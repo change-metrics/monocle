@@ -10,6 +10,7 @@ module Monocle.Client
     mkManager,
     monocleReq,
     baseUrl,
+    tokenM,
   )
 where
 
@@ -35,6 +36,7 @@ import Proto3.Suite.JSONPB qualified as JSONPB
 data MonocleClient = MonocleClient
   { -- | the base url
     baseUrl :: Text,
+    tokenM :: Maybe Text,
     manager :: Manager
   }
 
@@ -73,6 +75,8 @@ withClient ::
   m a
 withClient url managerM callBack =
   do
+    tokenM' <- liftIO $ lookupEnv "ADMIN_TOKEN"
+    let tokenM = from <$> tokenM'
     manager <- maybe (liftIO mkManager) pure managerM
     callBack MonocleClient {..}
   where
@@ -89,7 +93,11 @@ monocleReq path MonocleClient {..} body =
     initRequest <- parseUrlThrow (T.unpack $ baseUrl <> path)
     let request =
           initRequest
-            { requestHeaders = [("Accept", "*/*"), ("Content-Type", "application/json")],
+            { requestHeaders =
+                [ ("Accept", "*/*"),
+                  ("Content-Type", "application/json")
+                ]
+                  <> maybeToList authorizationH,
               method = "POST",
               requestBody = RequestBodyLBS . JSONPB.encode JSONPB.jsonPBOptions $ body
             }
@@ -99,3 +107,4 @@ monocleReq path MonocleClient {..} body =
     decodeResponse body' = case JSONPB.eitherDecode body' of
       Left err -> error $ "Decoding of " <> show body <> " failed with: " <> show err
       Right a -> a
+    authorizationH = fmap (\token -> ("Authorization", "Bearer " <> from token)) tokenM

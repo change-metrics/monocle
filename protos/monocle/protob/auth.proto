@@ -1,0 +1,38 @@
+// Copyright: (c) 2021-2022 Monocle authors
+// SPDX-License-Identifier: AGPL-3.0-only
+
+syntax = "proto3";
+package monocle_auth;
+option go_package = "monocle/auth";
+
+message GetMagicJwtRequest {
+  string token = 1;
+}
+
+enum GetMagicJwtError {
+  InvalidAdminToken = 0;
+  MagicTokenDisabled = 1;
+  MagicTokenCreateError = 2;
+}
+
+message GetMagicJwtResponse {
+  oneof result {
+    GetMagicJwtError error = 1;
+    string jwt = 2;
+  }
+}
+
+message WhoAmiRequest {
+  string void = 1;
+}
+
+enum WhoAmiError {
+  UnAuthorized = 0;
+}
+
+message WhoAmiResponse {
+  oneof result {
+    WhoAmiError error = 1;
+    string uid = 2;
+  }
+}

@@ -12,6 +12,7 @@ import Monocle.Search.Query qualified as Q
 import Monocle.Search.Syntax (Expr)
 import Network.HTTP.Client qualified as HTTP
 import Servant qualified (Handler)
+import Servant.Auth.Server (JWTSettings)
 
 -------------------------------------------------------------------------------
 -- The main AppM context, embeded in the Servant handler
@@ -24,7 +25,8 @@ data Env = Env
 -- | 'Env' is the global environment
 data AppEnv = AppEnv
   { config :: IO Config.ConfigStatus,
-    aEnv :: Env
+    aEnv :: Env,
+    aJWTSettings :: JWTSettings
   }
 
 -- | 'AppM' is the main context, it just adds Env to the servant Handler using Reader

@@ -7,10 +7,12 @@ import Macroscope.Test (monocleMacroscopeTests)
 import Monocle.Api.Test (mkAppEnv, withTestApi)
 import Monocle.Backend.Provisioner (runProvisioner)
 import Monocle.Backend.Test
-import Monocle.Client.Api (configGetGroupMembers, configGetGroups, crawlerCommitInfo)
+import Monocle.Client (MonocleClient (tokenM))
+import Monocle.Client.Api (authGetMagicJwt, authWhoAmi, configGetGroupMembers, configGetGroups, crawlerCommitInfo)
 import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Prelude
+import Monocle.Protob.Auth
 import Monocle.Protob.Config
   ( GetGroupMembersRequest (GetGroupMembersRequest),
     GetGroupMembersResponse (GetGroupMembersResponse, getGroupMembersResponseMembers),
@@ -24,6 +26,7 @@ import Monocle.Search.Parser qualified as P
 import Monocle.Search.Query qualified as Q
 import Monocle.Search.Syntax qualified as S
 import Proto3.Suite (Enumerated (Enumerated, enumerated))
+import Servant.Auth.Server (defaultJWTSettings, generateKey)
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -66,6 +69,8 @@ mkAppEnvWithSideEffect config' newConfig reloadedRef = do
   bhEnv <- mkEnv'
   ws <- newMVar $ Config.mkWorkspaceStatus config'
   newWs <- newMVar $ Config.mkWorkspaceStatus newConfig
+  jwk <- generateKey
+  let aJWTSettings = defaultJWTSettings jwk
   Config.setWorkspaceStatus Config.Ready ws
   let glLogger _ = pure ()
       config = configSE (config', ws) (newConfig, newWs)
@@ -118,9 +123,27 @@ monocleApiTests =
     "Monocle.Api.Server"
     [ testCase "Test getGroups and getGroupMembers" testGetGroups,
       testCase "Test crawler MDs refreshed after config reload" testReloadedConfig,
-      testCase "Test get metrics" testGetMetrics
+      testCase "Test get metrics" testGetMetrics,
+      testCase "Test Auth Magic Token" testAuthMagicToken
     ]
   where
+    testAuthMagicToken :: Assertion
+    testAuthMagicToken = do
+      let appEnv = mkAppEnv $ Config.mkTenant "ws"
+      let adminToken = "test"
+      setEnv "ADMIN_TOKEN" adminToken
+      withTestApi appEnv $ \_logger client -> do
+        resp <- authGetMagicJwt client $ GetMagicJwtRequest $ from adminToken
+        case resp of
+          GetMagicJwtResponse (Just (GetMagicJwtResponseResultJwt jwt)) -> do
+            let authClient = client {tokenM = Just $ from jwt}
+            resp' <- authWhoAmi authClient $ WhoAmiRequest ""
+            case resp' of
+              WhoAmiResponse (Just (WhoAmiResponseResultUid muid)) ->
+                assertEqual "Assert expected Magic Token uid" "Magic User UID" muid
+              _ -> error "Unexpected Token uid value"
+          _ -> error "expected a JWT token"
+
     testGetGroups :: Assertion
     testGetGroups = do
       let appEnv =

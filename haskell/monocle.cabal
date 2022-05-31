@@ -130,6 +130,7 @@ library
                      , http-mock                  >= 0.1
                      , http-types                 >=0.12
                      , json-syntax                >= 0.2
+                     , jose                       >= 0.9
                      , lens
                      , lens-aeson
                      , megaparsec                 >= 9
@@ -148,8 +149,8 @@ library
                      , retry                      >= 0.8
                      , safe-exceptions            >= 0.1
                      , servant                    >= 0.18.2
-                     , servant-options            >= 0.1
                      , servant-server             >= 0.18.2
+                     , servant-auth-server        >= 0.4.1.0
                      , streaming                  >= 0.2
                      , tasty                      >= 1.4
                      , tasty-hunit                >= 0.10
@@ -182,6 +183,7 @@ library
                      , Monocle.Main
                      , Monocle.Api.Server
                      , Monocle.Api.Test
+                     , Monocle.Api.Jwt
 
                      -- api client for lentille
                      , Monocle.Client
@@ -237,6 +239,7 @@ library
                      , Monocle.Protob.Crawler
                      , Monocle.Protob.Metric
                      , Monocle.Protob.Login
+                     , Monocle.Protob.Auth
 
   other-modules:       Database.Bloodhound.Raw
                      , Lentille.Bugzilla.Mock

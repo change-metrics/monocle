@@ -75,6 +75,7 @@ protoToHaskell = fromProto headers mkService
         "import Control.Monad.Catch (MonadThrow)",
         "import Control.Monad.IO.Class (MonadIO)",
         "import Monocle.Client (MonocleClient, monocleReq)",
+        "import Monocle.Protob.Auth",
         "import Monocle.Protob.Config",
         "import Monocle.Protob.Crawler",
         "import Monocle.Protob.Login",
@@ -118,12 +119,12 @@ protoToReScript = fromProto headers mkService
     mkMethod moduleName (name, input, output, path)
       | "/crawler/" `Text.isInfixOf` path = []
       | otherwise =
-        [ "@module(\"axios\")",
-          "external " <> camel name <> "Raw: (string, 'a) => axios<'b> = \"post\"",
-          "",
-          methodDef <> "=>",
-          requestEncode <> " |> " <> requestCall <> " |> " <> promiseDecode
-        ]
+          [ "@module(\"axios\")",
+            "external " <> camel name <> "Raw: (string, 'a) => axios<'b> = \"post\"",
+            "",
+            methodDef <> "=>",
+            requestEncode <> " |> " <> requestCall <> " |> " <> promiseDecode
+          ]
       where
         methodDef = "let " <> camel name <> " = (" <> methodInput <> "): " <> methodOutput
         methodInput = "request: " <> msgName moduleName input
@@ -149,7 +150,9 @@ protoToServant pb =
         "",
         "import Monocle.Env",
         "import Monocle.Servant.PBJSON (PBJSON)",
-        "import Servant"
+        "import Servant",
+        "import Servant.Auth.Server (Auth, JWT, Cookie)",
+        "import Monocle.Api.Jwt (AuthenticatedUser)"
       ]
 
     imports = concatMap mkImport methods
@@ -175,7 +178,7 @@ protoToServant pb =
                    . Text.split (== '/')
                    $ Text.drop (Text.length "/api/2/") path
                )
-            <> " :> ReqBody '[JSON] "
+            <> " :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] "
             <> ("Monocle.Protob." <> moduleName <> "." <> name <> "Request")
             <> " :> Post  '[PBJSON, JSON] "
             <> ("Monocle.Protob." <> moduleName <> "." <> name <> "Response")

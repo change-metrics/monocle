@@ -15,12 +15,29 @@ import "monocle/protob/search.proto";
 import "monocle/protob/crawler.proto";
 import "monocle/protob/login.proto";
 import "monocle/protob/metric.proto";
+import "monocle/protob/auth.proto";
 
 service Login {
   // Check a login username
   rpc LoginValidation(monocle_login.LoginValidationRequest) returns (monocle_login.LoginValidationResponse) {
     option (google.api.http) = {
       post: "/api/2/login/username/validate"
+      body: "*"
+    };
+  }
+}
+
+service Auth {
+  rpc GetMagicJwt(monocle_auth.GetMagicJwtRequest) returns (monocle_auth.GetMagicJwtResponse) {
+    option (google.api.http) = {
+      post: "/api/2/auth/get"
+      body: "*"
+    };
+  }
+
+  rpc WhoAmi(monocle_auth.WhoAmiRequest) returns (monocle_auth.WhoAmiResponse) {
+    option (google.api.http) = {
+      post: "/api/2/auth/whoami"
       body: "*"
     };
   }

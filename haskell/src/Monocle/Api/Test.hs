@@ -10,6 +10,7 @@ import Monocle.Main
 import Monocle.Prelude
 import Network.HTTP.Mock (withMockedManager)
 import Network.Wai
+import Servant.Auth.Server (defaultJWTSettings, generateKey)
 
 -- Create the AppEnv, necesary to create the monocle api Wai Application
 mkAppEnv :: Config.Index -> IO AppEnv
@@ -19,6 +20,8 @@ mkAppEnv workspace = do
       config' = Config.Config Nothing [workspace]
       ws = Config.mkWorkspaceStatus config'
   wsRef <- newMVar $ fmap (const Config.Ready) ws
+  jwk <- generateKey
+  let aJWTSettings = defaultJWTSettings jwk
   let config = pure (Config.ConfigStatus False config' wsRef)
       aEnv = Env {..}
   pure $ AppEnv {..}

@@ -23,6 +23,29 @@ module Login = {
     )
 }
 
+module Auth = {
+  @module("axios")
+  external getMagicJwtRaw: (string, 'a) => axios<'b> = "post"
+
+  let getMagicJwt = (request: AuthTypes.get_magic_jwt_request): axios<
+    AuthTypes.get_magic_jwt_response,
+  > =>
+    request->AuthBs.encode_get_magic_jwt_request
+    |> getMagicJwtRaw(serverUrl ++ "/api/2/auth/get")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->AuthBs.decode_get_magic_jwt_response}->Js.Promise.resolve
+    )
+  @module("axios")
+  external whoAmiRaw: (string, 'a) => axios<'b> = "post"
+
+  let whoAmi = (request: AuthTypes.who_ami_request): axios<AuthTypes.who_ami_response> =>
+    request->AuthBs.encode_who_ami_request
+    |> whoAmiRaw(serverUrl ++ "/api/2/auth/whoami")
+    |> Js.Promise.then_(resp =>
+      {data: resp.data->AuthBs.decode_who_ami_response}->Js.Promise.resolve
+    )
+}
+
 module Config = {
   @module("axios")
   external getWorkspacesRaw: (string, 'a) => axios<'b> = "post"

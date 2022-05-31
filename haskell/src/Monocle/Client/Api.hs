@@ -10,6 +10,7 @@ module Monocle.Client.Api where
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Class (MonadIO)
 import Monocle.Client (MonocleClient, monocleReq)
+import Monocle.Protob.Auth
 import Monocle.Protob.Config
 import Monocle.Protob.Crawler
 import Monocle.Protob.Login
@@ -18,6 +19,12 @@ import Monocle.Protob.Search
 
 loginLoginValidation :: (MonadThrow m, MonadIO m) => MonocleClient -> LoginValidationRequest -> m LoginValidationResponse
 loginLoginValidation = monocleReq "api/2/login/username/validate"
+
+authGetMagicJwt :: (MonadThrow m, MonadIO m) => MonocleClient -> GetMagicJwtRequest -> m GetMagicJwtResponse
+authGetMagicJwt = monocleReq "api/2/auth/get"
+
+authWhoAmi :: (MonadThrow m, MonadIO m) => MonocleClient -> WhoAmiRequest -> m WhoAmiResponse
+authWhoAmi = monocleReq "api/2/auth/whoami"
 
 configGetWorkspaces :: (MonadThrow m, MonadIO m) => MonocleClient -> GetWorkspacesRequest -> m GetWorkspacesResponse
 configGetWorkspaces = monocleReq "api/2/get_workspaces"
