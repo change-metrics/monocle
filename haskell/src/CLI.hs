@@ -57,7 +57,7 @@ usage =
       -- get parameters from the environment
       (config, url, monitoringPort) <- getFromEnv usageCrawlerEnv
       -- start the Crawler
-      withClient url Nothing Nothing $ runMacroscope (getInt monitoringPort) config
+      withClient url Nothing $ runMacroscope (getInt monitoringPort) config
     usageCrawlerEnv = (,,) <$> envConf <*> envPublicUrl <*> envMonitoring
 
     -- Helper to create sub command

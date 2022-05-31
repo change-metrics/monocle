@@ -126,7 +126,6 @@ module Monocle.Prelude
     preview,
     at,
     set,
-    (?~),
 
     -- * lens-aeson
     _Integer,
@@ -184,7 +183,7 @@ where
 
 import Control.Exception.Safe (tryAny)
 import Control.Foldl qualified as L
-import Control.Lens (Lens', at, lens, mapMOf, over, preview, set, view, (?~))
+import Control.Lens (Lens', at, lens, mapMOf, over, preview, set, view)
 import Control.Monad.Catch (Handler (Handler), MonadCatch (catch), MonadMask, MonadThrow (throwM))
 import Control.Monad.Except (MonadError, catchError, throwError)
 import Control.Monad.IO.Unlift (MonadUnliftIO)

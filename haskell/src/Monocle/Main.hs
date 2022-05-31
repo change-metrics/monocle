@@ -1,8 +1,6 @@
 -- | The Monocle entry point.
 module Monocle.Main (run, app) where
 
--- import Network.Wai.Middleware.Servant.Options (provideOptions)
-
 import Lentille (httpRetry)
 import Monocle.Api.Jwt qualified as Monocle.Api.JWK
 import Monocle.Backend.Index qualified as I
@@ -87,9 +85,6 @@ run' port url configFile glLogger = do
       Warp.runSettings
         settings
         . cors (const $ Just policy)
-        -- https://github.com/haskell-servant/servant/issues/672
-        -- TODO: commented out for now due to missing instances
-        -- . provideOptions monocleAPI
         . monitoringMiddleware
         . healthMiddleware
         $ app (AppEnv {..})

@@ -69,14 +69,14 @@ withClient ::
   Text ->
   -- | An optional manager
   Maybe Manager ->
-  -- | An option Auth token
-  Maybe Text ->
   -- | The callback
   (MonocleClient -> m a) ->
   -- | withClient performs the IO
   m a
-withClient url managerM tokenM callBack =
+withClient url managerM callBack =
   do
+    tokenM' <- liftIO $ lookupEnv "ADMIN_TOKEN"
+    let tokenM = from <$> tokenM'
     manager <- maybe (liftIO mkManager) pure managerM
     callBack MonocleClient {..}
   where
@@ -95,9 +95,9 @@ monocleReq path MonocleClient {..} body =
           initRequest
             { requestHeaders =
                 [ ("Accept", "*/*"),
-                  ("Content-Type", "application/json"),
-                  authorizationH
-                ],
+                  ("Content-Type", "application/json")
+                ]
+                  <> maybeToList authorizationH,
               method = "POST",
               requestBody = RequestBodyLBS . JSONPB.encode JSONPB.jsonPBOptions $ body
             }
@@ -107,4 +107,4 @@ monocleReq path MonocleClient {..} body =
     decodeResponse body' = case JSONPB.eitherDecode body' of
       Left err -> error $ "Decoding of " <> show body <> " failed with: " <> show err
       Right a -> a
-    authorizationH = maybe mempty (\token -> ("Authorization", "Bearer " <> from token)) tokenM
+    authorizationH = fmap (\token -> ("Authorization", "Bearer " <> from token)) tokenM
