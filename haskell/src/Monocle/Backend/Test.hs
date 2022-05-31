@@ -329,7 +329,7 @@ testEnsureConfig = bracket_ create delete doTest
     wrap :: QueryM () -> IO ()
     wrap action = do
       bhEnv <- mkEnv'
-      let qt = QueryConfig $ Config.Config Nothing [tenantConfig]
+      let qt = QueryConfig $ Config.Config Nothing Nothing [tenantConfig]
       runQueryTarget bhEnv qt action
 
     create = do

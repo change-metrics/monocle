@@ -21,8 +21,14 @@ val encode_get_workspaces_request : ConfigTypes.get_workspaces_request -> Js.Jso
 val encode_get_workspaces_response : ConfigTypes.get_workspaces_response -> Js.Json.t Js.Dict.t
 (** [encode_get_workspaces_response v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_auth_config : ConfigTypes.auth_config -> Js.Json.t Js.Dict.t
+(** [encode_auth_config v dict] encodes [v] int the given JSON [dict] *)
+
 val encode_about_about_link : ConfigTypes.about_about_link -> Js.Json.t Js.Dict.t
 (** [encode_about_about_link v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_about_authentication : ConfigTypes.about_authentication -> Js.Json.t Js.Dict.t
+(** [encode_about_authentication v dict] encodes [v] int the given JSON [dict] *)
 
 val encode_about : ConfigTypes.about -> Js.Json.t Js.Dict.t
 (** [encode_about v dict] encodes [v] int the given JSON [dict] *)
@@ -69,8 +75,14 @@ val decode_get_workspaces_request : Js.Json.t Js.Dict.t -> ConfigTypes.get_works
 val decode_get_workspaces_response : Js.Json.t Js.Dict.t -> ConfigTypes.get_workspaces_response
 (** [decode_get_workspaces_response decoder] decodes a [get_workspaces_response] value from [decoder] *)
 
+val decode_auth_config : Js.Json.t Js.Dict.t -> ConfigTypes.auth_config
+(** [decode_auth_config decoder] decodes a [auth_config] value from [decoder] *)
+
 val decode_about_about_link : Js.Json.t Js.Dict.t -> ConfigTypes.about_about_link
 (** [decode_about_about_link decoder] decodes a [about_about_link] value from [decoder] *)
+
+val decode_about_authentication : Js.Json.t Js.Dict.t -> ConfigTypes.about_authentication
+(** [decode_about_authentication decoder] decodes a [about_authentication] value from [decoder] *)
 
 val decode_about : Js.Json.t Js.Dict.t -> ConfigTypes.about
 (** [decode_about decoder] decodes a [about] value from [decoder] *)
