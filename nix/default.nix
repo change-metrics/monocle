@@ -1,12 +1,12 @@
-{ elasticsearch-port ? 19200 }:
+{ elasticsearch-port ? 19200, nixpkgsPath ? (fetchTarball {
+  url =
+    # Keep in sync with haskell/flake.nix
+    "https://github.com/NixOS/nixpkgs/archive/ed014c27f4d0ca772fb57d3b8985b772b0503bbd.tar.gz";
+  sha256 = "sha256-Jxyn3uXFr5LdZNNiippI/obtLXAVBM18uVfiKVP4j9Q=";
+}) }:
 let
   # pin the upstream nixpkgs
-  nixpkgsPath = fetchTarball {
-    url =
-      "https://github.com/NixOS/nixpkgs/archive/7954a245e70238e08078baef7ff6459a67e229c3.tar.gz";
-    sha256 = "sha256:0160ns4miy3i53fp3rn6zdq39qgxqn9ngdvihz51kz4s2mp8hib7";
-  };
-  nixpkgsSrc = (import nixpkgsPath);
+  nixpkgsSrc = import nixpkgsPath;
 
   gitignoreSrc = pkgs.fetchFromGitHub {
     owner = "hercules-ci";
@@ -107,11 +107,6 @@ let
           in (pkgs.haskell.lib.dontCheck
             (hpPrev.callCabal2nix "bytebuild" src { }));
 
-          # Fix proposed in: https://github.com/NixOS/nixpkgs/pull/167957
-          bloodhound = pkgs.haskell.lib.overrideCabal hpPrev.bloodhound {
-            broken = false;
-          };
-
           # ghc-9.2 fix proposed in: https://github.com/byteverse/bytesmith/pull/22
           bytesmith = let
             src = builtins.fetchGit {
@@ -188,7 +183,10 @@ let
     inherit overlays;
     system = "x86_64-linux";
   };
-  pkgsNonFree = nixpkgsSrc { config.allowUnfree = true; };
+  pkgsNonFree = nixpkgsSrc {
+    system = "x86_64-linux";
+    config.allowUnfree = true;
+  };
 
   # manually adds build dependencies for benchmark that are not managed by cabal2nix
   addCriterion = drv:
