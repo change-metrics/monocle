@@ -14,10 +14,10 @@ services:
       ELASTIC_CONN: elastic:9200
     healthcheck:
       retries: 6
-      test: "curl --silent --fail localhost:9898/health || exit 1"
+      test: "curl --silent --fail localhost:8080/health || exit 1"
       timeout: "60s"
     ports:
-      - "${MONOCLE_API_ADDR:-0.0.0.0}:${MONOCLE_API_PORT:-9898}:9898"
+      - "${MONOCLE_API_ADDR:-0.0.0.0}:${MONOCLE_API_PORT:-8080}:8080"
     volumes:
       - "./etc:/etc/monocle:z"
   crawler:
@@ -55,22 +55,4 @@ services:
         soft: 65535
     volumes:
       - "./data:/usr/share/elasticsearch/data:Z"
-  web:
-    build:
-      args: {}
-      context: web
-      dockerfile: Dockerfile-web
-    depends_on:
-      - api
-    environment:
-      REACT_APP_API_URL: "${MONOCLE_PUBLIC_URL:-http://localhost:8080}"
-      REACT_APP_TITLE: "${MONOCLE_TITLE}"
-    healthcheck:
-      retries: 6
-      test: "curl --silent --fail localhost:8080 || exit 1"
-      timeout: "60s"
-    ports:
-      - "${MONOCLE_WEB_ADDR:-0.0.0.0}:${MONOCLE_WEB_PORT:-8080}:8080"
-    volumes:
-      - "./web/conf:/etc/nginx/conf.d:z"
 version: '3'

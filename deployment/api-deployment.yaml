@@ -37,12 +37,12 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: 9898
+              port: 8080
             failureThreshold: 6
             timeoutSeconds: 60
           name: api
           ports:
-            - containerPort: 9898
+            - containerPort: 8080
               name: http-rest-api
           resources: {}
           volumeMounts:

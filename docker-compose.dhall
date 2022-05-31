@@ -118,7 +118,7 @@ let createApiService =
         let service =
               { healthcheck = Some
                   ( mkHealthCheck
-                      "curl --silent --fail localhost:9898/health || exit 1"
+                      "curl --silent --fail localhost:8080/health || exit 1"
                   )
               , depends_on = Some [ "elastic" ]
               , command = Some (Compose.StringOrList.String "monocle api")
@@ -138,13 +138,13 @@ let createApiService =
             then  Compose.Service::(     service
                                      //  { build = Some apiBuildContext
                                          , ports = Some
-                                           [ mkPort "API" 9898 9898 ]
+                                           [ mkPort "API" 8080 8080 ]
                                          }
                                    )
             else  Compose.Service::(     service
                                      //  { image = Some (monocleImage "api")
                                          , expose = Some
-                                           [ Compose.StringOrNumber.Number 9898
+                                           [ Compose.StringOrNumber.Number 8080
                                            ]
                                          , restart = Some "unless-stopped"
                                          }
@@ -178,51 +178,10 @@ let createCrawlerService =
                                          }
                                    )
 
-let createWebService =
-      \(dev : Bool) ->
-        let service =
-              { depends_on = Some [ "api" ]
-              , ports = Some [ mkPort "WEB" 8080 8080 ]
-              , volumes = Some [ "./web/conf:/etc/nginx/conf.d:z" ]
-              , healthcheck = Some
-                  ( mkHealthCheck
-                      "curl --silent --fail localhost:8080 || exit 1"
-                  )
-              , environment = Some
-                  ( Compose.ListOrDict.Dict
-                      [ { mapKey = "REACT_APP_API_URL"
-                        , mapValue =
-                            "\${MONOCLE_PUBLIC_URL:-http://localhost:8080}"
-                        }
-                      , { mapKey = "REACT_APP_TITLE"
-                        , mapValue = "\${MONOCLE_TITLE}"
-                        }
-                      ]
-                  )
-              }
-
-        let -- podman v3.1.0 doesn't seem to work with build directory
-            -- adding a build context and a dockerfile next to the compose file is a working combo
-            build =
-              buildContext "web" // { context = "web" }
-
-        in  if    dev
-            then  Compose.Service::(     service
-                                     //  { build = Some
-                                             (Compose.Build.Object build)
-                                         }
-                                   )
-            else  Compose.Service::(     service
-                                     //  { image = Some (monocleImage "web")
-                                         , restart = Some "unless-stopped"
-                                         }
-                                   )
-
 let createServices =
       \(dev : Bool) ->
         toMap
           { api = createApiService dev
-          , web = createWebService dev
           , crawler = createCrawlerService dev
           , elastic = createElasticService dev
           }

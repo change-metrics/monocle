@@ -5,12 +5,10 @@ package "backend" {
   database "elastic" as Datastore
   collections "api" as Api
   agent "crawler" as Worker
-  cloud "web" as Proxy
 }
 actor user as User
 
 Api --> Datastore
 Api <--> Worker
-Proxy -> Api
-User --> Proxy
+User --> Api
 @enduml

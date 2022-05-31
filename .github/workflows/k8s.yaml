@@ -33,8 +33,8 @@ jobs:
           kubernetes-version: stable
       - name: run k8s deployment on the cluster
         run: |
-          kubectl create namespace "${namespace}" 
-          kubectl create --namespace "${namespace}" --filename ./deployment/ 
+          kubectl create namespace "${namespace}"
+          kubectl create --namespace "${namespace}" --filename ./deployment/
       - name: validate components have been deployed successfuly
         run: |
           deploy_pod_labels_raw=$(kubectl get --namespace "${namespace}" --filename ./deployment/elastic-deployment.yaml --output go-template='{{ range $k, $v :=.spec.selector.matchLabels }}{{$k}}={{$v}},{{ end }}')
@@ -59,16 +59,16 @@ jobs:
           curl -s -I -X GET http://localhost:9200/_cat/indices
 
           kill %1
-      - name: Check api service through nginx
+      - name: Check api service
         run: |
-          kubectl port-forward --namespace "${namespace}" $( kubectl get --namespace "${namespace}" -f deployment/web-service.yaml --output name) 8080:8080 &
+          kubectl port-forward --namespace "${namespace}" $( kubectl get --namespace "${namespace}" -f deployment/api-service.yaml --output name) 8080:8080 &
           sleep 30s
 
           curl -s --fail -H 'Content-type: application/json' http://localhost:8080/api/2/get_workspaces -d '{}' | grep 'workspaces'
           kill %1
       - name: Check web service to fetch web app
         run: |
-          kubectl port-forward --namespace "${namespace}" $( kubectl get --namespace "${namespace}" -f deployment/web-service.yaml --output name) 8080:8080 &
+          kubectl port-forward --namespace "${namespace}" $( kubectl get --namespace "${namespace}" -f deployment/api-service.yaml --output name) 8080:8080 &
           sleep 30s
 
           curl -s http://localhost:8080/index.html | grep 'window.TITLE'

@@ -1,6 +1,6 @@
 .git
 .gitignore
-web
+web/build
 data
 docker-compose.yml
 contrib

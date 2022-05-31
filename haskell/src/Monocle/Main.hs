@@ -2,6 +2,9 @@
 module Monocle.Main (run, app) where
 
 import Crypto.JOSE qualified as Jose
+import Data.List qualified
+import Data.Text qualified as Text
+import Data.Text.IO qualified as Text
 import Lentille (httpRetry)
 import Monocle.Api.Jwt (getOIDCProviderPublicKeys)
 import Monocle.Api.Jwt qualified as Monocle.Api.JWK
@@ -21,23 +24,69 @@ import Network.Wai.Middleware.Cors (cors, corsRequestHeaders, simpleCorsResource
 import Network.Wai.Middleware.Prometheus (def, prometheus)
 import Prometheus (register)
 import Prometheus.Metric.GHC (ghcMetrics)
-import Servant (Context (EmptyContext, (:.)), Handler, hoistServerWithContext, serveWithContext)
+import Servant
 import Servant.Auth.Server (CookieSettings, JWTSettings (validationKeys), defaultCookieSettings, defaultJWTSettings)
+import System.Directory qualified
 
-monocleAPI :: Proxy MonocleAPI
-monocleAPI = Proxy
+-- | The API is served at both `/api/2/` (for backward compat with the legacy nginx proxy)
+-- and `/` (for compat with crawler client)
+type RootAPI = "api" :> "2" :> MonocleAPI :<|> MonocleAPI
 
 -- | Create the underlying Monocle web application interface, for integration or testing purpose.
 app :: AppEnv -> Wai.Application
--- app env = serve monocleAPI $ hoistServer monocleAPI mkAppM server
 app env =
-  serveWithContext monocleAPI cfg $
-    hoistServerWithContext monocleAPI (Proxy :: Proxy '[CookieSettings, JWTSettings]) mkAppM server
+  serveWithContext (Proxy @RootAPI) cfg $
+    hoistServerWithContext (Proxy @RootAPI) (Proxy :: Proxy '[CookieSettings, JWTSettings]) mkAppM (server :<|> server)
   where
     jwtCfg = aJWTSettings env
     cfg = jwtCfg :. defaultCookieSettings :. EmptyContext
     mkAppM :: AppM x -> Servant.Handler x
     mkAppM apM = runReaderT (unApp apM) env
+
+mkStaticMiddleware :: IO (Wai.Application -> Wai.Application)
+mkStaticMiddleware = do
+  -- Check where are the webui files
+  rootDir <- fromMaybe (error "WebUI files are missing") <$> "/monocle-webapp/" `existOr` Just "../web/build/"
+  -- Load the index and inject the customization
+  index <- Text.readFile $ rootDir <> "index.html"
+  title <- fromMaybe "Monocle" <$> lookupEnv "REACT_APP_TITLE"
+  apiUrl <- lookupEnv "REACT_APP_API_URL"
+  pure $ staticMiddleware (from $ prepIndex index title apiUrl) rootDir
+  where
+    -- Replace env variable in the index page
+    prepIndex :: Text -> String -> Maybe String -> Text
+    prepIndex index title apiUrl =
+      Text.replace "__TITLE__" (from title) $
+        case apiUrl of
+          Just url -> Text.replace "__API_URL__" (from url) index
+          Nothing -> index
+
+    -- Helper that checks if `fp` exists, otherwise it returns `otherFP`
+    existOr :: FilePath -> Maybe FilePath -> IO (Maybe FilePath)
+    existOr fp otherFP = do
+      exist <- System.Directory.doesPathExist fp
+      pure $ if exist then Just fp else otherFP
+
+    -- The middleware pass the request to the monocle app
+    staticMiddleware :: LByteString -> FilePath -> Wai.Application -> Wai.Application
+    staticMiddleware index rootDir app' req waiRespond = app' req responder
+      where
+        responder resp
+          -- The application handled the request, forward the responce
+          | HTTP.statusCode (Wai.responseStatus resp) /= 404 = waiRespond resp
+          | otherwise = do
+            respPath <- do
+              let reqPath = drop 1 $ decodeUtf8 $ Wai.rawPathInfo req
+              if Data.List.null reqPath || ".." `Data.List.isInfixOf` reqPath
+                then -- The path is empty or fishy
+                  pure Nothing
+                else -- Checks if the request match a file, such as favico or css
+                  (rootDir <> reqPath) `existOr` Nothing
+            waiRespond $ case respPath of
+              -- The path exist, returns it
+              Just path -> Wai.responseFile HTTP.status200 [] path Nothing
+              -- Otherwise returns the index
+              Nothing -> Wai.responseLBS HTTP.status200 [] index
 
 healthMiddleware :: Wai.Application -> Wai.Application
 healthMiddleware app' req resp
@@ -62,6 +111,8 @@ run' port url configFile glLogger = do
       error "Invalid aliases"
 
   -- TODO: add the aliases to the AppM env to avoid parsing them for each request
+
+  staticMiddleware <- mkStaticMiddleware
 
   -- Monitoring
   void $ register ghcMetrics
@@ -105,6 +156,7 @@ run' port url configFile glLogger = do
         . cors (const $ Just policy)
         . monitoringMiddleware
         . healthMiddleware
+        . staticMiddleware
         $ app (AppEnv {..})
   where
     policy =

@@ -64,7 +64,7 @@ pattern GetConfig a <- Config.ConfigStatus _ a _
 pattern GetTenants :: [Config.Index] -> Config.ConfigStatus
 pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _about _auth a) _
 
--- curl -XPOST -d '{"void": ""}' -H "Content-type: application/json" -H 'Authorization: Bearer <token>' http://localhost:19875/auth/whoami
+-- curl -XPOST -d '{"void": ""}' -H "Content-type: application/json" -H 'Authorization: Bearer <token>' http://localhost:8080/auth/whoami
 authWhoAmi :: AuthResult AuthenticatedUser -> AuthPB.WhoAmiRequest -> AppM AuthPB.WhoAmiResponse
 authWhoAmi (Authenticated (AUser muid)) _request = response
   where
@@ -82,7 +82,7 @@ authWhoAmi _auth _request =
       . Enumerated
       $ Right AuthPB.WhoAmiErrorUnAuthorized
 
--- curl -XPOST -d '{"token": "admin-token"}' -H "Content-type: application/json" http://localhost:19875/auth/get
+-- curl -XPOST -d '{"token": "admin-token"}' -H "Content-type: application/json" http://localhost:8080/auth/get
 authGetMagicJwt :: AuthResult AuthenticatedUser -> AuthPB.GetMagicJwtRequest -> AppM AuthPB.GetMagicJwtResponse
 authGetMagicJwt _auth (AuthPB.GetMagicJwtRequest inputAdminToken) = do
   jwtSettings <- asks aJWTSettings
