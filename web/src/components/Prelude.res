@@ -175,7 +175,7 @@ module NetworkRender = {
   @react.component
   let make = (~get, ~trigger, ~render) =>
     switch useAutoGetOn(get, trigger) {
-    | NotAsked => "Unknown"->React.string
+    | NotAsked => <Spinner />
     | Loading(respM) => <>
         <Spinner />
         {switch respM {

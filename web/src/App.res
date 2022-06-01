@@ -204,131 +204,144 @@ module About = {
     ->React.array
 
   @react.component
-  let make = (~store, ~isOpen: bool, ~onClose: unit => unit) =>
-    switch Store.Fetch.about(store) {
-    | None => React.null
-    | Some(Error(title)) => <Alert variant=#Danger title />
-    | Some(Ok({about})) =>
-      switch about {
-      | Some(about) =>
-        <AboutModal
-          isOpen onClose productName="Monocle" brandImageAlt="Monocle" brandImageSrc=logoPath>
-          <TextContent>
-            <h4> {"About Monocle"->str} </h4>
-            <TextList component=#Dl>
-              <TextListItem component=#Dt> {"Monocle Version"->str} </TextListItem>
-              <TextListItem component=#Dd> {about.version} </TextListItem>
-              <TextListItem component=#Dt> {defaultLink} </TextListItem>
-            </TextList>
-          </TextContent>
-          {about.links->buildCategoryLinks}
-        </AboutModal>
-      | None => React.null
-      }
+  let make = (~store: Store.t, ~isOpen: bool, ~onClose: unit => unit) => {
+    let (state, _) = store
+    <AboutModal isOpen onClose productName="Monocle" brandImageAlt="Monocle" brandImageSrc=logoPath>
+      <TextContent>
+        <h4> {"About Monocle"->str} </h4>
+        <TextList component=#Dl>
+          <TextListItem component=#Dt> {"Monocle Version"->str} </TextListItem>
+          <TextListItem component=#Dd> {state.about.version} </TextListItem>
+          <TextListItem component=#Dt> {defaultLink} </TextListItem>
+        </TextList>
+      </TextContent>
+      {state.about.links->buildCategoryLinks}
+    </AboutModal>
+  }
+}
+
+module App = {
+  @react.component
+  let make = (~about: ConfigTypes.about) => {
+    let url = RescriptReactRouter.useUrl()
+
+    // The initial index
+    let initIndex = switch url.path->Belt.List.head->Belt.Option.getWithDefault("") {
+    | "help" => ""
+    | x => x
     }
+
+    // The current nav
+    let active = switch url.path {
+    | list{} => ""
+    | list{_, ...xs} => "/" ++ Js.Array.joinWith("/", xs->Belt.List.toArray)
+    }
+
+    // Init the APP store
+    let store = Store.use(initIndex, about)
+    let (state, dispatch) = store
+
+    // Some state for managing various modals
+    let (showAbout, setShowAbout) = React.useState(_ => false)
+    let (showLoginModal, setShowLoginModal) = React.useState(_ => false)
+
+    // The main page to render APP
+    let bodyPage = {
+      let nav = <MonocleNav active store />
+      let sidebar = state.index == "" ? React.null : <PageSidebar nav />
+      let logo = <span onClick={_ => store->Store.changeIndex("")}> <img src={logoPath} /> </span>
+      let headerTools =
+        <PageHeaderTools>
+          <About store isOpen=showAbout onClose={() => setShowAbout(_ => false)} />
+          <PageHeaderToolsGroup>
+            <PageHeaderToolsItem> <Login.Button store setShowLoginModal /> </PageHeaderToolsItem>
+            <PageHeaderToolsItem>
+              <div
+                onClick={_ => setShowAbout(_ => true)}
+                style={ReactDOM.Style.make(~cursor="pointer", ())}>
+                <Patternfly.Icons.InfoAlt />
+              </div>
+            </PageHeaderToolsItem>
+            // <PageHeaderToolsItem>
+            //   <div
+            //     onClick={showSettings}
+            //     style={ReactDOM.Style.make(~cursor="pointer", ~paddingLeft="13px", ())}>
+            //     <Patternfly.Icons.Cog />
+            //   </div>
+            // </PageHeaderToolsItem>
+          </PageHeaderToolsGroup>
+        </PageHeaderTools>
+      let header = <PageHeader showNavToggle={state.index == "" ? false : true} logo headerTools />
+      <Page header sidebar isManagedSidebar={true}>
+        {switch showLoginModal {
+        | true => <Login.Modal store setShowLoginModal />
+        | false =>
+          <React.Fragment>
+            {switch state.index {
+            | "" => React.null
+
+            | _ => <PageSection variant=#Dark> <Search.Top store /> </PageSection>
+            }}
+            <PageSection isFilled={true}>
+              {switch url.path {
+              | list{} => <Indices.Indices store />
+              | list{"help", "search"} => <HelpSearch.View store />
+              | list{_, "settings"} => <LocalSettings.View store />
+              | list{_} => <Activity store />
+              | list{_, "author", name} => <ScopedView.AuthorScopedView store name />
+              | list{_, "group", name} => <ScopedView.GroupScopedView store name />
+              | list{_, "active_authors"} => <ActivePeopleView store />
+              | list{_, "peers_strength"} => <PeersStrengthView store stacked={false} />
+              | list{_, "new_authors"} => <NewContributorsView store />
+              | list{_, "projects"} => <ProjectsView store />
+              | list{_, "user_groups"} => <GroupsView store />
+              | list{_, "user_groups", group} => <GroupView group store />
+              | list{_, "repos"} => <ReposView store />
+              | list{_, "changes"} => <NChangeView store />
+              | list{_, "change", change} => <ChangeView change store />
+              | list{_, "board"} => <Board store />
+              | list{_, "search_author"} => <AuthorSearch store />
+              | _ => <p> {"Not found"->str} </p>
+              }}
+            </PageSection>
+          </React.Fragment>
+        }}
+      </Page>
+    }
+
+    let toaster =
+      <ul className="pf-c-alert-group pf-m-toast">
+        {state.toasts
+        ->Belt.List.mapWithIndex((idx, toast) =>
+          <li className="pf-c-alert-group__item">
+            <Patternfly.Alert
+              key={idx->string_of_int}
+              title={toast}
+              timeout={4000}
+              onTimeout={_ => toast->RemoveToast->dispatch}
+            />
+          </li>
+        )
+        ->Belt.List.toArray
+        ->React.array}
+      </ul>
+
+    <React.Fragment> bodyPage toaster </React.Fragment>
+  }
+  // let showSettings = _ => "settings"->RescriptReactRouter.push
 }
 
 @react.component
-let make = () => {
-  let url = RescriptReactRouter.useUrl()
-
-  // The initial index
-  let initIndex = switch url.path->Belt.List.head->Belt.Option.getWithDefault("") {
-  | "help" => ""
-  | x => x
-  }
-
-  // The current nav
-  let active = switch url.path {
-  | list{} => ""
-  | list{_, ...xs} => "/" ++ Js.Array.joinWith("/", xs->Belt.List.toArray)
-  }
-
-  let store = Store.use(initIndex)
-  let (state, dispatch) = store
-  let (showAbout, setShowAbout) = React.useState(_ => false)
-  let (showLoginModal, setShowLoginModal) = React.useState(_ => false)
-
-  // let showSettings = _ => "settings"->RescriptReactRouter.push
-  let _topNav = <Nav variant=#Horizontal> {<> </>} </Nav>
-  let headerTools =
-    <PageHeaderTools>
-      <About store isOpen=showAbout onClose={() => setShowAbout(_ => false)} />
-      <PageHeaderToolsGroup>
-        <PageHeaderToolsItem> <Login.Button store setShowLoginModal /> </PageHeaderToolsItem>
-        <PageHeaderToolsItem>
-          <div
-            onClick={_ => setShowAbout(_ => true)}
-            style={ReactDOM.Style.make(~cursor="pointer", ())}>
-            <Patternfly.Icons.InfoAlt />
-          </div>
-        </PageHeaderToolsItem>
-        /*
-        <PageHeaderToolsItem>
-          <div
-            onClick={showSettings}
-            style={ReactDOM.Style.make(~cursor="pointer", ~paddingLeft="13px", ())}>
-            <Patternfly.Icons.Cog />
-          </div>
-        </PageHeaderToolsItem>
- */
-      </PageHeaderToolsGroup>
-    </PageHeaderTools>
-  let nav = <MonocleNav active store />
-  let sidebar = state.index == "" ? React.null : <PageSidebar nav />
-  let logo = <span onClick={_ => store->Store.changeIndex("")}> <img src={logoPath} /> </span>
-  let header = <PageHeader showNavToggle={state.index == "" ? false : true} logo headerTools />
-
-  <>
-    <Page header sidebar isManagedSidebar={true}>
-      {switch showLoginModal {
-      | true => <Login.Modal store setShowLoginModal />
-      | false => <>
-          {switch state.index {
-          | "" => React.null
-          | _ => <PageSection variant=#Dark> <Search.Top store /> </PageSection>
-          }}
-          <PageSection isFilled={true}>
-            {switch url.path {
-            | list{} => <Indices.Indices store />
-            | list{"help", "search"} => <HelpSearch.View store />
-            | list{_, "settings"} => <LocalSettings.View store />
-            | list{_} => <Activity store />
-            | list{_, "author", name} => <ScopedView.AuthorScopedView store name />
-            | list{_, "group", name} => <ScopedView.GroupScopedView store name />
-            | list{_, "active_authors"} => <ActivePeopleView store />
-            | list{_, "peers_strength"} => <PeersStrengthView store stacked={false} />
-            | list{_, "new_authors"} => <NewContributorsView store />
-            | list{_, "projects"} => <ProjectsView store />
-            | list{_, "user_groups"} => <GroupsView store />
-            | list{_, "user_groups", group} => <GroupView group store />
-            | list{_, "repos"} => <ReposView store />
-            | list{_, "changes"} => <NChangeView store />
-            | list{_, "change", change} => <ChangeView change store />
-            | list{_, "board"} => <Board store />
-            | list{_, "search_author"} => <AuthorSearch store />
-            | _ => <p> {"Not found"->str} </p>
-            }}
-          </PageSection>
-        </>
-      }}
-    </Page>
-    <ul className="pf-c-alert-group pf-m-toast">
-      {state.toasts
-      ->Belt.List.mapWithIndex((idx, toast) =>
-        <li className="pf-c-alert-group__item">
-          <Patternfly.Alert
-            key={idx->string_of_int}
-            title={toast}
-            timeout={4000}
-            onTimeout={_ => toast->RemoveToast->dispatch}
-          />
-        </li>
-      )
-      ->Belt.List.toArray
-      ->React.array}
-    </ul>
-  </>
-}
+let make = () =>
+  <NetworkRender
+    get={() => WebApi.Config.getAbout({void: ""})}
+    trigger={""}
+    render={(resp: ConfigTypes.get_about_response) => {
+      switch resp.about {
+      | Some(about) => <App about />
+      | None => <Alert variant=#Danger title={"Unable to fetch about data !"} />
+      }
+    }}
+  />
 
 let default = make

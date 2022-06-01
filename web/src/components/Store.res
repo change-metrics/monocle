@@ -60,7 +60,7 @@ module Store = {
     fields: RemoteData.t<list<SearchTypes.field>>,
     projects: projectsR,
     changes_pies_panel: bool,
-    about: aboutR,
+    about: ConfigTypes.about,
     dexie: Dexie.Database.t,
     toasts: list<string>,
   }
@@ -74,7 +74,6 @@ module Store = {
     | FetchFields(fieldsRespR)
     | FetchSuggestions(suggestionsR)
     | FetchProjects(projectsR)
-    | FetchAbout(aboutR)
     | ReverseChangesPiePanelState
     | RemoveToast(string)
     | AddToast(string)
@@ -83,7 +82,7 @@ module Store = {
 
   type dispatch = action => unit
 
-  let create = index => {
+  let create = (index, about) => {
     index: index,
     query: UrlData.getQuery(),
     filter: UrlData.getFilter(),
@@ -94,7 +93,7 @@ module Store = {
     suggestions: None,
     fields: None,
     projects: None,
-    about: None,
+    about: about,
     changes_pies_panel: false,
     dexie: MonoIndexedDB.mkDexie(),
     toasts: list{},
@@ -109,7 +108,7 @@ module Store = {
       }
     | ChangeIndex(index) => {
         RescriptReactRouter.push("/" ++ index)
-        create(index)
+        create(index, state.about)
       }
     | SetQuery(query) => {
         Prelude.setLocationSearch("q", query)->ignore
@@ -131,7 +130,6 @@ module Store = {
     | FetchFields(res) => {...state, fields: res->RemoteData.fmap(resp => resp.fields)}
     | FetchSuggestions(res) => {...state, suggestions: res}
     | FetchProjects(res) => {...state, projects: res}
-    | FetchAbout(res) => {...state, about: res}
     | ReverseChangesPiePanelState => {...state, changes_pies_panel: !state.changes_pies_panel}
     | Login(username) => {
         Dom.Storage.localStorage |> Dom.Storage.setItem("monocle_username", username)
@@ -196,15 +194,6 @@ module Fetch = {
       dispatch,
     )
   }
-
-  let about = ((state: Store.t, dispatch)) => {
-    fetch(
-      state.about,
-      () => WebApi.Config.getAbout({void: ""}),
-      res => Store.FetchAbout(res),
-      dispatch,
-    )
-  }
 }
 
 let changeIndex = ((_, dispatch), name) => name->Store.ChangeIndex->dispatch
@@ -222,4 +211,4 @@ let mkSearchRequest = (state: Store.t, query_type: SearchTypes.query_request_que
 // Hook API
 type t = (Store.t, Store.action => unit)
 
-let use = (index): t => React.useReducer(Store.reducer, Store.create(index))
+let use = (index, about): t => React.useReducer(Store.reducer, Store.create(index, about))
