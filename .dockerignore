@@ -4,7 +4,6 @@ web/build
 data
 docker-compose.yml
 contrib
-dump
 etc
 doc
 

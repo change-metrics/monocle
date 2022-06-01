@@ -10,6 +10,5 @@ etc
 .env
 .secrets
 docker-compose.yml
-dump
 .vscode
 .hie
