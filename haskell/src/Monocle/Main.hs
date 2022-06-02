@@ -46,7 +46,7 @@ app env =
 mkStaticMiddleware :: IO (Wai.Application -> Wai.Application)
 mkStaticMiddleware = do
   -- Check where are the webui files
-  rootDir <- fromMaybe (error "WebUI files are missing") <$> "/monocle-webapp/" `existOr` Just "../web/build/"
+  rootDir <- fromMaybe (error "WebUI files are missing") <$> "/usr/share/monocle/webapp/" `existOr` Just "../web/build/"
   -- Load the index and inject the customization
   index <- Text.readFile $ rootDir <> "index.html"
   title <- fromMaybe "Monocle" <$> lookupEnv "REACT_APP_TITLE"

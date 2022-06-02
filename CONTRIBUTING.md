@@ -59,6 +59,17 @@ Monocle relies on ElasticSearch as backend to store Changes events.
 ```
 Make sure data directory has writing permissions.
 
+#### WebUI
+
+The API serves the webui from `/usr/share/monocle/webapp` or the `web/build` directory.
+Build the UI first:
+
+```ShellSession
+cd web
+npm install
+npm build
+```
+
 #### API
 
 To start the Monocle API run the following commands.
@@ -78,9 +89,9 @@ cabal repl monocle
 λ> run 9879 "http://localhost:9200" "../etc/config.yaml"
 ```
 
-#### Web
+#### WebUI hot reload
 
-The Monocle React WebAPP (hot reload is enabled).
+The Monocle React WebAPP hot reload service can be started:
 
 ```ShellSession
 cd web
@@ -119,15 +130,6 @@ You can configure the project [cachix](https://cachix.org) binary cache with thi
 nix-shell --command elasticsearch-start
 ```
 
-#### API
-
-```ShellSession
-nix-shell --command monocle-repl
-λ> import Monocle.Main
-λ> run 8080 "http://localhost:19200" "../etc/config.yaml"
-```
-
-
 #### Web
 
 ```ShellSession
@@ -136,6 +138,14 @@ firefox http://localhost:13000
 ```
 
 If the command fails with `Error: package bs-parse not found or built`, you can try running this command: `rm -Rf web/lib web/node_modules`
+
+#### API
+
+```ShellSession
+nix-shell --command monocle-repl
+λ> import Monocle.Main
+λ> run 8080 "http://localhost:19200" "../etc/config.yaml"
+```
 
 #### Start crawlers process
 
