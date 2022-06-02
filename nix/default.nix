@@ -193,8 +193,8 @@ let
     pkgs.haskell.lib.addBuildDepends drv ([ pkgs.myHaskellPackages.criterion ]);
 
   # local devel env
-  monocle-port = 18080;
-  web-port = 13000;
+  monocle-port = 8080;
+  web-port = 3000;
   prom-port = 19090;
   grafana-port = 19030;
 

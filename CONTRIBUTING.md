@@ -99,7 +99,7 @@ npm install
 REACT_APP_API_URL=http://localhost:8080 npm start
 firefox http://localhost:3000
 ```
-If you are running this on non-local machine, set the `REACT_APP_API_URL=http://< machine ip | FQDN >:8081`. FQDN must be known in your network.
+If you are running this on non-local machine, set the `REACT_APP_API_URL=http://< machine ip | FQDN >:8080`. FQDN must be known in your network.
 
 #### Start crawlers process
 
@@ -112,7 +112,7 @@ cabal repl monocle
 λ> import Macroscope.Worker
 λ> import Macroscope.Main
 λ> import Monocle.Client (withClient)
-λ> withClient "http://127.0.0.1:8081" Nothing $ \client -> runMacroscope 19001 "../etc/config.yaml" client
+λ> withClient "http://127.0.0.1:8080" Nothing $ \client -> runMacroscope 19001 "../etc/config.yaml" client
 ```
 
 ### Running the services manually using NIX
@@ -154,7 +154,7 @@ nix-shell --command monocle-repl
 λ> import Macroscope.Worker
 λ> import Macroscope.Main
 λ> import Monocle.Client (withClient)
-λ> withClient "http://localhost:18080" Nothing $ \client -> runMacroscope 19001 "../etc/config.yaml" client
+λ> withClient "http://localhost:8080" Nothing $ \client -> runMacroscope 19001 "../etc/config.yaml" client
 ```
 
 #### Run ghcid
@@ -222,7 +222,7 @@ Similarly the api can be automatically restarted:
 ghcid --test 'Monocle.Main.run 8080 "http://localhost:19200" "../etc/config.yaml"'
 ```
 
-## Update API (protobuf)
+### Update API (protobuf)
 
 The APIs are defined using protobuf. To change them, first you need to update the
 protobuf definitions present in the [./protos/ folder](./protos). Then you need to update

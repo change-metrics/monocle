@@ -30,13 +30,13 @@ FROM registry.fedoraproject.org/fedora:35
 RUN dnf update -y && dnf install -y nodejs git
 
 # set working directory
-WORKDIR /webapp
-ENV PATH /webapp/node_modules/.bin:$PATH
+WORKDIR /monocle-webapp
+ENV PATH /monocle-webapp/node_modules/.bin:$PATH
 
 # copy files to install js modules
-COPY web/package.json /webapp/
-COPY web/bsconfig.json /webapp/
-COPY web/package-lock.json /webapp/
+COPY web/package.json /monocle-webapp/
+COPY web/bsconfig.json /monocle-webapp/
+COPY web/package-lock.json /monocle-webapp/
 
 # install dependencies
 RUN npm install
@@ -53,4 +53,4 @@ RUN sed -e 's|-bs-no-version-header|-bs-no-version-header", "-warn-error -a+5+6+
 FROM registry.fedoraproject.org/fedora:35
 
 COPY --from=0 /root/.cabal/bin/monocle /bin/
-COPY --from=1 /webapp/build /usr/share/monocle/webapp/
+COPY --from=1 /monocle-webapp/build /usr/share/monocle/webapp/
