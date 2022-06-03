@@ -2,12 +2,13 @@
 -- This module provides an interface between the backend and the frontend
 module Monocle.Api.Server where
 
+import Data.ByteString.Lazy qualified as LBS
 import Data.List (lookup)
 import Data.Map qualified as Map
 import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Google.Protobuf.Timestamp qualified as T
-import Monocle.Api.Jwt (AuthenticatedUser (AUser))
+import Monocle.Api.Jwt (AuthInfo, AuthenticatedUser (AUser), LoginHandler, OIDCEnv (..), User)
 import Monocle.Api.Jwt qualified
 import Monocle.Backend.Documents
   ( EChange (..),
@@ -30,7 +31,18 @@ import Monocle.Search.Query qualified as Q
 import Monocle.Search.Syntax (ParseError (..))
 import Monocle.Version (version)
 import Proto3.Suite (Enumerated (..))
+import Servant
+  ( NoContent (..),
+    ServerError (errBody, errHeaders, errReasonPhrase),
+    err302,
+    err403,
+  )
 import Servant.Auth.Server (AuthResult (Authenticated))
+import Text.Blaze (ToMarkup (..))
+import Text.Blaze.Html qualified as H
+import Text.Blaze.Html5 qualified as H
+import Text.Blaze.Renderer.Utf8 (renderMarkup)
+import Web.OIDC.Client qualified as O
 
 -- | 'getConfig' reload the config automatically from the env
 getConfig :: AppM Config.ConfigStatus
@@ -690,3 +702,79 @@ metricGet _auth request = do
     Left err -> handleError $ show err
   where
     handleError = pure . MetricPB.GetResponse . Just . MetricPB.GetResponseResultError
+
+-- | gen a 302 redirect helper
+redirects :: ByteString -> AppM ()
+redirects url = throwError err302 {errHeaders = [("Location", url)]}
+
+data Err = Err
+  { errTitle :: Text,
+    errMsg :: Text
+  }
+
+instance ToMarkup Err where
+  toMarkup Err {..} = H.docTypeHtml $ do
+    H.head $ do
+      H.title "Error"
+    H.body $ do
+      H.h2 (H.toHtml errTitle)
+      H.p (H.toHtml errMsg)
+
+format :: ToMarkup a => a -> LBS.ByteString
+format err = toMarkup err & renderMarkup
+
+forbidden :: (MonadError ServerError m) => Text -> m a
+forbidden = throwError . forbiddenErr
+
+forbiddenErr :: Text -> ServerError
+forbiddenErr = appToErr err403
+
+appToErr :: ServerError -> Text -> ServerError
+appToErr x msg =
+  x
+    { errBody = from $ format (Err (from (errReasonPhrase x)) msg),
+      errHeaders = [("Content-Type", "text/html")]
+    }
+
+handleLogin :: Maybe OIDCEnv -> AppM NoContent
+handleLogin oidcenvM = do
+  case oidcenvM of
+    Just oidcenv -> do
+      loc <- liftIO (genOIDCURL oidcenv)
+      redirects loc
+      return NoContent
+    Nothing -> forbidden "No OIDC Context"
+  where
+    genOIDCURL :: OIDCEnv -> IO ByteString
+    genOIDCURL OIDCEnv {..} = do
+      st <- genState -- generate a random string
+      loc <- O.getAuthenticationRequestUrl oidc [O.openId, O.email, O.profile] (Just st) []
+      return (show loc)
+
+handleLoggedIn ::
+  Maybe OIDCEnv ->
+  -- | handle successful id
+  LoginHandler ->
+  -- | error
+  Maybe Text ->
+  -- | code
+  Maybe Text ->
+  AppM User
+handleLoggedIn oidcenvM handleSuccessfulId err mcode =
+  case oidcenvM of
+    Just oidcenv -> case err of
+      Just errorMsg -> forbidden errorMsg
+      Nothing -> case mcode of
+        Just oauthCode -> do
+          tokens :: O.Tokens AuthInfo <- liftIO $ O.requestTokens (oidc oidcenv) Nothing (from oauthCode) (mgr oidcenv)
+          let idToken = O.idToken tokens
+          putText $ "idToken: " <> show idToken
+          let jwt = O.unJwt . O.idTokenJwt $ tokens
+          putText $ "jwt: " <> show jwt
+          user <- liftIO $ handleSuccessfulId $ O.otherClaims idToken
+          putText $ "User: " <> show user
+          either forbidden return user
+        Nothing -> do
+          liftIO $ putText "No code param"
+          forbidden "no code parameter given"
+    Nothing -> forbidden "No OIDC Context"

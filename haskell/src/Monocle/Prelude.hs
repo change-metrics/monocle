@@ -114,6 +114,9 @@ module Monocle.Prelude
     inText,
     getPath,
 
+    -- * random
+    genRandomBS,
+
     -- * qq-literals
     utctime,
 
@@ -188,12 +191,14 @@ import Control.Monad.Catch (Handler (Handler), MonadCatch (catch), MonadMask, Mo
 import Control.Monad.Except (MonadError, catchError, throwError)
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Morph (hoist)
+import Control.Monad.Random qualified as Random
 import Control.Monad.Writer (MonadWriter, WriterT, runWriterT, tell)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (Number, String), encode, withText, (.=))
 import Data.Aeson.Encode.Pretty qualified as Aeson
 import Data.Aeson.Key qualified as AesonKey
 import Data.Aeson.Lens (_Integer, _Object)
 import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)
+import Data.List qualified as List
 import Data.Map qualified as Map
 import Data.Text qualified as T
 import Data.Text.Internal.Search
@@ -553,3 +558,26 @@ data AnyJSON = AnyJSON
 
 instance FromJSON AnyJSON where
   parseJSON _ = pure AnyJSON
+
+genRandomBS :: IO ByteString
+genRandomBS = do
+  g <- Random.newStdGen
+  Random.randomRs (0, n) g & take 42 & fmap toChar & readable 0 & from & return
+  where
+    n = length letters - 1
+    toChar i = letters List.!! i
+    letters = ['A' .. 'Z'] <> ['0' .. '9'] <> ['a' .. 'z']
+    readable :: Int -> [Char] -> [Char]
+    readable _ [] = []
+    readable i str =
+      let blocksize = case n of
+            0 -> 8
+            1 -> 4
+            2 -> 4
+            3 -> 4
+            _ -> 12
+          block = take blocksize str
+          rest = drop blocksize str
+       in if List.null rest
+            then str
+            else block <> "-" <> readable (i + 1) rest

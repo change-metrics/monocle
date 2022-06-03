@@ -74,6 +74,7 @@ mkAppEnvWithSideEffect config' newConfig reloadedRef = do
   Config.setWorkspaceStatus Config.Ready ws
   let glLogger _ = pure ()
       config = configSE (config', ws) (newConfig, newWs)
+      aOIDCEnv = Nothing
       aEnv = Env {..}
   pure $ AppEnv {..}
   where

@@ -1,11 +1,21 @@
 module Monocle.Api.Jwt
-  ( mkMagicJwt,
+  ( --- MagicJWT
+    mkMagicJwt,
     doGenJwk,
     AuthenticatedUser (..),
+    --- OIDC Keys discovery
     getOIDCProviderPublicKeys,
+    --- OIDC Flow
+    OIDCEnv (..),
+    AuthInfo (..),
+    User (..),
+    LoginHandler,
+    handleOIDCLogin,
+    initOIDC,
   )
 where
 
+import Control.Monad.Error (MonadError)
 import Crypto.JWT
   ( JWK,
     KeyMaterial (RSAKeyMaterial),
@@ -14,13 +24,17 @@ import Crypto.JWT
     genJWK,
   )
 import Crypto.JWT qualified as Jose
-import Data.Aeson (decode)
+import Data.Aeson (decode, (.:))
+import Data.Aeson qualified as JSON
+import Data.Aeson.Types qualified as AeT
 import Data.ByteString.Lazy qualified as BSL
+import Monocle.Config (OIDCProvider (..))
 import Monocle.Prelude
-  ( FromJSON,
+  ( FromJSON (parseJSON),
     MonadThrow,
     ToJSON,
     from,
+    genRandomBS,
   )
 import Network.HTTP.Client
   ( Manager,
@@ -37,25 +51,12 @@ import Servant.Auth.Server
     ToJWT,
     makeJWT,
   )
+import Text.Blaze (ToMarkup (..))
+import Text.Blaze.Html qualified as H
+import Text.Blaze.Html5 qualified as H
+import Web.OIDC.Client qualified as O
 
--- mkMagicClaims :: MonadIO m => StringOrURI -> m ClaimsSet
--- mkMagicClaims subject = do
---   t <- getCurrentTime
---   pure $
---     emptyClaimsSet
---       & claimIss ?~ "MagicJWT"
---       & claimSub ?~ subject
---       & claimIat ?~ NumericDate t
-
--- doSignJwt :: JWK -> ClaimsSet -> IO (Either JWTError SignedJWT)
--- doSignJwt jwk claims = runExceptT $ do
---   alg <- bestJWSAlg jwk
---   signClaims jwk (newJWSHeader ((), alg)) claims
-
--- mkMagicJwt' :: String -> JWK -> IO (Either JWTError SignedJWT)
--- mkMagicJwt' subject jwk = do
---   claims <- mkMagicClaims $ fromString subject
---   doSignJwt jwk claims
+--- * MagicJWT handling
 
 doGenJwk :: IO JWK
 doGenJwk = genJWK (RSAGenParam (4096 `div` 8))
@@ -82,9 +83,11 @@ newtype OIDCConfig = OIDCConfig {jwks_uri :: Text} deriving (Generic, Show)
 
 instance FromJSON OIDCConfig
 
+--- * Handle OIDC Provider discovery
+-- TODO: handle by oidc-client
 -- getOIDCProviderPublicKeys "https://accounts.google.com/.well-known/openid-configuration"
 getOIDCProviderPublicKeys :: (MonadThrow m, MonadIO m) => Text -> m [JWK]
-getOIDCProviderPublicKeys url = do
+getOIDCProviderPublicKeys issuerBUrl = do
   manager <- newOpenSSLManager
   configM <- getJwksFromOIDCConfig manager url
   case configM of
@@ -93,6 +96,7 @@ getOIDCProviderPublicKeys url = do
       pure $ fromKeyMaterial . RSAKeyMaterial <$> maybe [] keys jwksM
     Nothing -> pure []
   where
+    url = issuerBUrl <> ".well-known/openid-configuration"
     performGET :: (MonadIO m, MonadThrow m, FromJSON r) => Manager -> Text -> m (Maybe r)
     performGET manager url' = do
       initRequest <- parseUrlThrow $ from url'
@@ -110,3 +114,118 @@ getOIDCProviderPublicKeys url = do
 
     getJwksFromOIDCConfig :: (MonadThrow m, MonadIO m) => Manager -> Text -> m (Maybe OIDCConfig)
     getJwksFromOIDCConfig = performGET
+
+--- $ OIDC Flow
+
+data OIDCEnv = OIDCEnv
+  { oidc :: O.OIDC,
+    mgr :: Manager,
+    genState :: IO ByteString,
+    prov :: O.Provider,
+    redirectUri :: ByteString,
+    clientId :: ByteString,
+    clientPassword :: ByteString
+  }
+
+data AuthInfo = AuthInfo
+  { email :: Text,
+    emailVerified :: Bool,
+    name :: Text
+  }
+  deriving (Eq, Show, Generic)
+
+instance FromJSON AuthInfo where
+  parseJSON (JSON.Object v) = do
+    email :: Text <- v .: "email"
+    email_verified :: Bool <- v .: "email_verified"
+    name :: Text <- v .: "name"
+    return $ AuthInfo (from email) email_verified (from name)
+  parseJSON invalid = AeT.typeMismatch "Coord" invalid
+
+instance JSON.ToJSON AuthInfo where
+  toJSON (AuthInfo e ev n) =
+    JSON.object
+      [ "email" JSON..= (from e :: Text),
+        "email_verified" JSON..= ev,
+        "name" JSON..= (from n :: Text)
+      ]
+
+data User = User
+  { userId :: Text,
+    userSecret :: Text,
+    localStorageKey :: Text,
+    redirectUrl :: Maybe Text
+  }
+  deriving (Show, Eq, Ord)
+
+type APIKey = ByteString
+
+type Account = Text
+
+data Customer = Customer
+  { account :: Account,
+    apiKey :: APIKey,
+    mail :: Maybe Text,
+    fullname :: Maybe Text
+  }
+
+type LoginHandler = AuthInfo -> IO (Either Text User)
+
+customerFromAuthInfo :: AuthInfo -> IO Customer
+customerFromAuthInfo authinfo = do
+  apikey <- genRandomBS
+  return
+    Customer
+      { account = from (email authinfo),
+        apiKey = apikey,
+        mail = Just (from (email authinfo)),
+        fullname = Just (from (name authinfo))
+      }
+
+handleOIDCLogin :: LoginHandler
+handleOIDCLogin authInfo = do
+  custInfo <- customerFromAuthInfo authInfo
+  if emailVerified authInfo
+    then return . Right . customerToUser $ custInfo
+    else return (Left "You emails is not verified by your provider. Please verify your email.")
+  where
+    customerToUser :: Customer -> User
+    customerToUser c =
+      User
+        { userId = from (account c),
+          userSecret = decodeUtf8 (apiKey c),
+          redirectUrl = Nothing,
+          localStorageKey = "api-key"
+        }
+
+instance ToMarkup User where
+  toMarkup User {..} = H.docTypeHtml $ do
+    H.head $
+      H.title "Logged In"
+    H.body $ do
+      H.h1 "Logged In"
+      H.p (H.toHtml ("Successful login with id " <> userId))
+      H.script
+        ( H.toHtml
+            ( "localStorage.setItem('" <> localStorageKey <> "','" <> userSecret <> "');"
+                <> "localStorage.setItem('user-id','"
+                <> userId
+                <> "');"
+                <> "window.location='"
+                <> fromMaybe "/" redirectUrl
+                <> "';" -- redirect the user to /
+            )
+        )
+
+initOIDC :: OIDCProvider -> String -> IO OIDCEnv
+initOIDC OIDCProvider {..} clientSecret' = do
+  mgr <- newOpenSSLManager
+  prov <- O.discover issuer mgr
+  let publicUrl = "http://localhost:8080" -- TODO "Discover it or add it in config"
+      redirectUri = publicUrl <> "/api/2/auth/cb"
+      clientId = from client_id
+      clientSecret = from clientSecret'
+      oidc = O.setCredentials clientId clientSecret redirectUri (O.newOIDC prov)
+      genState = genRandomBS
+      clientPassword = clientSecret
+  pure OIDCEnv {..}

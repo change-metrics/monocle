@@ -86,6 +86,20 @@ let
           in pkgs.haskell.lib.dontCheck
           (hpPrev.callCabal2nix "proto3-wire" src { });
 
+          # Fix is needed for bytestring-0.11
+          oidc-client = let
+            src = builtins.fetchGit {
+              url = "https://github.com/morucci/haskell-oidc-client";
+              ref = "remove-bs-cap";
+              rev = "29ac58117a251cb18660e2b4b90266eb01bd88c6";
+            };
+          in pkgs.haskell.lib.dontCheck
+          (hpPrev.callCabal2nix "oidc-client" src { });
+
+          jose-jwt = (pkgs.haskell.lib.overrideCabal hpPrev.jose-jwt {
+            broken = false;
+          });
+
           # Hackage version does not build without a bump
           text-time = (pkgs.haskell.lib.overrideCabal hpPrev.text-time {
             broken = false;

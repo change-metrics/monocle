@@ -22,7 +22,8 @@ mkAppEnv workspace = do
   wsRef <- newMVar $ fmap (const Config.Ready) ws
   jwk <- generateKey
   let aJWTSettings = defaultJWTSettings jwk
-  let config = pure (Config.ConfigStatus False config' wsRef)
+      aOIDCEnv = Nothing
+      config = pure (Config.ConfigStatus False config' wsRef)
       aEnv = Env {..}
   pure $ AppEnv {..}
 
