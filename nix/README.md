@@ -35,6 +35,6 @@ podman load < $(nix-build --attr containerGrafana)
 Test the containers:
 
 ```ShellSession
-podman run --network host -v prom-data:/var/lib/prometheus:Z -e API_TARGET=localhost:19875 --rm quay.io/change-metrics/monocle-prometheus:latest
+podman run --network host -v prom-data:/var/lib/prometheus:Z -e API_TARGET=localhost:8080 --rm quay.io/change-metrics/monocle-prometheus:latest
 podman run -it --rm --network host quay.io/change-metrics/monocle-grafana:latest
 ```

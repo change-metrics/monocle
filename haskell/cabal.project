@@ -10,4 +10,7 @@ source-repository-package
   location: https://github.com/kowainik/relude
   tag: 1cd9f2ebe13322007b7c3e84b6f11126e98c10fa
 
+package proto3-suite
+  flags: -swagger
+
 packages: .

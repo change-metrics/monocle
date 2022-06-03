@@ -36,7 +36,7 @@ than the version available on your OS.
 Run the following commands **as non-root user**:
 
 ```ShellSession
-sudo dnf install -y nginx podman nodejs git ghc cabal-install zlib-devel python3-virtualenv python3-devel openssl-devel gcc
+sudo dnf install -y podman nodejs git ghc cabal-install zlib-devel python3-virtualenv python3-devel openssl-devel gcc
 ```
 
 Alternatively, or if the GHC version of your OS does not match the requirement, the Haskell tool chain
@@ -50,45 +50,6 @@ curl -sSf https://get-ghcup.haskell.org | sh
 If the above command fails read the output from more information, usually there are missing dependencies.
 Then logout and login again, for the new configurations to be loaded.
 
-#### HTTP gateway (nginx)
-
-The Monocle WebAPP and the API endpoints are served though NGINX.
-
-Copy this configuration to `/etc/nginx/conf.d/monocle.conf`
-
-```
-server {
-  listen 8081;
-
-  gzip on;
-  gzip_min_length 1000;
-  gzip_types text/plain text/xml application/javascript text/css;
-  client_max_body_size 1024M;
-
-  location /api/2/ {
-    proxy_pass http://localhost:9879/;
-    proxy_http_version 1.1;
-  }
-
-  location /auth {
-    proxy_pass http://localhost:9879/auth;
-    proxy_http_version 1.1;
-  }
-
-  # Forward the rest to the node development server
-  location / {
-    proxy_pass http://localhost:3000;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-    proxy_set_header Host $host;
-    proxy_cache_bypass $http_upgrade;
-  }
-}
-```
-
-Then ensure NGINX service is started/reloaded on your system.
-
 #### ElasticSearch
 
 Monocle relies on ElasticSearch as backend to store Changes events.
@@ -97,6 +58,17 @@ Monocle relies on ElasticSearch as backend to store Changes events.
 ./contrib/start-elk.sh 9200
 ```
 Make sure data directory has writing permissions.
+
+#### WebUI
+
+The API serves the webui from `/usr/share/monocle/webapp` or the `web/build` directory.
+Build the UI first:
+
+```ShellSession
+cd web
+npm install
+npm build
+```
 
 #### API
 
@@ -117,17 +89,17 @@ cabal repl monocle
 λ> run 9879 "http://localhost:9200" "../etc/config.yaml"
 ```
 
-#### Web
+#### WebUI hot reload
 
-The Monocle React WebAPP (hot reload is enabled).
+The Monocle React WebAPP hot reload service can be started:
 
 ```ShellSession
 cd web
 npm install
-REACT_APP_API_URL=http://localhost:8081 npm start
+REACT_APP_API_URL=http://localhost:8080 npm start
 firefox http://localhost:3000
 ```
-If you are running this on non-local machine, set the `REACT_APP_API_URL=http://< machine ip | FQDN >:8081`. FQDN must be known in your network.
+If you are running this on non-local machine, set the `REACT_APP_API_URL=http://< machine ip | FQDN >:8080`. FQDN must be known in your network.
 
 #### Start crawlers process
 
@@ -140,7 +112,7 @@ cabal repl monocle
 λ> import Macroscope.Worker
 λ> import Macroscope.Main
 λ> import Monocle.Client (withClient)
-λ> withClient "http://127.0.0.1:8081" Nothing $ \client -> runMacroscope 19001 "../etc/config.yaml" client
+λ> withClient "http://127.0.0.1:8080" Nothing $ \client -> runMacroscope 19001 "../etc/config.yaml" client
 ```
 
 ### Running the services manually using NIX
@@ -152,26 +124,11 @@ If you have not installed nix-shell follow the instructions [here](https://nixos
 You can configure the project [cachix](https://cachix.org) binary cache with this command: `nix-shell -p cachix --command "cachix use change-metrics"`.
 
 
-#### HTTP gateway (nginx)
-
-```ShellSession
-nix-shell --command nginx-start
-```
-
 #### ElasticSearch
 
 ```ShellSession
 nix-shell --command elasticsearch-start
 ```
-
-#### API
-
-```ShellSession
-nix-shell --command monocle-repl
-λ> import Monocle.Main
-λ> run 19875 "http://localhost:19200" "../etc/config.yaml"
-```
-
 
 #### Web
 
@@ -182,6 +139,14 @@ firefox http://localhost:13000
 
 If the command fails with `Error: package bs-parse not found or built`, you can try running this command: `rm -Rf web/lib web/node_modules`
 
+#### API
+
+```ShellSession
+nix-shell --command monocle-repl
+λ> import Monocle.Main
+λ> run 8080 "http://localhost:19200" "../etc/config.yaml"
+```
+
 #### Start crawlers process
 
 ```ShellSession
@@ -189,7 +154,7 @@ nix-shell --command monocle-repl
 λ> import Macroscope.Worker
 λ> import Macroscope.Main
 λ> import Monocle.Client (withClient)
-λ> withClient "http://localhost:18080" Nothing $ \client -> runMacroscope 19001 "../etc/config.yaml" client
+λ> withClient "http://localhost:8080" Nothing $ \client -> runMacroscope 19001 "../etc/config.yaml" client
 ```
 
 #### Run ghcid
@@ -254,10 +219,10 @@ ghcid --test 'Tests.main'
 Similarly the api can be automatically restarted:
 
 ```ShellSession
-ghcid --test 'Monocle.Main.run 19875 "http://localhost:19200" "../etc/config.yaml"'
+ghcid --test 'Monocle.Main.run 8080 "http://localhost:19200" "../etc/config.yaml"'
 ```
 
-## Update API (protobuf)
+### Update API (protobuf)
 
 The APIs are defined using protobuf. To change them, first you need to update the
 protobuf definitions present in the [./protos/ folder](./protos). Then you need to update

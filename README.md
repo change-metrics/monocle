@@ -467,9 +467,8 @@ To disable TLS verification, set the `TLS_NO_VERIFY` environment variable to `1`
 Monocle is composed of the following services:
 
 1. an Elasticsearch data store.
-2. an API service to serve user and crawler requests.
+2. an API service to serve the Web APP and API requests.
 3. a crawler service to retrieve change from providers.
-4. a web proxy and web application as a frontend for users.
 
 The APIs are defined using [protobuf][monocle-protobuf] and served over HTTP through [Monocle OpenAPI][monocle-openapi].
 

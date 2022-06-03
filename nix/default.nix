@@ -193,9 +193,8 @@ let
     pkgs.haskell.lib.addBuildDepends drv ([ pkgs.myHaskellPackages.criterion ]);
 
   # local devel env
-  nginx-port = 18080;
-  monocle-port = 19875;
-  web-port = 13000;
+  monocle-port = 8080;
+  web-port = 3000;
   prom-port = 19090;
   grafana-port = 19030;
 
@@ -411,66 +410,6 @@ in rec {
     };
   };
 
-  # WEB
-  nginx-home = "/tmp/nginx-home";
-  nginxConf = pkgs.writeTextFile {
-    name = "nginx.conf";
-    text = ''
-      error_log /dev/stdout info;
-      pid ${nginx-home}/nginx.pid;
-
-      events {
-          worker_connections 1024;
-      }
-
-      http {
-        access_log /dev/stdout;
-        client_body_temp_path ${nginx-home}/client-body;
-        proxy_temp_path ${nginx-home}/proxy;
-        proxy_cache_path ${nginx-home}/cache keys_zone=one:10m;
-        fastcgi_temp_path ${nginx-home}/fastcgi;
-        fastcgi_cache_path ${nginx-home}/fcache keys_zone=one1:10m;
-        uwsgi_temp_path ${nginx-home}/uwsgi;
-        scgi_temp_path ${nginx-home}/scgi;
-        client_max_body_size 1024M;
-        server {
-          listen ${toString nginx-port} default_server;
-          proxy_cache one;
-
-          gzip on;
-          gzip_min_length 1000;
-          gzip_types text/plain text/xml application/javascript text/css;
-
-          location /api/2/ {
-             proxy_pass http://localhost:${toString monocle-port}/;
-             proxy_http_version 1.1;
-          }
-
-          location /auth {
-              proxy_pass http://localhost:${toString monocle-port}/auth;
-              proxy_http_version 1.1;
-          }
-
-          # Forward the rest to the node development server
-          location / {
-              proxy_pass http://localhost:${toString web-port};
-              proxy_http_version 1.1;
-              proxy_set_header Upgrade $http_upgrade;
-              proxy_set_header Connection "upgrade";
-              proxy_set_header Host $host;
-              proxy_cache_bypass $http_upgrade;
-          }
-        }
-      }
-    '';
-  };
-  nginxStart = pkgs.writeScriptBin "nginx-start" ''
-    #!/bin/sh
-    set -ex
-    mkdir -p ${nginx-home};
-    exec ${pkgs.nginx}/bin/nginx -c ${nginxConf} -p ${nginx-home}/ -g "daemon off;"
-  '';
-
   nixCabal = "cabal --project-file=nix.project";
 
   monocleReplStart = pkgs.writeScriptBin "monocle-repl" ''
@@ -501,64 +440,17 @@ in rec {
     fi
 
     export WEB_PORT=${toString web-port}
-    export REACT_APP_API_URL=http://localhost:${toString nginx-port}
+    export REACT_APP_API_URL=http://localhost:${toString monocle-port}
     export REACT_APP_TITLE="Monocle Dev"
     exec ${pkgs.nodejs}/bin/npm start
   '';
 
-  monocleEmacsLauncher = pkgs.writeTextFile {
-    name = "monocle.el";
-    text = ''
-      ;;; monocle.el --- Functions to operate Monocle
-
-      ;; This file is not part of GNU Emacs.
-
-      ;;; Code:
-
-      ;; Start a process in a buffer with ansi colors
-      (require 'comint)
-      (defun start-worker-process (name program &rest args)
-        (let ((buffer-name (concat "*" name "*")))
-          (message "Starting %s %s" buffer-name program)
-          (let ((*buffer* (get-buffer-create buffer-name)))
-            (if (get-buffer-process *buffer*)
-                (message "Process already running!")
-              (with-current-buffer *buffer*
-                (let ((*proc* (apply 'start-process name buffer-name program args)))
-                  (ansi-color-for-comint-mode-on)
-                  (comint-mode)
-                  (set-process-filter *proc* 'comint-output-filter))))
-            (switch-to-buffer-other-window *buffer*))))
-
-      (defun monocle-startp (name command)
-        (start-worker-process (concat "monocle-" name) (concat command "/bin/" name "-start")))
-
-      (defun monocle-start ()
-        (monocle-startp "elasticsearch" "${elasticsearchStart}" )
-        (monocle-startp "nginx" "${nginxStart}" )
-        (monocle-startp "prometheus" "${promStart}" )
-        (monocle-startp "grafana" "${grafanaStart}" )
-        (monocle-startp "monocle-api" "${monocleReplStart}" )
-        (monocle-startp "monocle-web" "${monocleWebStart}" ))
-
-      (monocle-start)
-    '';
-  };
-
-  monocleEmacsStart = pkgs.writeScriptBin "launch-monocle-with-emacs" ''
-    #!/bin/sh
-    set -ex
-    ${pkgs.emacs-nox}/bin/emacs --quick --load ${monocleEmacsLauncher}
-  '';
-
   services-req = [
     elasticsearchStart
-    nginxStart
     promStart
     grafanaStart
     monocleReplStart
     monocleWebStart
-    monocleEmacsStart
     monocleGhcid
   ];
 

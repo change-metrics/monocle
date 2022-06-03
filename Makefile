@@ -38,10 +38,6 @@ codegen-openapi:
 	protoc $(PINCLUDE) --openapi_out=./doc/ $(BASEDIR)/http.proto
 	@echo Created doc/openapi.yaml
 
-codegen-with-container:
-	podman run -it -v $(shell pwd):/data:z --rm changemetrics/monocle_codegen make
-	@echo Success.
-
 codegen-compose:
 	@dhall-to-yaml  <<< "(./docker-compose.dhall).dev" > ./docker-compose.yml.dev
 	@dhall-to-yaml  <<< "(./docker-compose.dhall).img" > ./docker-compose.yml.img

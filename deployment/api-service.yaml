@@ -10,8 +10,8 @@ metadata:
 spec:
   ports:
     - name: http-rest-api
-      port: 9898
-      targetPort: 9898
+      port: 8080
+      targetPort: 8080
   selector:
     app.kubernetes.io/name: api
 status:
