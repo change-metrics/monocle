@@ -3,8 +3,6 @@ module Monocle.Api.Jwt
     mkMagicJwt,
     doGenJwk,
     AuthenticatedUser (..),
-    --- OIDC Keys discovery
-    getOIDCProviderPublicKeys,
     --- OIDC Flow
     OIDCEnv (..),
     AuthInfo (..),
@@ -15,34 +13,24 @@ module Monocle.Api.Jwt
   )
 where
 
-import Control.Monad.Error (MonadError)
 import Crypto.JWT
   ( JWK,
-    KeyMaterial (RSAKeyMaterial),
     KeyMaterialGenParam (RSAGenParam),
-    fromKeyMaterial,
     genJWK,
   )
 import Crypto.JWT qualified as Jose
-import Data.Aeson (decode, (.:))
+import Data.Aeson ((.:))
 import Data.Aeson qualified as JSON
 import Data.Aeson.Types qualified as AeT
 import Data.ByteString.Lazy qualified as BSL
 import Monocle.Config (OIDCProvider (..))
 import Monocle.Prelude
   ( FromJSON (parseJSON),
-    MonadThrow,
     ToJSON,
     from,
     genRandomBS,
   )
-import Network.HTTP.Client
-  ( Manager,
-    Request (method, requestHeaders),
-    Response (responseBody),
-    httpLbs,
-    parseUrlThrow,
-  )
+import Network.HTTP.Client (Manager)
 import Network.HTTP.Client.OpenSSL (newOpenSSLManager)
 import Relude
 import Servant.Auth.Server
@@ -82,38 +70,6 @@ instance FromJSON JWKS
 newtype OIDCConfig = OIDCConfig {jwks_uri :: Text} deriving (Generic, Show)
 
 instance FromJSON OIDCConfig
-
---- * Handle OIDC Provider discovery
--- TODO: handle by oidc-client
--- getOIDCProviderPublicKeys "https://accounts.google.com/.well-known/openid-configuration"
-getOIDCProviderPublicKeys :: (MonadThrow m, MonadIO m) => Text -> m [JWK]
-getOIDCProviderPublicKeys issuerBUrl = do
-  manager <- newOpenSSLManager
-  configM <- getJwksFromOIDCConfig manager url
-  case configM of
-    Just config -> do
-      jwksM <- getRemoteJwks manager config
-      pure $ fromKeyMaterial . RSAKeyMaterial <$> maybe [] keys jwksM
-    Nothing -> pure []
-  where
-    url = issuerBUrl <> ".well-known/openid-configuration"
-    performGET :: (MonadIO m, MonadThrow m, FromJSON r) => Manager -> Text -> m (Maybe r)
-    performGET manager url' = do
-      initRequest <- parseUrlThrow $ from url'
-      let request =
-            initRequest
-              { requestHeaders = [("Accept", "application/json")],
-                method = "GET"
-              }
-      response <- liftIO $ httpLbs request manager
-      pure $ decode (responseBody response)
-
-    getRemoteJwks :: (MonadThrow m, MonadIO m) => Manager -> OIDCConfig -> m (Maybe JWKS)
-    getRemoteJwks manager OIDCConfig {..} = do
-      performGET manager $ from jwks_uri
-
-    getJwksFromOIDCConfig :: (MonadThrow m, MonadIO m) => Manager -> Text -> m (Maybe OIDCConfig)
-    getJwksFromOIDCConfig = performGET
 
 --- $ OIDC Flow
 

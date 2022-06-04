@@ -1,12 +1,11 @@
 -- | The Monocle entry point.
 module Monocle.Main (run, app) where
 
-import Crypto.JOSE qualified as Jose
 import Data.List qualified
 import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
 import Lentille (httpRetry)
-import Monocle.Api.Jwt (doGenJwk, getOIDCProviderPublicKeys, initOIDC)
+import Monocle.Api.Jwt (doGenJwk, initOIDC)
 import Monocle.Backend.Index qualified as I
 import Monocle.Config (getAuthProvider)
 import Monocle.Config qualified as Config
@@ -24,7 +23,7 @@ import Network.Wai.Middleware.Prometheus (def, prometheus)
 import Prometheus (register)
 import Prometheus.Metric.GHC (ghcMetrics)
 import Servant
-import Servant.Auth.Server (CookieSettings, JWTSettings (validationKeys), defaultCookieSettings, defaultJWTSettings)
+import Servant.Auth.Server (CookieSettings, JWTSettings, defaultCookieSettings, defaultJWTSettings)
 import System.Directory qualified
 
 -- | The API is served at both `/api/2/` (for backward compat with the legacy nginx proxy)
@@ -122,28 +121,14 @@ run' port url configFile glLogger = do
   wsRef <- Config.csWorkspaceStatus <$> config
   Config.setWorkspaceStatus Config.Ready wsRef
 
-  -- TODO: replace with oidc-client discovery
-  -- Load Authentication Provider public keys if needed
-  let providerM = getAuthProvider conf
-  providersJwks <- case providerM of
-    Just (Config.OIDCProvider _ issuer _) -> do
-      doLog glLogger $ via @Text $ LoadingRemoteAuthProviderConfig issuer
-      jwks <- httpRetry ("auth-provider", issuer, "internal") $ getOIDCProviderPublicKeys issuer
-      doLog glLogger $ via @Text $ LoadedRemoteAuthProviderConfig $ length jwks
-      pure jwks
-    Nothing -> pure []
-
-  -- Generate arandom JWK (for issuing Magic JWTs)
+  -- Initialise JWT settings for locally issuing JWT
   localJwk <- doGenJwk
-
-  -- Initialise JWT settings
-  let aJWTSettings =
-        (defaultJWTSettings localJwk)
-          { validationKeys = Jose.JWKSet $ [localJwk] <> providersJwks
-          }
+  let aJWTSettings = defaultJWTSettings localJwk
 
   -- Init OIDC
+  let providerM = getAuthProvider conf
   clientSecretM <- lookupEnv "OIDC_CLIENT_SECRET"
+
   aOIDCEnv <- case (providerM, clientSecretM) of
     (Just provider, Just clientSecret) -> pure <$> initOIDC provider clientSecret
     _ -> pure Nothing
