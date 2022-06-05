@@ -6,9 +6,7 @@ module Monocle.Api.Jwt
     --- OIDC Flow
     OIDCEnv (..),
     User (..),
-    LoginHandler,
-    handleOIDCLogin,
-    initOIDC,
+    initOIDCEnv,
   )
 where
 
@@ -18,7 +16,6 @@ import Crypto.JWT
     genJWK,
   )
 import Crypto.JWT qualified as Jose
-import Data.Aeson (Value)
 import Data.ByteString.Lazy qualified as BSL
 import Monocle.Config (OIDCProvider (..))
 import Monocle.Prelude
@@ -60,14 +57,6 @@ instance FromJWT AuthenticatedUser
 mkMagicJwt :: JWTSettings -> Text -> IO (Either Jose.Error BSL.ByteString)
 mkMagicJwt settings muid = let expD = Nothing in makeJWT (AUser muid) settings expD
 
-newtype JWKS = JWKS {keys :: [Jose.RSAKeyParameters]} deriving (Generic, Show)
-
-instance FromJSON JWKS
-
-newtype OIDCConfig = OIDCConfig {jwks_uri :: Text} deriving (Generic, Show)
-
-instance FromJSON OIDCConfig
-
 --- $ OIDC Flow
 
 data OIDCEnv = OIDCEnv
@@ -88,16 +77,6 @@ data User = User
   }
   deriving (Show, Eq, Ord)
 
-type LoginHandler = Text -> Value -> IO (Either Text User)
-
-handleOIDCLogin :: LoginHandler
-handleOIDCLogin sub _otherClaims = do
-  let userId = sub
-      userSecret = "" -- Generate JWT from local keys
-      redirectUrl = Nothing
-      localStorageKey = "api-key"
-  return . Right $ User {..}
-
 instance ToMarkup User where
   toMarkup User {..} = H.docTypeHtml $ do
     H.head $
@@ -117,8 +96,8 @@ instance ToMarkup User where
             )
         )
 
-initOIDC :: OIDCProvider -> String -> IO OIDCEnv
-initOIDC OIDCProvider {..} clientSecret' = do
+initOIDCEnv :: OIDCProvider -> String -> IO OIDCEnv
+initOIDCEnv OIDCProvider {..} clientSecret' = do
   manager <- newOpenSSLManager
   provider <- O.discover issuer manager
   let publicUrl = "http://localhost:8080" -- TODO "Discover it or add it in config"

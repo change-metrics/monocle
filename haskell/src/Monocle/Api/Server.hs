@@ -8,7 +8,7 @@ import Data.Map qualified as Map
 import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Google.Protobuf.Timestamp qualified as T
-import Monocle.Api.Jwt (AuthenticatedUser (AUser), LoginHandler, OIDCEnv (..), User)
+import Monocle.Api.Jwt (AuthenticatedUser (AUser), OIDCEnv (..), User (..))
 import Monocle.Api.Jwt qualified
 import Monocle.Backend.Documents
   ( EChange (..),
@@ -98,8 +98,9 @@ authWhoAmi _auth _request =
 -- curl -XPOST -d '{"token": "admin-token"}' -H "Content-type: application/json" http://localhost:8080/auth/get
 authGetMagicJwt :: AuthResult AuthenticatedUser -> AuthPB.GetMagicJwtRequest -> AppM AuthPB.GetMagicJwtResponse
 authGetMagicJwt _auth (AuthPB.GetMagicJwtRequest inputAdminToken) = do
-  jwtSettings <- asks aJWTSettings
-  jwtE <- liftIO $ Monocle.Api.Jwt.mkMagicJwt jwtSettings "Magic User UID"
+  oidc <- asks aOIDC
+  -- TODO Handle expiry of the Magic token
+  jwtE <- liftIO $ Monocle.Api.Jwt.mkMagicJwt (localJWTSettings oidc) "Magic User UID"
   adminTokenM <- liftIO $ lookupEnv "ADMIN_TOKEN"
   case (jwtE, adminTokenM) of
     (Right jwt, Just adminToken) | inputAdminToken == from adminToken -> pure . genSuccess $ decodeUtf8 jwt
@@ -737,9 +738,10 @@ appToErr x msg =
       errHeaders = [("Content-Type", "text/html")]
     }
 
-handleLogin :: Maybe OIDCEnv -> AppM NoContent
-handleLogin oidcenvM = do
-  case oidcenvM of
+handleLogin :: AppM NoContent
+handleLogin = do
+  aOIDC <- asks aOIDC
+  case oidcEnv aOIDC of
     Just oidcenv -> do
       loc <- liftIO (genOIDCURL oidcenv)
       redirects loc
@@ -753,28 +755,34 @@ handleLogin oidcenvM = do
       return (show loc)
 
 handleLoggedIn ::
-  Maybe OIDCEnv ->
-  -- | handle successful id
-  LoginHandler ->
   -- | error
   Maybe Text ->
   -- | code
   Maybe Text ->
   AppM User
-handleLoggedIn oidcenvM handleSuccessfulId err mcode =
-  case oidcenvM of
-    Just oidcenv -> case err of
+handleLoggedIn err mcode = do
+  aOIDC <- asks aOIDC
+  case oidcEnv aOIDC of
+    Just oidcEnv -> case err of
       Just errorMsg -> forbidden errorMsg
       Nothing -> case mcode of
         Just oauthCode -> do
-          tokens :: O.Tokens Value <- liftIO $ O.requestTokens (oidc oidcenv) Nothing (from oauthCode) (manager oidcenv)
+          tokens :: O.Tokens Value <- liftIO $ O.requestTokens (oidc oidcEnv) Nothing (from oauthCode) (manager oidcEnv)
           let idToken = O.idToken tokens
-              otherClaims = O.otherClaims idToken
+              _otherClaims = O.otherClaims idToken -- TODO will need to check here for extra claims
           putText $ "idToken: " <> show idToken
-
-          user <- liftIO $ handleSuccessfulId (sub idToken) otherClaims
-          putText $ "User: " <> show user
-          either forbidden return user
+          jwtE <- liftIO $ Monocle.Api.Jwt.mkMagicJwt (localJWTSettings aOIDC) "Magic User UID"
+          case jwtE of
+            Right jwt -> do
+              let user =
+                    let userId = sub idToken
+                        userSecret = decodeUtf8 jwt
+                        redirectUrl = Nothing
+                        localStorageKey = "api-key"
+                     in User {..}
+              putText $ "User: " <> show user
+              pure user
+            Left err' -> forbidden $ "Unable to generate local JWT due to: " <> show err'
         Nothing -> do
           liftIO $ putText "No code param"
           forbidden "no code parameter given"

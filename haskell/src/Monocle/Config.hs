@@ -293,9 +293,7 @@ getWorkspaces Config {..} = workspaces
 -- | Get Authentication provider config and ensure mandatory config is not empty
 getAuthProvider :: Config -> Maybe OIDCProvider
 getAuthProvider (Config _about (Just (Auth provider@(OIDCProvider client_id issuer user_claim))) _ws)
-  | not (T.null issuer) && not (T.null client_id) && not (T.null user_claim) =
-      Just $
-        provider {issuer = ensureTrailingSlash issuer}
+  | not (T.null issuer) && not (T.null client_id) && not (T.null user_claim) = Just $ provider {issuer = ensureTrailingSlash issuer}
   where
     ensureTrailingSlash iss = T.dropWhileEnd (== '/') iss <> "/"
 getAuthProvider _ = Nothing

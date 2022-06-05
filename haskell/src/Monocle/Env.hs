@@ -24,12 +24,16 @@ data Env = Env
     glLogger :: Logger
   }
 
+data OIDC = OIDC
+  { oidcEnv :: Maybe OIDCEnv,
+    localJWTSettings :: JWTSettings
+  }
+
 -- | 'Env' is the global environment
 data AppEnv = AppEnv
   { config :: IO Config.ConfigStatus,
     aEnv :: Env,
-    aJWTSettings :: JWTSettings,
-    aOIDCEnv :: Maybe OIDCEnv
+    aOIDC :: OIDC
   }
 
 -- | 'AppM' is the main context, it just adds Env to the servant Handler using Reader

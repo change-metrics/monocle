@@ -5,7 +5,7 @@ import Data.List qualified
 import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
 import Lentille (httpRetry)
-import Monocle.Api.Jwt (doGenJwk, initOIDC)
+import Monocle.Api.Jwt (doGenJwk, initOIDCEnv)
 import Monocle.Backend.Index qualified as I
 import Monocle.Config (getAuthProvider)
 import Monocle.Config qualified as Config
@@ -33,11 +33,10 @@ type RootAPI = "api" :> "2" :> MonocleAPI :<|> MonocleAPI
 -- | Create the underlying Monocle web application interface, for integration or testing purpose.
 app :: AppEnv -> Wai.Application
 app env = do
-  let server' = server $ aOIDCEnv env
   serveWithContext (Proxy @RootAPI) cfg $
-    hoistServerWithContext (Proxy @RootAPI) (Proxy :: Proxy '[CookieSettings, JWTSettings]) mkAppM (server' :<|> server')
+    hoistServerWithContext (Proxy @RootAPI) (Proxy :: Proxy '[CookieSettings, JWTSettings]) mkAppM (server :<|> server)
   where
-    jwtCfg = aJWTSettings env
+    jwtCfg = localJWTSettings $ aOIDC env
     cfg = jwtCfg :. defaultCookieSettings :. EmptyContext
     mkAppM :: AppM x -> Servant.Handler x
     mkAppM apM = runReaderT (unApp apM) env
@@ -73,19 +72,20 @@ mkStaticMiddleware = do
         responder resp
           -- The application handled the request, forward the responce
           | HTTP.statusCode (Wai.responseStatus resp) /= 404 = waiRespond resp
-          | otherwise = do
-              respPath <- do
-                let reqPath = drop 1 $ decodeUtf8 $ Wai.rawPathInfo req
-                if Data.List.null reqPath || ".." `Data.List.isInfixOf` reqPath
-                  then -- The path is empty or fishy
-                    pure Nothing
-                  else -- Checks if the request match a file, such as favico or css
-                    (rootDir <> reqPath) `existOr` Nothing
-              waiRespond $ case respPath of
-                -- The path exist, returns it
-                Just path -> Wai.responseFile HTTP.status200 [] path Nothing
-                -- Otherwise returns the index
-                Nothing -> Wai.responseLBS HTTP.status200 [] index
+          | otherwise = handle
+        handle = do
+          respPath <- do
+            let reqPath = drop 1 $ decodeUtf8 $ Wai.rawPathInfo req
+            if Data.List.null reqPath || ".." `Data.List.isInfixOf` reqPath
+              then -- The path is empty or fishy
+                pure Nothing
+              else -- Checks if the request match a file, such as favico or css
+                (rootDir <> reqPath) `existOr` Nothing
+          waiRespond $ case respPath of
+            -- The path exist, returns it
+            Just path -> Wai.responseFile HTTP.status200 [] path Nothing
+            -- Otherwise returns the index
+            Nothing -> Wai.responseLBS HTTP.status200 [] index
 
 healthMiddleware :: Wai.Application -> Wai.Application
 healthMiddleware app' req resp
@@ -121,17 +121,17 @@ run' port url configFile glLogger = do
   wsRef <- Config.csWorkspaceStatus <$> config
   Config.setWorkspaceStatus Config.Ready wsRef
 
-  -- Initialise JWT settings for locally issuing JWT
-  localJwk <- doGenJwk
-  let aJWTSettings = defaultJWTSettings localJwk
-
   -- Init OIDC
-  let providerM = getAuthProvider conf
+  -- Initialise JWT settings for locally issuing JWT (local provider)
+  localJwk <- doGenJwk
   clientSecretM <- lookupEnv "OIDC_CLIENT_SECRET"
-
-  aOIDCEnv <- case (providerM, clientSecretM) of
-    (Just provider, Just clientSecret) -> pure <$> initOIDC provider clientSecret
+  let localJWTSettings = defaultJWTSettings localJwk
+      providerM = getAuthProvider conf
+  -- Initialize env to talk with OIDC provider
+  oidcEnv <- case (providerM, clientSecretM) of
+    (Just provider, Just clientSecret) -> pure <$> initOIDCEnv provider clientSecret
     _ -> pure Nothing
+  let aOIDC = OIDC {..}
 
   bhEnv <- mkEnv url
   let aEnv = Env {..}

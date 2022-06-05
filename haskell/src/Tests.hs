@@ -70,11 +70,10 @@ mkAppEnvWithSideEffect config' newConfig reloadedRef = do
   ws <- newMVar $ Config.mkWorkspaceStatus config'
   newWs <- newMVar $ Config.mkWorkspaceStatus newConfig
   jwk <- generateKey
-  let aJWTSettings = defaultJWTSettings jwk
   Config.setWorkspaceStatus Config.Ready ws
   let glLogger _ = pure ()
       config = configSE (config', ws) (newConfig, newWs)
-      aOIDCEnv = Nothing
+      aOIDC = OIDC Nothing (defaultJWTSettings jwk)
       aEnv = Env {..}
   pure $ AppEnv {..}
   where

@@ -35,6 +35,7 @@ common common-options
                        -Wincomplete-record-updates
                        -Wno-missing-pattern-synonym-signatures
                        --write-ghc-environment-files=always
+                      --  -Wno-deprecations
                        -- Enable stan integration
                        -fwrite-ide-info
                        -hiedir=.hie

@@ -7,7 +7,7 @@
 -- SPDX-License-Identifier: AGPL-3.0-only
 module Monocle.Servant.HTTP (MonocleAPI, server) where
 
-import Monocle.Api.Jwt (AuthenticatedUser, OIDCEnv (..), User (..), handleOIDCLogin)
+import Monocle.Api.Jwt (AuthenticatedUser, User (..))
 import Monocle.Api.Server (authGetMagicJwt, authWhoAmi, configGetAbout, configGetGroupMembers, configGetGroups, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, handleLoggedIn, handleLogin, loginLoginValidation, metricGet, metricList, searchAuthor, searchCheck, searchFields, searchQuery, searchSuggestions)
 import Monocle.Env
 import Monocle.Protob.Auth (GetMagicJwtRequest, GetMagicJwtResponse, WhoAmiRequest, WhoAmiResponse)
@@ -44,8 +44,8 @@ type MonocleAPI =
     :<|> "auth" :> "login" :> Get '[JSON] NoContent
     :<|> "auth" :> "cb" :> QueryParam "error" Text :> QueryParam "code" Text :> Get '[HTML] User
 
-server :: Maybe OIDCEnv -> ServerT MonocleAPI AppM
-server oidcEnv =
+server :: ServerT MonocleAPI AppM
+server =
   loginLoginValidation
     :<|> authGetMagicJwt
     :<|> authWhoAmi
@@ -64,5 +64,5 @@ server oidcEnv =
     :<|> crawlerAddDoc
     :<|> crawlerCommit
     :<|> crawlerCommitInfo
-    :<|> handleLogin oidcEnv
-    :<|> handleLoggedIn oidcEnv handleOIDCLogin
+    :<|> handleLogin
+    :<|> handleLoggedIn
