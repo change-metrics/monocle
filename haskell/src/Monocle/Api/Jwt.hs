@@ -5,7 +5,6 @@ module Monocle.Api.Jwt
     AuthenticatedUser (..),
     --- OIDC Flow
     OIDCEnv (..),
-    AuthInfo (..),
     User (..),
     LoginHandler,
     handleOIDCLogin,
@@ -19,13 +18,11 @@ import Crypto.JWT
     genJWK,
   )
 import Crypto.JWT qualified as Jose
-import Data.Aeson ((.:))
-import Data.Aeson qualified as JSON
-import Data.Aeson.Types qualified as AeT
+import Data.Aeson (Value)
 import Data.ByteString.Lazy qualified as BSL
 import Monocle.Config (OIDCProvider (..))
 import Monocle.Prelude
-  ( FromJSON (parseJSON),
+  ( FromJSON,
     ToJSON,
     from,
     genRandomBS,
@@ -75,36 +72,13 @@ instance FromJSON OIDCConfig
 
 data OIDCEnv = OIDCEnv
   { oidc :: O.OIDC,
-    mgr :: Manager,
+    manager :: Manager,
     genState :: IO ByteString,
-    prov :: O.Provider,
+    provider :: O.Provider,
     redirectUri :: ByteString,
     clientId :: ByteString,
-    clientPassword :: ByteString
+    clientSecret :: ByteString
   }
-
-data AuthInfo = AuthInfo
-  { email :: Text,
-    emailVerified :: Bool,
-    name :: Text
-  }
-  deriving (Eq, Show, Generic)
-
-instance FromJSON AuthInfo where
-  parseJSON (JSON.Object v) = do
-    email :: Text <- v .: "email"
-    email_verified :: Bool <- v .: "email_verified"
-    name :: Text <- v .: "name"
-    return $ AuthInfo (from email) email_verified (from name)
-  parseJSON invalid = AeT.typeMismatch "Coord" invalid
-
-instance JSON.ToJSON AuthInfo where
-  toJSON (AuthInfo e ev n) =
-    JSON.object
-      [ "email" JSON..= (from e :: Text),
-        "email_verified" JSON..= ev,
-        "name" JSON..= (from n :: Text)
-      ]
 
 data User = User
   { userId :: Text,
@@ -114,45 +88,15 @@ data User = User
   }
   deriving (Show, Eq, Ord)
 
-type APIKey = ByteString
-
-type Account = Text
-
-data Customer = Customer
-  { account :: Account,
-    apiKey :: APIKey,
-    mail :: Maybe Text,
-    fullname :: Maybe Text
-  }
-
-type LoginHandler = AuthInfo -> IO (Either Text User)
-
-customerFromAuthInfo :: AuthInfo -> IO Customer
-customerFromAuthInfo authinfo = do
-  apikey <- genRandomBS
-  return
-    Customer
-      { account = from (email authinfo),
-        apiKey = apikey,
-        mail = Just (from (email authinfo)),
-        fullname = Just (from (name authinfo))
-      }
+type LoginHandler = Text -> Value -> IO (Either Text User)
 
 handleOIDCLogin :: LoginHandler
-handleOIDCLogin authInfo = do
-  custInfo <- customerFromAuthInfo authInfo
-  if emailVerified authInfo
-    then return . Right . customerToUser $ custInfo
-    else return (Left "You emails is not verified by your provider. Please verify your email.")
-  where
-    customerToUser :: Customer -> User
-    customerToUser c =
-      User
-        { userId = from (account c),
-          userSecret = decodeUtf8 (apiKey c),
-          redirectUrl = Nothing,
-          localStorageKey = "api-key"
-        }
+handleOIDCLogin sub _otherClaims = do
+  let userId = sub
+      userSecret = "" -- Generate JWT from local keys
+      redirectUrl = Nothing
+      localStorageKey = "api-key"
+  return . Right $ User {..}
 
 instance ToMarkup User where
   toMarkup User {..} = H.docTypeHtml $ do
@@ -175,13 +119,12 @@ instance ToMarkup User where
 
 initOIDC :: OIDCProvider -> String -> IO OIDCEnv
 initOIDC OIDCProvider {..} clientSecret' = do
-  mgr <- newOpenSSLManager
-  prov <- O.discover issuer mgr
+  manager <- newOpenSSLManager
+  provider <- O.discover issuer manager
   let publicUrl = "http://localhost:8080" -- TODO "Discover it or add it in config"
       redirectUri = publicUrl <> "/api/2/auth/cb"
       clientId = from client_id
       clientSecret = from clientSecret'
-      oidc = O.setCredentials clientId clientSecret redirectUri (O.newOIDC prov)
+      oidc = O.setCredentials clientId clientSecret redirectUri (O.newOIDC provider)
       genState = genRandomBS
-      clientPassword = clientSecret
   pure OIDCEnv {..}

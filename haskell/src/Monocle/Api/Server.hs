@@ -8,7 +8,7 @@ import Data.Map qualified as Map
 import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Google.Protobuf.Timestamp qualified as T
-import Monocle.Api.Jwt (AuthInfo, AuthenticatedUser (AUser), LoginHandler, OIDCEnv (..), User)
+import Monocle.Api.Jwt (AuthenticatedUser (AUser), LoginHandler, OIDCEnv (..), User)
 import Monocle.Api.Jwt qualified
 import Monocle.Backend.Documents
   ( EChange (..),
@@ -42,6 +42,7 @@ import Text.Blaze (ToMarkup (..))
 import Text.Blaze.Html qualified as H
 import Text.Blaze.Html5 qualified as H
 import Text.Blaze.Renderer.Utf8 (renderMarkup)
+import Web.OIDC.Client (sub)
 import Web.OIDC.Client qualified as O
 
 -- | 'getConfig' reload the config automatically from the env
@@ -766,12 +767,12 @@ handleLoggedIn oidcenvM handleSuccessfulId err mcode =
       Just errorMsg -> forbidden errorMsg
       Nothing -> case mcode of
         Just oauthCode -> do
-          tokens :: O.Tokens AuthInfo <- liftIO $ O.requestTokens (oidc oidcenv) Nothing (from oauthCode) (mgr oidcenv)
+          tokens :: O.Tokens Value <- liftIO $ O.requestTokens (oidc oidcenv) Nothing (from oauthCode) (manager oidcenv)
           let idToken = O.idToken tokens
+              otherClaims = O.otherClaims idToken
           putText $ "idToken: " <> show idToken
-          let jwt = O.unJwt . O.idTokenJwt $ tokens
-          putText $ "jwt: " <> show jwt
-          user <- liftIO $ handleSuccessfulId $ O.otherClaims idToken
+
+          user <- liftIO $ handleSuccessfulId (sub idToken) otherClaims
           putText $ "User: " <> show user
           either forbidden return user
         Nothing -> do

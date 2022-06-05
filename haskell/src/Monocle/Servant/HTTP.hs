@@ -5,9 +5,9 @@
 -- |
 -- Copyright: (c) 2021 Monocle authors
 -- SPDX-License-Identifier: AGPL-3.0-only
-module Monocle.Servant.HTTP (MonocleAPI, server, AuthInfo (..)) where
+module Monocle.Servant.HTTP (MonocleAPI, server) where
 
-import Monocle.Api.Jwt (AuthInfo (..), AuthenticatedUser, OIDCEnv (..), User (..), handleOIDCLogin)
+import Monocle.Api.Jwt (AuthenticatedUser, OIDCEnv (..), User (..), handleOIDCLogin)
 import Monocle.Api.Server (authGetMagicJwt, authWhoAmi, configGetAbout, configGetGroupMembers, configGetGroups, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, handleLoggedIn, handleLogin, loginLoginValidation, metricGet, metricList, searchAuthor, searchCheck, searchFields, searchQuery, searchSuggestions)
 import Monocle.Env
 import Monocle.Protob.Auth (GetMagicJwtRequest, GetMagicJwtResponse, WhoAmiRequest, WhoAmiResponse)
