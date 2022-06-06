@@ -1,29 +1,20 @@
 module Monocle.Api.Jwt
-  ( --- MagicJWT
-    mkMagicJwt,
+  ( --- JWT
+    mkJwt,
     doGenJwk,
     AuthenticatedUser (..),
     --- OIDC Flow
     OIDCEnv (..),
-    User (..),
+    LoginInUser (..),
     initOIDCEnv,
   )
 where
 
-import Crypto.JWT
-  ( JWK,
-    KeyMaterialGenParam (RSAGenParam),
-    genJWK,
-  )
+import Crypto.JWT (JWK, KeyMaterialGenParam (RSAGenParam), genJWK)
 import Crypto.JWT qualified as Jose
 import Data.ByteString.Lazy qualified as BSL
 import Monocle.Config (OIDCProvider (..))
-import Monocle.Prelude
-  ( FromJSON,
-    ToJSON,
-    from,
-    genRandomBS,
-  )
+import Monocle.Prelude (FromJSON, ToJSON, from)
 import Network.HTTP.Client (Manager)
 import Network.HTTP.Client.OpenSSL (newOpenSSLManager)
 import Relude
@@ -34,17 +25,21 @@ import Servant.Auth.Server
     makeJWT,
   )
 import Text.Blaze (ToMarkup (..))
-import Text.Blaze.Html qualified as H
 import Text.Blaze.Html5 qualified as H
 import Web.OIDC.Client qualified as O
 
---- * MagicJWT handling
+--- * JWT handling
 
 doGenJwk :: IO JWK
 doGenJwk = genJWK (RSAGenParam (4096 `div` 8))
 
 -- Will be added as the 'dat' unregistered claim
-newtype AuthenticatedUser = AUser {aMuid :: Text} deriving (Generic, Show)
+data AuthenticatedUser = AUser
+  { aMuid :: Text,
+    aAliases :: [Text],
+    aGroups :: [Text]
+  }
+  deriving (Generic, Show)
 
 instance ToJSON AuthenticatedUser
 
@@ -54,45 +49,36 @@ instance ToJWT AuthenticatedUser
 
 instance FromJWT AuthenticatedUser
 
-mkMagicJwt :: JWTSettings -> Text -> IO (Either Jose.Error BSL.ByteString)
-mkMagicJwt settings muid = let expD = Nothing in makeJWT (AUser muid) settings expD
+mkJwt :: JWTSettings -> Text -> IO (Either Jose.Error BSL.ByteString)
+mkJwt settings muid =
+  let expD = Nothing
+      aMuid = muid
+      aAliases = mempty
+      aGroups = mempty
+   in makeJWT (AUser {..}) settings expD
 
 --- $ OIDC Flow
 
 data OIDCEnv = OIDCEnv
   { oidc :: O.OIDC,
     manager :: Manager,
-    genState :: IO ByteString,
     provider :: O.Provider,
     redirectUri :: ByteString,
     clientId :: ByteString,
     clientSecret :: ByteString
   }
 
-data User = User
-  { userId :: Text,
-    userSecret :: Text,
-    localStorageKey :: Text,
-    redirectUrl :: Maybe Text
-  }
-  deriving (Show, Eq, Ord)
+newtype LoginInUser = LoginInUser {liJWT :: Text} deriving (Show, Eq, Ord)
 
-instance ToMarkup User where
-  toMarkup User {..} = H.docTypeHtml $ do
+instance ToMarkup LoginInUser where
+  toMarkup LoginInUser {..} = H.docTypeHtml $ do
     H.head $
-      H.title "Logged In"
+      H.title "Redirecting after succesfull login ..."
     H.body $ do
-      H.h1 "Logged In"
-      H.p (H.toHtml ("Successful login with id " <> userId))
       H.script
         ( H.toHtml
-            ( "localStorage.setItem('" <> localStorageKey <> "','" <> userSecret <> "');"
-                <> "localStorage.setItem('user-id','"
-                <> userId
-                <> "');"
-                <> "window.location='"
-                <> fromMaybe "/" redirectUrl
-                <> "';" -- redirect the user to /
+            ( "localStorage.setItem('api-key','" <> liJWT <> "');"
+                <> "window.location='/';"
             )
         )
 
@@ -105,5 +91,4 @@ initOIDCEnv OIDCProvider {..} clientSecret' = do
       clientId = from client_id
       clientSecret = from clientSecret'
       oidc = O.setCredentials clientId clientSecret redirectUri (O.newOIDC provider)
-      genState = genRandomBS
   pure OIDCEnv {..}

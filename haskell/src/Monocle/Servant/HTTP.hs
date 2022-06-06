@@ -7,7 +7,7 @@
 -- SPDX-License-Identifier: AGPL-3.0-only
 module Monocle.Servant.HTTP (MonocleAPI, server) where
 
-import Monocle.Api.Jwt (AuthenticatedUser, User (..))
+import Monocle.Api.Jwt (AuthenticatedUser, LoginInUser (..))
 import Monocle.Api.Server (authGetMagicJwt, authWhoAmi, configGetAbout, configGetGroupMembers, configGetGroups, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, handleLoggedIn, handleLogin, loginLoginValidation, metricGet, metricList, searchAuthor, searchCheck, searchFields, searchQuery, searchSuggestions)
 import Monocle.Env
 import Monocle.Protob.Auth (GetMagicJwtRequest, GetMagicJwtResponse, WhoAmiRequest, WhoAmiResponse)
@@ -42,7 +42,7 @@ type MonocleAPI =
     :<|> "crawler" :> "commit" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.CommitRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.CommitResponse
     :<|> "crawler" :> "get_commit_info" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.CommitInfoRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.CommitInfoResponse
     :<|> "auth" :> "login" :> Get '[JSON] NoContent
-    :<|> "auth" :> "cb" :> QueryParam "error" Text :> QueryParam "code" Text :> Get '[HTML] User
+    :<|> "auth" :> "cb" :> QueryParam "error" Text :> QueryParam "code" Text :> Get '[HTML] LoginInUser
 
 server :: ServerT MonocleAPI AppM
 server =

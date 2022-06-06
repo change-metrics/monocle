@@ -8,8 +8,7 @@ import Data.Map qualified as Map
 import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Google.Protobuf.Timestamp qualified as T
-import Monocle.Api.Jwt (AuthenticatedUser (AUser), OIDCEnv (..), User (..))
-import Monocle.Api.Jwt qualified
+import Monocle.Api.Jwt (AuthenticatedUser (AUser), LoginInUser (..), OIDCEnv (..), mkJwt)
 import Monocle.Backend.Documents
   ( EChange (..),
     EChangeEvent (..),
@@ -79,7 +78,7 @@ pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _about _auth a) _
 
 -- curl -XPOST -d '{"void": ""}' -H "Content-type: application/json" -H 'Authorization: Bearer <token>' http://localhost:8080/auth/whoami
 authWhoAmi :: AuthResult AuthenticatedUser -> AuthPB.WhoAmiRequest -> AppM AuthPB.WhoAmiResponse
-authWhoAmi (Authenticated (AUser muid)) _request = response
+authWhoAmi (Authenticated (AUser muid _groups _aliases)) _request = response
   where
     response =
       pure $
@@ -100,7 +99,7 @@ authGetMagicJwt :: AuthResult AuthenticatedUser -> AuthPB.GetMagicJwtRequest -> 
 authGetMagicJwt _auth (AuthPB.GetMagicJwtRequest inputAdminToken) = do
   oidc <- asks aOIDC
   -- TODO Handle expiry of the Magic token
-  jwtE <- liftIO $ Monocle.Api.Jwt.mkMagicJwt (localJWTSettings oidc) "Magic User UID"
+  jwtE <- liftIO $ mkJwt (localJWTSettings oidc) "Magic User UID"
   adminTokenM <- liftIO $ lookupEnv "ADMIN_TOKEN"
   case (jwtE, adminTokenM) of
     (Right jwt, Just adminToken) | inputAdminToken == from adminToken -> pure . genSuccess $ decodeUtf8 jwt
@@ -750,7 +749,7 @@ handleLogin = do
   where
     genOIDCURL :: OIDCEnv -> IO ByteString
     genOIDCURL OIDCEnv {..} = do
-      st <- genState -- generate a random string
+      st <- genRandomBS
       loc <- O.getAuthenticationRequestUrl oidc [O.openId, O.email, O.profile] (Just st) []
       return (show loc)
 
@@ -759,7 +758,7 @@ handleLoggedIn ::
   Maybe Text ->
   -- | code
   Maybe Text ->
-  AppM User
+  AppM LoginInUser
 handleLoggedIn err mcode = do
   aOIDC <- asks aOIDC
   case oidcEnv aOIDC of
@@ -771,15 +770,12 @@ handleLoggedIn err mcode = do
           let idToken = O.idToken tokens
               _otherClaims = O.otherClaims idToken -- TODO will need to check here for extra claims
           putText $ "idToken: " <> show idToken
-          jwtE <- liftIO $ Monocle.Api.Jwt.mkMagicJwt (localJWTSettings aOIDC) "Magic User UID"
+          jwtE <- liftIO $ mkJwt (localJWTSettings aOIDC) $ sub idToken
           case jwtE of
             Right jwt -> do
               let user =
-                    let userId = sub idToken
-                        userSecret = decodeUtf8 jwt
-                        redirectUrl = Nothing
-                        localStorageKey = "api-key"
-                     in User {..}
+                    let liJWT = decodeUtf8 jwt
+                     in LoginInUser {..}
               putText $ "User: " <> show user
               pure user
             Left err' -> forbidden $ "Unable to generate local JWT due to: " <> show err'
