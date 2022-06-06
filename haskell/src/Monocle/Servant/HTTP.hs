@@ -17,7 +17,7 @@ import Monocle.Protob.Login (LoginValidationRequest, LoginValidationResponse)
 import Monocle.Protob.Metric (GetRequest, GetResponse, ListRequest, ListResponse)
 import Monocle.Protob.Search (AuthorRequest, AuthorResponse, CheckRequest, CheckResponse, FieldsRequest, FieldsResponse, QueryRequest, QueryResponse, SuggestionsRequest, SuggestionsResponse)
 import Monocle.Servant.PBJSON (PBJSON)
-import Relude
+import Relude (Text)
 import Servant
 import Servant.Auth.Server (Auth, Cookie, JWT)
 import Servant.HTML.Blaze (HTML)
