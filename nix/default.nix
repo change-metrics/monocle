@@ -89,9 +89,9 @@ let
           # Fix is needed for bytestring-0.11
           oidc-client = let
             src = builtins.fetchGit {
-              url = "https://github.com/morucci/haskell-oidc-client";
-              ref = "remove-bs-cap";
-              rev = "29ac58117a251cb18660e2b4b90266eb01bd88c6";
+              url = "https://github.com/krdlab/haskell-oidc-client";
+              ref = "master";
+              rev = "78dae84b9903038af61af87fe94112dd7aa57ebc";
             };
           in pkgs.haskell.lib.dontCheck
           (hpPrev.callCabal2nix "oidc-client" src { });
