@@ -124,11 +124,11 @@ monocleApiTests =
     [ testCase "Test getGroups and getGroupMembers" testGetGroups,
       testCase "Test crawler MDs refreshed after config reload" testReloadedConfig,
       testCase "Test get metrics" testGetMetrics,
-      testCase "Test Auth Magic Token" testAuthMagicToken
+      testCase "Test Auth Magic Token endpoint" testAuthMagicTokenEndpoint
     ]
   where
-    testAuthMagicToken :: Assertion
-    testAuthMagicToken = do
+    testAuthMagicTokenEndpoint :: Assertion
+    testAuthMagicTokenEndpoint = do
       let appEnv = mkAppEnv $ Config.mkTenant "ws"
       let adminToken = "test"
       setEnv "ADMIN_TOKEN" adminToken
@@ -140,7 +140,7 @@ monocleApiTests =
             resp' <- authWhoAmi authClient $ WhoAmiRequest ""
             case resp' of
               WhoAmiResponse (Just (WhoAmiResponseResultUid muid)) ->
-                assertEqual "Assert expected Magic Token uid" "Magic User UID" muid
+                assertEqual "Assert expected Magic Token uid" "bot" muid
               _ -> error "Unexpected Token uid value"
           _ -> error "expected a JWT token"
 

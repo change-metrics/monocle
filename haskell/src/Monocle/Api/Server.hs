@@ -786,7 +786,7 @@ handleLoggedIn err codeE stateE = do
       let idToken = O.idToken tokens
           -- TODO will need to check here for extra claims
           _otherClaims = O.otherClaims idToken
-      now <- liftIO $ Monocle.Prelude.getCurrentTime
+      now <- liftIO Monocle.Prelude.getCurrentTime
       let expiry = addUTCTime (24 * 3600) now
       jwtE <- liftIO $ mkJwt (localJWTSettings aOIDC) (sub idToken) (Just expiry)
       case jwtE of
