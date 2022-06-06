@@ -42,7 +42,7 @@ type MonocleAPI =
     :<|> "crawler" :> "commit" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.CommitRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.CommitResponse
     :<|> "crawler" :> "get_commit_info" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.CommitInfoRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.CommitInfoResponse
     :<|> "auth" :> "login" :> Get '[JSON] NoContent
-    :<|> "auth" :> "cb" :> QueryParam "error" Text :> QueryParam "code" Text :> Get '[HTML] LoginInUser
+    :<|> "auth" :> "cb" :> QueryParam "error" Text :> QueryParam "code" Text :> QueryParam "state" Text :> Get '[HTML] LoginInUser
 
 server :: ServerT MonocleAPI AppM
 server =

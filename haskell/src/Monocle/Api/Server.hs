@@ -8,7 +8,13 @@ import Data.Map qualified as Map
 import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Google.Protobuf.Timestamp qualified as T
-import Monocle.Api.Jwt (AuthenticatedUser (AUser), LoginInUser (..), OIDCEnv (..), mkJwt)
+import Monocle.Api.Jwt
+  ( AuthenticatedUser (AUser),
+    LoginInUser (..),
+    OIDCEnv (..),
+    mkJwt,
+    mkSessionStore,
+  )
 import Monocle.Backend.Documents
   ( EChange (..),
     EChangeEvent (..),
@@ -745,13 +751,12 @@ handleLogin = do
     Just oidcenv -> do
       loc <- liftIO (genOIDCURL oidcenv)
       redirects loc
-      return NoContent
+      pure NoContent
     Nothing -> forbidden "No OIDC Context"
   where
     genOIDCURL :: OIDCEnv -> IO ByteString
-    genOIDCURL OIDCEnv {..} = do
-      st <- genRandomBS
-      loc <- O.getAuthenticationRequestUrl oidc [O.openId, O.email, O.profile] (Just st) []
+    genOIDCURL oidcenv@OIDCEnv {oidc} = do
+      loc <- O.prepareAuthenticationRequestUrl (mkSessionStore oidcenv Nothing) oidc [O.openId] mempty
       return (show loc)
 
 handleLoggedIn ::
@@ -759,15 +764,25 @@ handleLoggedIn ::
   Maybe Text ->
   -- | code
   Maybe Text ->
+  -- | state
+  Maybe Text ->
   AppM LoginInUser
-handleLoggedIn err mcode = do
+handleLoggedIn err codeE stateE = do
   aOIDC <- asks aOIDC
-  case (oidcEnv aOIDC, err, mcode) of
-    (_, Just errorMsg, _) -> forbidden $ "Error from remote provider: " <> errorMsg
-    (_, _, Nothing) -> forbidden "No code parameter given"
-    (Nothing, _, _) -> forbidden "No OIDC Context"
-    (Just oidcEnv, _, Just oauthCode) -> do
-      tokens :: O.Tokens Value <- liftIO $ O.requestTokens (oidc oidcEnv) Nothing (from oauthCode) (manager oidcEnv)
+  case (oidcEnv aOIDC, err, codeE, stateE) of
+    (_, Just errorMsg, _, _) -> forbidden $ "Error from remote provider: " <> errorMsg
+    (_, _, Nothing, _) -> forbidden "No code parameter given"
+    (_, _, _, Nothing) -> forbidden "No state parameter given"
+    (Nothing, _, _, _) -> forbidden "No OIDC Context"
+    (Just oidcEnv, _, Just oauthCode, Just oauthState) -> do
+      tokens :: O.Tokens Value <-
+        liftIO $
+          O.getValidTokens
+            (mkSessionStore oidcEnv (Just $ from oauthState))
+            (oidc oidcEnv)
+            (manager oidcEnv)
+            (from oauthState)
+            (from oauthCode)
       let idToken = O.idToken tokens
           -- TODO will need to check here for extra claims
           _otherClaims = O.otherClaims idToken
