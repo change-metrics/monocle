@@ -145,6 +145,7 @@ module Monocle.Prelude
 
     -- * http-client-openssl
     withOpenSSL,
+    newOpenSSLManager,
 
     -- * bloodhound
     BH.MonadBH,
@@ -210,7 +211,7 @@ import GHC.Float (double2Float)
 import GHC.Generics (C, D, K1, M1, R, Rep, S, Selector, U1, selName, (:*:), (:+:))
 import Google.Protobuf.Timestamp qualified
 import Language.Haskell.TH.Quote (QuasiQuoter)
-import Network.HTTP.Client.OpenSSL (withOpenSSL)
+import Network.HTTP.Client.OpenSSL (newOpenSSLManager, withOpenSSL)
 import Prometheus (Info (..), counter, incCounter, withLabel)
 import Prometheus qualified
 import Proto3.Suite (Enumerated (..))

@@ -98,8 +98,9 @@ authWhoAmi _auth _request =
 authGetMagicJwt :: AuthResult AuthenticatedUser -> AuthPB.GetMagicJwtRequest -> AppM AuthPB.GetMagicJwtResponse
 authGetMagicJwt _auth (AuthPB.GetMagicJwtRequest inputAdminToken) = do
   oidc <- asks aOIDC
-  -- TODO Handle expiry of the Magic token
-  jwtE <- liftIO $ mkJwt (localJWTSettings oidc) "Magic User UID"
+  -- The generated JWT does not have any expiry
+  -- An API restart generates new JWK that will invalidate the token
+  jwtE <- liftIO $ mkJwt (localJWTSettings oidc) "bot" Nothing
   adminTokenM <- liftIO $ lookupEnv "ADMIN_TOKEN"
   case (jwtE, adminTokenM) of
     (Right jwt, Just adminToken) | inputAdminToken == from adminToken -> pure . genSuccess $ decodeUtf8 jwt
@@ -761,25 +762,18 @@ handleLoggedIn ::
   AppM LoginInUser
 handleLoggedIn err mcode = do
   aOIDC <- asks aOIDC
-  case oidcEnv aOIDC of
-    Just oidcEnv -> case err of
-      Just errorMsg -> forbidden errorMsg
-      Nothing -> case mcode of
-        Just oauthCode -> do
-          tokens :: O.Tokens Value <- liftIO $ O.requestTokens (oidc oidcEnv) Nothing (from oauthCode) (manager oidcEnv)
-          let idToken = O.idToken tokens
-              _otherClaims = O.otherClaims idToken -- TODO will need to check here for extra claims
-          putText $ "idToken: " <> show idToken
-          jwtE <- liftIO $ mkJwt (localJWTSettings aOIDC) $ sub idToken
-          case jwtE of
-            Right jwt -> do
-              let user =
-                    let liJWT = decodeUtf8 jwt
-                     in LoginInUser {..}
-              putText $ "User: " <> show user
-              pure user
-            Left err' -> forbidden $ "Unable to generate local JWT due to: " <> show err'
-        Nothing -> do
-          liftIO $ putText "No code param"
-          forbidden "no code parameter given"
-    Nothing -> forbidden "No OIDC Context"
+  case (oidcEnv aOIDC, err, mcode) of
+    (_, Just errorMsg, _) -> forbidden $ "Error from remote provider: " <> errorMsg
+    (_, _, Nothing) -> forbidden "No code parameter given"
+    (Nothing, _, _) -> forbidden "No OIDC Context"
+    (Just oidcEnv, _, Just oauthCode) -> do
+      tokens :: O.Tokens Value <- liftIO $ O.requestTokens (oidc oidcEnv) Nothing (from oauthCode) (manager oidcEnv)
+      let idToken = O.idToken tokens
+          -- TODO will need to check here for extra claims
+          _otherClaims = O.otherClaims idToken
+      now <- liftIO $ Monocle.Prelude.getCurrentTime
+      let expiry = addUTCTime (24 * 3600) now
+      jwtE <- liftIO $ mkJwt (localJWTSettings aOIDC) (sub idToken) (Just expiry)
+      case jwtE of
+        Right jwt -> let liJWT = decodeUtf8 jwt in pure $ LoginInUser {..}
+        Left err' -> forbidden $ "Unable to generate user JWT due to: " <> show err'

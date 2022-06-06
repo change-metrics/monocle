@@ -10,13 +10,11 @@ module Monocle.Api.Jwt
   )
 where
 
-import Crypto.JWT (JWK, KeyMaterialGenParam (RSAGenParam), genJWK)
-import Crypto.JWT qualified as Jose
+import Crypto.JWT (Error, JWK, KeyMaterialGenParam (RSAGenParam), genJWK)
 import Data.ByteString.Lazy qualified as BSL
 import Monocle.Config (OIDCProvider (..))
-import Monocle.Prelude (FromJSON, ToJSON, from)
+import Monocle.Prelude (FromJSON, ToJSON, UTCTime, from, newOpenSSLManager)
 import Network.HTTP.Client (Manager)
-import Network.HTTP.Client.OpenSSL (newOpenSSLManager)
 import Relude
 import Servant.Auth.Server
   ( FromJWT,
@@ -49,10 +47,9 @@ instance ToJWT AuthenticatedUser
 
 instance FromJWT AuthenticatedUser
 
-mkJwt :: JWTSettings -> Text -> IO (Either Jose.Error BSL.ByteString)
-mkJwt settings muid =
-  let expD = Nothing
-      aMuid = muid
+mkJwt :: JWTSettings -> Text -> Maybe UTCTime -> IO (Either Error BSL.ByteString)
+mkJwt settings muid expD =
+  let aMuid = muid
       aAliases = mempty
       aGroups = mempty
    in makeJWT (AUser {..}) settings expD
