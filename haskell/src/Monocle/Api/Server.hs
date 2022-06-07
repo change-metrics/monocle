@@ -2,6 +2,9 @@
 -- This module provides an interface between the backend and the frontend
 module Monocle.Api.Server where
 
+import Data.Aeson (Value (Object, String))
+import Data.Aeson.Key qualified as AK (fromText)
+import Data.Aeson.KeyMap qualified as AKM (lookup)
 import Data.ByteString.Lazy qualified as LBS
 import Data.List (lookup)
 import Data.Map qualified as Map
@@ -762,9 +765,10 @@ handleLoggedIn ::
   -- | state
   Maybe Text ->
   AppM LoginInUser
-handleLoggedIn err codeE stateE = do
+handleLoggedIn err codeM stateM = do
   aOIDC <- asks aOIDC
-  case (oidcEnv aOIDC, err, codeE, stateE) of
+  log $ OIDCCallbackCall err codeM stateM
+  case (oidcEnv aOIDC, err, codeM, stateM) of
     (_, Just errorMsg, _, _) -> forbidden $ "Error from remote provider: " <> errorMsg
     (_, _, Nothing, _) -> forbidden "No code parameter given"
     (_, _, _, Nothing) -> forbidden "No state parameter given"
@@ -778,12 +782,32 @@ handleLoggedIn err codeE stateE = do
             (manager oidcEnv)
             (from oauthState)
             (from oauthCode)
-      let idToken = O.idToken tokens
-          -- TODO will need to check here for extra claims
-          _otherClaims = O.otherClaims idToken
       now <- liftIO Monocle.Prelude.getCurrentTime
-      let expiry = addUTCTime (24 * 3600) now
-      jwtE <- liftIO $ mkJwt (localJWTSettings aOIDC) (sub idToken) (Just expiry)
+      let idToken = O.idToken tokens
+          -- TODO: map expiry on Provider's token expiry ?
+          expiry = addUTCTime (24 * 3600) now
+          mUid = userId oidcEnv idToken
+      log . OIDCProviderTokenRequested $ show idToken
+      jwtE <- liftIO $ mkJwt (localJWTSettings aOIDC) mUid (Just expiry)
       case jwtE of
-        Right jwt -> let liJWT = decodeUtf8 jwt in pure $ LoginInUser {..}
-        Left err' -> forbidden $ "Unable to generate user JWT due to: " <> show err'
+        Right jwt -> do
+          log $ JWTCreated mUid (decodeUtf8 $ redirectUri oidcEnv)
+          let liJWT = decodeUtf8 jwt
+          pure $ LoginInUser {..}
+        Left err' -> do
+          log $ JWTCreateFailed mUid (show err')
+          forbidden $ "Unable to generate user JWT due to: " <> show err'
+  where
+    userId :: OIDCEnv -> O.IdTokenClaims Value -> Text
+    userId oidcEnv idToken = case userClaim oidcEnv of
+      Just uc -> case O.otherClaims idToken of
+        Object o -> case AKM.lookup (AK.fromText uc) o of
+          Just (String s) -> s
+          _ -> defaultUserId
+        _ -> defaultUserId
+      Nothing -> defaultUserId
+      where
+        defaultUserId = sub idToken
+    log ev = do
+      aEnv <- asks aEnv
+      liftIO $ doLog (glLogger aEnv) $ via @Text $ ev

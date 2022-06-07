@@ -73,7 +73,8 @@ data OIDCEnv = OIDCEnv
     redirectUri :: ByteString,
     clientId :: ByteString,
     clientSecret :: ByteString,
-    sessionStoreStorage :: MVar (HM.Map O.State O.Nonce)
+    sessionStoreStorage :: MVar (HM.Map O.State O.Nonce),
+    userClaim :: Maybe Text
   }
 
 newtype LoginInUser = LoginInUser {liJWT :: Text} deriving (Show, Eq, Ord)
@@ -95,11 +96,12 @@ initOIDCEnv OIDCProvider {..} = do
   manager <- newOpenSSLManager
   provider <- O.discover opIssuerURL manager
   sst <- newMVar HM.empty
-  let redirectUri = from $ opAppPublicURL <> "/api/2/auth/cb"
+  let redirectUri = from $ opAppPublicURL <> "api/2/auth/cb"
       clientId = from opClientID
       clientSecret = from opClientSecret
       oidc = O.setCredentials clientId clientSecret redirectUri (O.newOIDC provider)
       sessionStoreStorage = sst
+      userClaim = opUserClaim
   pure OIDCEnv {..}
 
 mkSessionStore :: OIDCEnv -> Maybe O.State -> O.SessionStore IO
