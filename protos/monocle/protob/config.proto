@@ -32,12 +32,6 @@ message GetWorkspacesResponse {
   repeated Workspace workspaces = 1;
 }
 
-message AuthConfig {
-  string issuer = 1;
-  string client_id = 2;
-  string user_claim = 3;
-}
-
 message About {
   message AboutLink {
     string name = 1;
@@ -46,9 +40,7 @@ message About {
   }
   string version = 1;
   repeated AboutLink links = 2; 
-  oneof authentication {
-    AuthConfig config = 3;
-  }
+  bool authEnabled = 3;
 }
 
 message GetAboutRequest {

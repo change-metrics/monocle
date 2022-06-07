@@ -163,7 +163,7 @@ configGetAbout _auth _request = response
       let aboutVersion = from version
           links = maybe [] Config.links (Config.about config)
           aboutLinks = fromList $ toLink <$> links
-          aboutAuthentication = toAboutAuthentication <$> authProvider
+          aboutAuthEnabled = isJust authProvider
       pure $ ConfigPB.GetAboutResponse $ Just ConfigPB.About {..}
     toLink :: Config.Link -> ConfigPB.About_AboutLink
     toLink Config.Link {..} =
@@ -171,11 +171,6 @@ configGetAbout _auth _request = response
           about_AboutLinkUrl = from url
           about_AboutLinkCategory = from $ fromMaybe "About" category
        in ConfigPB.About_AboutLink {..}
-    toAboutAuthentication Config.OIDCProvider {..} =
-      let authConfigIssuer = from opIssuerURL
-          authConfigClientId = from opClientID
-          authConfigUserClaim = ""
-       in ConfigPB.AboutAuthenticationConfig $ ConfigPB.AuthConfig {..}
 
 -- | /api/2/get_workspaces endpoint
 configGetWorkspaces :: AuthResult AuthenticatedUser -> ConfigPB.GetWorkspacesRequest -> AppM ConfigPB.GetWorkspacesResponse
