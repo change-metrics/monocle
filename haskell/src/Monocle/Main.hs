@@ -124,12 +124,11 @@ run' port url configFile glLogger = do
   -- Init OIDC
   -- Initialise JWT settings for locally issuing JWT (local provider)
   localJwk <- doGenJwk
-  clientSecretM <- lookupEnv "OIDC_CLIENT_SECRET"
+  providerM <- getAuthProvider
   let localJWTSettings = defaultJWTSettings localJwk
-      providerM = getAuthProvider conf
   -- Initialize env to talk with OIDC provider
-  oidcEnv <- case (providerM, clientSecretM) of
-    (Just provider, Just clientSecret) -> pure <$> initOIDCEnv provider clientSecret
+  oidcEnv <- case providerM of
+    Just provider -> pure <$> initOIDCEnv provider
     _ -> pure Nothing
   let aOIDC = OIDC {..}
 

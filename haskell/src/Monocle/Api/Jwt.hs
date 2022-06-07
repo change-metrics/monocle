@@ -90,15 +90,14 @@ instance ToMarkup LoginInUser where
             )
         )
 
-initOIDCEnv :: OIDCProvider -> String -> IO OIDCEnv
-initOIDCEnv OIDCProvider {..} clientSecret' = do
+initOIDCEnv :: OIDCProvider -> IO OIDCEnv
+initOIDCEnv OIDCProvider {..} = do
   manager <- newOpenSSLManager
-  provider <- O.discover issuer manager
+  provider <- O.discover opIssuerURL manager
   sst <- newMVar HM.empty
-  let publicUrl = "http://localhost:8080" -- TODO "Discover it or add it in config"
-      redirectUri = publicUrl <> "/api/2/auth/cb"
-      clientId = from client_id
-      clientSecret = from clientSecret'
+  let redirectUri = from $ opAppPublicURL <> "/api/2/auth/cb"
+      clientId = from opClientID
+      clientSecret = from opClientSecret
       oidc = O.setCredentials clientId clientSecret redirectUri (O.newOIDC provider)
       sessionStoreStorage = sst
   pure OIDCEnv {..}

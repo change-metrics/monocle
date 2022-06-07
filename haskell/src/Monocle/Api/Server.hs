@@ -80,7 +80,7 @@ pattern GetConfig a <- Config.ConfigStatus _ a _
 
 -- | Convenient pattern to get the list of tenants
 pattern GetTenants :: [Config.Index] -> Config.ConfigStatus
-pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _about _auth a) _
+pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _about a) _
 
 -- curl -XPOST -d '{"void": ""}' -H "Content-type: application/json" -H 'Authorization: Bearer <token>' http://localhost:8080/auth/whoami
 authWhoAmi :: AuthResult AuthenticatedUser -> AuthPB.WhoAmiRequest -> AppM AuthPB.WhoAmiResponse
@@ -159,10 +159,10 @@ configGetAbout _auth _request = response
   where
     response = do
       GetConfig config <- getConfig
+      authProvider <- liftIO Config.getAuthProvider
       let aboutVersion = from version
           links = maybe [] Config.links (Config.about config)
           aboutLinks = fromList $ toLink <$> links
-          authProvider = Config.getAuthProvider config
           aboutAuthentication = toAboutAuthentication <$> authProvider
       pure $ ConfigPB.GetAboutResponse $ Just ConfigPB.About {..}
     toLink :: Config.Link -> ConfigPB.About_AboutLink
@@ -172,9 +172,9 @@ configGetAbout _auth _request = response
           about_AboutLinkCategory = from $ fromMaybe "About" category
        in ConfigPB.About_AboutLink {..}
     toAboutAuthentication Config.OIDCProvider {..} =
-      let authConfigIssuer = from issuer
-          authConfigClientId = from client_id
-          authConfigUserClaim = from user_claim
+      let authConfigIssuer = from opIssuerURL
+          authConfigClientId = from opClientID
+          authConfigUserClaim = ""
        in ConfigPB.AboutAuthenticationConfig $ ConfigPB.AuthConfig {..}
 
 -- | /api/2/get_workspaces endpoint
