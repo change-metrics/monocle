@@ -294,7 +294,7 @@ getAuthProvider = do
   opIssuerURL' <- lookupEnv "MONOCLE_OIDC_ISSUER_URL"
   opClientID' <- lookupEnv "MONOCLE_OIDC_CLIENT_ID"
   opClientSecret' <- lookupEnv "MONOCLE_OIDC_CLIENT_SECRET"
-  opAppPublicURL' <- lookupEnv "MONOCLE_OIDC_APP_PUBLIC_URL"
+  opAppPublicURL' <- lookupEnv "MONOCLE_PUBLIC_URL"
   opUserClaim' <- lookupEnv "MONOCLE_OIDC_USER_CLAIM"
   pure $ case (opIssuerURL', opClientID', opClientSecret', opAppPublicURL') of
     ( fmap (ensureTrailingSlash . from) -> Just opIssuerURL,
