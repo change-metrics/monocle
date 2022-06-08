@@ -207,7 +207,7 @@ Doctest can be executed using:
 # Ensure doctest-0.20. is installed
 cabal install doctest --overwrite-policy=always
 # Run doctest through cabal
-cabal repl --with-ghc=doctest
+cabal repl --with-ghc=doctest --ghc-options=-Wno-unused-packages
 ```
 
 Or using ghcid to automatically run the test when the code changes:

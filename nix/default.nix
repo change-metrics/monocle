@@ -559,7 +559,7 @@ in rec {
 
     echo "[+] Running doctests"
     export PATH=${hsPkgs.doctest_0_20_0}/bin:$PATH
-    cabal repl --with-ghc=doctest
+    cabal repl --with-ghc=doctest --ghc-options=-Wno-unused-packages
 
     # cabal haddock
     # cabal sdist
