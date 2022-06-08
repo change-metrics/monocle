@@ -5,7 +5,8 @@ import Data.List qualified
 import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
 import Lentille (httpRetry)
-import Monocle.Api.Jwt (doGenJwk, initOIDCEnv)
+import Monocle.Api.Jwt (LoginInUser (..), doGenJwk, initOIDCEnv)
+import Monocle.Api.Server (handleLoggedIn, handleLogin)
 import Monocle.Backend.Index qualified as I
 import Monocle.Config (getAuthProvider)
 import Monocle.Config qualified as Config
@@ -24,17 +25,29 @@ import Prometheus (register)
 import Prometheus.Metric.GHC (ghcMetrics)
 import Servant
 import Servant.Auth.Server (CookieSettings, JWTSettings, defaultCookieSettings, defaultJWTSettings)
+import Servant.HTML.Blaze (HTML)
 import System.Directory qualified
 
 -- | The API is served at both `/api/2/` (for backward compat with the legacy nginx proxy)
 -- and `/` (for compat with crawler client)
-type RootAPI = "api" :> "2" :> MonocleAPI :<|> MonocleAPI
+type RootAPI = "api" :> "2" :> MonocleAPI :<|> MonocleAPI :<|> AuthAPI
+
+type AuthAPI =
+  "auth" :> "login" :> Get '[JSON] NoContent
+    :<|> "auth" :> "cb" :> QueryParam "error" Text :> QueryParam "code" Text :> QueryParam "state" Text :> Get '[HTML] LoginInUser
+
+serverAuth :: ServerT AuthAPI AppM
+serverAuth = handleLogin :<|> handleLoggedIn
 
 -- | Create the underlying Monocle web application interface, for integration or testing purpose.
 app :: AppEnv -> Wai.Application
 app env = do
   serveWithContext (Proxy @RootAPI) cfg $
-    hoistServerWithContext (Proxy @RootAPI) (Proxy :: Proxy '[CookieSettings, JWTSettings]) mkAppM (server :<|> server)
+    hoistServerWithContext
+      (Proxy @RootAPI)
+      (Proxy :: Proxy '[CookieSettings, JWTSettings])
+      mkAppM
+      (server :<|> server :<|> serverAuth)
   where
     jwtCfg = localJWTSettings $ aOIDC env
     cfg = jwtCfg :. defaultCookieSettings :. EmptyContext

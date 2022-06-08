@@ -152,11 +152,7 @@ protoToServant pb =
         "import Monocle.Servant.PBJSON (PBJSON)",
         "import Servant",
         "import Servant.Auth.Server (Auth, JWT, Cookie)",
-        "import Monocle.Api.Jwt (AuthenticatedUser, LoginInUser (..))",
-        "import Servant.HTML.Blaze (HTML)",
-        "import Relude (Text)",
-        "import Monocle.Api.Server (handleLogin, handleLoggedIn)"
-
+        "import Monocle.Api.Jwt (AuthenticatedUser)"
       ]
 
     imports = concatMap mkImport methods
@@ -172,13 +168,9 @@ protoToServant pb =
 
     api =
       [ "type MonocleAPI =",
-        Text.intercalate "\n :<|>" $ (map mkApi methods ) <> otherEndpoints
+        Text.intercalate "\n :<|>" $ (map mkApi methods)
       ]
       where
-        otherEndpoints = [
-          "\"auth\" :> \"login\" :> Get '[JSON] NoContent",
-          "\"auth\" :> \"cb\" :> QueryParam \"error\" Text :> QueryParam \"code\" Text :> QueryParam \"state\" Text :> Get '[HTML] LoginInUser"
-          ]
         mkApi (moduleName, name, path) =
           "  "
             <> ( Text.intercalate " :> "
@@ -193,10 +185,9 @@ protoToServant pb =
     server =
       [ "server :: ServerT MonocleAPI AppM",
         "server =",
-        Text.intercalate "\n :<|>" $ (map mkServer methods) <> otherEndpointMethods
+        Text.intercalate "\n :<|>" $ (map mkServer methods)
       ]
       where
-        otherEndpointMethods = ["handleLogin", "handleLoggedIn"]
         mkServer (name, method, _) = "  " <> camel name <> method
 
     methods :: [(Text, Text, Text)]
