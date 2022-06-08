@@ -166,7 +166,7 @@ configGetAbout _auth _request = response
       let aboutVersion = from version
           links = maybe [] Config.links (Config.about config)
           aboutLinks = fromList $ toLink <$> links
-          aboutAuthEnabled = isJust authProvider
+          aboutAuth = isJust authProvider
       pure $ ConfigPB.GetAboutResponse $ Just ConfigPB.About {..}
     toLink :: Config.Link -> ConfigPB.About_AboutLink
     toLink Config.Link {..} =

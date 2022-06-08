@@ -483,7 +483,7 @@ instance HsJSONPB.FromJSON GetWorkspacesResponse where
 data About = About
   { aboutVersion :: Hs.Text,
     aboutLinks :: Hs.Vector Monocle.Protob.Config.About_AboutLink,
-    aboutAuthEnabled :: Hs.Bool
+    aboutAuth :: Hs.Bool
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -498,7 +498,7 @@ instance HsProtobuf.Message About where
     About
       { aboutVersion = aboutVersion,
         aboutLinks = aboutLinks,
-        aboutAuthEnabled = aboutAuthEnabled
+        aboutAuth = aboutAuth
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -514,7 +514,7 @@ instance HsProtobuf.Message About where
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 3)
-                aboutAuthEnabled
+                aboutAuth
             )
           ]
       )
@@ -556,7 +556,7 @@ instance HsProtobuf.Message About where
       ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 3)
           (HsProtobuf.Prim HsProtobuf.Bool)
-          (HsProtobuf.Single "authEnabled")
+          (HsProtobuf.Single "auth")
           []
           ""
       )
@@ -564,13 +564,9 @@ instance HsProtobuf.Message About where
 
 instance HsJSONPB.ToJSONPB About where
   toJSONPB (About f1 f2 f3) =
-    ( HsJSONPB.object
-        ["version" .= f1, "links" .= f2, "authEnabled" .= f3]
-    )
+    (HsJSONPB.object ["version" .= f1, "links" .= f2, "auth" .= f3])
   toEncodingPB (About f1 f2 f3) =
-    ( HsJSONPB.pairs
-        ["version" .= f1, "links" .= f2, "authEnabled" .= f3]
-    )
+    (HsJSONPB.pairs ["version" .= f1, "links" .= f2, "auth" .= f3])
 
 instance HsJSONPB.FromJSONPB About where
   parseJSONPB =
@@ -578,7 +574,7 @@ instance HsJSONPB.FromJSONPB About where
         "About"
         ( \obj ->
             (Hs.pure About) <*> obj .: "version" <*> obj .: "links"
-              <*> obj .: "authEnabled"
+              <*> obj .: "auth"
         )
     )
 

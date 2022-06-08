@@ -40,7 +40,7 @@ type about_about_link = {
 type about = {
   version : string;
   links : about_about_link list;
-  auth_enabled : bool;
+  auth : bool;
 }
 
 type get_about_request = {
@@ -126,7 +126,7 @@ val default_about_about_link :
 val default_about : 
   ?version:string ->
   ?links:about_about_link list ->
-  ?auth_enabled:bool ->
+  ?auth:bool ->
   unit ->
   about
 (** [default_about ()] is the default value for type [about] *)

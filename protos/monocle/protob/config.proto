@@ -40,7 +40,7 @@ message About {
   }
   string version = 1;
   repeated AboutLink links = 2; 
-  bool authEnabled = 3;
+  bool auth = 3;
 }
 
 message GetAboutRequest {

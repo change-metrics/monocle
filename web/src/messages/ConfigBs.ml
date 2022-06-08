@@ -69,13 +69,13 @@ let default_about_about_link_mutable () : about_about_link_mutable = {
 type about_mutable = {
   mutable version : string;
   mutable links : ConfigTypes.about_about_link list;
-  mutable auth_enabled : bool;
+  mutable auth : bool;
 }
 
 let default_about_mutable () : about_mutable = {
   version = "";
   links = [];
-  auth_enabled = false;
+  auth = false;
 }
 
 type get_about_request_mutable = {
@@ -301,16 +301,16 @@ let rec decode_about json =
         (decode_about_about_link (Pbrt_bs.object_ json "about" "links"))
       ) a |> Array.to_list;
     end
-    | "auth_enabled" -> 
-      let json = Js.Dict.unsafeGet json "auth_enabled" in
-      v.auth_enabled <- Pbrt_bs.bool json "about" "auth_enabled"
+    | "auth" -> 
+      let json = Js.Dict.unsafeGet json "auth" in
+      v.auth <- Pbrt_bs.bool json "about" "auth"
     
     | _ -> () (*Unknown fields are ignored*)
   done;
   ({
     ConfigTypes.version = v.version;
     ConfigTypes.links = v.links;
-    ConfigTypes.auth_enabled = v.auth_enabled;
+    ConfigTypes.auth = v.auth;
   } : ConfigTypes.about)
 
 let rec decode_get_about_request json =
@@ -519,7 +519,7 @@ let rec encode_about (v:ConfigTypes.about) =
     in
     Js.Dict.set json "links" links';
   end;
-  Js.Dict.set json "auth_enabled" (Js.Json.boolean v.ConfigTypes.auth_enabled);
+  Js.Dict.set json "auth" (Js.Json.boolean v.ConfigTypes.auth);
   json
 
 let rec encode_get_about_request (v:ConfigTypes.get_about_request) = 

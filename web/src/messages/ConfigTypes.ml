@@ -37,7 +37,7 @@ type about_about_link = {
 type about = {
   version : string;
   links : about_about_link list;
-  auth_enabled : bool;
+  auth : bool;
 }
 
 type get_about_request = {
@@ -125,11 +125,11 @@ let rec default_about_about_link
 let rec default_about 
   ?version:((version:string) = "")
   ?links:((links:about_about_link list) = [])
-  ?auth_enabled:((auth_enabled:bool) = false)
+  ?auth:((auth:bool) = false)
   () : about  = {
   version;
   links;
-  auth_enabled;
+  auth;
 }
 
 let rec default_get_about_request 

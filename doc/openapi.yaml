@@ -534,7 +534,7 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_config_AboutLink'
-                authEnabled:
+                auth:
                     type: boolean
         monocle_config_GetAboutRequest:
             properties:
