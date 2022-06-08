@@ -11,21 +11,16 @@ module Monocle.Api.Jwt
   )
 where
 
+import Control.Monad.Random (genByteString)
+import Control.Monad.Random qualified as Random
+import Crypto.Hash.SHA256 (hash)
 import Crypto.JWT (Error, JWK, KeyMaterialGenParam (RSAGenParam), genJWK)
+import Data.ByteString.Base64 qualified as B64
 import Data.ByteString.Lazy qualified as BSL
 import Data.Map.Strict qualified as HM
 import Monocle.Config (OIDCProvider (..))
 import Monocle.Prelude
-  ( FromJSON,
-    ToJSON,
-    UTCTime,
-    from,
-    genRandomBS,
-    modifyMVar_,
-    newOpenSSLManager,
-  )
 import Network.HTTP.Client (Manager)
-import Relude
 import Servant.Auth.Server
   ( FromJWT,
     JWTSettings,
@@ -106,7 +101,7 @@ initOIDCEnv OIDCProvider {..} = do
 
 mkSessionStore :: OIDCEnv -> Maybe O.State -> O.SessionStore IO
 mkSessionStore OIDCEnv {sessionStoreStorage} stateM = do
-  let sessionStoreGenerate = liftIO genRandomBS
+  let sessionStoreGenerate = liftIO genRandom
       sessionStoreSave = storeSave
       sessionStoreGet = storeGet
       sessionStoreDelete = case stateM of
@@ -123,3 +118,9 @@ mkSessionStore OIDCEnv {sessionStoreStorage} stateM = do
         let nonce = HM.lookup state' store
         pure (Just state', nonce)
       Nothing -> pure (Nothing, Nothing)
+
+genRandom :: IO ByteString
+genRandom = do
+  g <- Random.newStdGen
+  let (bs, _ng) = genByteString 42 g
+  pure . B64.encode $ hash bs

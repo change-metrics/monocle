@@ -30,7 +30,9 @@ import System.Directory qualified
 
 -- | The API is served at both `/api/2/` (for backward compat with the legacy nginx proxy)
 -- and `/` (for compat with crawler client)
-type RootAPI = "api" :> "2" :> MonocleAPI :<|> MonocleAPI :<|> AuthAPI
+type MonocleAPI' = MonocleAPI :<|> AuthAPI
+
+type RootAPI = "api" :> "2" :> MonocleAPI' :<|> MonocleAPI'
 
 type AuthAPI =
   "auth" :> "login" :> Get '[JSON] NoContent
@@ -42,12 +44,13 @@ serverAuth = handleLogin :<|> handleLoggedIn
 -- | Create the underlying Monocle web application interface, for integration or testing purpose.
 app :: AppEnv -> Wai.Application
 app env = do
+  let server' = server :<|> serverAuth
   serveWithContext (Proxy @RootAPI) cfg $
     hoistServerWithContext
       (Proxy @RootAPI)
       (Proxy :: Proxy '[CookieSettings, JWTSettings])
       mkAppM
-      (server :<|> server :<|> serverAuth)
+      (server' :<|> server')
   where
     jwtCfg = localJWTSettings $ aOIDC env
     cfg = jwtCfg :. defaultCookieSettings :. EmptyContext
