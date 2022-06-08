@@ -70,6 +70,12 @@ module MonocleNav = {
   }
 }
 
+let isAuthEnforced = (state: Store.Store.t) =>
+  switch state.about.auth {
+  | Config(auth) => auth.force_login
+  | _ => false
+  }
+
 module Login = {
   module Validator = {
     @react.component
@@ -97,6 +103,7 @@ module Login = {
           }
     }
   }
+
   module NonAuthenticatedLoginModal = {
     @react.component
     let make = (~store: Store.t, ~setShowLoginModal) => {
@@ -132,7 +139,7 @@ module Login = {
   }
   module AuthenticatedLoginModal = {
     @react.component
-    let make = (~setShowLoginModal, ~auth: Web.ConfigTypes.about_auth_config) => {
+    let make = (~setShowLoginModal, ~closable, ~auth: Web.ConfigTypes.about_auth_config) => {
       let loginTitle = "Login on Monocle"
       let loginSubtitle =
         "Click on the button below to be redirected to identity provider (" ++
@@ -153,7 +160,7 @@ module Login = {
             <Button _type=#Submit variant=#Primary onClick>
               {"Authenticate with Identity provider"}
             </Button>
-            <Button variant=#Primary onClick=close> {"Close"} </Button>
+            {closable ? <Button variant=#Primary onClick=close> {"Close"} </Button> : React.null}
           </ActionGroup>
         </Form>
       </LoginPage>
@@ -162,10 +169,10 @@ module Login = {
 
   module LoginModal = {
     @react.component
-    let make = (~store: Store.t, ~setShowLoginModal) => {
+    let make = (~store: Store.t, ~setShowLoginModal, ~closable=true) => {
       let (state, _) = store
       switch state.about.auth {
-      | Config(auth) => <AuthenticatedLoginModal setShowLoginModal auth />
+      | Config(auth) => <AuthenticatedLoginModal setShowLoginModal closable auth />
       | _ => <NonAuthenticatedLoginModal store setShowLoginModal />
       }
     }
@@ -217,7 +224,10 @@ module Login = {
         | (Some(username), None) => displayLoggedStatus(state, username, onClickLogoutNAU)
         | (None, Some(authenticatedUser)) =>
           displayLoggedStatus(state, authenticatedUser.uid, onClickLogoutAU)
-        | _ => <Button variant=#Tertiary onClick=onClickLogin> {"Login"} </Button>
+        | _ =>
+          state->isAuthEnforced
+            ? React.null
+            : <Button variant=#Tertiary onClick=onClickLogin> {"Login"} </Button>
         }}
       </div>
     }
@@ -332,30 +342,33 @@ module App = {
           {state.index != ""
             ? <PageSection variant=#Dark> <Search.Top store /> </PageSection>
             : React.null}
-          {showLoginModal
-            ? <Login.LoginModal store setShowLoginModal />
-            : <PageSection isFilled={true}>
-                {switch url.path {
-                | list{} => <Indices.Indices store />
-                | list{"help", "search"} => <HelpSearch.View store />
-                | list{_, "settings"} => <LocalSettings.View store />
-                | list{_} => <Activity store />
-                | list{_, "author", name} => <ScopedView.AuthorScopedView store name />
-                | list{_, "group", name} => <ScopedView.GroupScopedView store name />
-                | list{_, "active_authors"} => <ActivePeopleView store />
-                | list{_, "peers_strength"} => <PeersStrengthView store stacked={false} />
-                | list{_, "new_authors"} => <NewContributorsView store />
-                | list{_, "projects"} => <ProjectsView store />
-                | list{_, "user_groups"} => <GroupsView store />
-                | list{_, "user_groups", group} => <GroupView group store />
-                | list{_, "repos"} => <ReposView store />
-                | list{_, "changes"} => <NChangeView store />
-                | list{_, "change", change} => <ChangeView change store />
-                | list{_, "board"} => <Board store />
-                | list{_, "search_author"} => <AuthorSearch store />
-                | _ => <p> {"Not found"->str} </p>
-                }}
-              </PageSection>}
+          {switch (showLoginModal, state->isAuthEnforced, state.authenticated_user) {
+          | (true, _, _) => <Login.LoginModal store setShowLoginModal />
+          | (_, true, None) => <Login.LoginModal store setShowLoginModal closable=false />
+          | _ =>
+            <PageSection isFilled={true}>
+              {switch url.path {
+              | list{} => <Indices.Indices store />
+              | list{"help", "search"} => <HelpSearch.View store />
+              | list{_, "settings"} => <LocalSettings.View store />
+              | list{_} => <Activity store />
+              | list{_, "author", name} => <ScopedView.AuthorScopedView store name />
+              | list{_, "group", name} => <ScopedView.GroupScopedView store name />
+              | list{_, "active_authors"} => <ActivePeopleView store />
+              | list{_, "peers_strength"} => <PeersStrengthView store stacked={false} />
+              | list{_, "new_authors"} => <NewContributorsView store />
+              | list{_, "projects"} => <ProjectsView store />
+              | list{_, "user_groups"} => <GroupsView store />
+              | list{_, "user_groups", group} => <GroupView group store />
+              | list{_, "repos"} => <ReposView store />
+              | list{_, "changes"} => <NChangeView store />
+              | list{_, "change", change} => <ChangeView change store />
+              | list{_, "board"} => <Board store />
+              | list{_, "search_author"} => <AuthorSearch store />
+              | _ => <p> {"Not found"->str} </p>
+              }}
+            </PageSection>
+          }}
         </React.Fragment>
       </Page>
     }
