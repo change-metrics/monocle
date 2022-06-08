@@ -168,7 +168,7 @@ protoToServant pb =
 
     api =
       [ "type MonocleAPI =",
-        Text.intercalate "\n :<|>" $ (map mkApi methods)
+        Text.intercalate "\n :<|>" $ map mkApi methods
       ]
       where
         mkApi (moduleName, name, path) =
@@ -185,7 +185,7 @@ protoToServant pb =
     server =
       [ "server :: ServerT MonocleAPI AppM",
         "server =",
-        Text.intercalate "\n :<|>" $ (map mkServer methods)
+        Text.intercalate "\n :<|>" $ map mkServer methods
       ]
       where
         mkServer (name, method, _) = "  " <> camel name <> method
