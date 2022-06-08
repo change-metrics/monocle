@@ -1,3 +1,5 @@
+open Jwt
+
 module RemoteData = {
   type t<'data> = option<result<'data, string>>
 
@@ -54,6 +56,7 @@ module Store = {
     filter: string,
     limit: int,
     username: option<string>,
+    authenticated_user: option<Jwt.authenticatedUser>,
     order: option<SearchTypes.order>,
     author_scoped_tab: authorScopedTab,
     suggestions: suggestionsR,
@@ -77,10 +80,16 @@ module Store = {
     | ReverseChangesPiePanelState
     | RemoveToast(string)
     | AddToast(string)
-    | Login(string)
-    | Logout
+    | NonAuthenticatedLogin(string)
+    | NonAuthenticatedLogout
+    | AuthenticatedLogout
 
   type dispatch = action => unit
+
+  let getAuthenticatedUser =
+    Dom.Storage.getItem("api-key", Dom.Storage.localStorage)->Belt.Option.flatMap(jwt =>
+      jwt->monocleJwtDecode
+    )
 
   let create = (index, about) => {
     index: index,
@@ -90,6 +99,7 @@ module Store = {
     order: UrlData.getOrder(),
     author_scoped_tab: ChangeActivity,
     username: Dom.Storage.localStorage |> Dom.Storage.getItem("monocle_username"),
+    authenticated_user: getAuthenticatedUser,
     suggestions: None,
     fields: None,
     projects: None,
@@ -131,13 +141,17 @@ module Store = {
     | FetchSuggestions(res) => {...state, suggestions: res}
     | FetchProjects(res) => {...state, projects: res}
     | ReverseChangesPiePanelState => {...state, changes_pies_panel: !state.changes_pies_panel}
-    | Login(username) => {
+    | NonAuthenticatedLogin(username) => {
         Dom.Storage.localStorage |> Dom.Storage.setItem("monocle_username", username)
         {...state, username: username->Some}
       }
-    | Logout => {
+    | NonAuthenticatedLogout => {
         Dom.Storage.localStorage |> Dom.Storage.removeItem("monocle_username")
         {...state, username: None}
+      }
+    | AuthenticatedLogout => {
+        Dom.Storage.localStorage |> Dom.Storage.removeItem("api-key")
+        {...state, authenticated_user: None}
       }
     }
 }
