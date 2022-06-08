@@ -284,7 +284,8 @@ data OIDCProvider = OIDCProvider
     opClientID :: Text,
     opClientSecret :: Text,
     opAppPublicURL :: Text,
-    opUserClaim :: Maybe Text
+    opUserClaim :: Maybe Text,
+    opEnforceAuth :: Bool
   }
 
 -- | Get Authentication provider config from Env
@@ -295,6 +296,7 @@ getAuthProvider = do
   opClientSecret' <- lookupEnv "MONOCLE_OIDC_CLIENT_SECRET"
   opAppPublicURL' <- lookupEnv "MONOCLE_PUBLIC_URL"
   opUserClaim' <- lookupEnv "MONOCLE_OIDC_USER_CLAIM"
+  opEnforceAuth' <- lookupEnv "MONOCLE_ENFORCE_AUTH"
   pure $ case (opIssuerURL', opClientID', opClientSecret', opAppPublicURL') of
     ( fmap (ensureTrailingSlash . from) -> Just opIssuerURL,
       fmap from -> Just opClientID,
@@ -302,8 +304,8 @@ getAuthProvider = do
       fmap (ensureTrailingSlash . from) -> Just opAppPublicURL
       ) ->
         let opUserClaim = from <$> opUserClaim'
-         in Just $
-              OIDCProvider {..}
+            opEnforceAuth = maybe False (not . null) opEnforceAuth'
+         in Just $ OIDCProvider {..}
     _ -> Nothing
   where
     ensureTrailingSlash iss = T.dropWhileEnd (== '/') iss <> "/"

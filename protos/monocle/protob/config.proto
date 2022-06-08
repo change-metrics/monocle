@@ -38,9 +38,16 @@ message About {
     string url = 2;
     string category = 3;
   }
+  message AuthConfig {
+    bool force_login = 1;
+    string issuer = 2;
+  }
   string version = 1;
   repeated AboutLink links = 2; 
-  bool auth = 3;
+  oneof auth {
+    AuthConfig config = 3;
+    string void = 4;
+  }
 }
 
 message GetAboutRequest {

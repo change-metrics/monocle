@@ -132,10 +132,12 @@ module Login = {
   }
   module AuthenticatedLoginModal = {
     @react.component
-    let make = (~setShowLoginModal) => {
+    let make = (~setShowLoginModal, ~auth: Web.ConfigTypes.about_auth_config) => {
       let loginTitle = "Login on Monocle"
       let loginSubtitle =
-        "Click on the button below to be redirected to identity provider." ++ " Once authenticated you'll be redirected to Monocle."
+        "Click on the button below to be redirected to identity provider (" ++
+        auth.issuer ++
+        ")." ++ " Once authenticated you'll be redirected to Monocle."
       let location = WebApi.serverUrl ++ "/" ++ "api/2/auth/login"
       let onClick = e => {
         e->ReactEvent.Mouse.preventDefault
@@ -149,7 +151,7 @@ module Login = {
         <Form>
           <ActionGroup>
             <Button _type=#Submit variant=#Primary onClick>
-              {"Authenticate with Identity Provider"}
+              {"Authenticate with Identity provider"}
             </Button>
             <Button variant=#Primary onClick=close> {"Close"} </Button>
           </ActionGroup>
@@ -162,9 +164,10 @@ module Login = {
     @react.component
     let make = (~store: Store.t, ~setShowLoginModal) => {
       let (state, _) = store
-      state.about.auth
-        ? <AuthenticatedLoginModal setShowLoginModal />
-        : <NonAuthenticatedLoginModal store setShowLoginModal />
+      switch state.about.auth {
+      | Config(auth) => <AuthenticatedLoginModal setShowLoginModal auth />
+      | _ => <NonAuthenticatedLoginModal store setShowLoginModal />
+      }
     }
   }
 

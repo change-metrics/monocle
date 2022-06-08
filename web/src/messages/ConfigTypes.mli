@@ -37,10 +37,19 @@ type about_about_link = {
   category : string;
 }
 
-type about = {
+type about_auth_config = {
+  force_login : bool;
+  issuer : string;
+}
+
+type about_auth =
+  | Config of about_auth_config
+  | Void of string
+
+and about = {
   version : string;
   links : about_about_link list;
-  auth : bool;
+  auth : about_auth;
 }
 
 type get_about_request = {
@@ -123,10 +132,20 @@ val default_about_about_link :
   about_about_link
 (** [default_about_about_link ()] is the default value for type [about_about_link] *)
 
+val default_about_auth_config : 
+  ?force_login:bool ->
+  ?issuer:string ->
+  unit ->
+  about_auth_config
+(** [default_about_auth_config ()] is the default value for type [about_auth_config] *)
+
+val default_about_auth : unit -> about_auth
+(** [default_about_auth ()] is the default value for type [about_auth] *)
+
 val default_about : 
   ?version:string ->
   ?links:about_about_link list ->
-  ?auth:bool ->
+  ?auth:about_auth ->
   unit ->
   about
 (** [default_about ()] is the default value for type [about] *)
