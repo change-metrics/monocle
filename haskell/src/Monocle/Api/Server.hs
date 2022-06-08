@@ -2,13 +2,22 @@
 -- This module provides an interface between the backend and the frontend
 module Monocle.Api.Server where
 
+import Data.Aeson (Value (Object, String))
+import Data.Aeson.Key qualified as AK (fromText)
+import Data.Aeson.KeyMap qualified as AKM (lookup)
+import Data.ByteString.Lazy qualified as LBS
 import Data.List (lookup)
 import Data.Map qualified as Map
 import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Google.Protobuf.Timestamp qualified as T
-import Monocle.Api.Jwt (AuthenticatedUser (AUser))
-import Monocle.Api.Jwt qualified
+import Monocle.Api.Jwt
+  ( AuthenticatedUser (AUser),
+    LoginInUser (..),
+    OIDCEnv (..),
+    mkJwt,
+    mkSessionStore,
+  )
 import Monocle.Backend.Documents
   ( EChange (..),
     EChangeEvent (..),
@@ -30,7 +39,19 @@ import Monocle.Search.Query qualified as Q
 import Monocle.Search.Syntax (ParseError (..))
 import Monocle.Version (version)
 import Proto3.Suite (Enumerated (..))
+import Servant
+  ( NoContent (..),
+    ServerError (errBody, errHeaders, errReasonPhrase),
+    err302,
+    err403,
+  )
 import Servant.Auth.Server (AuthResult (Authenticated))
+import Text.Blaze (ToMarkup (..))
+import Text.Blaze.Html qualified as H
+import Text.Blaze.Html5 qualified as H
+import Text.Blaze.Renderer.Utf8 (renderMarkup)
+import Web.OIDC.Client (sub)
+import Web.OIDC.Client qualified as O
 
 -- | 'getConfig' reload the config automatically from the env
 getConfig :: AppM Config.ConfigStatus
@@ -62,11 +83,11 @@ pattern GetConfig a <- Config.ConfigStatus _ a _
 
 -- | Convenient pattern to get the list of tenants
 pattern GetTenants :: [Config.Index] -> Config.ConfigStatus
-pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _about _auth a) _
+pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _about a) _
 
 -- curl -XPOST -d '{"void": ""}' -H "Content-type: application/json" -H 'Authorization: Bearer <token>' http://localhost:8080/auth/whoami
 authWhoAmi :: AuthResult AuthenticatedUser -> AuthPB.WhoAmiRequest -> AppM AuthPB.WhoAmiResponse
-authWhoAmi (Authenticated (AUser muid)) _request = response
+authWhoAmi (Authenticated (AUser muid _groups _aliases)) _request = response
   where
     response =
       pure $
@@ -85,8 +106,10 @@ authWhoAmi _auth _request =
 -- curl -XPOST -d '{"token": "admin-token"}' -H "Content-type: application/json" http://localhost:8080/auth/get
 authGetMagicJwt :: AuthResult AuthenticatedUser -> AuthPB.GetMagicJwtRequest -> AppM AuthPB.GetMagicJwtResponse
 authGetMagicJwt _auth (AuthPB.GetMagicJwtRequest inputAdminToken) = do
-  jwtSettings <- asks aJWTSettings
-  jwtE <- liftIO $ Monocle.Api.Jwt.mkMagicJwt jwtSettings "Magic User UID"
+  oidc <- asks aOIDC
+  -- The generated JWT does not have any expiry
+  -- An API restart generates new JWK that will invalidate the token
+  jwtE <- liftIO $ mkJwt (localJWTSettings oidc) "bot" Nothing
   adminTokenM <- liftIO $ lookupEnv "ADMIN_TOKEN"
   case (jwtE, adminTokenM) of
     (Right jwt, Just adminToken) | inputAdminToken == from adminToken -> pure . genSuccess $ decodeUtf8 jwt
@@ -139,11 +162,11 @@ configGetAbout _auth _request = response
   where
     response = do
       GetConfig config <- getConfig
+      authProvider <- liftIO Config.getAuthProvider
       let aboutVersion = from version
           links = maybe [] Config.links (Config.about config)
           aboutLinks = fromList $ toLink <$> links
-          authProvider = Config.getAuthProvider config
-          aboutAuthentication = toAboutAuthentication <$> authProvider
+          aboutAuth = isJust authProvider
       pure $ ConfigPB.GetAboutResponse $ Just ConfigPB.About {..}
     toLink :: Config.Link -> ConfigPB.About_AboutLink
     toLink Config.Link {..} =
@@ -151,11 +174,6 @@ configGetAbout _auth _request = response
           about_AboutLinkUrl = from url
           about_AboutLinkCategory = from $ fromMaybe "About" category
        in ConfigPB.About_AboutLink {..}
-    toAboutAuthentication Config.OIDCProvider {..} =
-      let authConfigIssuer = from issuer
-          authConfigClientId = from client_id
-          authConfigUserClaim = from user_claim
-       in ConfigPB.AboutAuthenticationConfig $ ConfigPB.AuthConfig {..}
 
 -- | /api/2/get_workspaces endpoint
 configGetWorkspaces :: AuthResult AuthenticatedUser -> ConfigPB.GetWorkspacesRequest -> AppM ConfigPB.GetWorkspacesResponse
@@ -690,3 +708,106 @@ metricGet _auth request = do
     Left err -> handleError $ show err
   where
     handleError = pure . MetricPB.GetResponse . Just . MetricPB.GetResponseResultError
+
+-- | gen a 302 redirect helper
+redirects :: ByteString -> AppM ()
+redirects url = throwError err302 {errHeaders = [("Location", url)]}
+
+data Err = Err
+  { errTitle :: Text,
+    errMsg :: Text
+  }
+
+instance ToMarkup Err where
+  toMarkup Err {..} = H.docTypeHtml $ do
+    H.head $ do
+      H.title "Error"
+    H.body $ do
+      H.h2 (H.toHtml errTitle)
+      H.p (H.toHtml errMsg)
+
+format :: ToMarkup a => a -> LBS.ByteString
+format err = toMarkup err & renderMarkup
+
+forbidden :: (MonadError ServerError m) => Text -> m a
+forbidden = throwError . forbiddenErr
+
+forbiddenErr :: Text -> ServerError
+forbiddenErr = appToErr err403
+
+appToErr :: ServerError -> Text -> ServerError
+appToErr x msg =
+  x
+    { errBody = from $ format (Err (from (errReasonPhrase x)) msg),
+      errHeaders = [("Content-Type", "text/html")]
+    }
+
+handleLogin :: AppM NoContent
+handleLogin = do
+  aOIDC <- asks aOIDC
+  case oidcEnv aOIDC of
+    Just oidcenv -> do
+      loc <- liftIO (genOIDCURL oidcenv)
+      redirects loc
+      pure NoContent
+    Nothing -> forbidden "No OIDC Context"
+  where
+    genOIDCURL :: OIDCEnv -> IO ByteString
+    genOIDCURL oidcenv@OIDCEnv {oidc} = do
+      loc <- O.prepareAuthenticationRequestUrl (mkSessionStore oidcenv Nothing) oidc [O.openId] mempty
+      return (show loc)
+
+handleLoggedIn ::
+  -- | error
+  Maybe Text ->
+  -- | code
+  Maybe Text ->
+  -- | state
+  Maybe Text ->
+  AppM LoginInUser
+handleLoggedIn err codeM stateM = do
+  aOIDC <- asks aOIDC
+  log $ OIDCCallbackCall err codeM stateM
+  case (oidcEnv aOIDC, err, codeM, stateM) of
+    (_, Just errorMsg, _, _) -> forbidden $ "Error from remote provider: " <> errorMsg
+    (_, _, Nothing, _) -> forbidden "No code parameter given"
+    (_, _, _, Nothing) -> forbidden "No state parameter given"
+    (Nothing, _, _, _) -> forbidden "No OIDC Context"
+    (Just oidcEnv, _, Just oauthCode, Just oauthState) -> do
+      tokens :: O.Tokens Value <-
+        liftIO $
+          O.getValidTokens
+            (mkSessionStore oidcEnv (Just $ from oauthState))
+            (oidc oidcEnv)
+            (manager oidcEnv)
+            (from oauthState)
+            (from oauthCode)
+      now <- liftIO Monocle.Prelude.getCurrentTime
+      let idToken = O.idToken tokens
+          -- TODO: map expiry on Provider's token expiry ?
+          expiry = addUTCTime (24 * 3600) now
+          mUid = userId oidcEnv idToken
+      log . OIDCProviderTokenRequested $ show idToken
+      jwtE <- liftIO $ mkJwt (localJWTSettings aOIDC) mUid (Just expiry)
+      case jwtE of
+        Right jwt -> do
+          log $ JWTCreated mUid (decodeUtf8 $ redirectUri oidcEnv)
+          let liJWT = decodeUtf8 jwt
+          pure $ LoginInUser {..}
+        Left err' -> do
+          log $ JWTCreateFailed mUid (show err')
+          forbidden $ "Unable to generate user JWT due to: " <> show err'
+  where
+    userId :: OIDCEnv -> O.IdTokenClaims Value -> Text
+    userId oidcEnv idToken = case userClaim oidcEnv of
+      Just uc -> case O.otherClaims idToken of
+        Object o -> case AKM.lookup (AK.fromText uc) o of
+          Just (String s) -> s
+          _ -> defaultUserId
+        _ -> defaultUserId
+      Nothing -> defaultUserId
+      where
+        defaultUserId = sub idToken
+    log ev = do
+      aEnv <- asks aEnv
+      liftIO $ doLog (glLogger aEnv) $ via @Text $ ev

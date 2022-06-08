@@ -31,25 +31,16 @@ type get_workspaces_response = {
   workspaces : workspace list;
 }
 
-type auth_config = {
-  issuer : string;
-  client_id : string;
-  user_claim : string;
-}
-
 type about_about_link = {
   name : string;
   url : string;
   category : string;
 }
 
-type about_authentication =
-  | Config of auth_config
-
-and about = {
+type about = {
   version : string;
   links : about_about_link list;
-  authentication : about_authentication;
+  auth : bool;
 }
 
 type get_about_request = {
@@ -124,14 +115,6 @@ val default_get_workspaces_response :
   get_workspaces_response
 (** [default_get_workspaces_response ()] is the default value for type [get_workspaces_response] *)
 
-val default_auth_config : 
-  ?issuer:string ->
-  ?client_id:string ->
-  ?user_claim:string ->
-  unit ->
-  auth_config
-(** [default_auth_config ()] is the default value for type [auth_config] *)
-
 val default_about_about_link : 
   ?name:string ->
   ?url:string ->
@@ -140,13 +123,10 @@ val default_about_about_link :
   about_about_link
 (** [default_about_about_link ()] is the default value for type [about_about_link] *)
 
-val default_about_authentication : unit -> about_authentication
-(** [default_about_authentication ()] is the default value for type [about_authentication] *)
-
 val default_about : 
   ?version:string ->
   ?links:about_about_link list ->
-  ?authentication:about_authentication ->
+  ?auth:bool ->
   unit ->
   about
 (** [default_about ()] is the default value for type [about] *)

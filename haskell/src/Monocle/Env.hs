@@ -5,12 +5,14 @@ import Database.Bloodhound qualified as BH
 import Database.Bloodhound.Raw qualified as BHR
 import GHC.Stack (srcLocFile, srcLocStartLine)
 import Json.Extras qualified as Json
+import Monocle.Api.Jwt (OIDCEnv)
 import Monocle.Config qualified as Config
 import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Search.Query qualified as Q
 import Monocle.Search.Syntax (Expr)
 import Network.HTTP.Client qualified as HTTP
+import Servant (ServerError)
 import Servant qualified (Handler)
 import Servant.Auth.Server (JWTSettings)
 
@@ -22,16 +24,21 @@ data Env = Env
     glLogger :: Logger
   }
 
+data OIDC = OIDC
+  { oidcEnv :: Maybe OIDCEnv,
+    localJWTSettings :: JWTSettings
+  }
+
 -- | 'Env' is the global environment
 data AppEnv = AppEnv
   { config :: IO Config.ConfigStatus,
     aEnv :: Env,
-    aJWTSettings :: JWTSettings
+    aOIDC :: OIDC
   }
 
 -- | 'AppM' is the main context, it just adds Env to the servant Handler using Reader
 newtype AppM a = AppM {unApp :: ReaderT AppEnv Servant.Handler a}
-  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadThrow)
+  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadError ServerError)
   deriving newtype (MonadReader AppEnv)
 
 instance MonadMonitor AppM where

@@ -81,7 +81,8 @@ common common-options
                        ScopedTypeVariables,
                        StrictData,
                        TypeApplications,
-                       TypeOperators
+                       TypeOperators,
+                       ViewPatterns
 
 common codegen
   default-language:    Haskell2010
@@ -106,6 +107,8 @@ library
                      , aeson-pretty
                      , attoparsec                 >= 0.13
                      , base64-bytestring          >= 1.1
+                     , blaze-markup               >= 0.8.2.8
+                     , blaze-html                 >= 0.9.1.2
                      , binary                     >= 0.8
                      , bloodhound                 ^>= 0.19
                      , bugzilla-redhat            ^>= 1.0
@@ -139,6 +142,7 @@ library
                      , mtl
                      , network                    >= 3
                      , network-uri                >= 2.5
+                     , oidc-client                >= 0.6.0
                      , optparse-applicative
                      , parser-combinators         >= 1.2
                      , prometheus-client          >= 1.0
@@ -151,6 +155,7 @@ library
                      , servant                    >= 0.18.2
                      , servant-server             >= 0.18.2
                      , servant-auth-server        >= 0.4.1.0
+                     , servant-blaze              >= 0.9.1
                      , streaming                  >= 0.2
                      , tasty                      >= 1.4
                      , tasty-hunit                >= 0.10

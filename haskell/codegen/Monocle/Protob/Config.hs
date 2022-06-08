@@ -480,110 +480,10 @@ instance HsJSONPB.ToJSON GetWorkspacesResponse where
 instance HsJSONPB.FromJSON GetWorkspacesResponse where
   parseJSON = HsJSONPB.parseJSONPB
 
-data AuthConfig = AuthConfig
-  { authConfigIssuer :: Hs.Text,
-    authConfigClientId :: Hs.Text,
-    authConfigUserClaim :: Hs.Text
-  }
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
-
-instance HsProtobuf.Named AuthConfig where
-  nameOf _ = (Hs.fromString "AuthConfig")
-
-instance HsProtobuf.HasDefault AuthConfig
-
-instance HsProtobuf.Message AuthConfig where
-  encodeMessage
-    _
-    AuthConfig
-      { authConfigIssuer = authConfigIssuer,
-        authConfigClientId = authConfigClientId,
-        authConfigUserClaim = authConfigUserClaim
-      } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                authConfigIssuer
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 2)
-                authConfigClientId
-            ),
-            ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 3)
-                authConfigUserClaim
-            )
-          ]
-      )
-  decodeMessage _ =
-    (Hs.pure AuthConfig)
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 1)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 2)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 3)
-          )
-  dotProto _ =
-    [ ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "issuer")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 2)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "client_id")
-          []
-          ""
-      ),
-      ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 3)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "user_claim")
-          []
-          ""
-      )
-    ]
-
-instance HsJSONPB.ToJSONPB AuthConfig where
-  toJSONPB (AuthConfig f1 f2 f3) =
-    ( HsJSONPB.object
-        ["issuer" .= f1, "client_id" .= f2, "user_claim" .= f3]
-    )
-  toEncodingPB (AuthConfig f1 f2 f3) =
-    ( HsJSONPB.pairs
-        ["issuer" .= f1, "client_id" .= f2, "user_claim" .= f3]
-    )
-
-instance HsJSONPB.FromJSONPB AuthConfig where
-  parseJSONPB =
-    ( HsJSONPB.withObject
-        "AuthConfig"
-        ( \obj ->
-            (Hs.pure AuthConfig) <*> obj .: "issuer" <*> obj .: "client_id"
-              <*> obj .: "user_claim"
-        )
-    )
-
-instance HsJSONPB.ToJSON AuthConfig where
-  toJSON = HsJSONPB.toAesonValue
-  toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON AuthConfig where
-  parseJSON = HsJSONPB.parseJSONPB
-
 data About = About
   { aboutVersion :: Hs.Text,
     aboutLinks :: Hs.Vector Monocle.Protob.Config.About_AboutLink,
-    aboutAuthentication :: Hs.Maybe AboutAuthentication
+    aboutAuth :: Hs.Bool
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -598,7 +498,7 @@ instance HsProtobuf.Message About where
     About
       { aboutVersion = aboutVersion,
         aboutLinks = aboutLinks,
-        aboutAuthentication = aboutAuthentication
+        aboutAuth = aboutAuth
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -612,18 +512,10 @@ instance HsProtobuf.Message About where
                     aboutLinks
                 )
             ),
-            case aboutAuthentication of
-              Hs.Nothing -> Hs.mempty
-              Hs.Just x ->
-                case x of
-                  AboutAuthenticationConfig y ->
-                    ( HsProtobuf.encodeMessageField
-                        (HsProtobuf.FieldNumber 3)
-                        ( Hs.coerce @(Hs.Maybe Monocle.Protob.Config.AuthConfig)
-                            @(HsProtobuf.Nested Monocle.Protob.Config.AuthConfig)
-                            (Hs.Just y)
-                        )
-                    )
+            ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 3)
+                aboutAuth
+            )
           ]
       )
   decodeMessage _ =
@@ -640,17 +532,9 @@ instance HsProtobuf.Message About where
                   (HsProtobuf.FieldNumber 2)
               )
           )
-      <*> ( HsProtobuf.oneof
-              Hs.Nothing
-              [ ( (HsProtobuf.FieldNumber 3),
-                  (Hs.pure (Hs.fmap AboutAuthenticationConfig))
-                    <*> ( Hs.coerce
-                            @(_ (HsProtobuf.Nested Monocle.Protob.Config.AuthConfig))
-                            @(_ (Hs.Maybe Monocle.Protob.Config.AuthConfig))
-                            HsProtobuf.decodeMessageField
-                        )
-                )
-              ]
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 3)
           )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
@@ -668,52 +552,21 @@ instance HsProtobuf.Message About where
           (HsProtobuf.Single "links")
           []
           ""
+      ),
+      ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 3)
+          (HsProtobuf.Prim HsProtobuf.Bool)
+          (HsProtobuf.Single "auth")
+          []
+          ""
       )
     ]
 
 instance HsJSONPB.ToJSONPB About where
   toJSONPB (About f1 f2 f3) =
-    ( HsJSONPB.object
-        [ "version" .= f1,
-          "links" .= f2,
-          ( let encodeAuthentication =
-                  ( case f3 of
-                      Hs.Just (AboutAuthenticationConfig f3) ->
-                        (HsJSONPB.pair "config" f3)
-                      Hs.Nothing -> Hs.mempty
-                  )
-             in \options ->
-                  if HsJSONPB.optEmitNamedOneof options
-                    then
-                      ( "authentication"
-                          .= (HsJSONPB.objectOrNull [encodeAuthentication] options)
-                      )
-                        options
-                    else encodeAuthentication options
-          )
-        ]
-    )
+    (HsJSONPB.object ["version" .= f1, "links" .= f2, "auth" .= f3])
   toEncodingPB (About f1 f2 f3) =
-    ( HsJSONPB.pairs
-        [ "version" .= f1,
-          "links" .= f2,
-          ( let encodeAuthentication =
-                  ( case f3 of
-                      Hs.Just (AboutAuthenticationConfig f3) ->
-                        (HsJSONPB.pair "config" f3)
-                      Hs.Nothing -> Hs.mempty
-                  )
-             in \options ->
-                  if HsJSONPB.optEmitNamedOneof options
-                    then
-                      ( "authentication"
-                          .= (HsJSONPB.pairsOrNull [encodeAuthentication] options)
-                      )
-                        options
-                    else encodeAuthentication options
-          )
-        ]
-    )
+    (HsJSONPB.pairs ["version" .= f1, "links" .= f2, "auth" .= f3])
 
 instance HsJSONPB.FromJSONPB About where
   parseJSONPB =
@@ -721,17 +574,7 @@ instance HsJSONPB.FromJSONPB About where
         "About"
         ( \obj ->
             (Hs.pure About) <*> obj .: "version" <*> obj .: "links"
-              <*> ( let parseAuthentication parseObj =
-                          Hs.msum
-                            [ Hs.Just Hs.. AboutAuthenticationConfig
-                                <$> (HsJSONPB.parseField parseObj "config"),
-                              Hs.pure Hs.Nothing
-                            ]
-                     in ( (obj .: "authentication")
-                            Hs.>>= (HsJSONPB.withObject "authentication" parseAuthentication)
-                        )
-                          <|> (parseAuthentication obj)
-                  )
+              <*> obj .: "auth"
         )
     )
 
@@ -838,12 +681,6 @@ instance HsJSONPB.ToJSON About_AboutLink where
 
 instance HsJSONPB.FromJSON About_AboutLink where
   parseJSON = HsJSONPB.parseJSONPB
-
-data AboutAuthentication = AboutAuthenticationConfig Monocle.Protob.Config.AuthConfig
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
-
-instance HsProtobuf.Named AboutAuthentication where
-  nameOf _ = (Hs.fromString "AboutAuthentication")
 
 newtype GetAboutRequest = GetAboutRequest
   { getAboutRequestVoid ::

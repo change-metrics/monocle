@@ -17,12 +17,12 @@ mkAppEnv :: Config.Index -> IO AppEnv
 mkAppEnv workspace = do
   bhEnv <- mkEnv'
   let glLogger _ = pure ()
-      config' = Config.Config Nothing Nothing [workspace]
+      config' = Config.Config Nothing [workspace]
       ws = Config.mkWorkspaceStatus config'
   wsRef <- newMVar $ fmap (const Config.Ready) ws
   jwk <- generateKey
-  let aJWTSettings = defaultJWTSettings jwk
-  let config = pure (Config.ConfigStatus False config' wsRef)
+  let aOIDC = OIDC Nothing (defaultJWTSettings jwk)
+      config = pure (Config.ConfigStatus False config' wsRef)
       aEnv = Env {..}
   pure $ AppEnv {..}
 

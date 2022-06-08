@@ -78,7 +78,7 @@ where
 import Data.ByteString qualified as BS
 import Data.Either.Validation (Validation (Failure, Success))
 import Data.Map qualified as Map
-import Data.Text qualified as T (dropWhileEnd, isPrefixOf, isSuffixOf, null)
+import Data.Text qualified as T (dropWhileEnd, isPrefixOf)
 import Dhall qualified
 import Dhall.Core qualified
 import Dhall.Src qualified
@@ -104,8 +104,6 @@ Dhall.TH.makeHaskellTypes
           main "Config",
           main "About",
           main "Link",
-          main "Auth",
-          main "OIDCProvider",
           provider "Gerrit",
           provider "Gitlab",
           provider "Github",
@@ -281,6 +279,35 @@ instance MonadConfig IO where
   mGetSecret = getSecret
   mReloadConfig = reloadConfig
 
+data OIDCProvider = OIDCProvider
+  { opIssuerURL :: Text,
+    opClientID :: Text,
+    opClientSecret :: Text,
+    opAppPublicURL :: Text,
+    opUserClaim :: Maybe Text
+  }
+
+-- | Get Authentication provider config from Env
+getAuthProvider :: IO (Maybe OIDCProvider)
+getAuthProvider = do
+  opIssuerURL' <- lookupEnv "MONOCLE_OIDC_ISSUER_URL"
+  opClientID' <- lookupEnv "MONOCLE_OIDC_CLIENT_ID"
+  opClientSecret' <- lookupEnv "MONOCLE_OIDC_CLIENT_SECRET"
+  opAppPublicURL' <- lookupEnv "MONOCLE_PUBLIC_URL"
+  opUserClaim' <- lookupEnv "MONOCLE_OIDC_USER_CLAIM"
+  pure $ case (opIssuerURL', opClientID', opClientSecret', opAppPublicURL') of
+    ( fmap (ensureTrailingSlash . from) -> Just opIssuerURL,
+      fmap from -> Just opClientID,
+      fmap from -> Just opClientSecret,
+      fmap (ensureTrailingSlash . from) -> Just opAppPublicURL
+      ) ->
+        let opUserClaim = from <$> opUserClaim'
+         in Just $
+              OIDCProvider {..}
+    _ -> Nothing
+  where
+    ensureTrailingSlash iss = T.dropWhileEnd (== '/') iss <> "/"
+
 -- End - Configuration loading system
 
 -- Begin - Functions to handle a Config
@@ -289,20 +316,6 @@ instance MonadConfig IO where
 -- | Simply returns the config workspaces
 getWorkspaces :: Config -> [Index]
 getWorkspaces Config {..} = workspaces
-
--- | Get Authentication provider config and ensure mandatory config is not empty
-getAuthProvider :: Config -> Maybe OIDCProvider
-getAuthProvider (Config _about (Just (Auth provider@(OIDCProvider client_id issuer user_claim))) _ws)
-  | not (T.null issuer) && not (T.null client_id) && not (T.null user_claim) = Just $ provider {issuer = canonicalIssuer}
-  where
-    scheme = "https://"
-    wellKnown = ".well-known/openid-configuration"
-    canonicalIssuer = addScheme $ addSuffix issuer
-    addScheme iss | not $ scheme `T.isPrefixOf` iss = scheme <> iss
-    addScheme iss = iss
-    addSuffix iss | not $ wellKnown `T.isSuffixOf` iss = T.dropWhileEnd (== '/') iss <> "/" <> wellKnown
-    addSuffix iss = iss
-getAuthProvider _ = Nothing
 
 -- End - Functions to handle a Config
 

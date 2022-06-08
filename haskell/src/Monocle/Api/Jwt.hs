@@ -1,67 +1,48 @@
 module Monocle.Api.Jwt
-  ( mkMagicJwt,
+  ( --- JWT
+    mkJwt,
     doGenJwk,
     AuthenticatedUser (..),
-    getOIDCProviderPublicKeys,
+    --- OIDC Flow
+    OIDCEnv (..),
+    LoginInUser (..),
+    initOIDCEnv,
+    mkSessionStore,
   )
 where
 
-import Crypto.JWT
-  ( JWK,
-    KeyMaterial (RSAKeyMaterial),
-    KeyMaterialGenParam (RSAGenParam),
-    fromKeyMaterial,
-    genJWK,
-  )
-import Crypto.JWT qualified as Jose
-import Data.Aeson (decode)
+import Control.Monad.Random (genByteString)
+import Control.Monad.Random qualified as Random
+import Crypto.Hash.SHA256 (hash)
+import Crypto.JWT (Error, JWK, KeyMaterialGenParam (RSAGenParam), genJWK)
+import Data.ByteString.Base64 qualified as B64
 import Data.ByteString.Lazy qualified as BSL
+import Data.Map.Strict qualified as HM
+import Monocle.Config (OIDCProvider (..))
 import Monocle.Prelude
-  ( FromJSON,
-    MonadThrow,
-    ToJSON,
-    from,
-  )
-import Network.HTTP.Client
-  ( Manager,
-    Request (method, requestHeaders),
-    Response (responseBody),
-    httpLbs,
-    parseUrlThrow,
-  )
-import Network.HTTP.Client.OpenSSL (newOpenSSLManager)
-import Relude
+import Network.HTTP.Client (Manager)
 import Servant.Auth.Server
   ( FromJWT,
     JWTSettings,
     ToJWT,
     makeJWT,
   )
+import Text.Blaze (ToMarkup (..))
+import Text.Blaze.Html5 qualified as H
+import Web.OIDC.Client qualified as O
 
--- mkMagicClaims :: MonadIO m => StringOrURI -> m ClaimsSet
--- mkMagicClaims subject = do
---   t <- getCurrentTime
---   pure $
---     emptyClaimsSet
---       & claimIss ?~ "MagicJWT"
---       & claimSub ?~ subject
---       & claimIat ?~ NumericDate t
-
--- doSignJwt :: JWK -> ClaimsSet -> IO (Either JWTError SignedJWT)
--- doSignJwt jwk claims = runExceptT $ do
---   alg <- bestJWSAlg jwk
---   signClaims jwk (newJWSHeader ((), alg)) claims
-
--- mkMagicJwt' :: String -> JWK -> IO (Either JWTError SignedJWT)
--- mkMagicJwt' subject jwk = do
---   claims <- mkMagicClaims $ fromString subject
---   doSignJwt jwk claims
+--- * JWT handling
 
 doGenJwk :: IO JWK
 doGenJwk = genJWK (RSAGenParam (4096 `div` 8))
 
 -- Will be added as the 'dat' unregistered claim
-newtype AuthenticatedUser = AUser {aMuid :: Text} deriving (Generic, Show)
+data AuthenticatedUser = AUser
+  { aMuid :: Text,
+    aAliases :: [Text],
+    aGroups :: [Text]
+  }
+  deriving (Generic, Show)
 
 instance ToJSON AuthenticatedUser
 
@@ -71,42 +52,75 @@ instance ToJWT AuthenticatedUser
 
 instance FromJWT AuthenticatedUser
 
-mkMagicJwt :: JWTSettings -> Text -> IO (Either Jose.Error BSL.ByteString)
-mkMagicJwt settings muid = let expD = Nothing in makeJWT (AUser muid) settings expD
+mkJwt :: JWTSettings -> Text -> Maybe UTCTime -> IO (Either Error BSL.ByteString)
+mkJwt settings muid expD =
+  let aMuid = muid
+      aAliases = mempty
+      aGroups = mempty
+   in makeJWT (AUser {..}) settings expD
 
-newtype JWKS = JWKS {keys :: [Jose.RSAKeyParameters]} deriving (Generic, Show)
+--- $ OIDC Flow
 
-instance FromJSON JWKS
+data OIDCEnv = OIDCEnv
+  { oidc :: O.OIDC,
+    manager :: Manager,
+    provider :: O.Provider,
+    redirectUri :: ByteString,
+    clientId :: ByteString,
+    clientSecret :: ByteString,
+    sessionStoreStorage :: MVar (HM.Map O.State O.Nonce),
+    userClaim :: Maybe Text
+  }
 
-newtype OIDCConfig = OIDCConfig {jwks_uri :: Text} deriving (Generic, Show)
+newtype LoginInUser = LoginInUser {liJWT :: Text} deriving (Show, Eq, Ord)
 
-instance FromJSON OIDCConfig
+instance ToMarkup LoginInUser where
+  toMarkup LoginInUser {..} = H.docTypeHtml $ do
+    H.head $
+      H.title "Redirecting after succesfull login ..."
+    H.body $ do
+      H.script
+        ( H.toHtml
+            ( "localStorage.setItem('api-key','" <> liJWT <> "');"
+                <> "window.location='/';"
+            )
+        )
 
--- getOIDCProviderPublicKeys "https://accounts.google.com/.well-known/openid-configuration"
-getOIDCProviderPublicKeys :: (MonadThrow m, MonadIO m) => Text -> m [JWK]
-getOIDCProviderPublicKeys url = do
+initOIDCEnv :: OIDCProvider -> IO OIDCEnv
+initOIDCEnv OIDCProvider {..} = do
   manager <- newOpenSSLManager
-  configM <- getJwksFromOIDCConfig manager url
-  case configM of
-    Just config -> do
-      jwksM <- getRemoteJwks manager config
-      pure $ fromKeyMaterial . RSAKeyMaterial <$> maybe [] keys jwksM
-    Nothing -> pure []
+  provider <- O.discover opIssuerURL manager
+  sst <- newMVar HM.empty
+  let redirectUri = from $ opAppPublicURL <> "api/2/auth/cb"
+      clientId = from opClientID
+      clientSecret = from opClientSecret
+      oidc = O.setCredentials clientId clientSecret redirectUri (O.newOIDC provider)
+      sessionStoreStorage = sst
+      userClaim = opUserClaim
+  pure OIDCEnv {..}
+
+mkSessionStore :: OIDCEnv -> Maybe O.State -> O.SessionStore IO
+mkSessionStore OIDCEnv {sessionStoreStorage} stateM = do
+  let sessionStoreGenerate = liftIO genRandom
+      sessionStoreSave = storeSave
+      sessionStoreGet = storeGet
+      sessionStoreDelete = case stateM of
+        Just state' -> modifyMVar_ sessionStoreStorage $ \store -> pure $ HM.delete state' store
+        Nothing -> pure ()
+   in O.SessionStore {..}
   where
-    performGET :: (MonadIO m, MonadThrow m, FromJSON r) => Manager -> Text -> m (Maybe r)
-    performGET manager url' = do
-      initRequest <- parseUrlThrow $ from url'
-      let request =
-            initRequest
-              { requestHeaders = [("Accept", "application/json")],
-                method = "GET"
-              }
-      response <- liftIO $ httpLbs request manager
-      pure $ decode (responseBody response)
+    storeSave :: O.State -> O.Nonce -> IO ()
+    storeSave state' nonce = modifyMVar_ sessionStoreStorage $ \store -> pure $ HM.insert state' nonce store
+    storeGet :: IO (Maybe O.State, Maybe O.Nonce)
+    storeGet = case stateM of
+      Just state' -> do
+        store <- readMVar sessionStoreStorage
+        let nonce = HM.lookup state' store
+        pure (Just state', nonce)
+      Nothing -> pure (Nothing, Nothing)
 
-    getRemoteJwks :: (MonadThrow m, MonadIO m) => Manager -> OIDCConfig -> m (Maybe JWKS)
-    getRemoteJwks manager OIDCConfig {..} = do
-      performGET manager $ from jwks_uri
-
-    getJwksFromOIDCConfig :: (MonadThrow m, MonadIO m) => Manager -> Text -> m (Maybe OIDCConfig)
-    getJwksFromOIDCConfig = performGET
+genRandom :: IO ByteString
+genRandom = do
+  g <- Random.newStdGen
+  let (bs, _ng) = genByteString 42 g
+  pure . B64.encode $ hash bs

@@ -28,15 +28,10 @@ let status = HiddenChanges.Visible
 module App = {
   @react.component
   let make = () => {
-    let fakeAuth: ConfigTypes.auth_config = {
-      issuer: "heaven",
-      client_id: "123",
-      user_claim: "sub",
-    }
     let fakeAbout: ConfigTypes.about = {
       version: "1.2.3",
       links: list{},
-      authentication: Config(fakeAuth),
+      auth: false,
     }
     let store = Store.use("test", fakeAbout)
     <>

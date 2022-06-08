@@ -63,10 +63,12 @@ data LogEvent
   | UpdatingEntity LText Entity UTCTime
   | Searching QueryRequest_QueryType LText Q.Query
   | SystemReady Int Int Text
-  | LoadingRemoteAuthProviderConfig Text
-  | LoadedRemoteAuthProviderConfig Int
   | ReloadConfig FilePath
   | RefreshIndex Config.Index
+  | OIDCCallbackCall (Maybe Text) (Maybe Text) (Maybe Text)
+  | OIDCProviderTokenRequested Text
+  | JWTCreated Text Text
+  | JWTCreateFailed Text Text
 
 instance From LogEvent Text where
   from = \case
@@ -111,7 +113,11 @@ instance From LogEvent Text where
       "Ensure workspace: " <> Config.getWorkspaceName index <> " exists and refresh crawlers metadata"
     ReloadConfig fp ->
       "Reloading " <> from fp
-    LoadingRemoteAuthProviderConfig url -> "Fetching public keys on Authentication provider: " <> url
-    LoadedRemoteAuthProviderConfig keysCount -> show keysCount <> " keys fetched from Authentication provider"
+    OIDCCallbackCall errM codeM stateM ->
+      "Received OIDC Callback: (err: " <> show errM <> " code: " <> show codeM <> " state: " <> show stateM <> ")"
+    OIDCProviderTokenRequested content ->
+      "Requested OIDC IdToken: " <> content
+    JWTCreated mUid redirectUri -> "JSON Web Token created for mUid: " <> mUid <> ". Redirecting user to: " <> redirectUri
+    JWTCreateFailed mUid err -> "JSON Web Token created failed for mUid: " <> mUid <> " due to: " <> err
     where
       prefix LogCrawlerContext {..} = "[" <> lccIndex <> "] " <> "Crawler: " <> lccName

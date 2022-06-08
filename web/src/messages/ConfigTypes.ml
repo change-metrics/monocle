@@ -28,25 +28,16 @@ type get_workspaces_response = {
   workspaces : workspace list;
 }
 
-type auth_config = {
-  issuer : string;
-  client_id : string;
-  user_claim : string;
-}
-
 type about_about_link = {
   name : string;
   url : string;
   category : string;
 }
 
-type about_authentication =
-  | Config of auth_config
-
-and about = {
+type about = {
   version : string;
   links : about_about_link list;
-  authentication : about_authentication;
+  auth : bool;
 }
 
 type get_about_request = {
@@ -121,16 +112,6 @@ let rec default_get_workspaces_response
   workspaces;
 }
 
-let rec default_auth_config 
-  ?issuer:((issuer:string) = "")
-  ?client_id:((client_id:string) = "")
-  ?user_claim:((user_claim:string) = "")
-  () : auth_config  = {
-  issuer;
-  client_id;
-  user_claim;
-}
-
 let rec default_about_about_link 
   ?name:((name:string) = "")
   ?url:((url:string) = "")
@@ -141,16 +122,14 @@ let rec default_about_about_link
   category;
 }
 
-let rec default_about_authentication () : about_authentication = Config (default_auth_config ())
-
-and default_about 
+let rec default_about 
   ?version:((version:string) = "")
   ?links:((links:about_about_link list) = [])
-  ?authentication:((authentication:about_authentication) = Config (default_auth_config ()))
+  ?auth:((auth:bool) = false)
   () : about  = {
   version;
   links;
-  authentication;
+  auth;
 }
 
 let rec default_get_about_request 

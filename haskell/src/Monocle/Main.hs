@@ -1,13 +1,12 @@
 -- | The Monocle entry point.
 module Monocle.Main (run, app) where
 
-import Crypto.JOSE qualified as Jose
 import Data.List qualified
 import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
 import Lentille (httpRetry)
-import Monocle.Api.Jwt (getOIDCProviderPublicKeys)
-import Monocle.Api.Jwt qualified as Monocle.Api.JWK
+import Monocle.Api.Jwt (LoginInUser (..), doGenJwk, initOIDCEnv)
+import Monocle.Api.Server (handleLoggedIn, handleLogin)
 import Monocle.Backend.Index qualified as I
 import Monocle.Config (getAuthProvider)
 import Monocle.Config qualified as Config
@@ -25,20 +24,35 @@ import Network.Wai.Middleware.Prometheus (def, prometheus)
 import Prometheus (register)
 import Prometheus.Metric.GHC (ghcMetrics)
 import Servant
-import Servant.Auth.Server (CookieSettings, JWTSettings (validationKeys), defaultCookieSettings, defaultJWTSettings)
+import Servant.Auth.Server (CookieSettings, JWTSettings, defaultCookieSettings, defaultJWTSettings)
+import Servant.HTML.Blaze (HTML)
 import System.Directory qualified
 
 -- | The API is served at both `/api/2/` (for backward compat with the legacy nginx proxy)
 -- and `/` (for compat with crawler client)
-type RootAPI = "api" :> "2" :> MonocleAPI :<|> MonocleAPI
+type MonocleAPI' = MonocleAPI :<|> AuthAPI
+
+type RootAPI = "api" :> "2" :> MonocleAPI' :<|> MonocleAPI'
+
+type AuthAPI =
+  "auth" :> "login" :> Get '[JSON] NoContent
+    :<|> "auth" :> "cb" :> QueryParam "error" Text :> QueryParam "code" Text :> QueryParam "state" Text :> Get '[HTML] LoginInUser
+
+serverAuth :: ServerT AuthAPI AppM
+serverAuth = handleLogin :<|> handleLoggedIn
 
 -- | Create the underlying Monocle web application interface, for integration or testing purpose.
 app :: AppEnv -> Wai.Application
-app env =
+app env = do
+  let server' = server :<|> serverAuth
   serveWithContext (Proxy @RootAPI) cfg $
-    hoistServerWithContext (Proxy @RootAPI) (Proxy :: Proxy '[CookieSettings, JWTSettings]) mkAppM (server :<|> server)
+    hoistServerWithContext
+      (Proxy @RootAPI)
+      (Proxy :: Proxy '[CookieSettings, JWTSettings])
+      mkAppM
+      (server' :<|> server')
   where
-    jwtCfg = aJWTSettings env
+    jwtCfg = localJWTSettings $ aOIDC env
     cfg = jwtCfg :. defaultCookieSettings :. EmptyContext
     mkAppM :: AppM x -> Servant.Handler x
     mkAppM apM = runReaderT (unApp apM) env
@@ -74,19 +88,20 @@ mkStaticMiddleware = do
         responder resp
           -- The application handled the request, forward the responce
           | HTTP.statusCode (Wai.responseStatus resp) /= 404 = waiRespond resp
-          | otherwise = do
-            respPath <- do
-              let reqPath = drop 1 $ decodeUtf8 $ Wai.rawPathInfo req
-              if Data.List.null reqPath || ".." `Data.List.isInfixOf` reqPath
-                then -- The path is empty or fishy
-                  pure Nothing
-                else -- Checks if the request match a file, such as favico or css
-                  (rootDir <> reqPath) `existOr` Nothing
-            waiRespond $ case respPath of
-              -- The path exist, returns it
-              Just path -> Wai.responseFile HTTP.status200 [] path Nothing
-              -- Otherwise returns the index
-              Nothing -> Wai.responseLBS HTTP.status200 [] index
+          | otherwise = handle
+        handle = do
+          respPath <- do
+            let reqPath = drop 1 $ decodeUtf8 $ Wai.rawPathInfo req
+            if Data.List.null reqPath || ".." `Data.List.isInfixOf` reqPath
+              then -- The path is empty or fishy
+                pure Nothing
+              else -- Checks if the request match a file, such as favico or css
+                (rootDir <> reqPath) `existOr` Nothing
+          waiRespond $ case respPath of
+            -- The path exist, returns it
+            Just path -> Wai.responseFile HTTP.status200 [] path Nothing
+            -- Otherwise returns the index
+            Nothing -> Wai.responseLBS HTTP.status200 [] index
 
 healthMiddleware :: Wai.Application -> Wai.Application
 healthMiddleware app' req resp
@@ -122,24 +137,16 @@ run' port url configFile glLogger = do
   wsRef <- Config.csWorkspaceStatus <$> config
   Config.setWorkspaceStatus Config.Ready wsRef
 
-  -- Load Authentication Provider public keys if needed
-  let providerM = getAuthProvider conf
-  providersJwks <- case providerM of
-    Just (Config.OIDCProvider _ issuer _) -> do
-      doLog glLogger $ via @Text $ LoadingRemoteAuthProviderConfig issuer
-      jwks <- httpRetry ("auth-provider", issuer, "internal") $ getOIDCProviderPublicKeys issuer
-      doLog glLogger $ via @Text $ LoadedRemoteAuthProviderConfig $ length jwks
-      pure jwks
-    Nothing -> pure []
-
-  -- Generate arandom JWK (for issuing Magic JWTs)
-  localJwk <- Monocle.Api.JWK.doGenJwk
-
-  -- Initialise JWT settings
-  let aJWTSettings =
-        (defaultJWTSettings localJwk)
-          { validationKeys = Jose.JWKSet $ [localJwk] <> providersJwks
-          }
+  -- Init OIDC
+  -- Initialise JWT settings for locally issuing JWT (local provider)
+  localJwk <- doGenJwk
+  providerM <- getAuthProvider
+  let localJWTSettings = defaultJWTSettings localJwk
+  -- Initialize env to talk with OIDC provider
+  oidcEnv <- case providerM of
+    Just provider -> pure <$> initOIDCEnv provider
+    _ -> pure Nothing
+  let aOIDC = OIDC {..}
 
   bhEnv <- mkEnv url
   let aEnv = Env {..}
