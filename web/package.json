@@ -19,7 +19,7 @@
     "moment": "2.29.2",
     "react": "^17.0.2",
     "react-chartjs-2": "^2.11.1",
-    "react-chord-diagram": "^1.7.0",
+    "react-chord-diagram": "^1.8.0",
     "react-d3-treemap": "^1.0.27",
     "react-datepicker": "^3.7.0",
     "react-dom": "^17.0.2",
