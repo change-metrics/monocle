@@ -37,11 +37,7 @@ doGenJwk :: IO JWK
 doGenJwk = genJWK (RSAGenParam (4096 `div` 8))
 
 -- Will be added as the 'dat' unregistered claim
-data AuthenticatedUser = AUser
-  { aMuid :: Text,
-    aAliases :: [Text],
-    aGroups :: [Text]
-  }
+newtype AuthenticatedUser = AUser {aMuid :: Text}
   deriving (Generic, Show)
 
 instance ToJSON AuthenticatedUser
@@ -55,8 +51,6 @@ instance FromJWT AuthenticatedUser
 mkJwt :: JWTSettings -> Text -> Maybe UTCTime -> IO (Either Error BSL.ByteString)
 mkJwt settings muid expD =
   let aMuid = muid
-      aAliases = mempty
-      aGroups = mempty
    in makeJWT (AUser {..}) settings expD
 
 --- $ OIDC Flow

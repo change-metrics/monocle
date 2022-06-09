@@ -87,7 +87,7 @@ pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _about a) _
 
 -- curl -XPOST -d '{"void": ""}' -H "Content-type: application/json" -H 'Authorization: Bearer <token>' http://localhost:8080/auth/whoami
 authWhoAmi :: AuthResult AuthenticatedUser -> AuthPB.WhoAmiRequest -> AppM AuthPB.WhoAmiResponse
-authWhoAmi (Authenticated (AUser muid _groups _aliases)) _request = response
+authWhoAmi (Authenticated (AUser muid)) _request = response
   where
     response =
       pure $

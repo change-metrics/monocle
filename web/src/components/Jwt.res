@@ -17,8 +17,6 @@ type authenticatedUser = {
   jwt: string,
   jwt_exp: Js.Date.t,
   uid: string,
-  aliases: list<string>,
-  groups: list<string>,
 }
 
 let monocleJwtDecode = jwt => {
@@ -28,8 +26,6 @@ let monocleJwtDecode = jwt => {
       jwt: jwt,
       jwt_exp: decodedJwt["exp"],
       uid: decodedJwt["dat"]["aMuid"],
-      aliases: decodedJwt["dat"]["aliases"],
-      groups: decodedJwt["dat"]["groups"],
     }->Some
   } catch {
   | err => {
