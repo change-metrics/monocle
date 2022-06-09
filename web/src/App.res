@@ -81,7 +81,7 @@ module Login = {
     @react.component
     let make = (~store: Store.t, ~usernameValidated: string, ~setShowLoginModal) => {
       let (_, dispatch) = store
-      let get = {() => WebApi.Login.loginValidation({username: usernameValidated})}
+      let get = {() => WebApi.Login.loginValidation({username: usernameValidated}, None)}
       usernameValidated->String.length == 0
         ? React.null
         : {
@@ -398,7 +398,7 @@ module App = {
 @react.component
 let make = () =>
   <NetworkRender
-    get={() => WebApi.Config.getAbout({void: ""})}
+    get={() => WebApi.Config.getAbout({void: ""}, None)}
     trigger={""}
     render={(resp: ConfigTypes.get_about_response) => {
       switch resp.about {

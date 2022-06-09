@@ -126,6 +126,7 @@ let make = (~store: Store.t, ~extraQuery: option<string>=?, ~isScoped: option<bo
   let tooltip_content = "This shows the list of repositories (which received some activities) along with some metrics"
   let title = "Repository summary"
   let icon = <Patternfly.Icons.Repository />
+  let tokenM = state->Store.Store.getAuthenticatedUserJWT
   let match = resp =>
     switch resp {
     | SearchTypes.Repos_summary(data) => Some(data.reposum)
@@ -134,6 +135,6 @@ let make = (~store: Store.t, ~extraQuery: option<string>=?, ~isScoped: option<bo
   let childrenBuilder = (repos: list<Web.SearchTypes.repo_summary>) =>
     <RepoSummaryTable store repos ?isScoped />
 
-  <QueryRenderCard request trigger title tooltip_content icon match childrenBuilder />
+  <QueryRenderCard request tokenM trigger title tooltip_content icon match childrenBuilder />
 }
 let default = make

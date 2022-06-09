@@ -91,6 +91,9 @@ module Store = {
       jwt->monocleJwtDecode
     )
 
+  let getAuthenticatedUserJWT = (state: t) =>
+    state.authenticated_user->Belt.Option.flatMap(au => au.jwt->Some)
+
   let create = (index, about) => {
     index: index,
     query: UrlData.getQuery(),
@@ -186,7 +189,11 @@ module Fetch = {
   let suggestions = ((state: Store.t, dispatch)) =>
     fetch(
       state.suggestions,
-      () => WebApi.Search.suggestions({SearchTypes.index: state.index}),
+      () =>
+        WebApi.Search.suggestions(
+          {SearchTypes.index: state.index},
+          state->Store.getAuthenticatedUserJWT,
+        ),
       res => Store.FetchSuggestions(res),
       dispatch,
     )
@@ -194,7 +201,7 @@ module Fetch = {
   let fields = ((state: Store.t, dispatch)) => {
     fetch(
       state.fields,
-      () => WebApi.Search.fields({version: "1"}),
+      () => WebApi.Search.fields({version: "1"}, state->Store.getAuthenticatedUserJWT),
       res => Store.FetchFields(res),
       dispatch,
     )
@@ -203,7 +210,11 @@ module Fetch = {
   let projects = ((state: Store.t, dispatch)) => {
     fetch(
       state.projects,
-      () => WebApi.Config.getProjects({ConfigTypes.index: state.index}),
+      () =>
+        WebApi.Config.getProjects(
+          {ConfigTypes.index: state.index},
+          state->Store.getAuthenticatedUserJWT,
+        ),
       res => Store.FetchProjects(res),
       dispatch,
     )
