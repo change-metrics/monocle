@@ -22,9 +22,10 @@ type authenticatedUser = {
 let monocleJwtDecode = jwt => {
   try {
     let decodedJwt = jwtDecode(jwt)
+    let exp = decodedJwt["exp"]->Belt.Float.fromString->Belt.Option.getExn
     {
       jwt: jwt,
-      jwt_exp: decodedJwt["exp"],
+      jwt_exp: (exp *. 1000.0)->Js.Date.fromFloat,
       uid: decodedJwt["dat"]["aMuid"],
     }->Some
   } catch {

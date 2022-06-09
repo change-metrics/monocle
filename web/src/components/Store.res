@@ -86,10 +86,11 @@ module Store = {
 
   type dispatch = action => unit
 
-  let getAuthenticatedUser =
+  let getAuthenticatedUser = () => {
     Dom.Storage.getItem("api-key", Dom.Storage.localStorage)->Belt.Option.flatMap(jwt =>
       jwt->monocleJwtDecode
     )
+  }
 
   let getAuthenticatedUserJWT = (state: t) =>
     state.authenticated_user->Belt.Option.flatMap(au => au.jwt->Some)
@@ -102,7 +103,7 @@ module Store = {
     order: UrlData.getOrder(),
     author_scoped_tab: ChangeActivity,
     username: Dom.Storage.localStorage |> Dom.Storage.getItem("monocle_username"),
-    authenticated_user: getAuthenticatedUser,
+    authenticated_user: getAuthenticatedUser(),
     suggestions: None,
     fields: None,
     projects: None,

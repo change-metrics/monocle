@@ -306,6 +306,21 @@ module App = {
     let (showAbout, setShowAbout) = React.useState(_ => false)
     let (showLoginModal, setShowLoginModal) = React.useState(_ => false)
 
+    // Remove the token 60s before its expiration
+    React.useEffect0(() => {
+      switch state.authenticated_user {
+      | Some(au) => {
+          let now = Js.Date.now()
+          let willExpireAt = au.jwt_exp->Js.Date.getTime
+          let willExpireIn = (willExpireAt -. now)->Belt.Int.fromFloat - 60
+          Js.log3("JWT expiration in", willExpireIn / 1000, "s")
+          Js.Global.setTimeout(() => AuthenticatedLogout->dispatch, willExpireIn)->ignore
+        }
+      | None => ()
+      }
+      None
+    })
+
     // The main page to render APP
     let bodyPage = {
       let nav = <MonocleNav active store />

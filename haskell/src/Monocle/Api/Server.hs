@@ -788,7 +788,6 @@ handleLoggedIn err codeM stateM = do
             (from oauthCode)
       now <- liftIO Monocle.Prelude.getCurrentTime
       let idToken = O.idToken tokens
-          -- TODO: map expiry on Provider's token expiry ?
           expiry = addUTCTime (24 * 3600) now
           mUid = userId oidcEnv idToken
       log . OIDCProviderTokenRequested $ show idToken
