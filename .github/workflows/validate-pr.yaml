@@ -83,7 +83,7 @@ jobs:
       - name: Install npm packages
         run: |
           sudo apt-get install git
-          cd web ; npm install
+          cd web ; npm install --legacy-peer-deps
 
       - name: Run npm test
         run: |
