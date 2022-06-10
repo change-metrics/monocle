@@ -88,7 +88,7 @@ module Store = {
 
   let getAuthenticatedUser = () => {
     Dom.Storage.getItem("api-key", Dom.Storage.localStorage)->Belt.Option.flatMap(jwt =>
-      jwt->monocleJwtDecode
+      jwt->jwtToAuthenticatedUser
     )
   }
 

@@ -19,7 +19,7 @@ type authenticatedUser = {
   uid: string,
 }
 
-let monocleJwtDecode = jwt => {
+let jwtToAuthenticatedUser = jwt => {
   try {
     let decodedJwt = jwtDecode(jwt)
     let exp = decodedJwt["exp"]->Belt.Float.fromString->Belt.Option.getExn
