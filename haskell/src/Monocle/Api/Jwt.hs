@@ -36,8 +36,15 @@ import Web.OIDC.Client qualified as O
 doGenJwk :: IO JWK
 doGenJwk = genJWK (RSAGenParam (4096 `div` 8))
 
+type MUidMap = Map Text Text
+
 -- Will be added as the 'dat' unregistered claim
-newtype AuthenticatedUser = AUser {aMuid :: Text}
+data AuthenticatedUser = AUser
+  { -- A mapping that contains a Monocle UID by Index name
+    aMuidMap :: MUidMap,
+    -- A default Monocle UID to be used when aMuidMap is empty
+    aDefaultMuid :: Text
+  }
   deriving (Generic, Show)
 
 instance ToJSON AuthenticatedUser
@@ -48,10 +55,8 @@ instance ToJWT AuthenticatedUser
 
 instance FromJWT AuthenticatedUser
 
-mkJwt :: JWTSettings -> Text -> Maybe UTCTime -> IO (Either Error BSL.ByteString)
-mkJwt settings muid expD =
-  let aMuid = muid
-   in makeJWT (AUser {..}) settings expD
+mkJwt :: JWTSettings -> MUidMap -> Text -> Maybe UTCTime -> IO (Either Error BSL.ByteString)
+mkJwt settings aMuidMap aDefaultMuid expD = makeJWT (AUser {..}) settings expD
 
 --- $ OIDC Flow
 

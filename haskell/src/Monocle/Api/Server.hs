@@ -12,7 +12,7 @@ import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Google.Protobuf.Timestamp qualified as T
 import Monocle.Api.Jwt
-  ( AuthenticatedUser (AUser, aMuid),
+  ( AuthenticatedUser,
     LoginInUser (..),
     OIDCEnv (..),
     mkJwt,
@@ -24,6 +24,7 @@ import Monocle.Backend.Documents
   )
 import Monocle.Backend.Index as I
 import Monocle.Backend.Queries qualified as Q
+import Monocle.Config (Config)
 import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Logging
@@ -99,12 +100,12 @@ checkAuth auth action = do
 
 -- curl -XPOST -d '{"void": ""}' -H "Content-type: application/json" -H 'Authorization: Bearer <token>' http://localhost:8080/auth/whoami
 authWhoAmi :: AuthResult AuthenticatedUser -> AuthPB.WhoAmiRequest -> AppM AuthPB.WhoAmiResponse
-authWhoAmi (Authenticated (AUser {aMuid})) _request =
+authWhoAmi (Authenticated au) _request =
   pure $
     AuthPB.WhoAmiResponse
       . Just
       . AuthPB.WhoAmiResponseResultUid
-      $ from aMuid
+      $ show au
 authWhoAmi _auth _request =
   pure $
     AuthPB.WhoAmiResponse
@@ -119,7 +120,7 @@ authGetMagicJwt _auth (AuthPB.GetMagicJwtRequest inputAdminToken) = do
   oidc <- asks aOIDC
   -- The generated JWT does not have any expiry
   -- An API restart generates new JWK that will invalidate the token
-  jwtE <- liftIO $ mkJwt (localJWTSettings oidc) "bot" Nothing
+  jwtE <- liftIO $ mkJwt (localJWTSettings oidc) Map.empty "bot" Nothing
   adminTokenM <- liftIO $ lookupEnv "ADMIN_TOKEN"
   case (jwtE, adminTokenM) of
     (Right jwt, Just adminToken) | inputAdminToken == from adminToken -> pure . genSuccess $ decodeUtf8 jwt
@@ -792,6 +793,7 @@ handleLoggedIn ::
   AppM LoginInUser
 handleLoggedIn err codeM stateM = do
   aOIDC <- asks aOIDC
+  GetConfig config <- getConfig
   log $ OIDCCallbackCall err codeM stateM
   case (oidcEnv aOIDC, err, codeM, stateM) of
     (_, Just errorMsg, _, _) -> forbidden $ "Error from remote provider: " <> errorMsg
@@ -810,20 +812,22 @@ handleLoggedIn err codeM stateM = do
       now <- liftIO Monocle.Prelude.getCurrentTime
       let idToken = O.idToken tokens
           expiry = addUTCTime (24 * 3600) now
-          mUid = userId oidcEnv idToken
+          userId = aUserId oidcEnv idToken
+          mUidMap = getIdents config $ "AuthProviderUID:" <> userId
       log . OIDCProviderTokenRequested $ show idToken
-      jwtE <- liftIO $ mkJwt (localJWTSettings aOIDC) mUid (Just expiry)
+      jwtE <- liftIO $ mkJwt (localJWTSettings aOIDC) mUidMap userId (Just expiry)
       case jwtE of
         Right jwt -> do
-          log $ JWTCreated mUid (decodeUtf8 $ redirectUri oidcEnv)
+          log $ JWTCreated (show mUidMap) (decodeUtf8 $ redirectUri oidcEnv)
           let liJWT = decodeUtf8 jwt
           pure $ LoginInUser {..}
         Left err' -> do
-          log $ JWTCreateFailed mUid (show err')
+          log $ JWTCreateFailed (show mUidMap) (show err')
           forbidden $ "Unable to generate user JWT due to: " <> show err'
   where
-    userId :: OIDCEnv -> O.IdTokenClaims Value -> Text
-    userId oidcEnv idToken = case userClaim oidcEnv of
+    -- Get the Token's claim that identify an unique user
+    aUserId :: OIDCEnv -> O.IdTokenClaims Value -> Text
+    aUserId oidcEnv idToken = case userClaim oidcEnv of
       Just uc -> case O.otherClaims idToken of
         Object o -> case AKM.lookup (AK.fromText uc) o of
           Just (String s) -> s
@@ -835,3 +839,10 @@ handleLoggedIn err codeM stateM = do
     log ev = do
       aEnv <- asks aEnv
       liftIO $ doLog (glLogger aEnv) $ via @Text $ ev
+    -- Given a Claim, get a mapping of index (workspace) name to Monocle UID (mUid)
+    getIdents :: Config -> Text -> Map.Map Text Text
+    getIdents config auid = foldr go Map.empty $ Config.getWorkspaces config
+      where
+        go index acc = case Config.getIdentByAlias index auid of
+          Just muid -> Map.insert (Config.getWorkspaceName index) muid acc
+          Nothing -> acc

@@ -219,11 +219,20 @@ module Login = {
       let onClickLogin = _ => setShowLoginModal(_ => true)
       let onClickLogoutNAU = _ => NonAuthenticatedLogout->dispatch
       let onClickLogoutAU = _ => AuthenticatedLogout->dispatch
+      let displayUID = (au: Jwt.authenticatedUser) =>
+        switch state.index {
+        | "" => au.defaultMuid
+        | index =>
+          switch Jwt.getMuidByIndex(au, index) {
+          | Some(muid) => muid
+          | None => au.defaultMuid
+          }
+        }
       <div style={ReactDOM.Style.make(~paddingRight="13px", ())}>
         {switch (state.username, state.authenticated_user) {
         | (Some(username), None) => displayLoggedStatus(state, username, onClickLogoutNAU)
         | (None, Some(authenticatedUser)) =>
-          displayLoggedStatus(state, authenticatedUser.uid, onClickLogoutAU)
+          displayLoggedStatus(state, authenticatedUser->displayUID, onClickLogoutAU)
         | _ =>
           state->isAuthEnforced
             ? React.null

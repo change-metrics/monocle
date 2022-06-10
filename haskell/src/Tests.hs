@@ -139,10 +139,13 @@ monocleApiTests =
             let authClient = client {tokenM = Just $ from jwt}
             resp' <- authWhoAmi authClient $ WhoAmiRequest ""
             case resp' of
-              WhoAmiResponse (Just (WhoAmiResponseResultUid muid)) ->
-                assertEqual "Assert expected Magic Token uid" "bot" muid
-              _ -> error "Unexpected Token uid value"
-          _ -> error "expected a JWT token"
+              WhoAmiResponse (Just (WhoAmiResponseResultUid au)) ->
+                assertEqual
+                  "Assert expected WhoAmI response"
+                  "AUser {aMuidMap = fromList [], aDefaultMuid = \"bot\"}"
+                  au
+              _ -> error "Unexpected WhoAmI Response"
+          _ -> error "Unexpected GetMagicJWT reponse"
 
     testGetGroups :: Assertion
     testGetGroups = do

@@ -16,7 +16,8 @@ let jwtDecode = %raw(`
 type authenticatedUser = {
   jwt: string,
   jwt_exp: Js.Date.t,
-  uid: string,
+  defaultMuid: string,
+  muidMap: Js.Dict.t<string>,
 }
 
 let jwtToAuthenticatedUser = jwt => {
@@ -26,7 +27,8 @@ let jwtToAuthenticatedUser = jwt => {
     {
       jwt: jwt,
       jwt_exp: (exp *. 1000.0)->Js.Date.fromFloat,
-      uid: decodedJwt["dat"]["aMuid"],
+      defaultMuid: decodedJwt["dat"]["aDefaultMuid"],
+      muidMap: decodedJwt["dat"]["aMuidMap"],
     }->Some
   } catch {
   | err => {
@@ -35,3 +37,5 @@ let jwtToAuthenticatedUser = jwt => {
     }
   }
 }
+
+let getMuidByIndex = (au: authenticatedUser, index: string) => au.muidMap->Js.Dict.get(index)
