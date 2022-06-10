@@ -12,7 +12,7 @@ import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Google.Protobuf.Timestamp qualified as T
 import Monocle.Api.Jwt
-  ( AuthenticatedUser,
+  ( AuthenticatedUser (aDefaultMuid, aMuidMap),
     LoginInUser (..),
     OIDCEnv (..),
     mkJwt,
@@ -526,15 +526,21 @@ searchAuthor auth request = checkAuth auth response
 
       pure . SearchPB.AuthorResponse $ V.fromList authors
 
+getMuidByIndexName :: Text -> AuthenticatedUser -> Maybe Text
+getMuidByIndexName index = Map.lookup index . aMuidMap
+
 -- | /search/check endpoint
 searchCheck :: AuthResult AuthenticatedUser -> SearchPB.CheckRequest -> AppM SearchPB.CheckResponse
 searchCheck auth request = checkAuth auth response
   where
-    response _au = do
+    response authenticatedUserM = do
       let SearchPB.CheckRequest {..} = request
+          username = from $ case authenticatedUserM of
+            Just au -> fromMaybe (aDefaultMuid au) $ getMuidByIndexName (from checkRequestIndex) au
+            Nothing -> from checkRequestUsername
 
       incCounter monocleQueryCheckCounter
-      requestE <- validateSearchRequest checkRequestIndex checkRequestQuery checkRequestUsername
+      requestE <- validateSearchRequest checkRequestIndex checkRequestQuery username
 
       pure $
         SearchPB.CheckResponse $
@@ -548,11 +554,14 @@ searchCheck auth request = checkAuth auth response
 searchQuery :: AuthResult AuthenticatedUser -> SearchPB.QueryRequest -> AppM SearchPB.QueryResponse
 searchQuery auth request = checkAuth auth response
   where
-    response _au = do
+    response authenticatedUserM = do
       let SearchPB.QueryRequest {..} = request
+          username = from $ case authenticatedUserM of
+            Just au -> fromMaybe (aDefaultMuid au) $ getMuidByIndexName (from queryRequestIndex) au
+            Nothing -> from queryRequestUsername
 
       incCounter monocleQueryCounter
-      requestE <- validateSearchRequest queryRequestIndex queryRequestQuery queryRequestUsername
+      requestE <- validateSearchRequest queryRequestIndex queryRequestQuery username
 
       case requestE of
         Right (tenant, query) -> runQueryM tenant (Q.ensureMinBound query) $ do
@@ -715,10 +724,13 @@ metricList auth _request = checkAuth auth response
 metricGet :: AuthResult AuthenticatedUser -> MetricPB.GetRequest -> AppM MetricPB.GetResponse
 metricGet auth request = checkAuth auth response
   where
-    response _au = do
+    response authenticatedUserM = do
       let MetricPB.GetRequest {..} = request
+          username = from $ case authenticatedUserM of
+            Just au -> fromMaybe (aDefaultMuid au) $ getMuidByIndexName (from getRequestIndex) au
+            Nothing -> from getRequestUsername
       incCounter monocleMetricCounter
-      requestE <- validateSearchRequest getRequestIndex getRequestQuery getRequestUsername
+      requestE <- validateSearchRequest getRequestIndex getRequestQuery username
       case requestE of
         -- Valid request
         Right (tenant, query) -> do
