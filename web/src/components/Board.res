@@ -282,6 +282,8 @@ module Board = {
     board
   }
 
+  let addUserColumn = {...default, columns: default.columns->Belt.List.add(userColumn)}
+
   let loadFromUrl: Store.t => t = store => {
     let (state, _) = store
     let params = URLSearchParams.current()
@@ -305,9 +307,10 @@ module Board = {
     switch (getP("t"), go(0)) {
     | (None, _)
     | (_, list{}) =>
-      switch state.username {
-      | Some(_) => {...default, columns: default.columns->Belt.List.add(userColumn)}
-      | None => default
+      switch (state.username, state.authenticated_user) {
+      | (Some(_), _) => addUserColumn
+      | (_, Some(_)) => addUserColumn
+      | _ => default
       }
     | (Some(title), columns) => {
         title: title,
