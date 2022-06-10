@@ -56,7 +56,7 @@ instance ToJWT AuthenticatedUser
 instance FromJWT AuthenticatedUser
 
 mkJwt :: JWTSettings -> MUidMap -> Text -> Maybe UTCTime -> IO (Either Error BSL.ByteString)
-mkJwt settings aMuidMap aDefaultMuid expD = makeJWT (AUser {..}) settings expD
+mkJwt settings aMuidMap aDefaultMuid = makeJWT (AUser {..}) settings
 
 --- $ OIDC Flow
 

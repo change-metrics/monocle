@@ -192,9 +192,9 @@ configGetAbout _auth _request = response
 
 -- | /api/2/get_workspaces endpoint
 configGetWorkspaces :: AuthResult AuthenticatedUser -> ConfigPB.GetWorkspacesRequest -> AppM ConfigPB.GetWorkspacesResponse
-configGetWorkspaces auth _request = checkAuth auth response
+configGetWorkspaces auth _request = checkAuth auth $ const response
   where
-    response _au = do
+    response = do
       GetTenants tenants <- getConfig
       pure . ConfigPB.GetWorkspacesResponse . V.fromList $ map toWorkspace tenants
     toWorkspace Config.Index {..} =
@@ -203,15 +203,14 @@ configGetWorkspaces auth _request = checkAuth auth response
 
 -- | /api/2/get_groups endpoint
 configGetGroups :: AuthResult AuthenticatedUser -> ConfigPB.GetGroupsRequest -> AppM ConfigPB.GetGroupsResponse
-configGetGroups auth request = checkAuth auth response
-  where
-    response _au = do
-      GetTenants tenants <- getConfig
-      let ConfigPB.GetGroupsRequest {..} = request
+configGetGroups auth request = checkAuth auth . const $ do
+  GetTenants tenants <- getConfig
+  let ConfigPB.GetGroupsRequest {..} = request
 
-      pure . ConfigPB.GetGroupsResponse . V.fromList $ case Config.lookupTenant tenants (from getGroupsRequestIndex) of
-        Just index -> toGroupCounts <$> Config.getTenantGroups index
-        Nothing -> []
+  pure . ConfigPB.GetGroupsResponse . V.fromList $ case Config.lookupTenant tenants (from getGroupsRequestIndex) of
+    Just index -> toGroupCounts <$> Config.getTenantGroups index
+    Nothing -> []
+  where
     toGroupCounts :: (Text, [Text]) -> ConfigPB.GroupDefinition
     toGroupCounts (name, users) =
       let groupDefinitionName = from name
@@ -220,25 +219,22 @@ configGetGroups auth request = checkAuth auth response
 
 -- | /api/2/get_group_members endpoint
 configGetGroupMembers :: AuthResult AuthenticatedUser -> ConfigPB.GetGroupMembersRequest -> AppM ConfigPB.GetGroupMembersResponse
-configGetGroupMembers auth request = checkAuth auth response
-  where
-    response _au = do
-      GetTenants tenants <- getConfig
-      let ConfigPB.GetGroupMembersRequest {..} = request
-      members <- case Config.lookupTenant tenants (from getGroupMembersRequestIndex) of
-        Just index -> pure $ fromMaybe [] $ lookup (from getGroupMembersRequestGroup) (Config.getTenantGroups index)
-        Nothing -> pure []
-      pure . ConfigPB.GetGroupMembersResponse . V.fromList $ from <$> members
+configGetGroupMembers auth request = checkAuth auth . const $ do
+  GetTenants tenants <- getConfig
+  let ConfigPB.GetGroupMembersRequest {..} = request
+  members <- case Config.lookupTenant tenants (from getGroupMembersRequestIndex) of
+    Just index -> pure $ fromMaybe [] $ lookup (from getGroupMembersRequestGroup) (Config.getTenantGroups index)
+    Nothing -> pure []
+  pure . ConfigPB.GetGroupMembersResponse . V.fromList $ from <$> members
 
 -- | /api/2/get_projects
 configGetProjects :: AuthResult AuthenticatedUser -> ConfigPB.GetProjectsRequest -> AppM ConfigPB.GetProjectsResponse
-configGetProjects auth ConfigPB.GetProjectsRequest {..} = checkAuth auth response
+configGetProjects auth ConfigPB.GetProjectsRequest {..} = checkAuth auth . const $ do
+  GetTenants tenants <- getConfig
+  pure . ConfigPB.GetProjectsResponse . V.fromList $ case Config.lookupTenant tenants (from getProjectsRequestIndex) of
+    Just index -> maybe [] (fmap toResp) (Config.projects index)
+    Nothing -> []
   where
-    response _au = do
-      GetTenants tenants <- getConfig
-      pure . ConfigPB.GetProjectsResponse . V.fromList $ case Config.lookupTenant tenants (from getProjectsRequestIndex) of
-        Just index -> maybe [] (fmap toResp) (Config.projects index)
-        Nothing -> []
     toResp :: Config.Project -> ConfigPB.ProjectDefinition
     toResp Config.Project {..} =
       let projectDefinitionName = from name
@@ -464,22 +460,21 @@ validateTaskDataRequest indexName crawlerName apiKey checkCommitDate commitDate 
 
 -- | /suggestions endpoint
 searchSuggestions :: AuthResult AuthenticatedUser -> SearchPB.SuggestionsRequest -> AppM SearchPB.SuggestionsResponse
-searchSuggestions auth request = checkAuth auth response
+searchSuggestions auth request = checkAuth auth . const $ do
+  GetTenants tenants <- getConfig
+  let SearchPB.SuggestionsRequest {..} = request
+
+  let tenantM = Config.lookupTenant tenants (from suggestionsRequestIndex)
+
+  case tenantM of
+    Just tenant -> do
+      now <- getCurrentTime
+      runQueryM tenant (emptyQ now) $ Q.getSuggestions tenant
+    Nothing ->
+      -- Simply return empty suggestions in case of unknown tenant
+      pure $
+        SearchPB.SuggestionsResponse mempty mempty mempty mempty mempty mempty mempty mempty
   where
-    response _au = do
-      GetTenants tenants <- getConfig
-      let SearchPB.SuggestionsRequest {..} = request
-
-      let tenantM = Config.lookupTenant tenants (from suggestionsRequestIndex)
-
-      case tenantM of
-        Just tenant -> do
-          now <- getCurrentTime
-          runQueryM tenant (emptyQ now) $ Q.getSuggestions tenant
-        Nothing ->
-          -- Simply return empty suggestions in case of unknown tenant
-          pure $
-            SearchPB.SuggestionsResponse mempty mempty mempty mempty mempty mempty mempty mempty
     emptyQ now' = Q.blankQuery now' $ Q.yearAgo now'
 
 -- | A helper function to decode search query
@@ -504,27 +499,25 @@ validateSearchRequest tenantName queryText username = do
 
 -- | /search/author endpoint
 searchAuthor :: AuthResult AuthenticatedUser -> SearchPB.AuthorRequest -> AppM SearchPB.AuthorResponse
-searchAuthor auth request = checkAuth auth response
-  where
-    response _au = do
-      let SearchPB.AuthorRequest {..} = request
-      GetTenants tenants <- getConfig
-      let indexM = Config.lookupTenant tenants $ from authorRequestIndex
+searchAuthor auth request = checkAuth auth . const $ do
+  let SearchPB.AuthorRequest {..} = request
+  GetTenants tenants <- getConfig
+  let indexM = Config.lookupTenant tenants $ from authorRequestIndex
 
-      authors <- case indexM of
-        Just index -> do
-          let toSearchAuthor muid = case Config.lookupIdent index muid of
-                Nothing -> SearchPB.Author (from muid) mempty mempty
-                Just Config.Ident {..} ->
-                  let authorMuid = from muid
-                      authorAliases = V.fromList $ from <$> aliases
-                      authorGroups = V.fromList $ from <$> fromMaybe mempty groups
-                   in SearchPB.Author {..}
-          found <- runEmptyQueryM index $ I.searchAuthorCache . from $ authorRequestQuery
-          pure $ toSearchAuthor <$> found
-        Nothing -> pure []
+  authors <- case indexM of
+    Just index -> do
+      let toSearchAuthor muid = case Config.lookupIdent index muid of
+            Nothing -> SearchPB.Author (from muid) mempty mempty
+            Just Config.Ident {..} ->
+              let authorMuid = from muid
+                  authorAliases = V.fromList $ from <$> aliases
+                  authorGroups = V.fromList $ from <$> fromMaybe mempty groups
+               in SearchPB.Author {..}
+      found <- runEmptyQueryM index $ I.searchAuthorCache . from $ authorRequestQuery
+      pure $ toSearchAuthor <$> found
+    Nothing -> pure []
 
-      pure . SearchPB.AuthorResponse $ V.fromList authors
+  pure . SearchPB.AuthorResponse $ V.fromList authors
 
 getMuidByIndexName :: Text -> AuthenticatedUser -> Maybe Text
 getMuidByIndexName index = Map.lookup index . aMuidMap
@@ -695,9 +688,9 @@ searchQuery auth request = checkAuth auth response
        in SearchPB.ChangeAndEvents {..}
 
 searchFields :: AuthResult AuthenticatedUser -> SearchPB.FieldsRequest -> AppM SearchPB.FieldsResponse
-searchFields auth _request = checkAuth auth response
+searchFields auth _request = checkAuth auth . const $ response
   where
-    response _au = pure . SearchPB.FieldsResponse . V.fromList . map toResult $ Q.fields
+    response = pure . SearchPB.FieldsResponse . V.fromList . map toResult $ Q.fields
     toResult (name, (fieldType', _realname, desc)) =
       let fieldName = from name
           fieldDescription = from desc
@@ -710,9 +703,9 @@ lookupTenant name = do
   pure $ Config.lookupTenant tenants name
 
 metricList :: AuthResult AuthenticatedUser -> MetricPB.ListRequest -> AppM MetricPB.ListResponse
-metricList auth _request = checkAuth auth response
+metricList auth _request = checkAuth auth . const $ response
   where
-    response _au = pure . MetricPB.ListResponse . fromList . fmap toResp $ Q.allMetrics
+    response = pure . MetricPB.ListResponse . fromList . fmap toResp $ Q.allMetrics
     toResp Q.MetricInfo {..} =
       MetricPB.MetricInfo
         { metricInfoName = from miName,
