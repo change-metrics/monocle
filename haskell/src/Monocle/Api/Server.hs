@@ -12,7 +12,7 @@ import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Google.Protobuf.Timestamp qualified as T
 import Monocle.Api.Jwt
-  ( AuthenticatedUser (AUser),
+  ( AuthenticatedUser (AUser, aMuid),
     LoginInUser (..),
     OIDCEnv (..),
     mkJwt,
@@ -85,16 +85,26 @@ pattern GetConfig a <- Config.ConfigStatus _ a _
 pattern GetTenants :: [Config.Index] -> Config.ConfigStatus
 pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _about a) _
 
+checkAuth :: forall a. AuthResult AuthenticatedUser -> (Maybe AuthenticatedUser -> AppM a) -> AppM a
+checkAuth auth action = do
+  aOIDC <- asks aOIDC
+  case oidcEnv aOIDC of
+    Just (OIDCEnv {authRequired}) -> case auth of
+      Authenticated au -> action $ Just au
+      _ -> do
+        if not authRequired
+          then action Nothing
+          else forbidden "Not allowed"
+    Nothing -> action Nothing
+
 -- curl -XPOST -d '{"void": ""}' -H "Content-type: application/json" -H 'Authorization: Bearer <token>' http://localhost:8080/auth/whoami
 authWhoAmi :: AuthResult AuthenticatedUser -> AuthPB.WhoAmiRequest -> AppM AuthPB.WhoAmiResponse
-authWhoAmi (Authenticated (AUser muid)) _request = response
-  where
-    response =
-      pure $
-        AuthPB.WhoAmiResponse
-          . Just
-          . AuthPB.WhoAmiResponseResultUid
-          $ from muid
+authWhoAmi (Authenticated (AUser {aMuid})) _request =
+  pure $
+    AuthPB.WhoAmiResponse
+      . Just
+      . AuthPB.WhoAmiResponseResultUid
+      $ from aMuid
 authWhoAmi _auth _request =
   pure $
     AuthPB.WhoAmiResponse
@@ -181,9 +191,9 @@ configGetAbout _auth _request = response
 
 -- | /api/2/get_workspaces endpoint
 configGetWorkspaces :: AuthResult AuthenticatedUser -> ConfigPB.GetWorkspacesRequest -> AppM ConfigPB.GetWorkspacesResponse
-configGetWorkspaces _auth _request = response
+configGetWorkspaces auth _request = checkAuth auth response
   where
-    response = do
+    response _au = do
       GetTenants tenants <- getConfig
       pure . ConfigPB.GetWorkspacesResponse . V.fromList $ map toWorkspace tenants
     toWorkspace Config.Index {..} =
@@ -192,14 +202,15 @@ configGetWorkspaces _auth _request = response
 
 -- | /api/2/get_groups endpoint
 configGetGroups :: AuthResult AuthenticatedUser -> ConfigPB.GetGroupsRequest -> AppM ConfigPB.GetGroupsResponse
-configGetGroups _auth request = do
-  GetTenants tenants <- getConfig
-  let ConfigPB.GetGroupsRequest {..} = request
-
-  pure . ConfigPB.GetGroupsResponse . V.fromList $ case Config.lookupTenant tenants (from getGroupsRequestIndex) of
-    Just index -> toGroupCounts <$> Config.getTenantGroups index
-    Nothing -> []
+configGetGroups auth request = checkAuth auth response
   where
+    response _au = do
+      GetTenants tenants <- getConfig
+      let ConfigPB.GetGroupsRequest {..} = request
+
+      pure . ConfigPB.GetGroupsResponse . V.fromList $ case Config.lookupTenant tenants (from getGroupsRequestIndex) of
+        Just index -> toGroupCounts <$> Config.getTenantGroups index
+        Nothing -> []
     toGroupCounts :: (Text, [Text]) -> ConfigPB.GroupDefinition
     toGroupCounts (name, users) =
       let groupDefinitionName = from name
@@ -208,23 +219,25 @@ configGetGroups _auth request = do
 
 -- | /api/2/get_group_members endpoint
 configGetGroupMembers :: AuthResult AuthenticatedUser -> ConfigPB.GetGroupMembersRequest -> AppM ConfigPB.GetGroupMembersResponse
-configGetGroupMembers _auth request = do
-  GetTenants tenants <- getConfig
-  let ConfigPB.GetGroupMembersRequest {..} = request
-  members <- case Config.lookupTenant tenants (from getGroupMembersRequestIndex) of
-    Just index -> pure $ fromMaybe [] $ lookup (from getGroupMembersRequestGroup) (Config.getTenantGroups index)
-    Nothing -> pure []
-
-  pure . ConfigPB.GetGroupMembersResponse . V.fromList $ from <$> members
+configGetGroupMembers auth request = checkAuth auth response
+  where
+    response _au = do
+      GetTenants tenants <- getConfig
+      let ConfigPB.GetGroupMembersRequest {..} = request
+      members <- case Config.lookupTenant tenants (from getGroupMembersRequestIndex) of
+        Just index -> pure $ fromMaybe [] $ lookup (from getGroupMembersRequestGroup) (Config.getTenantGroups index)
+        Nothing -> pure []
+      pure . ConfigPB.GetGroupMembersResponse . V.fromList $ from <$> members
 
 -- | /api/2/get_projects
 configGetProjects :: AuthResult AuthenticatedUser -> ConfigPB.GetProjectsRequest -> AppM ConfigPB.GetProjectsResponse
-configGetProjects _auth ConfigPB.GetProjectsRequest {..} = do
-  GetTenants tenants <- getConfig
-  pure . ConfigPB.GetProjectsResponse . V.fromList $ case Config.lookupTenant tenants (from getProjectsRequestIndex) of
-    Just index -> maybe [] (fmap toResp) (Config.projects index)
-    Nothing -> []
+configGetProjects auth ConfigPB.GetProjectsRequest {..} = checkAuth auth response
   where
+    response _au = do
+      GetTenants tenants <- getConfig
+      pure . ConfigPB.GetProjectsResponse . V.fromList $ case Config.lookupTenant tenants (from getProjectsRequestIndex) of
+        Just index -> maybe [] (fmap toResp) (Config.projects index)
+        Nothing -> []
     toResp :: Config.Project -> ConfigPB.ProjectDefinition
     toResp Config.Project {..} =
       let projectDefinitionName = from name
@@ -450,21 +463,22 @@ validateTaskDataRequest indexName crawlerName apiKey checkCommitDate commitDate 
 
 -- | /suggestions endpoint
 searchSuggestions :: AuthResult AuthenticatedUser -> SearchPB.SuggestionsRequest -> AppM SearchPB.SuggestionsResponse
-searchSuggestions _auth request = do
-  GetTenants tenants <- getConfig
-  let SearchPB.SuggestionsRequest {..} = request
-
-  let tenantM = Config.lookupTenant tenants (from suggestionsRequestIndex)
-
-  case tenantM of
-    Just tenant -> do
-      now <- getCurrentTime
-      runQueryM tenant (emptyQ now) $ Q.getSuggestions tenant
-    Nothing ->
-      -- Simply return empty suggestions in case of unknown tenant
-      pure $
-        SearchPB.SuggestionsResponse mempty mempty mempty mempty mempty mempty mempty mempty
+searchSuggestions auth request = checkAuth auth response
   where
+    response _au = do
+      GetTenants tenants <- getConfig
+      let SearchPB.SuggestionsRequest {..} = request
+
+      let tenantM = Config.lookupTenant tenants (from suggestionsRequestIndex)
+
+      case tenantM of
+        Just tenant -> do
+          now <- getCurrentTime
+          runQueryM tenant (emptyQ now) $ Q.getSuggestions tenant
+        Nothing ->
+          -- Simply return empty suggestions in case of unknown tenant
+          pure $
+            SearchPB.SuggestionsResponse mempty mempty mempty mempty mempty mempty mempty mempty
     emptyQ now' = Q.blankQuery now' $ Q.yearAgo now'
 
 -- | A helper function to decode search query
@@ -489,127 +503,133 @@ validateSearchRequest tenantName queryText username = do
 
 -- | /search/author endpoint
 searchAuthor :: AuthResult AuthenticatedUser -> SearchPB.AuthorRequest -> AppM SearchPB.AuthorResponse
-searchAuthor _auth request = do
-  let SearchPB.AuthorRequest {..} = request
-  GetTenants tenants <- getConfig
-  let indexM = Config.lookupTenant tenants $ from authorRequestIndex
+searchAuthor auth request = checkAuth auth response
+  where
+    response _au = do
+      let SearchPB.AuthorRequest {..} = request
+      GetTenants tenants <- getConfig
+      let indexM = Config.lookupTenant tenants $ from authorRequestIndex
 
-  authors <- case indexM of
-    Just index -> do
-      let toSearchAuthor muid = case Config.lookupIdent index muid of
-            Nothing -> SearchPB.Author (from muid) mempty mempty
-            Just Config.Ident {..} ->
-              let authorMuid = from muid
-                  authorAliases = V.fromList $ from <$> aliases
-                  authorGroups = V.fromList $ from <$> fromMaybe mempty groups
-               in SearchPB.Author {..}
-      found <- runEmptyQueryM index $ I.searchAuthorCache . from $ authorRequestQuery
-      pure $ toSearchAuthor <$> found
-    Nothing -> pure []
+      authors <- case indexM of
+        Just index -> do
+          let toSearchAuthor muid = case Config.lookupIdent index muid of
+                Nothing -> SearchPB.Author (from muid) mempty mempty
+                Just Config.Ident {..} ->
+                  let authorMuid = from muid
+                      authorAliases = V.fromList $ from <$> aliases
+                      authorGroups = V.fromList $ from <$> fromMaybe mempty groups
+                   in SearchPB.Author {..}
+          found <- runEmptyQueryM index $ I.searchAuthorCache . from $ authorRequestQuery
+          pure $ toSearchAuthor <$> found
+        Nothing -> pure []
 
-  pure . SearchPB.AuthorResponse $ V.fromList authors
+      pure . SearchPB.AuthorResponse $ V.fromList authors
 
 -- | /search/check endpoint
 searchCheck :: AuthResult AuthenticatedUser -> SearchPB.CheckRequest -> AppM SearchPB.CheckResponse
-searchCheck _auth request = do
-  let SearchPB.CheckRequest {..} = request
+searchCheck auth request = checkAuth auth response
+  where
+    response _au = do
+      let SearchPB.CheckRequest {..} = request
 
-  incCounter monocleQueryCheckCounter
-  requestE <- validateSearchRequest checkRequestIndex checkRequestQuery checkRequestUsername
+      incCounter monocleQueryCheckCounter
+      requestE <- validateSearchRequest checkRequestIndex checkRequestQuery checkRequestUsername
 
-  pure $
-    SearchPB.CheckResponse $
-      Just $ case requestE of
-        Right _ -> SearchPB.CheckResponseResultSuccess "ok"
-        Left (ParseError msg offset) ->
-          SearchPB.CheckResponseResultError $
-            SearchPB.QueryError (from msg) (fromInteger . toInteger $ offset)
+      pure $
+        SearchPB.CheckResponse $
+          Just $ case requestE of
+            Right _ -> SearchPB.CheckResponseResultSuccess "ok"
+            Left (ParseError msg offset) ->
+              SearchPB.CheckResponseResultError $
+                SearchPB.QueryError (from msg) (fromInteger . toInteger $ offset)
 
 -- | /search/query endpoint
 searchQuery :: AuthResult AuthenticatedUser -> SearchPB.QueryRequest -> AppM SearchPB.QueryResponse
-searchQuery _auth request = do
-  let SearchPB.QueryRequest {..} = request
-
-  incCounter monocleQueryCounter
-  requestE <- validateSearchRequest queryRequestIndex queryRequestQuery queryRequestUsername
-
-  case requestE of
-    Right (tenant, query) -> runQueryM tenant (Q.ensureMinBound query) $ do
-      let queryType = fromPBEnum queryRequestQueryType
-      logEvent $ Searching queryType queryRequestQuery query
-
-      case queryType of
-        SearchPB.QueryRequest_QueryTypeQUERY_CHANGE ->
-          SearchPB.QueryResponse . Just
-            . SearchPB.QueryResponseResultChanges
-            . SearchPB.Changes
-            . V.fromList
-            . map from
-            <$> Q.changes queryRequestOrder queryRequestLimit
-        SearchPB.QueryRequest_QueryTypeQUERY_CHANGE_AND_EVENTS ->
-          SearchPB.QueryResponse . Just
-            . SearchPB.QueryResponseResultChangeEvents
-            . toChangeEventsResult
-            <$> Q.changeEvents queryRequestChangeId queryRequestLimit
-        SearchPB.QueryRequest_QueryTypeQUERY_REPOS_SUMMARY ->
-          SearchPB.QueryResponse . Just
-            . SearchPB.QueryResponseResultReposSummary
-            . SearchPB.ReposSummary
-            . V.fromList
-            . map toRSumResult
-            <$> Q.getReposSummary
-        SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_LIFECYCLE_STATS ->
-          SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultLifecycleStats
-            <$> Q.getLifecycleStats
-        SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_REVIEW_STATS ->
-          SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultReviewStats
-            <$> Q.getReviewStats
-        SearchPB.QueryRequest_QueryTypeQUERY_ACTIVE_AUTHORS_STATS ->
-          SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultActivityStats
-            <$> Q.getActivityStats
-        SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_COMMENTED ->
-          handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeCommented
-        SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_REVIEWED ->
-          handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeReviewed
-        SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_CREATED ->
-          handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeCreated
-        SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_MERGED ->
-          handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeMerged
-        SearchPB.QueryRequest_QueryTypeQUERY_TOP_REVIEWED_AUTHORS ->
-          handleTopAuthorsQ queryRequestLimit Q.getMostReviewedAuthor
-        SearchPB.QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS ->
-          handleTopAuthorsQ queryRequestLimit Q.getMostCommentedAuthor
-        SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS ->
-          SearchPB.QueryResponse . Just
-            . SearchPB.QueryResponseResultAuthorsPeers
-            . SearchPB.AuthorsPeers
-            . V.fromList
-            . map toAPeerResult
-            <$> Q.getAuthorsPeersStrength queryRequestLimit
-        SearchPB.QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS -> do
-          results <- take (fromInteger . toInteger $ queryRequestLimit) <$> Q.getNewContributors
-          pure $
-            SearchPB.QueryResponse . Just $
-              SearchPB.QueryResponseResultNewAuthors $
-                toTermsCount (V.fromList $ toTTResult <$> results) 0
-        SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_TOPS ->
-          SearchPB.QueryResponse . Just
-            . SearchPB.QueryResponseResultChangesTops
-            <$> Q.getChangesTops queryRequestLimit
-        SearchPB.QueryRequest_QueryTypeQUERY_RATIO_COMMITS_VS_REVIEWS -> do
-          ratio <- Q.getRatio Q.COMMITS_VS_REVIEWS_RATIO
-          pure . SearchPB.QueryResponse . Just $
-            SearchPB.QueryResponseResultRatio ratio
-        SearchPB.QueryRequest_QueryTypeQUERY_HISTO_COMMITS -> do
-          histo <- Q.getHisto Q.COMMITS_HISTO
-          pure . SearchPB.QueryResponse . Just $
-            SearchPB.QueryResponseResultHisto $ SearchPB.HistoStat histo
-        SearchPB.QueryRequest_QueryTypeQUERY_HISTO_REVIEWS_AND_COMMENTS -> do
-          histo <- Q.getHisto Q.REVIEWS_AND_COMMENTS_HISTO
-          pure . SearchPB.QueryResponse . Just $
-            SearchPB.QueryResponseResultHisto $ SearchPB.HistoStat histo
-    Left err -> pure . handleError $ err
+searchQuery auth request = checkAuth auth response
   where
+    response _au = do
+      let SearchPB.QueryRequest {..} = request
+
+      incCounter monocleQueryCounter
+      requestE <- validateSearchRequest queryRequestIndex queryRequestQuery queryRequestUsername
+
+      case requestE of
+        Right (tenant, query) -> runQueryM tenant (Q.ensureMinBound query) $ do
+          let queryType = fromPBEnum queryRequestQueryType
+          logEvent $ Searching queryType queryRequestQuery query
+
+          case queryType of
+            SearchPB.QueryRequest_QueryTypeQUERY_CHANGE ->
+              SearchPB.QueryResponse . Just
+                . SearchPB.QueryResponseResultChanges
+                . SearchPB.Changes
+                . V.fromList
+                . map from
+                <$> Q.changes queryRequestOrder queryRequestLimit
+            SearchPB.QueryRequest_QueryTypeQUERY_CHANGE_AND_EVENTS ->
+              SearchPB.QueryResponse . Just
+                . SearchPB.QueryResponseResultChangeEvents
+                . toChangeEventsResult
+                <$> Q.changeEvents queryRequestChangeId queryRequestLimit
+            SearchPB.QueryRequest_QueryTypeQUERY_REPOS_SUMMARY ->
+              SearchPB.QueryResponse . Just
+                . SearchPB.QueryResponseResultReposSummary
+                . SearchPB.ReposSummary
+                . V.fromList
+                . map toRSumResult
+                <$> Q.getReposSummary
+            SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_LIFECYCLE_STATS ->
+              SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultLifecycleStats
+                <$> Q.getLifecycleStats
+            SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_REVIEW_STATS ->
+              SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultReviewStats
+                <$> Q.getReviewStats
+            SearchPB.QueryRequest_QueryTypeQUERY_ACTIVE_AUTHORS_STATS ->
+              SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultActivityStats
+                <$> Q.getActivityStats
+            SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_COMMENTED ->
+              handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeCommented
+            SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_REVIEWED ->
+              handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeReviewed
+            SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_CREATED ->
+              handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeCreated
+            SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_MERGED ->
+              handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeMerged
+            SearchPB.QueryRequest_QueryTypeQUERY_TOP_REVIEWED_AUTHORS ->
+              handleTopAuthorsQ queryRequestLimit Q.getMostReviewedAuthor
+            SearchPB.QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS ->
+              handleTopAuthorsQ queryRequestLimit Q.getMostCommentedAuthor
+            SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS ->
+              SearchPB.QueryResponse . Just
+                . SearchPB.QueryResponseResultAuthorsPeers
+                . SearchPB.AuthorsPeers
+                . V.fromList
+                . map toAPeerResult
+                <$> Q.getAuthorsPeersStrength queryRequestLimit
+            SearchPB.QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS -> do
+              results <- take (fromInteger . toInteger $ queryRequestLimit) <$> Q.getNewContributors
+              pure $
+                SearchPB.QueryResponse . Just $
+                  SearchPB.QueryResponseResultNewAuthors $
+                    toTermsCount (V.fromList $ toTTResult <$> results) 0
+            SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_TOPS ->
+              SearchPB.QueryResponse . Just
+                . SearchPB.QueryResponseResultChangesTops
+                <$> Q.getChangesTops queryRequestLimit
+            SearchPB.QueryRequest_QueryTypeQUERY_RATIO_COMMITS_VS_REVIEWS -> do
+              ratio <- Q.getRatio Q.COMMITS_VS_REVIEWS_RATIO
+              pure . SearchPB.QueryResponse . Just $
+                SearchPB.QueryResponseResultRatio ratio
+            SearchPB.QueryRequest_QueryTypeQUERY_HISTO_COMMITS -> do
+              histo <- Q.getHisto Q.COMMITS_HISTO
+              pure . SearchPB.QueryResponse . Just $
+                SearchPB.QueryResponseResultHisto $ SearchPB.HistoStat histo
+            SearchPB.QueryRequest_QueryTypeQUERY_HISTO_REVIEWS_AND_COMMENTS -> do
+              histo <- Q.getHisto Q.REVIEWS_AND_COMMENTS_HISTO
+              pure . SearchPB.QueryResponse . Just $
+                SearchPB.QueryResponseResultHisto $ SearchPB.HistoStat histo
+        Left err -> pure . handleError $ err
+
     handleError :: ParseError -> SearchPB.QueryResponse
     handleError (ParseError msg offset) =
       SearchPB.QueryResponse . Just
@@ -665,10 +685,9 @@ searchQuery _auth request = do
        in SearchPB.ChangeAndEvents {..}
 
 searchFields :: AuthResult AuthenticatedUser -> SearchPB.FieldsRequest -> AppM SearchPB.FieldsResponse
-searchFields _auth _request = pure response
+searchFields auth _request = checkAuth auth response
   where
-    response :: SearchPB.FieldsResponse
-    response = SearchPB.FieldsResponse . V.fromList . map toResult $ Q.fields
+    response _au = pure . SearchPB.FieldsResponse . V.fromList . map toResult $ Q.fields
     toResult (name, (fieldType', _realname, desc)) =
       let fieldName = from name
           fieldDescription = from desc
@@ -681,8 +700,9 @@ lookupTenant name = do
   pure $ Config.lookupTenant tenants name
 
 metricList :: AuthResult AuthenticatedUser -> MetricPB.ListRequest -> AppM MetricPB.ListResponse
-metricList _auth _request = pure . MetricPB.ListResponse . fromList . fmap toResp $ Q.allMetrics
+metricList auth _request = checkAuth auth response
   where
+    response _au = pure . MetricPB.ListResponse . fromList . fmap toResp $ Q.allMetrics
     toResp Q.MetricInfo {..} =
       MetricPB.MetricInfo
         { metricInfoName = from miName,
@@ -692,25 +712,26 @@ metricList _auth _request = pure . MetricPB.ListResponse . fromList . fmap toRes
         }
 
 metricGet :: AuthResult AuthenticatedUser -> MetricPB.GetRequest -> AppM MetricPB.GetResponse
-metricGet _auth request = do
-  let MetricPB.GetRequest {..} = request
-  incCounter monocleMetricCounter
-  requestE <- validateSearchRequest getRequestIndex getRequestQuery getRequestUsername
-  case requestE of
-    -- Valid request
-    Right (tenant, query) -> do
-      let runMetric = runQueryM tenant (Q.ensureMinBound query)
-          floatResult metric =
-            MetricPB.GetResponse . Just . MetricPB.GetResponseResultFloatValue <$> runMetric (Q.runMetric metric)
-
-      case getRequestMetric of
-        "time_to_merge" -> floatResult Q.metricTimeToMerge
-        -- Unknown query
-        _ -> handleError $ "Unknown metric: " <> from getRequestMetric
-
-    -- Invalid request
-    Left err -> handleError $ show err
+metricGet auth request = checkAuth auth response
   where
+    response _au = do
+      let MetricPB.GetRequest {..} = request
+      incCounter monocleMetricCounter
+      requestE <- validateSearchRequest getRequestIndex getRequestQuery getRequestUsername
+      case requestE of
+        -- Valid request
+        Right (tenant, query) -> do
+          let runMetric = runQueryM tenant (Q.ensureMinBound query)
+              floatResult metric =
+                MetricPB.GetResponse . Just . MetricPB.GetResponseResultFloatValue <$> runMetric (Q.runMetric metric)
+
+          case getRequestMetric of
+            "time_to_merge" -> floatResult Q.metricTimeToMerge
+            -- Unknown query
+            _ -> handleError $ "Unknown metric: " <> from getRequestMetric
+
+        -- Invalid request
+        Left err -> handleError $ show err
     handleError = pure . MetricPB.GetResponse . Just . MetricPB.GetResponseResultError
 
 -- | gen a 302 redirect helper
