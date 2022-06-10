@@ -16,6 +16,7 @@ let make = (~store: Store.t, ~extraQuery: option<string>=?) => {
     | None => baseRequest.query
     },
   }
+  let tokenM = state->Store.Store.getAuthenticatedUserJWT
   let trigger = state.query ++ extraQuery->Belt.Option.getWithDefault("")
   let match = resp =>
     switch resp {
@@ -31,7 +32,7 @@ let make = (~store: Store.t, ~extraQuery: option<string>=?) => {
       <Patternfly.Layout.FlexItem> {"Reviews"->str} </Patternfly.Layout.FlexItem>
     </Patternfly.Layout.Flex>
 
-  <QueryRenderCard title tooltip_content icon request trigger match childrenBuilder />
+  <QueryRenderCard title tooltip_content icon request tokenM trigger match childrenBuilder />
 }
 
 let default = make

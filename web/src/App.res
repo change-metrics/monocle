@@ -70,12 +70,18 @@ module MonocleNav = {
   }
 }
 
+let isAuthEnforced = (state: Store.Store.t) =>
+  switch state.about.auth {
+  | Config(auth) => auth.force_login
+  | _ => false
+  }
+
 module Login = {
   module Validator = {
     @react.component
     let make = (~store: Store.t, ~usernameValidated: string, ~setShowLoginModal) => {
       let (_, dispatch) = store
-      let get = {() => WebApi.Login.loginValidation({username: usernameValidated})}
+      let get = {() => WebApi.Login.loginValidation({username: usernameValidated}, None)}
       usernameValidated->String.length == 0
         ? React.null
         : {
@@ -88,7 +94,7 @@ module Login = {
               | LoginTypes.Validation_result(LoginTypes.Unknown_ident) =>
                 <Alert variant=#Warning title={"Author identity not found"} />
               | LoginTypes.Validation_result(LoginTypes.Known_ident) => {
-                  usernameValidated->Login->dispatch
+                  usernameValidated->NonAuthenticatedLogin->dispatch
                   setShowLoginModal(_ => false)
                   React.null
                 }
@@ -97,10 +103,12 @@ module Login = {
           }
     }
   }
-  module Modal = {
+
+  module NonAuthenticatedLoginModal = {
     @react.component
     let make = (~store: Store.t, ~setShowLoginModal) => {
       let loginTitle = "Login on Monocle"
+      let loginSubtitle = "This is not an authenticated login - Set your username to an author identity to get personalized content."
       let (username, setUsername) = React.useState(_ => "")
       let (usernameValidated, setUsernameValidated) = React.useState(_ => "")
       let onChange = (value, _) => {
@@ -115,11 +123,7 @@ module Login = {
         setShowLoginModal(_ => false)
       }
 
-      <LoginPage loginTitle>
-        <Alert
-          variant=#Info
-          title={"This is not an authenticated login - Set your username to an author identity to get personalized content."}
-        />
+      <LoginPage loginTitle loginSubtitle>
         <Form>
           <FormGroup label={"Username"} fieldId={"login"}>
             <TextInput id={"login"} onChange value={username} />
@@ -133,18 +137,53 @@ module Login = {
       </LoginPage>
     }
   }
-  module Button = {
+  module AuthenticatedLoginModal = {
     @react.component
-    let make = (~store: Store.t, ~setShowLoginModal) => {
-      let (state, dispatch) = store
-      let onClickLogin = _ => setShowLoginModal(_ => true)
-      let onClickLogout = _ => Logout->dispatch
-      <div style={ReactDOM.Style.make(~paddingRight="13px", ())}>
-        {switch state.username {
-        | Some(username) =>
-          <Patternfly.Layout.Flex>
-            <Patternfly.Layout.FlexItem>
-              <Button
+    let make = (~setShowLoginModal, ~closable, ~auth: Web.ConfigTypes.about_auth_config) => {
+      let loginTitle = "Login on Monocle"
+      let loginSubtitle =
+        "Click on the button below to be redirected to identity provider (" ++
+        auth.issuer ++
+        ")." ++ " Once authenticated you'll be redirected to Monocle."
+      let location = WebApi.serverUrl ++ "/" ++ "api/2/auth/login"
+      let onClick = e => {
+        e->ReactEvent.Mouse.preventDefault
+        replaceWindowLocation(location)
+      }
+      let close = e => {
+        e->ReactEvent.Mouse.preventDefault
+        setShowLoginModal(_ => false)
+      }
+      <LoginPage loginTitle loginSubtitle>
+        <Form>
+          <ActionGroup>
+            <Button _type=#Submit variant=#Primary onClick>
+              {"Authenticate with Identity provider"}
+            </Button>
+            {closable ? <Button variant=#Primary onClick=close> {"Close"} </Button> : React.null}
+          </ActionGroup>
+        </Form>
+      </LoginPage>
+    }
+  }
+
+  module LoginModal = {
+    @react.component
+    let make = (~store: Store.t, ~setShowLoginModal, ~closable=true) => {
+      let (state, _) = store
+      switch state.about.auth {
+      | Config(auth) => <AuthenticatedLoginModal setShowLoginModal closable auth />
+      | _ => <NonAuthenticatedLoginModal store setShowLoginModal />
+      }
+    }
+  }
+
+  module LoginStatus = {
+    let displayLoggedStatus = (state: Store.Store.t, username, onClickLogout) => {
+      <Patternfly.Layout.Flex>
+        <Patternfly.Layout.FlexItem>
+          {state.index != ""
+            ? <Button
                 variant=#Tertiary
                 icon={<Patternfly.Icons.User color="cyan" title={username} />}
                 onClick={_ => {
@@ -159,14 +198,36 @@ module Login = {
                 }}>
                 {username}
               </Button>
-            </Patternfly.Layout.FlexItem>
-            <Patternfly.Layout.FlexItem>
-              <div onClick={onClickLogout} style={ReactDOM.Style.make(~cursor="pointer", ())}>
-                <Patternfly.Icons.Arrow color="coral" title="Logout" />
-              </div>
-            </Patternfly.Layout.FlexItem>
-          </Patternfly.Layout.Flex>
-        | None => <Button variant=#Tertiary onClick=onClickLogin> {"Login"} </Button>
+            : <Button
+                variant=#Tertiary
+                isDisabled=true
+                icon={<Patternfly.Icons.User color="cyan" title={username} />}>
+                {username}
+              </Button>}
+        </Patternfly.Layout.FlexItem>
+        <Patternfly.Layout.FlexItem>
+          <div onClick={onClickLogout} style={ReactDOM.Style.make(~cursor="pointer", ())}>
+            <Patternfly.Icons.Arrow color="coral" title="Logout" />
+          </div>
+        </Patternfly.Layout.FlexItem>
+      </Patternfly.Layout.Flex>
+    }
+
+    @react.component
+    let make = (~store: Store.t, ~setShowLoginModal) => {
+      let (state, dispatch) = store
+      let onClickLogin = _ => setShowLoginModal(_ => true)
+      let onClickLogoutNAU = _ => NonAuthenticatedLogout->dispatch
+      let onClickLogoutAU = _ => AuthenticatedLogout->dispatch
+      <div style={ReactDOM.Style.make(~paddingRight="13px", ())}>
+        {switch (state.username, state.authenticated_user) {
+        | (Some(username), None) => displayLoggedStatus(state, username, onClickLogoutNAU)
+        | (None, Some(authenticatedUser)) =>
+          displayLoggedStatus(state, authenticatedUser.uid, onClickLogoutAU)
+        | _ =>
+          state->isAuthEnforced
+            ? React.null
+            : <Button variant=#Tertiary onClick=onClickLogin> {"Login"} </Button>
         }}
       </div>
     }
@@ -245,43 +306,61 @@ module App = {
     let (showAbout, setShowAbout) = React.useState(_ => false)
     let (showLoginModal, setShowLoginModal) = React.useState(_ => false)
 
+    // Remove the token 60s before its expiration
+    React.useEffect0(() => {
+      switch state.authenticated_user {
+      | Some(au) => {
+          let now = Js.Date.now()
+          let willExpireAt = au.jwt_exp->Js.Date.getTime
+          let willExpireIn = (willExpireAt -. now)->Belt.Int.fromFloat - 60
+          Js.log3("JWT expiration in", willExpireIn / 1000, "s")
+          Js.Global.setTimeout(() => AuthenticatedLogout->dispatch, willExpireIn)->ignore
+        }
+      | None => ()
+      }
+      None
+    })
+
     // The main page to render APP
     let bodyPage = {
       let nav = <MonocleNav active store />
       let sidebar = state.index == "" ? React.null : <PageSidebar nav />
-      let logo = <span onClick={_ => store->Store.changeIndex("")}> <img src={logoPath} /> </span>
-      let headerTools =
-        <PageHeaderTools>
-          <About store isOpen=showAbout onClose={() => setShowAbout(_ => false)} />
-          <PageHeaderToolsGroup>
-            <PageHeaderToolsItem> <Login.Button store setShowLoginModal /> </PageHeaderToolsItem>
-            <PageHeaderToolsItem>
-              <div
-                onClick={_ => setShowAbout(_ => true)}
-                style={ReactDOM.Style.make(~cursor="pointer", ())}>
-                <Patternfly.Icons.InfoAlt />
-              </div>
-            </PageHeaderToolsItem>
-            // <PageHeaderToolsItem>
-            //   <div
-            //     onClick={showSettings}
-            //     style={ReactDOM.Style.make(~cursor="pointer", ~paddingLeft="13px", ())}>
-            //     <Patternfly.Icons.Cog />
-            //   </div>
-            // </PageHeaderToolsItem>
-          </PageHeaderToolsGroup>
-        </PageHeaderTools>
-      let header = <PageHeader showNavToggle={state.index == "" ? false : true} logo headerTools />
+      let header = {
+        let logo = <span onClick={_ => store->Store.changeIndex("")}> <img src={logoPath} /> </span>
+        let headerTools =
+          <PageHeaderTools>
+            <About store isOpen=showAbout onClose={() => setShowAbout(_ => false)} />
+            <PageHeaderToolsGroup>
+              <PageHeaderToolsItem>
+                <Login.LoginStatus store setShowLoginModal />
+              </PageHeaderToolsItem>
+              <PageHeaderToolsItem>
+                <div
+                  onClick={_ => setShowAbout(_ => true)}
+                  style={ReactDOM.Style.make(~cursor="pointer", ())}>
+                  <Patternfly.Icons.InfoAlt />
+                </div>
+              </PageHeaderToolsItem>
+              // <PageHeaderToolsItem>
+              //   <div
+              //     onClick={showSettings}
+              //     style={ReactDOM.Style.make(~cursor="pointer", ~paddingLeft="13px", ())}>
+              //     <Patternfly.Icons.Cog />
+              //   </div>
+              // </PageHeaderToolsItem>
+            </PageHeaderToolsGroup>
+          </PageHeaderTools>
+        <PageHeader showNavToggle={state.index == "" ? false : true} logo headerTools />
+      }
       <Page header sidebar isManagedSidebar={true}>
-        {switch showLoginModal {
-        | true => <Login.Modal store setShowLoginModal />
-        | false =>
-          <React.Fragment>
-            {switch state.index {
-            | "" => React.null
-
-            | _ => <PageSection variant=#Dark> <Search.Top store /> </PageSection>
-            }}
+        <React.Fragment>
+          {state.index != ""
+            ? <PageSection variant=#Dark> <Search.Top store /> </PageSection>
+            : React.null}
+          {switch (showLoginModal, state->isAuthEnforced, state.authenticated_user) {
+          | (true, _, _) => <Login.LoginModal store setShowLoginModal />
+          | (_, true, None) => <Login.LoginModal store setShowLoginModal closable=false />
+          | _ =>
             <PageSection isFilled={true}>
               {switch url.path {
               | list{} => <Indices.Indices store />
@@ -304,8 +383,8 @@ module App = {
               | _ => <p> {"Not found"->str} </p>
               }}
             </PageSection>
-          </React.Fragment>
-        }}
+          }}
+        </React.Fragment>
       </Page>
     }
 
@@ -334,7 +413,7 @@ module App = {
 @react.component
 let make = () =>
   <NetworkRender
-    get={() => WebApi.Config.getAbout({void: ""})}
+    get={() => WebApi.Config.getAbout({void: ""}, None)}
     trigger={""}
     render={(resp: ConfigTypes.get_about_response) => {
       switch resp.about {

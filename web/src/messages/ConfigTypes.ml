@@ -34,10 +34,19 @@ type about_about_link = {
   category : string;
 }
 
-type about = {
+type about_auth_config = {
+  force_login : bool;
+  issuer : string;
+}
+
+type about_auth =
+  | Config of about_auth_config
+  | Void of string
+
+and about = {
   version : string;
   links : about_about_link list;
-  auth : bool;
+  auth : about_auth;
 }
 
 type get_about_request = {
@@ -122,10 +131,20 @@ let rec default_about_about_link
   category;
 }
 
-let rec default_about 
+let rec default_about_auth_config 
+  ?force_login:((force_login:bool) = false)
+  ?issuer:((issuer:string) = "")
+  () : about_auth_config  = {
+  force_login;
+  issuer;
+}
+
+let rec default_about_auth () : about_auth = Config (default_about_auth_config ())
+
+and default_about 
   ?version:((version:string) = "")
   ?links:((links:about_about_link list) = [])
-  ?auth:((auth:bool) = false)
+  ?auth:((auth:about_auth) = Config (default_about_auth_config ()))
   () : about  = {
   version;
   links;

@@ -79,6 +79,7 @@ module MostActiveAuthor = {
       },
       limit: limit->Int32.of_int,
     }
+    let tokenM = state->Store.Store.getAuthenticatedUserJWT
     let trigger = state.query ++ limit->string_of_int
     let limitSelector = <LimitSelector limit setLimit default=10 values=limit_values />
     let icon = <Patternfly.Icons.TrendUp />
@@ -90,7 +91,7 @@ module MostActiveAuthor = {
     let childrenBuilder = (data: Web.SearchTypes.terms_count) =>
       <TopTermsTable store items=data.termcount columnNames link />
     <QueryRenderCard
-      request trigger title tooltip_content icon limitSelector match childrenBuilder
+      request tokenM trigger title tooltip_content icon limitSelector match childrenBuilder
     />
   }
 }

@@ -387,6 +387,7 @@ module Top = {
     let (error, setError) = React.useState(() => None)
     let setValue = v => setValue'(_ => v)
     let (showErrorModal, setShowErrorModal) = React.useState(_ => false)
+    let tokenM = state->Store.Store.getAuthenticatedUserJWT
 
     // Update changed value
     React.useEffect1(() => {
@@ -414,11 +415,14 @@ module Top = {
       }->Js.Promise.resolve
     }
     let onSave = newValue => {
-      (WebApi.Search.check({
-        index: state.index,
-        username: state.username->Belt.Option.getWithDefault(""),
-        query: value,
-      }) |> Js.Promise.then_(handleCheck(newValue)))->ignore
+      (WebApi.Search.check(
+        {
+          index: state.index,
+          username: state.username->Belt.Option.getWithDefault(""),
+          query: value,
+        },
+        tokenM,
+      ) |> Js.Promise.then_(handleCheck(newValue)))->ignore
     }
 
     let onClick = _ => onSave(value)

@@ -20,13 +20,15 @@ module Indice = {
 module Indices = {
   @react.component
   let make = (~store: Store.t) => {
+    let (state, _) = store
     let title = "Workspaces"
     let tooltip_content = "This shows the list of available workspaces"
     let icon = <Patternfly.Icons.Bundle />
+    let tokenM = state->Store.Store.getAuthenticatedUserJWT
     <MCenteredContent>
       <MonoCard title tooltip_content icon>
         <NetworkRender
-          get={() => WebApi.Config.getWorkspaces({void: ""})}
+          get={() => WebApi.Config.getWorkspaces({void: ""}, tokenM)}
           trigger={""}
           render={(resp: ConfigTypes.get_workspaces_response) =>
             resp.workspaces->Belt.List.length > 0

@@ -87,7 +87,7 @@ pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _about a) _
 
 -- curl -XPOST -d '{"void": ""}' -H "Content-type: application/json" -H 'Authorization: Bearer <token>' http://localhost:8080/auth/whoami
 authWhoAmi :: AuthResult AuthenticatedUser -> AuthPB.WhoAmiRequest -> AppM AuthPB.WhoAmiResponse
-authWhoAmi (Authenticated (AUser muid _groups _aliases)) _request = response
+authWhoAmi (Authenticated (AUser muid)) _request = response
   where
     response =
       pure $
@@ -166,7 +166,7 @@ configGetAbout _auth _request = response
       let aboutVersion = from version
           links = maybe [] Config.links (Config.about config)
           aboutLinks = fromList $ toLink <$> links
-          aboutAuth = isJust authProvider
+          aboutAuth = toAuth <$> authProvider
       pure $ ConfigPB.GetAboutResponse $ Just ConfigPB.About {..}
     toLink :: Config.Link -> ConfigPB.About_AboutLink
     toLink Config.Link {..} =
@@ -174,6 +174,10 @@ configGetAbout _auth _request = response
           about_AboutLinkUrl = from url
           about_AboutLinkCategory = from $ fromMaybe "About" category
        in ConfigPB.About_AboutLink {..}
+    toAuth Config.OIDCProvider {..} =
+      let about_AuthConfigForceLogin = opEnforceAuth
+          about_AuthConfigIssuer = from opIssuerURL
+       in ConfigPB.AboutAuthConfig $ ConfigPB.About_AuthConfig {..}
 
 -- | /api/2/get_workspaces endpoint
 configGetWorkspaces :: AuthResult AuthenticatedUser -> ConfigPB.GetWorkspacesRequest -> AppM ConfigPB.GetWorkspacesResponse
@@ -784,7 +788,6 @@ handleLoggedIn err codeM stateM = do
             (from oauthCode)
       now <- liftIO Monocle.Prelude.getCurrentTime
       let idToken = O.idToken tokens
-          -- TODO: map expiry on Provider's token expiry ?
           expiry = addUTCTime (24 * 3600) now
           mUid = userId oidcEnv idToken
       log . OIDCProviderTokenRequested $ show idToken
