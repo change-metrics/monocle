@@ -139,7 +139,8 @@ run' port url configFile glLogger = do
 
   -- Init OIDC
   -- Initialise JWT settings for locally issuing JWT (local provider)
-  localJwk <- doGenJwk
+  jwkGenKey <- fmap from <$> lookupEnv "MONOCLE_JWK_GEN_KEY"
+  localJwk <- doGenJwk jwkGenKey
   providerM <- getAuthProvider
   let localJWTSettings = defaultJWTSettings localJwk
   -- Initialize env to talk with OIDC provider

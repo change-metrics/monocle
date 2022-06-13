@@ -14,7 +14,8 @@ where
 import Control.Monad.Random (genByteString)
 import Control.Monad.Random qualified as Random
 import Crypto.Hash.SHA256 (hash)
-import Crypto.JWT (Error, JWK, KeyMaterialGenParam (RSAGenParam), genJWK)
+import Crypto.JWT (Error, JWK, fromOctets)
+import Data.ByteString qualified as BS
 import Data.ByteString.Base64 qualified as B64
 import Data.ByteString.Lazy qualified as BSL
 import Data.Map.Strict qualified as HM
@@ -33,8 +34,16 @@ import Web.OIDC.Client qualified as O
 
 --- * JWT handling
 
-doGenJwk :: IO JWK
-doGenJwk = genJWK (RSAGenParam (4096 `div` 8))
+doGenJwk :: Maybe ByteString -> IO JWK
+doGenJwk keyM = case keyM of
+  Just key -> do
+    if BS.length key < 64
+      then randomJWK
+      else pure $ keyFromBS key
+  Nothing -> randomJWK
+  where
+    randomJWK = keyFromBS <$> genRandom
+    keyFromBS = fromOctets . take 64 . BSL.unpack . from
 
 type MUidMap = Map Text Text
 
@@ -101,7 +110,7 @@ initOIDCEnv OIDCProvider {..} = do
 
 mkSessionStore :: OIDCEnv -> Maybe O.State -> O.SessionStore IO
 mkSessionStore OIDCEnv {sessionStoreStorage} stateM = do
-  let sessionStoreGenerate = liftIO genRandom
+  let sessionStoreGenerate = liftIO genRandomB64
       sessionStoreSave = storeSave
       sessionStoreGet = storeGet
       sessionStoreDelete = case stateM of
@@ -119,8 +128,13 @@ mkSessionStore OIDCEnv {sessionStoreStorage} stateM = do
         pure (Just state', nonce)
       Nothing -> pure (Nothing, Nothing)
 
+-- | Generate a random fixed size string of 42 char base64 encoded
+genRandomB64 :: IO ByteString
+genRandomB64 = B64.encode . hash <$> genRandom
+
+-- | Generate a random fixed size string of 1024 Bytes
 genRandom :: IO ByteString
 genRandom = do
   g <- Random.newStdGen
-  let (bs, _ng) = genByteString 42 g
-  pure . B64.encode $ hash bs
+  let (bs, _ng) = genByteString 1024 g
+  pure bs
