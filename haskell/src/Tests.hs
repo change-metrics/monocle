@@ -131,7 +131,7 @@ monocleApiTests =
     testAuthMagicTokenEndpoint = do
       let appEnv = mkAppEnv $ Config.mkTenant "ws"
       let adminToken = "test"
-      setEnv "ADMIN_TOKEN" adminToken
+      setEnv "MONOCLE_ADMIN_TOKEN" adminToken
       withTestApi appEnv $ \_logger client -> do
         resp <- authGetMagicJwt client $ GetMagicJwtRequest $ from adminToken
         case resp of

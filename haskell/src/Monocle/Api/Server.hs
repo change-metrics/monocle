@@ -121,7 +121,7 @@ authGetMagicJwt _auth (AuthPB.GetMagicJwtRequest inputAdminToken) = do
   -- The generated JWT does not have any expiry
   -- An API restart generates new JWK that will invalidate the token
   jwtE <- liftIO $ mkJwt (localJWTSettings oidc) Map.empty "bot" Nothing
-  adminTokenM <- liftIO $ lookupEnv "ADMIN_TOKEN"
+  adminTokenM <- liftIO $ lookupEnv "MONOCLE_ADMIN_TOKEN"
   case (jwtE, adminTokenM) of
     (Right jwt, Just adminToken) | inputAdminToken == from adminToken -> pure . genSuccess $ decodeUtf8 jwt
     (_, Just adminToken) | inputAdminToken /= from adminToken -> pure $ genErr AuthPB.GetMagicJwtErrorInvalidAdminToken

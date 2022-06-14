@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - [cli] github-watched subcommand can be used to list a user's watched projects.
+- [api] Authentication support via an OIDC provider (ADR: 0012-OpenID-connect-authentication.md).
 
 ### Changed
 ### Removed

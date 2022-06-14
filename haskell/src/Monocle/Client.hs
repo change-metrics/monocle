@@ -75,7 +75,7 @@ withClient ::
   m a
 withClient url managerM callBack =
   do
-    tokenM' <- liftIO $ lookupEnv "ADMIN_TOKEN"
+    tokenM' <- liftIO $ lookupEnv "MONOCLE_ADMIN_TOKEN"
     let tokenM = from <$> tokenM'
     manager <- maybe (liftIO mkManager) pure managerM
     callBack MonocleClient {..}

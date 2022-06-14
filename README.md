@@ -115,24 +115,50 @@ See [Troubleshooting](#troubleshooting) section if needed.
 
 ## Configuration
 
-### System
+The Monocle configuration is splitted between a configuration file and various environment
+variables.
+
+[Environment variables](#environment-variables) configure system settings and secrets. Any changes require
+a restart of the Monocle API. 
+
+[The configuration file](#configuration-file) contains non sensitive data and could be exposed in a Git repository.
+A CI/CD flow could be enabled on top of the Git repository to allow Monocle' users to
+propose configuration changes. The Monocle API tracks the configuration file's modification date and reloads transparently in case of changes.  
+
+### Environment variables
 
 For a local deployment, default settings are fine.
 
 The following settings are available in the `.env` file:
 
 - `MONOCLE_PUBLIC_URL=<url>` to configure the public URL to access the UI and API.
-  This is required for the github oauth redirection.
+  This is required for the authentication provider redirection.
 - `MONOCLE_VERSION=<version>` to use a specific version. By default it uses `latest`.
 - `MONOCLE_TITLE=<title>` to change the title of the web application. By default it is `Monocle`.
-- `ES_XMS and ES_XMX` to change the ElasticSearch JVM HEAP SIZE. By default 512m.
 - `MONOCLE_WEB_ADDR` to change the IP address the web service will bind on. By default 0.0.0.0.
 - `MONOCLE_WEB_PORT` to change the TCP port the web service will bind on. By default 8080.
+- `MONOCLE_JWK_GEN_KEY` to set the local JWT issuer key. The key size must be 64 characters minimum.
+  By default the key is automatically generated.
+- `MONOCLE_OIDC_<PROVIDER_NAME>_CLIENT_SECRET` to set the secret used by Monocle to request an ID Token.
+  Unset by default.
+- `MONOCLE_ADMIN_TOKEN` to set the *token* to access admin endpoints.
+  By default not set and endpoints deactivated.
+- `ES_XMS and ES_XMX` to change the ElasticSearch JVM HEAP SIZE. By default 512m.
 
-### Workspaces
+### Configuration file
 
-The Monocle configuration file defines workspaces. The file is used by the API and crawlers processes. The format of the file is YAML. You might want to use Dhall to manage it or to better
-understand the schema ([dhall-monocle](https://github.com/change-metrics/dhall-monocle)).
+The Monocle configuration file is used by the API and crawlers processes. The format of the file is YAML.
+
+The file configures the following:
+
+- [Monocle workspaces](#workspaces)
+- The [About](#about) WEB Application endpoint
+- The [Authentication](#authentication) system
+
+You might want to use Dhall to manage it or to better understand the schema ([dhall-monocle](https://github.com/change-metrics/dhall-monocle)).
+
+#### Workspaces
+
 
 A workspace uses a dedicated ElasticSearch index. A workspace defines:
 
@@ -142,12 +168,12 @@ A workspace uses a dedicated ElasticSearch index. A workspace defines:
 - groups - [details](#groups-definition)
 - search aliases - [details](#search-aliases-definition)
 
-#### Crawlers
+##### Crawlers
 
 Monocle provides two kinds of crawlers:
 
-- Change: A crawler to fetch Changes proposed to a repository. Monocle supports Gerrit (Reviews), GitHub (Pull-Requests), GitLab (Merge-Requests).
-- TaskData: A crawler to fetch task data related to a repository. Monocle supports GitHub (issues),
+- [Change](#change): A crawler to fetch Changes proposed to a repository. Monocle supports Gerrit (Reviews), GitHub (Pull-Requests), GitLab (Merge-Requests).
+- [TaskData](#taskdata): A crawler to fetch task data related to a repository. Monocle supports GitHub (issues),
   and BugZilla (Bugs).
 
 The `.secrets` file is used to store credentials and API keys used by crawlers to authenticate on providers.
@@ -167,9 +193,7 @@ workspaces:
         provider: {}
 ```
 
-##### Change
-
-###### GitHub
+###### Change
 
 A GitHub provider settings
 
@@ -196,7 +220,6 @@ token value. Default is "GITHUB_TOKEN"
 To crawl privates repositories, either you must use a [GitHub Application](#github-application)
 or you must generate a Personal Access Token with the "repo" scope.
 
-###### Gerrit
 
 A Gerrit provider settings
 
@@ -221,7 +244,6 @@ password. Default is "GERRIT_PASSWORD"
 
 `gerrit_prefix` might be set to configure the crawler to prepend the repository name with a prefix.
 
-###### GitLab
 
 A GitLab provider settings
 
@@ -244,18 +266,18 @@ the listed repositories.
 `gitlab_token` might be specified to use an alternate environment variable name to look for the
 token value. Default is "GITLAB_TOKEN"
 
-##### TaskData
+###### TaskData
 
 Monocle provides additional crawlers to attach tasks/issues/RFEs to changes based on a
 match on `change_url`. Then, Changes can be enhanced with information about related
 tasks such as a `priority` or a `score`.
 
-###### GitHub
+For GitHub:
 
 The GitHub TaskData crawler run automatically whenever repositories are specified into a
 [GitHub Changes crawler](#github) definition.
 
-###### Bugzilla
+For Bugzilla:
 
 A BugZilla provider settings
 
@@ -277,7 +299,7 @@ token value. Default is "BUGZILLA_TOKEN"
 
 Note that this crawler is managed by the `crawler` container.
 
-#### Projects definition
+##### Projects definition
 
 Projects could be defined within a workspace configuration. A project is identified by a name and allows to set the following filter attributes:
 
@@ -314,7 +336,7 @@ retrieved the list defined projects for a given workspace. See the
 
 The monocle query endpoint handles the query parameter: `project`.
 
-#### Identity Management
+##### Identity Management
 
 Monocle is able to index changes from multiple code review systems. A contributor
 might get different identities across code review systems. Thus Monocle provides
@@ -332,6 +354,7 @@ workspaces:
         aliases:
           - github.com/john-doe
           - review.opendev.org/John Doe/12345
+          - AuthProviderUID:jdoe
     crawlers:
       - name: github-containers
         provider:
@@ -351,7 +374,7 @@ A contributor id on github.com or a GitHub enterprise instance is formated as `<
 
 A contributor id on a Gerrit instance is formated as `<domain>/<Full Name>/<gerrit-user-id>`.
 
-##### Apply idents configuration
+###### Apply idents configuration
 
 Database objects must be updated to reflect the configuration. Once `config.yaml` is updated, run the following commands:
 
@@ -359,7 +382,7 @@ Database objects must be updated to reflect the configuration. Once `config.yaml
 docker-compose run --rm --no-deps api monocle janitor update-idents --elastic elastic:9200 --config /etc/monocle/config.yaml
 ```
 
-#### Groups definition
+##### Groups definition
 
 A group in Monocle permits to group authors of Changes and filter them from the web interface.
 
@@ -386,14 +409,14 @@ workspaces:
 ```
 
 
-#### Search aliases definition
+##### Search aliases definition
 
 The Monocle configuration file provides a way to define aliases to be used in search queries.
 A use case could be to group `bot` authors to provide an easy way to exclude them from search results.
 
 Here is an example:
 
-```
+```YAML
 workspaces:
   - name: example
     search_aliases:
@@ -402,6 +425,94 @@ workspaces:
 ```
 
 Then the query could be: "from:now-3weeks and not bot".
+
+#### About
+
+This section configures information to be displayed by the WEB Application on the `About` modal.
+
+Here is an example:
+
+```YAML
+about:
+  links:
+    - category: Community
+      name: Monocle configuration
+      url: https://github.com/change-metrics/demo-node-config
+```
+
+#### Authentication
+
+Monocle supports user authentication via an OIDC (OpenID Connect) provider.
+
+Once authenticated, Monocle is able to display personalized content like resolving the
+*self* query value such as in the query: *author: self*.
+
+Monocle only support one provider at a time.
+
+Note that by default and if no authentication system is configured, Monocle provides an
+*unauthentcated login* mechanism which allows a user to enter its *author name*.
+
+##### OIDC Provider
+
+Here is an example of configuration:
+
+```YAML
+auth:
+  auth_provider:
+    oidc_client_id: my_client_id
+    oidc_issuer_url: https://accounts.google.com
+    oidc_provider_name: my provider
+    oidc_user_claim: email
+  enforce_auth: false
+```
+
+- oidc_client_id: is the client id that is provided by your OIDC provider.
+- oidc_issuer_url: is the URL used to discover your OIDC's provider
+  configuration (via the *.well-known/openid-configuration* endpoint).
+- oidc_provider_name: is the name displayed on the authentication modal in the WEB Application.
+- oidc_user_claim: (optional) is the JWT claim used as/(or to discover matching) Monocle User ID. (Default: *sub*)
+- enfore_auth: (optional) if set to *True* then Monocle requires a valid JWT to access any API endpoints and the
+  WEB Application requires the user to login to navigate. (Default: *False*)
+
+The redirect URI to configure on the OIDC provider is: `<MONOCLE_PUBLIC_URL>/auth/cb`.
+
+Furthermore, two additional settings ([environment variables](#environment-variables)) are required to enable the Authentication provider:
+
+- MONOCLE_PUBLIC_URL: is used to redirect the OIDC provider to the callback endpoint and the user to
+  the Monocle WEB Application after a successful authentication.
+- MONOCLE_OIDC_<PROVIDER_NAME>_CLIENT_SECRET: Monocle looks for this variable to discover the client secret
+  which has been provided by your OIDC provider.
+
+Monocle API generates the following log line when the Authentication provider has been properly set up:
+
+```
+2022-06-14 09:53:25 Authentication provider (my provider) ready
+```
+
+Monocle issues its own JWTs to the WEB Application users. JWTs issued by the OIDC provider are used to get
+the authenticated user's information such as its unique uid via the *oidc_user_claim*. Monocle uses the UID (from the OIDC provider) to discover through the [idents](#identity-management) settings a matching
+Monocle Ident. A *matching ident* defines an *alias* which is *AuthProviderUID:<user_unique_id>*. In case of
+no matching ident then the user claim value is used.
+
+A Monocle JWT is valid for 24 hours, once expired the user must login again to the OIDC provider.
+
+###### Service tokens
+
+Monocle can issue service tokens to be used by applications that consume the Monocle API. To request
+a token your need to perform the following call:
+
+```Shell
+curl -XPOST -d '{"token": "<admin_token>"}' -H "Content-type: application/json" <monocle_public_url>/auth/get
+{"jwt":"eyJhbGciOiJIUzUxMiJ9.eyJkYXQiOnsiYURlZmF1bHRNdWlkIjoiYm90IiwiYU11aWRNYXAiOnt9fX0.bmj5vcxXxz2LmkrVKxX8jd-aYzHeTng_QBzR_9YZwCb9ToKA59TVlN1wZf6hhPlUX1VU82Y94gVCREDifintZg"}
+```
+
+Then set the *Authorization* header to access Monocle API:
+
+```Shell
+curl -XPOST -d '{"void": ""}' -H "Content-type: application/json" -H 'Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJkYXQiOnsiYURlZmF1bHRNdWlkIjoiYm90IiwiYU11aWRNYXAiOnt9fX0.bmj5vcxXxz2LmkrVKxX8jd-aYzHeTng_QBzR_9YZwCb9ToKA59TVlN1wZf6hhPlUX1VU82Y94gVCREDifintZg' <monocle_public_url>/auth/whoami
+```
+
+The `MONOCLE_ADMIN_TOKEN` must be set to enable this endpoint.
 
 ### Full configuration file example
 
