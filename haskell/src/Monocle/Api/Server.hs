@@ -84,7 +84,7 @@ pattern GetConfig a <- Config.ConfigStatus _ a _
 
 -- | Convenient pattern to get the list of tenants
 pattern GetTenants :: [Config.Index] -> Config.ConfigStatus
-pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _about a) _
+pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _about _auth a) _
 
 checkAuth :: forall a. AuthResult AuthenticatedUser -> (Maybe AuthenticatedUser -> AppM a) -> AppM a
 checkAuth auth action = do
@@ -173,7 +173,7 @@ configGetAbout _auth _request = response
   where
     response = do
       GetConfig config <- getConfig
-      authProvider <- liftIO Config.getAuthProvider
+      authProvider <- liftIO $ Config.getAuthProvider config
       let aboutVersion = from version
           links = maybe [] Config.links (Config.about config)
           aboutLinks = fromList $ toLink <$> links
@@ -185,10 +185,11 @@ configGetAbout _auth _request = response
           about_AboutLinkUrl = from url
           about_AboutLinkCategory = from $ fromMaybe "About" category
        in ConfigPB.About_AboutLink {..}
-    toAuth Config.OIDCProvider {..} =
+    toAuth Config.OIDCProviderConfig {..} =
       let about_AuthConfigForceLogin = opEnforceAuth
           about_AuthConfigIssuer = from opIssuerURL
-       in ConfigPB.AboutAuthConfig $ ConfigPB.About_AuthConfig {..}
+          about_AuthConfigProviderName = from opName
+       in ConfigPB.AboutAuthAuthConfig $ ConfigPB.About_AuthConfig {..}
 
 -- | /api/2/get_workspaces endpoint
 configGetWorkspaces :: AuthResult AuthenticatedUser -> ConfigPB.GetWorkspacesRequest -> AppM ConfigPB.GetWorkspacesResponse

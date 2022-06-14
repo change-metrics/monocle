@@ -69,11 +69,13 @@ let default_about_about_link_mutable () : about_about_link_mutable = {
 type about_auth_config_mutable = {
   mutable force_login : bool;
   mutable issuer : string;
+  mutable provider_name : string;
 }
 
 let default_about_auth_config_mutable () : about_auth_config_mutable = {
   force_login = false;
   issuer = "";
+  provider_name = "";
 }
 
 type about_mutable = {
@@ -85,7 +87,7 @@ type about_mutable = {
 let default_about_mutable () : about_mutable = {
   version = "";
   links = [];
-  auth = ConfigTypes.Config (ConfigTypes.default_about_auth_config ());
+  auth = ConfigTypes.Auth_config (ConfigTypes.default_about_auth_config ());
 }
 
 type get_about_request_mutable = {
@@ -305,12 +307,16 @@ let rec decode_about_auth_config json =
     | "issuer" -> 
       let json = Js.Dict.unsafeGet json "issuer" in
       v.issuer <- Pbrt_bs.string json "about_auth_config" "issuer"
+    | "provider_name" -> 
+      let json = Js.Dict.unsafeGet json "provider_name" in
+      v.provider_name <- Pbrt_bs.string json "about_auth_config" "provider_name"
     
     | _ -> () (*Unknown fields are ignored*)
   done;
   ({
     ConfigTypes.force_login = v.force_login;
     ConfigTypes.issuer = v.issuer;
+    ConfigTypes.provider_name = v.provider_name;
   } : ConfigTypes.about_auth_config)
 
 let rec decode_about_auth json =
@@ -319,12 +325,9 @@ let rec decode_about_auth json =
     | -1 -> Pbrt_bs.E.malformed_variant "about_auth"
     | i -> 
       begin match Array.unsafe_get keys i with
-      | "config" -> 
-        let json = Js.Dict.unsafeGet json "config" in
-        (ConfigTypes.Config ((decode_about_auth_config (Pbrt_bs.object_ json "about_auth" "Config"))) : ConfigTypes.about_auth)
-      | "void" -> 
-        let json = Js.Dict.unsafeGet json "void" in
-        (ConfigTypes.Void (Pbrt_bs.string json "about_auth" "Void") : ConfigTypes.about_auth)
+      | "auth_config" -> 
+        let json = Js.Dict.unsafeGet json "auth_config" in
+        (ConfigTypes.Auth_config ((decode_about_auth_config (Pbrt_bs.object_ json "about_auth" "Auth_config"))) : ConfigTypes.about_auth)
       
       | _ -> loop (i - 1)
       end
@@ -349,12 +352,9 @@ and decode_about json =
         (decode_about_about_link (Pbrt_bs.object_ json "about" "links"))
       ) a |> Array.to_list;
     end
-    | "config" -> 
-      let json = Js.Dict.unsafeGet json "config" in
-      v.auth <- Config ((decode_about_auth_config (Pbrt_bs.object_ json "about" "auth")))
-    | "void" -> 
-      let json = Js.Dict.unsafeGet json "void" in
-      v.auth <- Void (Pbrt_bs.string json "about" "auth")
+    | "auth_config" -> 
+      let json = Js.Dict.unsafeGet json "auth_config" in
+      v.auth <- Auth_config ((decode_about_auth_config (Pbrt_bs.object_ json "about" "auth")))
     
     | _ -> () (*Unknown fields are ignored*)
   done;
@@ -560,18 +560,17 @@ let rec encode_about_auth_config (v:ConfigTypes.about_auth_config) =
   let json = Js.Dict.empty () in
   Js.Dict.set json "force_login" (Js.Json.boolean v.ConfigTypes.force_login);
   Js.Dict.set json "issuer" (Js.Json.string v.ConfigTypes.issuer);
+  Js.Dict.set json "provider_name" (Js.Json.string v.ConfigTypes.provider_name);
   json
 
 let rec encode_about_auth (v:ConfigTypes.about_auth) = 
   let json = Js.Dict.empty () in
   begin match v with
-  | ConfigTypes.Config v ->
-    begin (* config field *)
+  | ConfigTypes.Auth_config v ->
+    begin (* authConfig field *)
       let json' = encode_about_auth_config v in
-      Js.Dict.set json "config" (Js.Json.object_ json');
+      Js.Dict.set json "auth_config" (Js.Json.object_ json');
     end;
-  | ConfigTypes.Void v ->
-    Js.Dict.set json "void" (Js.Json.string v);
   end;
   json
 
@@ -590,13 +589,11 @@ and encode_about (v:ConfigTypes.about) =
     Js.Dict.set json "links" links';
   end;
   begin match v.ConfigTypes.auth with
-    | Config v ->
-      begin (* config field *)
+    | Auth_config v ->
+      begin (* authConfig field *)
         let json' = encode_about_auth_config v in
-        Js.Dict.set json "config" (Js.Json.object_ json');
+        Js.Dict.set json "auth_config" (Js.Json.object_ json');
       end;
-    | Void v ->
-      Js.Dict.set json "void" (Js.Json.string v);
   end; (* match v.auth *)
   json
 

@@ -19,7 +19,7 @@ import Data.ByteString qualified as BS
 import Data.ByteString.Base64 qualified as B64
 import Data.ByteString.Lazy qualified as BSL
 import Data.Map.Strict qualified as HM
-import Monocle.Config (OIDCProvider (..))
+import Monocle.Config (OIDCProviderConfig (..))
 import Monocle.Prelude
 import Network.HTTP.Client (Manager)
 import Servant.Auth.Server
@@ -95,8 +95,8 @@ instance ToMarkup LoginInUser where
             )
         )
 
-initOIDCEnv :: OIDCProvider -> IO OIDCEnv
-initOIDCEnv OIDCProvider {..} = do
+initOIDCEnv :: OIDCProviderConfig -> IO OIDCEnv
+initOIDCEnv OIDCProviderConfig {..} = do
   manager <- newOpenSSLManager
   provider <- O.discover opIssuerURL manager
   sessionStoreStorage <- newMVar HM.empty

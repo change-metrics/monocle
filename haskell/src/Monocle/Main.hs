@@ -8,7 +8,7 @@ import Lentille (httpRetry)
 import Monocle.Api.Jwt (LoginInUser (..), doGenJwk, initOIDCEnv)
 import Monocle.Api.Server (handleLoggedIn, handleLogin)
 import Monocle.Backend.Index qualified as I
-import Monocle.Config (getAuthProvider)
+import Monocle.Config (getAuthProvider, opName)
 import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Logging
@@ -141,11 +141,13 @@ run' port url configFile glLogger = do
   -- Initialise JWT settings for locally issuing JWT (local provider)
   jwkGenKey <- fmap from <$> lookupEnv "MONOCLE_JWK_GEN_KEY"
   localJwk <- doGenJwk jwkGenKey
-  providerM <- getAuthProvider
+  providerM <- getAuthProvider conf
   let localJWTSettings = defaultJWTSettings localJwk
   -- Initialize env to talk with OIDC provider
   oidcEnv <- case providerM of
-    Just provider -> pure <$> initOIDCEnv provider
+    Just provider -> do
+      doLog glLogger $ via @Text $ AuthSystemReady $ opName provider
+      pure <$> initOIDCEnv provider
     _ -> pure Nothing
   let aOIDC = OIDC {..}
 
