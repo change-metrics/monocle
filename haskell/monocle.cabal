@@ -142,7 +142,7 @@ library
                      , mtl
                      , network                    >= 3
                      , network-uri                >= 2.5
-                     , oidc-client                >= 0.6.0
+                     , oidc-client                >= 0.6.1
                      , optparse-applicative
                      , parser-combinators         >= 1.2
                      , prometheus-client          >= 1.0

@@ -10,12 +10,6 @@ source-repository-package
   location: https://github.com/kowainik/relude
   tag: 1cd9f2ebe13322007b7c3e84b6f11126e98c10fa
 
--- Pull last haskell-oidc-client master for bytestring version cap removal
-source-repository-package
-  type: git
-  location: https://github.com/krdlab/haskell-oidc-client
-  tag: 78dae84b9903038af61af87fe94112dd7aa57ebc
-
 package proto3-suite
   flags: -swagger
 

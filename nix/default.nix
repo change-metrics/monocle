@@ -91,7 +91,7 @@ let
             src = builtins.fetchGit {
               url = "https://github.com/krdlab/haskell-oidc-client";
               ref = "master";
-              rev = "78dae84b9903038af61af87fe94112dd7aa57ebc";
+              rev = "d00e6c52d529e7e2283f4322cf9468a6221b144d";
             };
           in pkgs.haskell.lib.dontCheck
           (hpPrev.callCabal2nix "oidc-client" src { });
