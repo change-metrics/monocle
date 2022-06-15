@@ -14,11 +14,12 @@ where
 import Control.Monad.Random (genByteString)
 import Control.Monad.Random qualified as Random
 import Crypto.Hash.SHA256 (hash)
-import Crypto.JWT (Error, JWK, KeyMaterialGenParam (RSAGenParam), genJWK)
+import Crypto.JWT (Error, JWK, fromOctets)
+import Data.ByteString qualified as BS
 import Data.ByteString.Base64 qualified as B64
 import Data.ByteString.Lazy qualified as BSL
 import Data.Map.Strict qualified as HM
-import Monocle.Config (OIDCProvider (..))
+import Monocle.Config (OIDCProviderConfig (..))
 import Monocle.Prelude
 import Network.HTTP.Client (Manager)
 import Servant.Auth.Server
@@ -33,11 +34,23 @@ import Web.OIDC.Client qualified as O
 
 --- * JWT handling
 
-doGenJwk :: IO JWK
-doGenJwk = genJWK (RSAGenParam (4096 `div` 8))
+doGenJwk :: Maybe ByteString -> IO JWK
+doGenJwk keyM = case keyM of
+  Just key | BS.length key >= 64 -> pure $ keyFromBS key
+  _ -> randomJWK
+  where
+    randomJWK = keyFromBS <$> genRandom
+    keyFromBS = fromOctets . take 64 . BSL.unpack . from
+
+type MUidMap = Map Text Text
 
 -- Will be added as the 'dat' unregistered claim
-newtype AuthenticatedUser = AUser {aMuid :: Text}
+data AuthenticatedUser = AUser
+  { -- A mapping that contains a Monocle UID by Index name
+    aMuidMap :: MUidMap,
+    -- A default Monocle UID to be used when aMuidMap is empty
+    aDefaultMuid :: Text
+  }
   deriving (Generic, Show)
 
 instance ToJSON AuthenticatedUser
@@ -48,10 +61,8 @@ instance ToJWT AuthenticatedUser
 
 instance FromJWT AuthenticatedUser
 
-mkJwt :: JWTSettings -> Text -> Maybe UTCTime -> IO (Either Error BSL.ByteString)
-mkJwt settings muid expD =
-  let aMuid = muid
-   in makeJWT (AUser {..}) settings expD
+mkJwt :: JWTSettings -> MUidMap -> Text -> Maybe UTCTime -> IO (Either Error BSL.ByteString)
+mkJwt settings aMuidMap aDefaultMuid = makeJWT (AUser {..}) settings
 
 --- $ OIDC Flow
 
@@ -63,7 +74,8 @@ data OIDCEnv = OIDCEnv
     clientId :: ByteString,
     clientSecret :: ByteString,
     sessionStoreStorage :: MVar (HM.Map O.State O.Nonce),
-    userClaim :: Maybe Text
+    userClaim :: Maybe Text,
+    authRequired :: Bool
   }
 
 newtype LoginInUser = LoginInUser {liJWT :: Text} deriving (Show, Eq, Ord)
@@ -80,22 +92,22 @@ instance ToMarkup LoginInUser where
             )
         )
 
-initOIDCEnv :: OIDCProvider -> IO OIDCEnv
-initOIDCEnv OIDCProvider {..} = do
+initOIDCEnv :: OIDCProviderConfig -> IO OIDCEnv
+initOIDCEnv OIDCProviderConfig {..} = do
   manager <- newOpenSSLManager
   provider <- O.discover opIssuerURL manager
-  sst <- newMVar HM.empty
+  sessionStoreStorage <- newMVar HM.empty
   let redirectUri = from $ opAppPublicURL <> "api/2/auth/cb"
       clientId = from opClientID
       clientSecret = from opClientSecret
       oidc = O.setCredentials clientId clientSecret redirectUri (O.newOIDC provider)
-      sessionStoreStorage = sst
       userClaim = opUserClaim
+      authRequired = opEnforceAuth
   pure OIDCEnv {..}
 
 mkSessionStore :: OIDCEnv -> Maybe O.State -> O.SessionStore IO
 mkSessionStore OIDCEnv {sessionStoreStorage} stateM = do
-  let sessionStoreGenerate = liftIO genRandom
+  let sessionStoreGenerate = liftIO genRandomB64
       sessionStoreSave = storeSave
       sessionStoreGet = storeGet
       sessionStoreDelete = case stateM of
@@ -113,8 +125,13 @@ mkSessionStore OIDCEnv {sessionStoreStorage} stateM = do
         pure (Just state', nonce)
       Nothing -> pure (Nothing, Nothing)
 
+-- | Generate a random fixed size string of 42 char base64 encoded
+genRandomB64 :: IO ByteString
+genRandomB64 = B64.encode . hash <$> genRandom
+
+-- | Generate a random fixed size string of 1024 Bytes
 genRandom :: IO ByteString
 genRandom = do
   g <- Random.newStdGen
-  let (bs, _ng) = genByteString 42 g
-  pure . B64.encode $ hash bs
+  let (bs, _ng) = genByteString 1024 g
+  pure bs

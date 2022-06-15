@@ -72,8 +72,8 @@ module MonocleNav = {
 
 let isAuthEnforced = (state: Store.Store.t) =>
   switch state.about.auth {
-  | Config(auth) => auth.force_login
-  | _ => false
+  | Auth_config({provider_name: ""}) => false
+  | Auth_config(auth) => auth.force_login
   }
 
 module Login = {
@@ -142,9 +142,7 @@ module Login = {
     let make = (~setShowLoginModal, ~closable, ~auth: Web.ConfigTypes.about_auth_config) => {
       let loginTitle = "Login on Monocle"
       let loginSubtitle =
-        "Click on the button below to be redirected to identity provider (" ++
-        auth.issuer ++
-        ")." ++ " Once authenticated you'll be redirected to Monocle."
+        "Click on the button below to be redirected to identity provider." ++ " Once authenticated you'll be redirected to Monocle."
       let location = WebApi.serverUrl ++ "/" ++ "api/2/auth/login"
       let onClick = e => {
         e->ReactEvent.Mouse.preventDefault
@@ -157,8 +155,8 @@ module Login = {
       <LoginPage loginTitle loginSubtitle>
         <Form>
           <ActionGroup>
-            <Button _type=#Submit variant=#Primary onClick>
-              {"Authenticate with Identity provider"}
+            <Button _type=#Submit variant=#Primary icon={<Patternfly.Icons.User />} onClick>
+              {"Authenticate with " ++ auth.provider_name}
             </Button>
             {closable ? <Button variant=#Primary onClick=close> {"Close"} </Button> : React.null}
           </ActionGroup>
@@ -172,8 +170,8 @@ module Login = {
     let make = (~store: Store.t, ~setShowLoginModal, ~closable=true) => {
       let (state, _) = store
       switch state.about.auth {
-      | Config(auth) => <AuthenticatedLoginModal setShowLoginModal closable auth />
-      | _ => <NonAuthenticatedLoginModal store setShowLoginModal />
+      | Auth_config({provider_name: ""}) => <NonAuthenticatedLoginModal store setShowLoginModal />
+      | Auth_config(auth) => <AuthenticatedLoginModal setShowLoginModal closable auth />
       }
     }
   }
@@ -219,11 +217,20 @@ module Login = {
       let onClickLogin = _ => setShowLoginModal(_ => true)
       let onClickLogoutNAU = _ => NonAuthenticatedLogout->dispatch
       let onClickLogoutAU = _ => AuthenticatedLogout->dispatch
+      let displayUID = (au: Jwt.authenticatedUser) =>
+        switch state.index {
+        | "" => au.defaultMuid
+        | index =>
+          switch Jwt.getMuidByIndex(au, index) {
+          | Some(muid) => muid
+          | None => au.defaultMuid
+          }
+        }
       <div style={ReactDOM.Style.make(~paddingRight="13px", ())}>
         {switch (state.username, state.authenticated_user) {
         | (Some(username), None) => displayLoggedStatus(state, username, onClickLogoutNAU)
         | (None, Some(authenticatedUser)) =>
-          displayLoggedStatus(state, authenticatedUser.uid, onClickLogoutAU)
+          displayLoggedStatus(state, authenticatedUser->displayUID, onClickLogoutAU)
         | _ =>
           state->isAuthEnforced
             ? React.null

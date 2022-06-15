@@ -41,12 +41,12 @@ message About {
   message AuthConfig {
     bool force_login = 1;
     string issuer = 2;
+    string provider_name = 3;
   }
   string version = 1;
   repeated AboutLink links = 2; 
   oneof auth {
-    AuthConfig config = 3;
-    string void = 4;
+    AuthConfig auth_config = 3;
   }
 }
 

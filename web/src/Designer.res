@@ -31,7 +31,7 @@ module App = {
     let fakeAbout: ConfigTypes.about = {
       version: "1.2.3",
       links: list{},
-      auth: Void(""),
+      auth: ConfigTypes.Auth_config(ConfigTypes.default_about_auth_config()),
     }
     let store = Store.use("test", fakeAbout)
     <>

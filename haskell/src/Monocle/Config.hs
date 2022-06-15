@@ -27,7 +27,11 @@ module Monocle.Config
     Bugzilla (..),
     GithubApplication (..),
     Link (..),
-    OIDCProvider (..),
+    OIDCProviderConfig (..),
+    Auth (..),
+    AuthProvider (..),
+    OIDC (..),
+    GithubAuth (..),
 
     -- * Data types to host the config status
     WorkspaceStatus,
@@ -78,7 +82,7 @@ where
 import Data.ByteString qualified as BS
 import Data.Either.Validation (Validation (Failure, Success))
 import Data.Map qualified as Map
-import Data.Text qualified as T (dropWhileEnd, isPrefixOf)
+import Data.Text qualified as T (dropWhileEnd, isPrefixOf, null, replace, toUpper)
 import Dhall qualified
 import Dhall.Core qualified
 import Dhall.Src qualified
@@ -94,13 +98,16 @@ import System.Directory (getModificationTime)
 -- See: https://hackage.haskell.org/package/dhall-1.38.0/docs/Dhall-TH.html
 Dhall.TH.makeHaskellTypes
   ( let providerPath name = "./dhall-monocle/Monocle/Provider/" <> name <> "/Type.dhall"
+        authProviderPath name = "./dhall-monocle/Monocle/AuthProvider/" <> name <> "/Type.dhall"
         provider name = Dhall.TH.SingleConstructor name name $ providerPath name
+        authProvider name = Dhall.TH.SingleConstructor name name $ authProviderPath name
         mainPath name = "./dhall-monocle/Monocle/" <> name <> "/Type.dhall"
         main name = Dhall.TH.SingleConstructor name name $ mainPath name
      in [ main "Project",
           main "Ident",
           main "SearchAlias",
           main "Crawler",
+          main "Auth",
           main "Config",
           main "About",
           main "Link",
@@ -109,9 +116,14 @@ Dhall.TH.makeHaskellTypes
           provider "Github",
           provider "GithubApplication",
           provider "Bugzilla",
+          authProvider "OIDC",
+          authProvider "GithubAuth",
           Dhall.TH.MultipleConstructors
             "Provider"
             "./dhall-monocle/Monocle/Crawler/Provider.dhall",
+          Dhall.TH.MultipleConstructors
+            "AuthProvider"
+            "./dhall-monocle/Monocle/Auth/Provider.dhall",
           -- To support backward compatible schema, we replace Index and Crawler schemas
           Dhall.TH.SingleConstructor "Index" "Index" $ mainPath "Workspace"
         ]
@@ -119,7 +131,23 @@ Dhall.TH.makeHaskellTypes
 
 -- | Embed the expected configuration schema
 configurationSchema :: Dhall.Core.Expr Dhall.Src.Src Void
-configurationSchema = $(Dhall.TH.staticDhallExpression "./dhall-monocle/Monocle/Config/Type.dhall")
+configurationSchema = $(Dhall.TH.staticDhallExpression " ./dhall-monocle/Monocle/Config/Type.dhall")
+
+deriving instance Eq OIDC
+
+deriving instance Show OIDC
+
+deriving instance Eq GithubAuth
+
+deriving instance Show GithubAuth
+
+deriving instance Eq Auth
+
+deriving instance Show Auth
+
+deriving instance Eq AuthProvider
+
+deriving instance Show AuthProvider
 
 deriving instance Eq Gerrit
 
@@ -279,30 +307,15 @@ instance MonadConfig IO where
   mGetSecret = getSecret
   mReloadConfig = reloadConfig
 
-data OIDCProvider = OIDCProvider
+data OIDCProviderConfig = OIDCProviderConfig
   { opIssuerURL :: Text,
     opClientID :: Text,
     opClientSecret :: Text,
     opAppPublicURL :: Text,
     opUserClaim :: Maybe Text,
-    opEnforceAuth :: Bool
+    opEnforceAuth :: Bool,
+    opName :: Text
   }
-
--- | Get Authentication provider config from Env
-getAuthProvider :: IO (Maybe OIDCProvider)
-getAuthProvider = do
-  opIssuerUrlM <- fmap (ensureTrailingSlash . from) <$> lookupEnv "MONOCLE_OIDC_ISSUER_URL"
-  opClientIdM <- fmap from <$> lookupEnv "MONOCLE_OIDC_CLIENT_ID"
-  opClientSecretM <- fmap from <$> lookupEnv "MONOCLE_OIDC_CLIENT_SECRET"
-  opAppPublicUrlM <- fmap (ensureTrailingSlash . from) <$> lookupEnv "MONOCLE_PUBLIC_URL"
-  opUserClaim <- fmap from <$> lookupEnv "MONOCLE_OIDC_USER_CLAIM"
-  opEnforceAuthM <- lookupEnv "MONOCLE_ENFORCE_AUTH"
-  pure $ case (opIssuerUrlM, opClientIdM, opClientSecretM, opAppPublicUrlM) of
-    (Just opIssuerURL, Just opClientID, Just opClientSecret, Just opAppPublicURL) ->
-      let opEnforceAuth = maybe False (not . null) opEnforceAuthM in Just $ OIDCProvider {..}
-    _ -> Nothing
-  where
-    ensureTrailingSlash iss = T.dropWhileEnd (== '/') iss <> "/"
 
 -- End - Configuration loading system
 
@@ -312,6 +325,34 @@ getAuthProvider = do
 -- | Simply returns the config workspaces
 getWorkspaces :: Config -> [Index]
 getWorkspaces Config {..} = workspaces
+
+-- | Get Authentication provider from config
+getAuthProvider :: Config -> IO (Maybe OIDCProviderConfig)
+getAuthProvider Config {auth} = case auth of
+  Just Auth {..} -> do
+    case auth_provider of
+      OIDCProvider (OIDC {..}) | (not . any T.null) [oidc_issuer_url, oidc_client_id, oidc_provider_name] ->
+        do
+          opClientSecretM <- fmap from <$> lookupEnv (secretEnv oidc_provider_name)
+          opAppPublicUrlM <- fmap (ensureTrailingSlash . from) <$> lookupEnv "MONOCLE_PUBLIC_URL"
+          case (opClientSecretM, opAppPublicUrlM) of
+            (Just opClientSecret, from -> Just opAppPublicURL) | (not . any T.null) [opClientSecret, opAppPublicURL] -> mkProvider
+              where
+                mkProvider =
+                  let opIssuerURL = ensureTrailingSlash oidc_issuer_url
+                      opClientID = oidc_client_id
+                      opUserClaim = oidc_user_claim
+                      opName = oidc_provider_name
+                      opEnforceAuth = Just True == enforce_auth
+                   in pure . Just $ OIDCProviderConfig {..}
+            _ -> pure Nothing
+      GithubAuthProvider _ -> error "Github Auth provider not yet supported"
+      _ -> pure Nothing
+  Nothing -> pure Nothing
+  where
+    ensureTrailingSlash iss = T.dropWhileEnd (== '/') iss <> "/"
+    providerNameToEnvFragment = T.replace " " "_" . T.toUpper
+    secretEnv pname = "MONOCLE_OIDC_" <> from (providerNameToEnvFragment pname) <> "_CLIENT_SECRET"
 
 -- End - Functions to handle a Config
 

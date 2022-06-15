@@ -131,7 +131,7 @@ monocleApiTests =
     testAuthMagicTokenEndpoint = do
       let appEnv = mkAppEnv $ Config.mkTenant "ws"
       let adminToken = "test"
-      setEnv "ADMIN_TOKEN" adminToken
+      setEnv "MONOCLE_ADMIN_TOKEN" adminToken
       withTestApi appEnv $ \_logger client -> do
         resp <- authGetMagicJwt client $ GetMagicJwtRequest $ from adminToken
         case resp of
@@ -139,10 +139,13 @@ monocleApiTests =
             let authClient = client {tokenM = Just $ from jwt}
             resp' <- authWhoAmi authClient $ WhoAmiRequest ""
             case resp' of
-              WhoAmiResponse (Just (WhoAmiResponseResultUid muid)) ->
-                assertEqual "Assert expected Magic Token uid" "bot" muid
-              _ -> error "Unexpected Token uid value"
-          _ -> error "expected a JWT token"
+              WhoAmiResponse (Just (WhoAmiResponseResultUid au)) ->
+                assertEqual
+                  "Assert expected WhoAmI response"
+                  "AUser {aMuidMap = fromList [], aDefaultMuid = \"bot\"}"
+                  au
+              _ -> error "Unexpected WhoAmI Response"
+          _ -> error "Unexpected GetMagicJWT reponse"
 
     testGetGroups :: Assertion
     testGetGroups = do
@@ -176,8 +179,9 @@ monocleApiTests =
       reloadedRef <- newTVarIO False
       let appEnv =
             mkAppEnvWithSideEffect
-              (Config.Config Nothing [makeFakeWS wsName1 ["opendev/neutron"]])
+              (Config.Config Nothing Nothing [makeFakeWS wsName1 ["opendev/neutron"]])
               ( Config.Config
+                  Nothing
                   Nothing
                   [ makeFakeWS wsName1 ["opendev/neutron", "opendev/nova"],
                     makeFakeWS wsName2 ["opendev/swift"]

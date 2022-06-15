@@ -40,11 +40,11 @@ type about_about_link = {
 type about_auth_config = {
   force_login : bool;
   issuer : string;
+  provider_name : string;
 }
 
 type about_auth =
-  | Config of about_auth_config
-  | Void of string
+  | Auth_config of about_auth_config
 
 and about = {
   version : string;
@@ -135,6 +135,7 @@ val default_about_about_link :
 val default_about_auth_config : 
   ?force_login:bool ->
   ?issuer:string ->
+  ?provider_name:string ->
   unit ->
   about_auth_config
 (** [default_about_auth_config ()] is the default value for type [about_auth_config] *)

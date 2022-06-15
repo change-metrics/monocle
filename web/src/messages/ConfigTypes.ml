@@ -37,11 +37,11 @@ type about_about_link = {
 type about_auth_config = {
   force_login : bool;
   issuer : string;
+  provider_name : string;
 }
 
 type about_auth =
-  | Config of about_auth_config
-  | Void of string
+  | Auth_config of about_auth_config
 
 and about = {
   version : string;
@@ -134,17 +134,19 @@ let rec default_about_about_link
 let rec default_about_auth_config 
   ?force_login:((force_login:bool) = false)
   ?issuer:((issuer:string) = "")
+  ?provider_name:((provider_name:string) = "")
   () : about_auth_config  = {
   force_login;
   issuer;
+  provider_name;
 }
 
-let rec default_about_auth () : about_auth = Config (default_about_auth_config ())
+let rec default_about_auth () : about_auth = Auth_config (default_about_auth_config ())
 
 and default_about 
   ?version:((version:string) = "")
   ?links:((links:about_about_link list) = [])
-  ?auth:((auth:about_auth) = Config (default_about_auth_config ()))
+  ?auth:((auth:about_auth) = Auth_config (default_about_auth_config ()))
   () : about  = {
   version;
   links;

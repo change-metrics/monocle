@@ -12,7 +12,7 @@ import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Google.Protobuf.Timestamp qualified as T
 import Monocle.Api.Jwt
-  ( AuthenticatedUser (AUser),
+  ( AuthenticatedUser (aDefaultMuid, aMuidMap),
     LoginInUser (..),
     OIDCEnv (..),
     mkJwt,
@@ -24,6 +24,7 @@ import Monocle.Backend.Documents
   )
 import Monocle.Backend.Index as I
 import Monocle.Backend.Queries qualified as Q
+import Monocle.Config (Config)
 import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Logging
@@ -83,18 +84,28 @@ pattern GetConfig a <- Config.ConfigStatus _ a _
 
 -- | Convenient pattern to get the list of tenants
 pattern GetTenants :: [Config.Index] -> Config.ConfigStatus
-pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _about a) _
+pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _about _auth a) _
+
+checkAuth :: forall a. AuthResult AuthenticatedUser -> (Maybe AuthenticatedUser -> AppM a) -> AppM a
+checkAuth auth action = do
+  aOIDC <- asks aOIDC
+  case oidcEnv aOIDC of
+    Just (OIDCEnv {authRequired}) -> case auth of
+      Authenticated au -> action $ Just au
+      _ -> do
+        if not authRequired
+          then action Nothing
+          else forbidden "Not allowed"
+    Nothing -> action Nothing
 
 -- curl -XPOST -d '{"void": ""}' -H "Content-type: application/json" -H 'Authorization: Bearer <token>' http://localhost:8080/auth/whoami
 authWhoAmi :: AuthResult AuthenticatedUser -> AuthPB.WhoAmiRequest -> AppM AuthPB.WhoAmiResponse
-authWhoAmi (Authenticated (AUser muid)) _request = response
-  where
-    response =
-      pure $
-        AuthPB.WhoAmiResponse
-          . Just
-          . AuthPB.WhoAmiResponseResultUid
-          $ from muid
+authWhoAmi (Authenticated au) _request =
+  pure $
+    AuthPB.WhoAmiResponse
+      . Just
+      . AuthPB.WhoAmiResponseResultUid
+      $ show au
 authWhoAmi _auth _request =
   pure $
     AuthPB.WhoAmiResponse
@@ -109,8 +120,8 @@ authGetMagicJwt _auth (AuthPB.GetMagicJwtRequest inputAdminToken) = do
   oidc <- asks aOIDC
   -- The generated JWT does not have any expiry
   -- An API restart generates new JWK that will invalidate the token
-  jwtE <- liftIO $ mkJwt (localJWTSettings oidc) "bot" Nothing
-  adminTokenM <- liftIO $ lookupEnv "ADMIN_TOKEN"
+  jwtE <- liftIO $ mkJwt (localJWTSettings oidc) Map.empty "bot" Nothing
+  adminTokenM <- liftIO $ lookupEnv "MONOCLE_ADMIN_TOKEN"
   case (jwtE, adminTokenM) of
     (Right jwt, Just adminToken) | inputAdminToken == from adminToken -> pure . genSuccess $ decodeUtf8 jwt
     (_, Just adminToken) | inputAdminToken /= from adminToken -> pure $ genErr AuthPB.GetMagicJwtErrorInvalidAdminToken
@@ -162,7 +173,7 @@ configGetAbout _auth _request = response
   where
     response = do
       GetConfig config <- getConfig
-      authProvider <- liftIO Config.getAuthProvider
+      authProvider <- liftIO $ Config.getAuthProvider config
       let aboutVersion = from version
           links = maybe [] Config.links (Config.about config)
           aboutLinks = fromList $ toLink <$> links
@@ -174,14 +185,15 @@ configGetAbout _auth _request = response
           about_AboutLinkUrl = from url
           about_AboutLinkCategory = from $ fromMaybe "About" category
        in ConfigPB.About_AboutLink {..}
-    toAuth Config.OIDCProvider {..} =
+    toAuth Config.OIDCProviderConfig {..} =
       let about_AuthConfigForceLogin = opEnforceAuth
           about_AuthConfigIssuer = from opIssuerURL
-       in ConfigPB.AboutAuthConfig $ ConfigPB.About_AuthConfig {..}
+          about_AuthConfigProviderName = from opName
+       in ConfigPB.AboutAuthAuthConfig $ ConfigPB.About_AuthConfig {..}
 
 -- | /api/2/get_workspaces endpoint
 configGetWorkspaces :: AuthResult AuthenticatedUser -> ConfigPB.GetWorkspacesRequest -> AppM ConfigPB.GetWorkspacesResponse
-configGetWorkspaces _auth _request = response
+configGetWorkspaces auth _request = checkAuth auth $ const response
   where
     response = do
       GetTenants tenants <- getConfig
@@ -192,7 +204,7 @@ configGetWorkspaces _auth _request = response
 
 -- | /api/2/get_groups endpoint
 configGetGroups :: AuthResult AuthenticatedUser -> ConfigPB.GetGroupsRequest -> AppM ConfigPB.GetGroupsResponse
-configGetGroups _auth request = do
+configGetGroups auth request = checkAuth auth . const $ do
   GetTenants tenants <- getConfig
   let ConfigPB.GetGroupsRequest {..} = request
 
@@ -208,18 +220,17 @@ configGetGroups _auth request = do
 
 -- | /api/2/get_group_members endpoint
 configGetGroupMembers :: AuthResult AuthenticatedUser -> ConfigPB.GetGroupMembersRequest -> AppM ConfigPB.GetGroupMembersResponse
-configGetGroupMembers _auth request = do
+configGetGroupMembers auth request = checkAuth auth . const $ do
   GetTenants tenants <- getConfig
   let ConfigPB.GetGroupMembersRequest {..} = request
   members <- case Config.lookupTenant tenants (from getGroupMembersRequestIndex) of
     Just index -> pure $ fromMaybe [] $ lookup (from getGroupMembersRequestGroup) (Config.getTenantGroups index)
     Nothing -> pure []
-
   pure . ConfigPB.GetGroupMembersResponse . V.fromList $ from <$> members
 
 -- | /api/2/get_projects
 configGetProjects :: AuthResult AuthenticatedUser -> ConfigPB.GetProjectsRequest -> AppM ConfigPB.GetProjectsResponse
-configGetProjects _auth ConfigPB.GetProjectsRequest {..} = do
+configGetProjects auth ConfigPB.GetProjectsRequest {..} = checkAuth auth . const $ do
   GetTenants tenants <- getConfig
   pure . ConfigPB.GetProjectsResponse . V.fromList $ case Config.lookupTenant tenants (from getProjectsRequestIndex) of
     Just index -> maybe [] (fmap toResp) (Config.projects index)
@@ -450,7 +461,7 @@ validateTaskDataRequest indexName crawlerName apiKey checkCommitDate commitDate 
 
 -- | /suggestions endpoint
 searchSuggestions :: AuthResult AuthenticatedUser -> SearchPB.SuggestionsRequest -> AppM SearchPB.SuggestionsResponse
-searchSuggestions _auth request = do
+searchSuggestions auth request = checkAuth auth . const $ do
   GetTenants tenants <- getConfig
   let SearchPB.SuggestionsRequest {..} = request
 
@@ -489,7 +500,7 @@ validateSearchRequest tenantName queryText username = do
 
 -- | /search/author endpoint
 searchAuthor :: AuthResult AuthenticatedUser -> SearchPB.AuthorRequest -> AppM SearchPB.AuthorResponse
-searchAuthor _auth request = do
+searchAuthor auth request = checkAuth auth . const $ do
   let SearchPB.AuthorRequest {..} = request
   GetTenants tenants <- getConfig
   let indexM = Config.lookupTenant tenants $ from authorRequestIndex
@@ -509,107 +520,120 @@ searchAuthor _auth request = do
 
   pure . SearchPB.AuthorResponse $ V.fromList authors
 
+getMuidByIndexName :: Text -> AuthenticatedUser -> Maybe Text
+getMuidByIndexName index = Map.lookup index . aMuidMap
+
 -- | /search/check endpoint
 searchCheck :: AuthResult AuthenticatedUser -> SearchPB.CheckRequest -> AppM SearchPB.CheckResponse
-searchCheck _auth request = do
-  let SearchPB.CheckRequest {..} = request
+searchCheck auth request = checkAuth auth response
+  where
+    response authenticatedUserM = do
+      let SearchPB.CheckRequest {..} = request
+          username = from $ case authenticatedUserM of
+            Just au -> fromMaybe (aDefaultMuid au) $ getMuidByIndexName (from checkRequestIndex) au
+            Nothing -> from checkRequestUsername
 
-  incCounter monocleQueryCheckCounter
-  requestE <- validateSearchRequest checkRequestIndex checkRequestQuery checkRequestUsername
+      incCounter monocleQueryCheckCounter
+      requestE <- validateSearchRequest checkRequestIndex checkRequestQuery username
 
-  pure $
-    SearchPB.CheckResponse $
-      Just $ case requestE of
-        Right _ -> SearchPB.CheckResponseResultSuccess "ok"
-        Left (ParseError msg offset) ->
-          SearchPB.CheckResponseResultError $
-            SearchPB.QueryError (from msg) (fromInteger . toInteger $ offset)
+      pure $
+        SearchPB.CheckResponse $
+          Just $ case requestE of
+            Right _ -> SearchPB.CheckResponseResultSuccess "ok"
+            Left (ParseError msg offset) ->
+              SearchPB.CheckResponseResultError $
+                SearchPB.QueryError (from msg) (fromInteger . toInteger $ offset)
 
 -- | /search/query endpoint
 searchQuery :: AuthResult AuthenticatedUser -> SearchPB.QueryRequest -> AppM SearchPB.QueryResponse
-searchQuery _auth request = do
-  let SearchPB.QueryRequest {..} = request
-
-  incCounter monocleQueryCounter
-  requestE <- validateSearchRequest queryRequestIndex queryRequestQuery queryRequestUsername
-
-  case requestE of
-    Right (tenant, query) -> runQueryM tenant (Q.ensureMinBound query) $ do
-      let queryType = fromPBEnum queryRequestQueryType
-      logEvent $ Searching queryType queryRequestQuery query
-
-      case queryType of
-        SearchPB.QueryRequest_QueryTypeQUERY_CHANGE ->
-          SearchPB.QueryResponse . Just
-            . SearchPB.QueryResponseResultChanges
-            . SearchPB.Changes
-            . V.fromList
-            . map from
-            <$> Q.changes queryRequestOrder queryRequestLimit
-        SearchPB.QueryRequest_QueryTypeQUERY_CHANGE_AND_EVENTS ->
-          SearchPB.QueryResponse . Just
-            . SearchPB.QueryResponseResultChangeEvents
-            . toChangeEventsResult
-            <$> Q.changeEvents queryRequestChangeId queryRequestLimit
-        SearchPB.QueryRequest_QueryTypeQUERY_REPOS_SUMMARY ->
-          SearchPB.QueryResponse . Just
-            . SearchPB.QueryResponseResultReposSummary
-            . SearchPB.ReposSummary
-            . V.fromList
-            . map toRSumResult
-            <$> Q.getReposSummary
-        SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_LIFECYCLE_STATS ->
-          SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultLifecycleStats
-            <$> Q.getLifecycleStats
-        SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_REVIEW_STATS ->
-          SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultReviewStats
-            <$> Q.getReviewStats
-        SearchPB.QueryRequest_QueryTypeQUERY_ACTIVE_AUTHORS_STATS ->
-          SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultActivityStats
-            <$> Q.getActivityStats
-        SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_COMMENTED ->
-          handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeCommented
-        SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_REVIEWED ->
-          handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeReviewed
-        SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_CREATED ->
-          handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeCreated
-        SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_MERGED ->
-          handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeMerged
-        SearchPB.QueryRequest_QueryTypeQUERY_TOP_REVIEWED_AUTHORS ->
-          handleTopAuthorsQ queryRequestLimit Q.getMostReviewedAuthor
-        SearchPB.QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS ->
-          handleTopAuthorsQ queryRequestLimit Q.getMostCommentedAuthor
-        SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS ->
-          SearchPB.QueryResponse . Just
-            . SearchPB.QueryResponseResultAuthorsPeers
-            . SearchPB.AuthorsPeers
-            . V.fromList
-            . map toAPeerResult
-            <$> Q.getAuthorsPeersStrength queryRequestLimit
-        SearchPB.QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS -> do
-          results <- take (fromInteger . toInteger $ queryRequestLimit) <$> Q.getNewContributors
-          pure $
-            SearchPB.QueryResponse . Just $
-              SearchPB.QueryResponseResultNewAuthors $
-                toTermsCount (V.fromList $ toTTResult <$> results) 0
-        SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_TOPS ->
-          SearchPB.QueryResponse . Just
-            . SearchPB.QueryResponseResultChangesTops
-            <$> Q.getChangesTops queryRequestLimit
-        SearchPB.QueryRequest_QueryTypeQUERY_RATIO_COMMITS_VS_REVIEWS -> do
-          ratio <- Q.getRatio Q.COMMITS_VS_REVIEWS_RATIO
-          pure . SearchPB.QueryResponse . Just $
-            SearchPB.QueryResponseResultRatio ratio
-        SearchPB.QueryRequest_QueryTypeQUERY_HISTO_COMMITS -> do
-          histo <- Q.getHisto Q.COMMITS_HISTO
-          pure . SearchPB.QueryResponse . Just $
-            SearchPB.QueryResponseResultHisto $ SearchPB.HistoStat histo
-        SearchPB.QueryRequest_QueryTypeQUERY_HISTO_REVIEWS_AND_COMMENTS -> do
-          histo <- Q.getHisto Q.REVIEWS_AND_COMMENTS_HISTO
-          pure . SearchPB.QueryResponse . Just $
-            SearchPB.QueryResponseResultHisto $ SearchPB.HistoStat histo
-    Left err -> pure . handleError $ err
+searchQuery auth request = checkAuth auth response
   where
+    response authenticatedUserM = do
+      let SearchPB.QueryRequest {..} = request
+          username = from $ case authenticatedUserM of
+            Just au -> fromMaybe (aDefaultMuid au) $ getMuidByIndexName (from queryRequestIndex) au
+            Nothing -> from queryRequestUsername
+
+      incCounter monocleQueryCounter
+      requestE <- validateSearchRequest queryRequestIndex queryRequestQuery username
+
+      case requestE of
+        Right (tenant, query) -> runQueryM tenant (Q.ensureMinBound query) $ do
+          let queryType = fromPBEnum queryRequestQueryType
+          logEvent $ Searching queryType queryRequestQuery query
+
+          case queryType of
+            SearchPB.QueryRequest_QueryTypeQUERY_CHANGE ->
+              SearchPB.QueryResponse . Just
+                . SearchPB.QueryResponseResultChanges
+                . SearchPB.Changes
+                . V.fromList
+                . map from
+                <$> Q.changes queryRequestOrder queryRequestLimit
+            SearchPB.QueryRequest_QueryTypeQUERY_CHANGE_AND_EVENTS ->
+              SearchPB.QueryResponse . Just
+                . SearchPB.QueryResponseResultChangeEvents
+                . toChangeEventsResult
+                <$> Q.changeEvents queryRequestChangeId queryRequestLimit
+            SearchPB.QueryRequest_QueryTypeQUERY_REPOS_SUMMARY ->
+              SearchPB.QueryResponse . Just
+                . SearchPB.QueryResponseResultReposSummary
+                . SearchPB.ReposSummary
+                . V.fromList
+                . map toRSumResult
+                <$> Q.getReposSummary
+            SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_LIFECYCLE_STATS ->
+              SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultLifecycleStats
+                <$> Q.getLifecycleStats
+            SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_REVIEW_STATS ->
+              SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultReviewStats
+                <$> Q.getReviewStats
+            SearchPB.QueryRequest_QueryTypeQUERY_ACTIVE_AUTHORS_STATS ->
+              SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultActivityStats
+                <$> Q.getActivityStats
+            SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_COMMENTED ->
+              handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeCommented
+            SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_REVIEWED ->
+              handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeReviewed
+            SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_CREATED ->
+              handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeCreated
+            SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_MERGED ->
+              handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeMerged
+            SearchPB.QueryRequest_QueryTypeQUERY_TOP_REVIEWED_AUTHORS ->
+              handleTopAuthorsQ queryRequestLimit Q.getMostReviewedAuthor
+            SearchPB.QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS ->
+              handleTopAuthorsQ queryRequestLimit Q.getMostCommentedAuthor
+            SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS ->
+              SearchPB.QueryResponse . Just
+                . SearchPB.QueryResponseResultAuthorsPeers
+                . SearchPB.AuthorsPeers
+                . V.fromList
+                . map toAPeerResult
+                <$> Q.getAuthorsPeersStrength queryRequestLimit
+            SearchPB.QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS -> do
+              results <- take (fromInteger . toInteger $ queryRequestLimit) <$> Q.getNewContributors
+              pure $
+                SearchPB.QueryResponse . Just $
+                  SearchPB.QueryResponseResultNewAuthors $
+                    toTermsCount (V.fromList $ toTTResult <$> results) 0
+            SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_TOPS ->
+              SearchPB.QueryResponse . Just
+                . SearchPB.QueryResponseResultChangesTops
+                <$> Q.getChangesTops queryRequestLimit
+            SearchPB.QueryRequest_QueryTypeQUERY_RATIO_COMMITS_VS_REVIEWS -> do
+              ratio <- Q.getRatio Q.COMMITS_VS_REVIEWS_RATIO
+              pure . SearchPB.QueryResponse . Just $
+                SearchPB.QueryResponseResultRatio ratio
+            SearchPB.QueryRequest_QueryTypeQUERY_HISTO_COMMITS -> do
+              histo <- Q.getHisto Q.COMMITS_HISTO
+              pure . SearchPB.QueryResponse . Just $
+                SearchPB.QueryResponseResultHisto $ SearchPB.HistoStat histo
+            SearchPB.QueryRequest_QueryTypeQUERY_HISTO_REVIEWS_AND_COMMENTS -> do
+              histo <- Q.getHisto Q.REVIEWS_AND_COMMENTS_HISTO
+              pure . SearchPB.QueryResponse . Just $
+                SearchPB.QueryResponseResultHisto $ SearchPB.HistoStat histo
+        Left err -> pure . handleError $ err
+
     handleError :: ParseError -> SearchPB.QueryResponse
     handleError (ParseError msg offset) =
       SearchPB.QueryResponse . Just
@@ -665,10 +689,9 @@ searchQuery _auth request = do
        in SearchPB.ChangeAndEvents {..}
 
 searchFields :: AuthResult AuthenticatedUser -> SearchPB.FieldsRequest -> AppM SearchPB.FieldsResponse
-searchFields _auth _request = pure response
+searchFields auth _request = checkAuth auth . const $ response
   where
-    response :: SearchPB.FieldsResponse
-    response = SearchPB.FieldsResponse . V.fromList . map toResult $ Q.fields
+    response = pure . SearchPB.FieldsResponse . V.fromList . map toResult $ Q.fields
     toResult (name, (fieldType', _realname, desc)) =
       let fieldName = from name
           fieldDescription = from desc
@@ -681,8 +704,9 @@ lookupTenant name = do
   pure $ Config.lookupTenant tenants name
 
 metricList :: AuthResult AuthenticatedUser -> MetricPB.ListRequest -> AppM MetricPB.ListResponse
-metricList _auth _request = pure . MetricPB.ListResponse . fromList . fmap toResp $ Q.allMetrics
+metricList auth _request = checkAuth auth . const $ response
   where
+    response = pure . MetricPB.ListResponse . fromList . fmap toResp $ Q.allMetrics
     toResp Q.MetricInfo {..} =
       MetricPB.MetricInfo
         { metricInfoName = from miName,
@@ -692,25 +716,29 @@ metricList _auth _request = pure . MetricPB.ListResponse . fromList . fmap toRes
         }
 
 metricGet :: AuthResult AuthenticatedUser -> MetricPB.GetRequest -> AppM MetricPB.GetResponse
-metricGet _auth request = do
-  let MetricPB.GetRequest {..} = request
-  incCounter monocleMetricCounter
-  requestE <- validateSearchRequest getRequestIndex getRequestQuery getRequestUsername
-  case requestE of
-    -- Valid request
-    Right (tenant, query) -> do
-      let runMetric = runQueryM tenant (Q.ensureMinBound query)
-          floatResult metric =
-            MetricPB.GetResponse . Just . MetricPB.GetResponseResultFloatValue <$> runMetric (Q.runMetric metric)
-
-      case getRequestMetric of
-        "time_to_merge" -> floatResult Q.metricTimeToMerge
-        -- Unknown query
-        _ -> handleError $ "Unknown metric: " <> from getRequestMetric
-
-    -- Invalid request
-    Left err -> handleError $ show err
+metricGet auth request = checkAuth auth response
   where
+    response authenticatedUserM = do
+      let MetricPB.GetRequest {..} = request
+          username = from $ case authenticatedUserM of
+            Just au -> fromMaybe (aDefaultMuid au) $ getMuidByIndexName (from getRequestIndex) au
+            Nothing -> from getRequestUsername
+      incCounter monocleMetricCounter
+      requestE <- validateSearchRequest getRequestIndex getRequestQuery username
+      case requestE of
+        -- Valid request
+        Right (tenant, query) -> do
+          let runMetric = runQueryM tenant (Q.ensureMinBound query)
+              floatResult metric =
+                MetricPB.GetResponse . Just . MetricPB.GetResponseResultFloatValue <$> runMetric (Q.runMetric metric)
+
+          case getRequestMetric of
+            "time_to_merge" -> floatResult Q.metricTimeToMerge
+            -- Unknown query
+            _ -> handleError $ "Unknown metric: " <> from getRequestMetric
+
+        -- Invalid request
+        Left err -> handleError $ show err
     handleError = pure . MetricPB.GetResponse . Just . MetricPB.GetResponseResultError
 
 -- | gen a 302 redirect helper
@@ -771,6 +799,7 @@ handleLoggedIn ::
   AppM LoginInUser
 handleLoggedIn err codeM stateM = do
   aOIDC <- asks aOIDC
+  GetConfig config <- getConfig
   log $ OIDCCallbackCall err codeM stateM
   case (oidcEnv aOIDC, err, codeM, stateM) of
     (_, Just errorMsg, _, _) -> forbidden $ "Error from remote provider: " <> errorMsg
@@ -789,20 +818,22 @@ handleLoggedIn err codeM stateM = do
       now <- liftIO Monocle.Prelude.getCurrentTime
       let idToken = O.idToken tokens
           expiry = addUTCTime (24 * 3600) now
-          mUid = userId oidcEnv idToken
+          userId = aUserId oidcEnv idToken
+          mUidMap = getIdents config $ "AuthProviderUID:" <> userId
       log . OIDCProviderTokenRequested $ show idToken
-      jwtE <- liftIO $ mkJwt (localJWTSettings aOIDC) mUid (Just expiry)
+      jwtE <- liftIO $ mkJwt (localJWTSettings aOIDC) mUidMap userId (Just expiry)
       case jwtE of
         Right jwt -> do
-          log $ JWTCreated mUid (decodeUtf8 $ redirectUri oidcEnv)
+          log $ JWTCreated (show mUidMap) (decodeUtf8 $ redirectUri oidcEnv)
           let liJWT = decodeUtf8 jwt
           pure $ LoginInUser {..}
         Left err' -> do
-          log $ JWTCreateFailed mUid (show err')
+          log $ JWTCreateFailed (show mUidMap) (show err')
           forbidden $ "Unable to generate user JWT due to: " <> show err'
   where
-    userId :: OIDCEnv -> O.IdTokenClaims Value -> Text
-    userId oidcEnv idToken = case userClaim oidcEnv of
+    -- Get the Token's claim that identify an unique user
+    aUserId :: OIDCEnv -> O.IdTokenClaims Value -> Text
+    aUserId oidcEnv idToken = case userClaim oidcEnv of
       Just uc -> case O.otherClaims idToken of
         Object o -> case AKM.lookup (AK.fromText uc) o of
           Just (String s) -> s
@@ -814,3 +845,10 @@ handleLoggedIn err codeM stateM = do
     log ev = do
       aEnv <- asks aEnv
       liftIO $ doLog (glLogger aEnv) $ via @Text $ ev
+    -- Given a Claim, get a mapping of index (workspace) name to Monocle UID (mUid)
+    getIdents :: Config -> Text -> Map.Map Text Text
+    getIdents config auid = foldr go Map.empty $ Config.getWorkspaces config
+      where
+        go index acc = case Config.getIdentByAlias index auid of
+          Just muid -> Map.insert (Config.getWorkspaceName index) muid acc
+          Nothing -> acc

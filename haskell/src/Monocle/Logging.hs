@@ -63,6 +63,7 @@ data LogEvent
   | UpdatingEntity LText Entity UTCTime
   | Searching QueryRequest_QueryType LText Q.Query
   | SystemReady Int Int Text
+  | AuthSystemReady Text
   | ReloadConfig FilePath
   | RefreshIndex Config.Index
   | OIDCCallbackCall (Maybe Text) (Maybe Text) (Maybe Text)
@@ -109,6 +110,7 @@ instance From LogEvent Text where
        in "searching " <> show queryType <> " with `" <> from queryText <> "`: " <> jsonQuery
     SystemReady tenantCount port url ->
       "Serving " <> show tenantCount <> " tenant(s) on 0.0.0.0:" <> show port <> " with elastic: " <> url
+    AuthSystemReady provider_name -> "Authentication provider (" <> provider_name <> ") ready"
     RefreshIndex index ->
       "Ensure workspace: " <> Config.getWorkspaceName index <> " exists and refresh crawlers metadata"
     ReloadConfig fp ->
