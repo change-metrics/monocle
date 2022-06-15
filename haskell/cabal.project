@@ -1,3 +1,9 @@
+-- Pull in version for turtle pinning to 1.6.0
+source-repository-package
+  type: git
+  location: https://github.com/morucci/proto3-suite
+  tag: e61831e7f8d4df9f78a25ea0c037dbfcc77066e2
+
 -- Pull in version for hashable-1.4
 source-repository-package
   type: git
