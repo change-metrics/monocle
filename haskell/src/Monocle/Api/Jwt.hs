@@ -36,11 +36,8 @@ import Web.OIDC.Client qualified as O
 
 doGenJwk :: Maybe ByteString -> IO JWK
 doGenJwk keyM = case keyM of
-  Just key -> do
-    if BS.length key < 64
-      then randomJWK
-      else pure $ keyFromBS key
-  Nothing -> randomJWK
+  Just key | BS.length key >= 64 -> pure $ keyFromBS key
+  _ -> randomJWK
   where
     randomJWK = keyFromBS <$> genRandom
     keyFromBS = fromOctets . take 64 . BSL.unpack . from

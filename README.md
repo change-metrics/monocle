@@ -123,7 +123,7 @@ a restart of the Monocle API.
 
 [The configuration file](#configuration-file) contains non sensitive data and could be exposed in a Git repository.
 A CI/CD flow could be enabled on top of the Git repository to allow Monocle' users to
-propose configuration changes. The Monocle API tracks the configuration file's modification date and reloads transparently in case of changes.  
+propose configuration changes. The Monocle API automatically reload the configuration when it changes.  
 
 ### Environment variables
 
@@ -132,7 +132,7 @@ For a local deployment, default settings are fine.
 The following settings are available in the `.env` file:
 
 - `MONOCLE_PUBLIC_URL=<url>` to configure the public URL to access the UI and API.
-  This is required for the authentication provider redirection.
+  The URL is required for user redirection during the authentication.
 - `MONOCLE_VERSION=<version>` to use a specific version. By default it uses `latest`.
 - `MONOCLE_TITLE=<title>` to change the title of the web application. By default it is `Monocle`.
 - `MONOCLE_WEB_ADDR` to change the IP address the web service will bind on. By default 0.0.0.0.
