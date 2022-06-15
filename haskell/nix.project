@@ -1,2 +1,0 @@
--- When using nix, no need to setup source-repository-package
-packages: *.cabal

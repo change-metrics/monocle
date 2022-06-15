@@ -1,22 +1,6 @@
--- Pull in version for hashable-1.4
-source-repository-package
-  type: git
-  location: https://github.com/awakesecurity/proto3-wire
-  tag: 267242d7daa004e8b42e81146590865c8efe3437
-
--- Pull last relude master for hashable-1.4
-source-repository-package
-  type: git
-  location: https://github.com/kowainik/relude
-  tag: 1cd9f2ebe13322007b7c3e84b6f11126e98c10fa
-
--- Pull last haskell-oidc-client master for bytestring version cap removal
-source-repository-package
-  type: git
-  location: https://github.com/krdlab/haskell-oidc-client
-  tag: 78dae84b9903038af61af87fe94112dd7aa57ebc
-
 package proto3-suite
   flags: -swagger
 
 packages: .
+
+constraints: turtle < 1.6
