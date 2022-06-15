@@ -86,15 +86,10 @@ let
           in pkgs.haskell.lib.dontCheck
           (hpPrev.callCabal2nix "proto3-wire" src { });
 
-          # Fix is needed for bytestring-0.11
-          oidc-client = let
-            src = builtins.fetchGit {
-              url = "https://github.com/krdlab/haskell-oidc-client";
-              ref = "master";
-              rev = "78dae84b9903038af61af87fe94112dd7aa57ebc";
-            };
-          in pkgs.haskell.lib.dontCheck
-          (hpPrev.callCabal2nix "oidc-client" src { });
+          oidc-client = pkgs.haskell.lib.overrideCabal hpPrev.oidc-client {
+            version = "0.6.1.0";
+            sha256 = "sha256-PtzYvIs6gXO40JHMElNH/i+kxMSZephJMkkJTGCzEkI=";
+          };
 
           jose-jwt = (pkgs.haskell.lib.overrideCabal hpPrev.jose-jwt {
             broken = false;
@@ -424,8 +419,6 @@ in rec {
     };
   };
 
-  nixCabal = "cabal --project-file=nix.project";
-
   monocleReplStart = pkgs.writeScriptBin "monocle-repl" ''
     #!/bin/sh
     set -ex
@@ -435,13 +428,13 @@ in rec {
     else
       export $(cat ../.secrets)
     fi
-    ${nixCabal} repl --build-depends pretty-simple monocle
+    cabal repl --build-depends pretty-simple monocle
   '';
 
   monocleGhcid = pkgs.writeScriptBin "monocle-ghcid" ''
     #!/bin/sh
     set -x
-    cd haskell 2> /dev/null; ${pkgs.ghcid}/bin/ghcid -c "${nixCabal} repl monocle" $*
+    cd haskell 2> /dev/null; ${pkgs.ghcid}/bin/ghcid -c "cabal repl monocle" $*
   '';
 
   monocleWebStart = pkgs.writeScriptBin "monocle-web-start" ''
@@ -549,7 +542,6 @@ in rec {
 
   ci-commands = ''
     cd haskell;
-    alias cabal="${nixCabal}"
 
     echo "[+] Building the project"
     cabal build --enable-tests --flags=ci -O0
@@ -630,14 +622,13 @@ in rec {
       [ pkgs.hlint pkgs.ghcid pkgs.haskell-language-server doctest_0_20_0 ]
       ++ all-req ++ services-req ++ [ ci-run fast-ci-run reformat-run ];
 
-    withHoogle = true;
+    withHoogle = false;
 
     shellHook = ''
       export PROTOC_FLAGS="-I ${googleapis-src}/ -I ${protobuf-src}/src"
       export PROTOBUF_SRC=${protobuf-src}/src
       export NIX_PATH=nixpkgs=${nixpkgsPath}
       export ELASTIC_URL=http://localhost:19200
-      alias cabal="${nixCabal}"
     '';
   };
   inherit pkgs;
