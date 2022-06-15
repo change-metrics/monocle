@@ -81,7 +81,7 @@ let
             src = builtins.fetchGit {
               url = "https://github.com/awakesecurity/proto3-wire";
               ref = "master";
-              rev = "a5ed1a3bff0816cc247a1058232f3ed8a6f1e873";
+              rev = "9bf881bfc578a72ed471621d54c968f0c06b1821";
             };
           in pkgs.haskell.lib.dontCheck
           (hpPrev.callCabal2nix "proto3-wire" src { });
