@@ -10,14 +10,18 @@ services:
       - elastic
     env_file: ".secrets"
     environment:
-      CONFIG: /etc/monocle/config.yaml
-      ELASTIC_CONN: elastic:9200
+      MONOCLE_API_PORT: '8080'
+      MONOCLE_CONFIG: /etc/monocle/config.yaml
+      MONOCLE_ELASTIC_URL: http://elastic:9200
+      MONOCLE_PUBLIC_URL: "${COMPOSE_MONOCLE_PUBLIC_URL:-http://localhost:8080}"
+      MONOCLE_WEBAPP_PATH: /usr/share/monocle/webapp/
+      MONOCLE_WEBAPP_TITLE: "${COMPOSE_MONOCLE_WEBAPP_TITLE:-Monocle}"
     healthcheck:
       retries: 6
       test: "curl --silent --fail localhost:8080/health || exit 1"
       timeout: "60s"
     ports:
-      - "${MONOCLE_API_ADDR:-0.0.0.0}:${MONOCLE_API_PORT:-8080}:8080"
+      - "${COMPOSE_MONOCLE_API_ADDR:-0.0.0.0}:${COMPOSE_MONOCLE_API_PORT:-8080}:8080"
     volumes:
       - "./etc:/etc/monocle:z"
   crawler:
@@ -31,7 +35,8 @@ services:
       - api
     env_file: ".secrets"
     environment:
-      CONFIG: /etc/monocle/config.yaml
+      MONOCLE_CONFIG: /etc/monocle/config.yaml
+      MONOCLE_PUBLIC_URL: http://api:8080
     healthcheck:
       retries: 6
       test: "curl --silent --fail localhost:9001/health || exit 1"
@@ -40,7 +45,7 @@ services:
       - "./etc:/etc/monocle:z"
   elastic:
     environment:
-      ES_JAVA_OPTS: "-Xms${ES_XMS:-512m} -Xmx${ES_XMX:-512m}"
+      ES_JAVA_OPTS: "-Xms${COMPOSE_ES_XMS:-512m} -Xmx${COMPOSE_ES_XMX:-512m}"
       discovery.type: single-node
     healthcheck:
       retries: 6
@@ -48,7 +53,7 @@ services:
       timeout: "60s"
     image: docker.elastic.co/elasticsearch/elasticsearch:7.10.1
     ports:
-      - "${MONOCLE_ELASTIC_ADDR:-0.0.0.0}:${MONOCLE_ELASTIC_PORT:-9200}:9200"
+      - "${COMPOSE_MONOCLE_ELASTIC_ADDR:-0.0.0.0}:${COMPOSE_MONOCLE_ELASTIC_PORT:-9200}:9200"
     ulimits:
       nofile:
         hard: 65535

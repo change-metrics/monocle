@@ -18,7 +18,7 @@ let Compose =
 
 let monocleImage =
       \(name : Text) ->
-        "quay.io/change-metrics/monocle_${name}:\${MONOCLE_VERSION:-latest}"
+        "quay.io/change-metrics/monocle_${name}:\${COMPOSE_MONOCLE_VERSION:-latest}"
 
 let buildContext =
       \(name : Text) ->
@@ -45,10 +45,10 @@ let mkPort =
       \(default-port : Natural) ->
       \(container-port : Natural) ->
         Compose.StringOrNumber.String
-          (     mkEnvDefault "MONOCLE_${env-var-prefix}_ADDR" "0.0.0.0"
+          (     mkEnvDefault "COMPOSE_MONOCLE_${env-var-prefix}_ADDR" "0.0.0.0"
             ++  ":"
             ++  mkEnvDefault
-                  "MONOCLE_${env-var-prefix}_PORT"
+                  "COMPOSE_MONOCLE_${env-var-prefix}_PORT"
                   (Natural/show default-port)
             ++  ":${Natural/show container-port}"
           )
@@ -80,7 +80,8 @@ let createElasticService =
               , environment = Some
                   ( Compose.ListOrDict.Dict
                       [ { mapKey = "ES_JAVA_OPTS"
-                        , mapValue = "-Xms\${ES_XMS:-512m} -Xmx\${ES_XMX:-512m}"
+                        , mapValue =
+                            "-Xms\${COMPOSE_ES_XMS:-512m} -Xmx\${COMPOSE_ES_XMX:-512m}"
                         }
                       , { mapKey = "discovery.type", mapValue = "single-node" }
                       ]
@@ -124,28 +125,34 @@ let createApiService =
               , command = Some (Compose.StringOrList.String "monocle api")
               , volumes = Some [ "./etc:/etc/monocle:z" ]
               , env_file = envFile
+              , ports = Some [ mkPort "API" 8080 8080 ]
               , environment = Some
                   ( Compose.ListOrDict.Dict
-                      [ { mapKey = "CONFIG"
+                      [ { mapKey = "MONOCLE_CONFIG"
                         , mapValue = "/etc/monocle/config.yaml"
                         }
-                      , { mapKey = "ELASTIC_CONN", mapValue = "elastic:9200" }
+                      , { mapKey = "MONOCLE_ELASTIC_URL"
+                        , mapValue = "http://elastic:9200"
+                        }
+                      , { mapKey = "MONOCLE_WEBAPP_PATH"
+                        , mapValue = "/usr/share/monocle/webapp/"
+                        }
+                      , { mapKey = "MONOCLE_API_PORT", mapValue = "8080" }
+                      , { mapKey = "MONOCLE_PUBLIC_URL"
+                        , mapValue =
+                            "\${COMPOSE_MONOCLE_PUBLIC_URL:-http://localhost:8080}"
+                        }
+                      , { mapKey = "MONOCLE_WEBAPP_TITLE"
+                        , mapValue = "\${COMPOSE_MONOCLE_WEBAPP_TITLE:-Monocle}"
+                        }
                       ]
                   )
               }
 
         in  if    dev
-            then  Compose.Service::(     service
-                                     //  { build = Some apiBuildContext
-                                         , ports = Some
-                                           [ mkPort "API" 8080 8080 ]
-                                         }
-                                   )
+            then  Compose.Service::(service // { build = Some apiBuildContext })
             else  Compose.Service::(     service
                                      //  { image = Some (monocleImage "api")
-                                         , expose = Some
-                                           [ Compose.StringOrNumber.Number 8080
-                                           ]
                                          , restart = Some "unless-stopped"
                                          }
                                    )
@@ -163,8 +170,11 @@ let createCrawlerService =
               , env_file = envFile
               , environment = Some
                   ( Compose.ListOrDict.Dict
-                      [ { mapKey = "CONFIG"
+                      [ { mapKey = "MONOCLE_CONFIG"
                         , mapValue = "/etc/monocle/config.yaml"
+                        }
+                      , { mapKey = "MONOCLE_PUBLIC_URL"
+                        , mapValue = "http://api:8080"
                         }
                       ]
                   )

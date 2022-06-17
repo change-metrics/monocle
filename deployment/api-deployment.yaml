@@ -27,10 +27,10 @@ spec:
             - monocle
             - api
           env:
-            - name: CONFIG
+            - name: MONOCLE_CONFIG
               value: /etc/monocle/config.yaml
-            - name: ELASTIC_CONN
-              value: elastic:9200
+            - name: MONOCLE_ELASTIC_URL
+              value: http://elastic:9200
             - name: CHANGE_ME
               value: change_me # done as the value in ./monocle-config.yaml requires an envvar by the name CHANGE_ME to exist
           image: quay.io/change-metrics/monocle_api:latest

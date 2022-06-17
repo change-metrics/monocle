@@ -178,7 +178,7 @@ Tests rely on the Elasticsearch service so first you need to ensure the ElasticS
 Tests can be executed using:
 
 ```ShellSession
-export ELASTIC_URL=http://localhost:9200
+export MONOCLE_ELASTIC_URL=http://localhost:9200
 cd haskell
 cabal test
 ```

@@ -9,12 +9,17 @@ All notable changes to this project will be documented in this file.
 - [api] Authentication support via an OIDC provider (ADR: 0012-OpenID-connect-authentication.md).
 
 ### Changed
+
+- [cli/compose] Some environment variables have been renamed.
+
 ### Removed
 
 - [compose] Removed the nginx web proxy, the monocle-api now serves the webui.
 - [deploy] The MONOCLE_API vars are replaced by MONOCLE_WEB: the monocle-api service listen on port 8080, and monocle no longer uses the ports 989*.
 
 ### Fixed
+
+- [web] Web APP title not set properly. 
 
 ## [1.5.0] - 2022-03-31
 
