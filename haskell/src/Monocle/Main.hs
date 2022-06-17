@@ -1,5 +1,5 @@
 -- | The Monocle entry point.
-module Monocle.Main (run, app) where
+module Monocle.Main (run, app, ApiConfig (..), defaultApiConfig) where
 
 import Data.List qualified
 import Data.Text qualified as Text
@@ -108,12 +108,25 @@ healthMiddleware app' req resp
   | Wai.rawPathInfo req == "/health" = resp $ Wai.responseLBS HTTP.status200 mempty "api is running\n"
   | otherwise = app' req resp
 
--- | Start the API in the foreground.
-run :: Int -> Text -> FilePath -> IO ()
-run port url configFile = withLogger (run' port url configFile)
+data ApiConfig = ApiConfig
+  { port :: Int,
+    elasticUrl :: Text,
+    configFile :: FilePath,
+    publicUrl :: Text,
+    jwkKey :: Maybe String,
+    adminToken :: Maybe String
+  }
 
-run' :: Int -> Text -> FilePath -> Logger -> IO ()
-run' port url configFile glLogger = do
+defaultApiConfig :: Int -> Text -> FilePath -> ApiConfig
+defaultApiConfig port elasticUrl configFile =
+  let publicUrl = "http://localhost:" <> show port
+      jwkKey = Nothing
+      adminToken = Nothing
+   in ApiConfig {..}
+
+-- | Start the API in the foreground.
+run :: ApiConfig -> IO ()
+run ApiConfig {..} = withLogger $ \glLogger -> do
   config <- Config.reloadConfig configFile
   conf <- Config.csConfig <$> config
   let workspaces = Config.getWorkspaces conf
@@ -139,9 +152,8 @@ run' port url configFile glLogger = do
 
   -- Init OIDC
   -- Initialise JWT settings for locally issuing JWT (local provider)
-  jwkGenKey <- fmap from <$> lookupEnv "MONOCLE_JWK_GEN_KEY"
-  localJwk <- doGenJwk jwkGenKey
-  providerM <- getAuthProvider conf
+  localJwk <- doGenJwk $ from <$> jwkKey
+  providerM <- getAuthProvider publicUrl conf
   let localJWTSettings = defaultJWTSettings localJwk
   -- Initialize env to talk with OIDC provider
   oidcEnv <- case providerM of
@@ -151,16 +163,16 @@ run' port url configFile glLogger = do
     _ -> pure Nothing
   let aOIDC = OIDC {..}
 
-  bhEnv <- mkEnv url
+  bhEnv <- mkEnv elasticUrl
   let aEnv = Env {..}
-  httpRetry ("elastic-client", url, "internal") $
+  httpRetry ("elastic-client", elasticUrl, "internal") $
     liftIO $ traverse_ (\tenant -> runQueryM' bhEnv tenant I.ensureIndex) workspaces
-  httpRetry ("elastic-client", url, "internal") $
+  httpRetry ("elastic-client", elasticUrl, "internal") $
     liftIO $ runQueryTarget bhEnv (QueryConfig conf) I.ensureConfigIndex
   liftIO $
     withStdoutLogger $ \aplogger -> do
       let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
-      doLog glLogger $ via @Text $ SystemReady (length workspaces) port url
+      doLog glLogger $ via @Text $ SystemReady (length workspaces) port elasticUrl
       Warp.runSettings
         settings
         . cors (const $ Just policy)

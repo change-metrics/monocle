@@ -71,11 +71,8 @@ data OIDCEnv = OIDCEnv
     manager :: Manager,
     provider :: O.Provider,
     redirectUri :: ByteString,
-    clientId :: ByteString,
-    clientSecret :: ByteString,
     sessionStoreStorage :: MVar (HM.Map O.State O.Nonce),
-    userClaim :: Maybe Text,
-    authRequired :: Bool
+    providerConfig :: OIDCProviderConfig
   }
 
 newtype LoginInUser = LoginInUser {liJWT :: Text} deriving (Show, Eq, Ord)
@@ -93,7 +90,7 @@ instance ToMarkup LoginInUser where
         )
 
 initOIDCEnv :: OIDCProviderConfig -> IO OIDCEnv
-initOIDCEnv OIDCProviderConfig {..} = do
+initOIDCEnv providerConfig@OIDCProviderConfig {..} = do
   manager <- newOpenSSLManager
   provider <- O.discover opIssuerURL manager
   sessionStoreStorage <- newMVar HM.empty
@@ -101,8 +98,6 @@ initOIDCEnv OIDCProviderConfig {..} = do
       clientId = from opClientID
       clientSecret = from opClientSecret
       oidc = O.setCredentials clientId clientSecret redirectUri (O.newOIDC provider)
-      userClaim = opUserClaim
-      authRequired = opEnforceAuth
   pure OIDCEnv {..}
 
 mkSessionStore :: OIDCEnv -> Maybe O.State -> O.SessionStore IO

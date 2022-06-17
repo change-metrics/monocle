@@ -18,6 +18,7 @@ import Monocle.Client (withClient)
 import Monocle.Config qualified as Config
 import Monocle.Env (mkEnv, runQueryM')
 import Monocle.Logging (LogCrawlerContext (..))
+import Monocle.Main (ApiConfig (..))
 import Monocle.Main qualified
 import Monocle.Prelude hiding ((:::))
 import Monocle.Search.Query (parseDateValue)
@@ -46,18 +47,25 @@ usage =
     usageApi :: O.Parser (IO ())
     usageApi = pure $ do
       -- get parameters from the environment
-      (config, elastic, port) <- getFromEnv usageApiEnv
+      ( configFile,
+        from -> elasticUrl,
+        getInt -> port,
+        from -> publicUrl,
+        jwkKey,
+        adminToken
+        ) <-
+        getFromEnv usageApiEnv
       -- start the API
-      Monocle.Main.run (getInt port) (getURL elastic) config
-    usageApiEnv :: Env.Parser Env.Error (FilePath, String, String)
-    usageApiEnv = (,,) <$> envConf <*> envElastic <*> envApiPort
+      Monocle.Main.run ApiConfig {..}
+    usageApiEnv :: Env.Parser Env.Error (FilePath, String, String, String, Maybe String, Maybe String)
+    usageApiEnv = (,,,,,) <$> envConf <*> envElastic <*> envApiPort <*> envPublicUrl <*> envJwkKey <*> envAdminToken
 
     -- The Crawler entrypoint (no CLI argument).
     usageCrawler = pure $ do
       -- get parameters from the environment
       (config, url, monitoringPort) <- getFromEnv usageCrawlerEnv
       -- start the Crawler
-      withClient url Nothing $ runMacroscope (getInt monitoringPort) config
+      withClient (from url) Nothing $ runMacroscope (getInt monitoringPort) config
     usageCrawlerEnv = (,,) <$> envConf <*> envPublicUrl <*> envMonitoring
 
     -- Helper to create sub command
@@ -69,12 +77,17 @@ usage =
 
     -- Helpers to get value fromm the env
     getFromEnv = Env.parse (header "monocle")
-    envConf = var str "CONFIG" (help "The Monocle configuration" <> def "/etc/monocle/config.yaml" <> helpDef show)
-    envElastic = var str "ELASTIC_CONN" (help "The Elasticsearch endpoint" <> def "elastic:9200")
-    envApiPort = var str "MONOCLE_API_PORT" (help "The API Port" <> def "8080")
-    envPublicUrl = var str "MONOCLE_PUBLIC_URL" (help "The Monocle URL" <> def "http://web:8080")
-    envMonitoring = var str "MONOCLE_CRAWLER_MONITORING" (help "The Monitoring Port" <> def "9001")
+    envConf = var str "CONFIG" (help "The Monocle configuration" <> envDef "/etc/monocle/config.yaml")
+    envElastic = var str "ELASTIC_CONN" (help "The Elasticsearch endpoint" <> envDef "elastic:9200")
+    envApiPort = var str "MONOCLE_API_PORT" (help "The API Port" <> envDef "8080")
+    envPublicUrl = var str "MONOCLE_PUBLIC_URL" (help "The Monocle API base URL" <> envDef "http://api:8080")
+    envJwkKey = optional $ var str "MONOCLE_JWK_GEN_KEY" $ help "The secret key used to issue Authentication tokens (must be 64 characters minimum) (optional)"
+    envAdminToken = optional $ var str "MONOCLE_ADMIN_TOKEN" $ help "Token to access admin endpoints (optional)"
+    envMonitoring = var str "MONOCLE_CRAWLER_MONITORING" (help "The Monitoring Port" <> envDef "9001")
     getInt txt = fromMaybe (error . from $ "Invalid number: " <> txt) $ readMaybe txt
+
+    envDef :: String -> Env.Mod Var String
+    envDef s = def s <> helpDef show
 
 -- | The CLI entrypoint.
 main :: IO ()

@@ -86,7 +86,7 @@ export $(cat .secrets)
 cd haskell
 cabal repl monocle
 λ> import Monocle.Main
-λ> run 9879 "http://localhost:9200" "../etc/config.yaml"
+λ> run $ defaultApiConfig 9879 "http://localhost:9200" "../etc/config.yaml"
 ```
 
 #### WebUI hot reload
@@ -144,7 +144,7 @@ If the command fails with `Error: package bs-parse not found or built`, you can 
 ```ShellSession
 nix-shell --command monocle-repl
 λ> import Monocle.Main
-λ> run 8080 "http://localhost:19200" "../etc/config.yaml"
+λ> run $ defaultApiConfig 8080 "http://localhost:19200" "../etc/config.yaml"
 ```
 
 #### Start crawlers process
