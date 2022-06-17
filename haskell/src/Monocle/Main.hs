@@ -57,23 +57,20 @@ app env = do
     mkAppM :: AppM x -> Servant.Handler x
     mkAppM apM = runReaderT (unApp apM) env
 
-mkStaticMiddleware :: IO (Wai.Application -> Wai.Application)
-mkStaticMiddleware = do
+fallbackWebAppPath :: FilePath
+fallbackWebAppPath = "../web/build/"
+
+mkStaticMiddleware :: Text -> Text -> FilePath -> IO (Wai.Application -> Wai.Application)
+mkStaticMiddleware publicUrl title webAppPath = do
   -- Check where are the webui files
-  rootDir <- fromMaybe (error "WebUI files are missing") <$> "/usr/share/monocle/webapp/" `existOr` Just "../web/build/"
+  rootDir <- fromMaybe (error "Web APP files are missing") <$> webAppPath `existOr` Just fallbackWebAppPath
   -- Load the index and inject the customization
   index <- Text.readFile $ rootDir <> "index.html"
-  title <- fromMaybe "Monocle" <$> lookupEnv "REACT_APP_TITLE"
-  apiUrl <- lookupEnv "REACT_APP_API_URL"
-  pure $ staticMiddleware (from $ prepIndex index title apiUrl) rootDir
+  pure $ staticMiddleware (from $ prepIndex index) rootDir
   where
     -- Replace env variable in the index page
-    prepIndex :: Text -> String -> Maybe String -> Text
-    prepIndex index title apiUrl =
-      Text.replace "__TITLE__" (from title) $
-        case apiUrl of
-          Just url -> Text.replace "__API_URL__" (from url) index
-          Nothing -> index
+    prepIndex :: Text -> Text
+    prepIndex index = Text.replace "__TITLE__" (from title) $ Text.replace "__API_URL__" (from publicUrl) index
 
     -- Helper that checks if `fp` exists, otherwise it returns `otherFP`
     existOr :: FilePath -> Maybe FilePath -> IO (Maybe FilePath)
@@ -113,6 +110,8 @@ data ApiConfig = ApiConfig
     elasticUrl :: Text,
     configFile :: FilePath,
     publicUrl :: Text,
+    title :: Text,
+    webAppPath :: FilePath,
     jwkKey :: Maybe String,
     adminToken :: Maybe String
   }
@@ -120,8 +119,10 @@ data ApiConfig = ApiConfig
 defaultApiConfig :: Int -> Text -> FilePath -> ApiConfig
 defaultApiConfig port elasticUrl configFile =
   let publicUrl = "http://localhost:" <> show port
+      title = "Monocle"
       jwkKey = Nothing
       adminToken = Nothing
+      webAppPath = fallbackWebAppPath
    in ApiConfig {..}
 
 -- | Start the API in the foreground.
@@ -140,7 +141,7 @@ run ApiConfig {..} = withLogger $ \glLogger -> do
 
   -- TODO: add the aliases to the AppM env to avoid parsing them for each request
 
-  staticMiddleware <- mkStaticMiddleware
+  staticMiddleware <- mkStaticMiddleware publicUrl title webAppPath
 
   -- Monitoring
   void $ register ghcMetrics

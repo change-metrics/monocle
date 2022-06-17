@@ -51,14 +51,25 @@ usage =
         from -> elasticUrl,
         getInt -> port,
         from -> publicUrl,
+        from -> title,
+        webAppPath,
         jwkKey,
         adminToken
         ) <-
         getFromEnv usageApiEnv
       -- start the API
       Monocle.Main.run ApiConfig {..}
-    usageApiEnv :: Env.Parser Env.Error (FilePath, String, String, String, Maybe String, Maybe String)
-    usageApiEnv = (,,,,,) <$> envConf <*> envElastic <*> envApiPort <*> envPublicUrl <*> envJwkKey <*> envAdminToken
+    usageApiEnv :: Env.Parser Env.Error (FilePath, String, String, String, String, String, Maybe String, Maybe String)
+    usageApiEnv =
+      (,,,,,,,)
+        <$> envConf
+          <*> envElastic
+          <*> envApiPort
+          <*> envPublicUrl
+          <*> envTitle
+          <*> envWebAppPath
+          <*> envJwkKey
+          <*> envAdminToken
 
     -- The Crawler entrypoint (no CLI argument).
     usageCrawler = pure $ do
@@ -81,8 +92,10 @@ usage =
     envElastic = var str "ELASTIC_CONN" (help "The Elasticsearch endpoint" <> envDef "elastic:9200")
     envApiPort = var str "MONOCLE_API_PORT" (help "The API Port" <> envDef "8080")
     envPublicUrl = var str "MONOCLE_PUBLIC_URL" (help "The Monocle API base URL" <> envDef "http://api:8080")
-    envJwkKey = optional $ var str "MONOCLE_JWK_GEN_KEY" $ help "The secret key used to issue Authentication tokens (must be 64 characters minimum) (optional)"
-    envAdminToken = optional $ var str "MONOCLE_ADMIN_TOKEN" $ help "Token to access admin endpoints (optional)"
+    envTitle = var str "MONOCLE_WEBAPP_TITLE" (help "The Monocle WEB APP title" <> envDef "Monocle")
+    envWebAppPath = var str "MONOCLE_WEBAPP_PATH" (help "The Monocle WEB APP build path" <> envDef "/usr/share/monocle/webapp/")
+    envJwkKey = optional $ var str "MONOCLE_JWK_GEN_KEY" $ help "The secret key used to issue Authentication tokens (must be 64 characters minimum) (default: None)"
+    envAdminToken = optional $ var str "MONOCLE_ADMIN_TOKEN" $ help "Token to access admin endpoints (default: None)"
     envMonitoring = var str "MONOCLE_CRAWLER_MONITORING" (help "The Monitoring Port" <> envDef "9001")
     getInt txt = fromMaybe (error . from $ "Invalid number: " <> txt) $ readMaybe txt
 
