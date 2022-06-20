@@ -306,6 +306,7 @@ in rec {
 
   promContainer = pkgs.dockerTools.buildLayeredImage {
     name = "quay.io/change-metrics/monocle-prometheus";
+    contents = [ pkgs.coreutils pkgs.gnused pkgs.findutils ];
     tag = "latest";
     # created = "now";
     config = {
