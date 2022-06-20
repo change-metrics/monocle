@@ -179,6 +179,8 @@ module Monocle.Prelude
     monocleQueryCheckCounter,
     monocleQueryCounter,
     monocleMetricCounter,
+    monocleAuthSuccessCounter,
+    monocleAuthProviderRedirectCounter,
   )
 where
 
@@ -248,6 +250,16 @@ monocleQueryCheckCounter =
 monocleQueryCounter :: Prometheus.Counter
 monocleQueryCounter =
   unsafePerformIO $ promRegister $ Prometheus.counter (Info "query" "")
+
+{-# NOINLINE monocleAuthSuccessCounter #-}
+monocleAuthSuccessCounter :: Prometheus.Counter
+monocleAuthSuccessCounter =
+  unsafePerformIO $ promRegister $ Prometheus.counter (Info "auth_success" "")
+
+{-# NOINLINE monocleAuthProviderRedirectCounter #-}
+monocleAuthProviderRedirectCounter :: Prometheus.Counter
+monocleAuthProviderRedirectCounter =
+  unsafePerformIO $ promRegister $ Prometheus.counter (Info "auth_provider_redirect" "")
 
 {-# NOINLINE monocleMetricCounter #-}
 monocleMetricCounter :: Prometheus.Counter

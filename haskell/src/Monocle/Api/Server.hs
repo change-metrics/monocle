@@ -779,6 +779,7 @@ handleLogin = do
   aOIDC <- asks aOIDC
   case oidcEnv aOIDC of
     Just oidcenv -> do
+      incCounter monocleAuthProviderRedirectCounter
       loc <- liftIO (genOIDCURL oidcenv)
       redirects loc
       pure NoContent
@@ -824,6 +825,7 @@ handleLoggedIn err codeM stateM = do
       jwtE <- liftIO $ mkJwt (localJWTSettings aOIDC) mUidMap userId (Just expiry)
       case jwtE of
         Right jwt -> do
+          incCounter monocleAuthSuccessCounter
           log $ JWTCreated (show mUidMap) (decodeUtf8 $ redirectUri oidcEnv)
           let liJWT = decodeUtf8 jwt
           pure $ LoginInUser {..}
