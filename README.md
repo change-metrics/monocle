@@ -47,7 +47,7 @@ Note that you can also [deploy from source code](CONTRIBUTING.md#deploy-from-sou
 git clone https://github.com/change-metrics/monocle.git
 cd monocle
 git submodule update --init --recursive
-# Init a .secret file with a default API key for the crawler process
+# Init a .secrets file with a default API key for the crawler process
 echo CRAWLERS_API_KEY=$(uuidgen) > .secrets
 ```
 
@@ -131,20 +131,21 @@ For a local deployment, default settings are fine.
 
 The following settings are available in the `.env` file:
 
-- `MONOCLE_PUBLIC_URL=<url>` to configure the public URL to access the UI and API.
-  The URL is required for user redirection during the authentication.
-- `MONOCLE_VERSION=<version>` to use a specific version. By default it uses `latest`.
-- `MONOCLE_TITLE=<title>` to change the title of the web application. By default it is `Monocle`.
-- `MONOCLE_WEB_ADDR` to change the IP address the web service will bind on. By default 0.0.0.0.
-- `MONOCLE_WEB_PORT` to change the TCP port the web service will bind on. By default 8080.
+- `COMPOSE_ES_XMS and COMPOSE_ES_XMX` to change the ElasticSearch JVM HEAP SIZE. By default 512m.
+- `COMPOSE_MONOCLE_VERSION` to use a specific version. By default it uses `latest`.
+- `COMPOSE_MONOCLE_API_ADDR` to set binding address where the Monocle API is exposed by the container.
+- `COMPOSE_MONOCLE_API_PORT` to set binding port where the Monocle API is exposed by the container.
+- `COMPOSE_MONOCLE_PUBLIC_URL` to configure the public URL to access the UI and API.
+  The URL is required for user redirection during the authentication. By default it is `http://localhost:8080`
+- `COMPOSE_MONOCLE_WEBAPP_TITLE` to change the title of the web application. By default it is `Monocle`.
+
+The following settings are available in the `.secrets` file:
+
 - `MONOCLE_JWK_GEN_KEY` to set the local JWT issuer key. The key size must be 64 characters minimum.
   By default the key is automatically generated.
-- `MONOCLE_OIDC_<PROVIDER_NAME>_CLIENT_SECRET` to set the secret used by Monocle to request an ID Token.
-  Unset by default.
+- `MONOCLE_OIDC_<PROVIDER_NAME>_CLIENT_SECRET` to set the secret used by Monocle to request an ID Token (Unset by default).
 - `MONOCLE_ADMIN_TOKEN` to set the *token* to access admin endpoints.
   By default not set and endpoints deactivated.
-- `ES_XMS and ES_XMX` to change the ElasticSearch JVM HEAP SIZE. By default 512m.
-
 ### Configuration file
 
 The Monocle configuration file is used by the API and crawlers processes. The format of the file is YAML.
@@ -590,7 +591,7 @@ To setup the monitoring:
 1. Create the prometheus service by providing the API and CRAWLER location
 
 ```ShellSession
-export API_TARGET=localhost:9879
+export API_TARGET=localhost:8080
 export CRAWLER_TARGET=localhost:9001
 mkdir -p /srv/prometheus
 podman create --network host -v /srv/prometheus:/var/lib/prometheus:Z -e API_TARGET=${API_TARGET} -e CRAWLER_TARGET=${CRAWLER_TARGET} --name monocle-prometheus quay.io/change-metrics/monocle-prometheus:latest

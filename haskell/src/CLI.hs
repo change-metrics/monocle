@@ -18,6 +18,7 @@ import Monocle.Client (withClient)
 import Monocle.Config qualified as Config
 import Monocle.Env (mkEnv, runQueryM')
 import Monocle.Logging (LogCrawlerContext (..))
+import Monocle.Main (ApiConfig (..))
 import Monocle.Main qualified
 import Monocle.Prelude hiding ((:::))
 import Monocle.Search.Query (parseDateValue)
@@ -46,18 +47,36 @@ usage =
     usageApi :: O.Parser (IO ())
     usageApi = pure $ do
       -- get parameters from the environment
-      (config, elastic, port) <- getFromEnv usageApiEnv
+      ( configFile,
+        getURL -> elasticUrl,
+        getInt -> port,
+        getURL -> publicUrl,
+        from -> title,
+        webAppPath,
+        jwkKey,
+        adminToken
+        ) <-
+        getFromEnv usageApiEnv
       -- start the API
-      Monocle.Main.run (getInt port) (getURL elastic) config
-    usageApiEnv :: Env.Parser Env.Error (FilePath, String, String)
-    usageApiEnv = (,,) <$> envConf <*> envElastic <*> envApiPort
+      Monocle.Main.run ApiConfig {..}
+    usageApiEnv :: Env.Parser Env.Error (FilePath, String, String, String, String, String, Maybe String, Maybe String)
+    usageApiEnv =
+      (,,,,,,,)
+        <$> envConf
+          <*> envElastic
+          <*> envApiPort
+          <*> envPublicUrl
+          <*> envTitle
+          <*> envWebAppPath
+          <*> envJwkKey
+          <*> envAdminToken
 
     -- The Crawler entrypoint (no CLI argument).
     usageCrawler = pure $ do
       -- get parameters from the environment
       (config, url, monitoringPort) <- getFromEnv usageCrawlerEnv
       -- start the Crawler
-      withClient url Nothing $ runMacroscope (getInt monitoringPort) config
+      withClient (from url) Nothing $ runMacroscope (getInt monitoringPort) config
     usageCrawlerEnv = (,,) <$> envConf <*> envPublicUrl <*> envMonitoring
 
     -- Helper to create sub command
@@ -69,12 +88,19 @@ usage =
 
     -- Helpers to get value fromm the env
     getFromEnv = Env.parse (header "monocle")
-    envConf = var str "CONFIG" (help "The Monocle configuration" <> def "/etc/monocle/config.yaml" <> helpDef show)
-    envElastic = var str "ELASTIC_CONN" (help "The Elasticsearch endpoint" <> def "elastic:9200")
-    envApiPort = var str "MONOCLE_API_PORT" (help "The API Port" <> def "8080")
-    envPublicUrl = var str "MONOCLE_PUBLIC_URL" (help "The Monocle URL" <> def "http://web:8080")
-    envMonitoring = var str "MONOCLE_CRAWLER_MONITORING" (help "The Monitoring Port" <> def "9001")
+    envConf = var str "MONOCLE_CONFIG" (help "The Monocle configuration" <> envDef "/etc/monocle/config.yaml")
+    envElastic = var str "MONOCLE_ELASTIC_URL" (help "The Elasticsearch endpoint URL" <> envDef "http://localhost:9200")
+    envApiPort = var str "MONOCLE_API_PORT" (help "The API Port" <> envDef "8080")
+    envPublicUrl = var str "MONOCLE_PUBLIC_URL" (help "The Monocle API base URL" <> envDef "http://localhost:8080")
+    envTitle = var str "MONOCLE_WEBAPP_TITLE" (help "The Monocle WEB APP title" <> envDef "Monocle")
+    envWebAppPath = var str "MONOCLE_WEBAPP_PATH" (help "The Monocle WEB APP build path" <> envDef "/usr/share/monocle/webapp/")
+    envJwkKey = optional $ var str "MONOCLE_JWK_GEN_KEY" $ help "The secret key used to issue Authentication tokens (must be 64 characters minimum) (default: None)"
+    envAdminToken = optional $ var str "MONOCLE_ADMIN_TOKEN" $ help "Token to access admin endpoints (default: None)"
+    envMonitoring = var str "MONOCLE_CRAWLER_MONITORING" (help "The Monitoring Port" <> envDef "9001")
     getInt txt = fromMaybe (error . from $ "Invalid number: " <> txt) $ readMaybe txt
+
+    envDef :: String -> Env.Mod Var String
+    envDef s = def s <> helpDef show
 
 -- | The CLI entrypoint.
 main :: IO ()
@@ -117,8 +143,8 @@ usageJanitor =
                 Just workspace -> runOnWorkspace env workspace
             Nothing -> traverse_ (runOnWorkspace env) $ Config.getWorkspaces config
         workspaceOption = optional $ strOption (long "workspace" <> O.help "Workspace name" <> metavar "WORKSPACE")
-        configOption = strOption (long "config" <> O.help "Path to configuration file" <> metavar "CONFIG")
-        elasticOption = strOption (long "elastic" <> O.help "The Elastic endpoint url" <> metavar "ELASTIC_URL")
+        configOption = strOption (long "config" <> O.help "Path to configuration file" <> metavar "MONOCLE_CONFIG")
+        elasticOption = strOption (long "elastic" <> O.help "The Elastic endpoint url" <> metavar "MONOCLE_ELASTIC_URL")
         runOnWorkspace env workspace = runQueryM' env workspace J.updateIdentsOnWorkspace
 
 ---------------------------------------------------------------

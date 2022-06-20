@@ -144,7 +144,7 @@ mkEnv server = do
 
 mkEnv' :: MonadIO m => m BH.BHEnv
 mkEnv' = do
-  url <- fromMaybe "http://localhost:9200" <$> lookupEnv "ELASTIC_URL"
+  url <- fromMaybe "http://localhost:9200" <$> lookupEnv "MONOCLE_ELASTIC_URL"
   mkEnv (from url)
 
 -- | Run a QueryM without sharing a BHEnv, this is useful for one-off test
