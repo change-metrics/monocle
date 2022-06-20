@@ -69,6 +69,18 @@ let panels =
           ]
       , panel
           32
+          "API Authentication requests count"
+          [ target
+              "C"
+              "increase(auth_success{job=\"api\"}[5m])"
+              "Authentication redirections to Identity provider"
+          , target
+              "D"
+              "increase(auth_provider_redirect{job=\"api\"}[5m])"
+              "Authentications succeeded"
+          ]
+      , panel
+          40
           "Crawler requests count (by crawler name)"
           [ target
               "E"
@@ -80,7 +92,7 @@ let panels =
               "{{ ident }} failures"
           ]
       , panel
-          40
+          48
           "Crawler requests count (by url)"
           [ target
               "G"
@@ -92,7 +104,7 @@ let panels =
               "{{ url }} failures"
           ]
       , panel
-          48
+          56
           "Crawler requests to Monocle API"
           [ target
               "I"

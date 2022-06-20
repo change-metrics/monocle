@@ -591,7 +591,7 @@ To setup the monitoring:
 1. Create the prometheus service by providing the API and CRAWLER location
 
 ```ShellSession
-export API_TARGET=localhost:9879
+export API_TARGET=localhost:8080
 export CRAWLER_TARGET=localhost:9001
 mkdir -p /srv/prometheus
 podman create --network host -v /srv/prometheus:/var/lib/prometheus:Z -e API_TARGET=${API_TARGET} -e CRAWLER_TARGET=${CRAWLER_TARGET} --name monocle-prometheus quay.io/change-metrics/monocle-prometheus:latest
