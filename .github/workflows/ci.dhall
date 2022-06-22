@@ -12,7 +12,7 @@ in  { Nix =
                 , name = Some "Run Test"
                 , run = Some
                     ( let command =
-                            "env ELASTIC_URL=http://localhost:9200 monocle-ci-run"
+                            "env MONOCLE_ELASTIC_URL=http://localhost:9200 monocle-ci-run"
 
                       in  "cd haskell; nix-shell --pure --attr ci-shell ../nix/default.nix --command '${command}'"
                     )

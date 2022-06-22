@@ -35,10 +35,10 @@ main = withOpenSSL $ do
   setEnv "API_KEY" "secret"
   setEnv "CRAWLERS_API_KEY" "secret"
   integrationTests <- do
-    elasticUrl <- lookupEnv "ELASTIC_URL"
+    elasticUrl <- lookupEnv "MONOCLE_ELASTIC_URL"
     case elasticUrl of
       Nothing -> do
-        putTextLn "ELASTIC_URL is missing, we skip integration test"
+        putTextLn "MONOCLE_ELASTIC_URL is missing, we skip integration test"
         pure []
       Just _ -> do
         setEnv "TASTY_NUM_THREADS" "1"

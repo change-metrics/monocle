@@ -24,7 +24,7 @@ import Monocle.Backend.Documents
   )
 import Monocle.Backend.Index as I
 import Monocle.Backend.Queries qualified as Q
-import Monocle.Config (Config)
+import Monocle.Config (Config, OIDCProviderConfig (..))
 import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Logging
@@ -90,10 +90,10 @@ checkAuth :: forall a. AuthResult AuthenticatedUser -> (Maybe AuthenticatedUser 
 checkAuth auth action = do
   aOIDC <- asks aOIDC
   case oidcEnv aOIDC of
-    Just (OIDCEnv {authRequired}) -> case auth of
+    Just (OIDCEnv {providerConfig}) -> case auth of
       Authenticated au -> action $ Just au
       _ -> do
-        if not authRequired
+        if not $ opEnforceAuth providerConfig
           then action Nothing
           else forbidden "Not allowed"
     Nothing -> action Nothing
@@ -172,12 +172,12 @@ configGetAbout :: AuthResult AuthenticatedUser -> ConfigPB.GetAboutRequest -> Ap
 configGetAbout _auth _request = response
   where
     response = do
+      aOIDC <- asks aOIDC
       GetConfig config <- getConfig
-      authProvider <- liftIO $ Config.getAuthProvider config
       let aboutVersion = from version
           links = maybe [] Config.links (Config.about config)
           aboutLinks = fromList $ toLink <$> links
-          aboutAuth = toAuth <$> authProvider
+          aboutAuth = toAuth . providerConfig <$> oidcEnv aOIDC
       pure $ ConfigPB.GetAboutResponse $ Just ConfigPB.About {..}
     toLink :: Config.Link -> ConfigPB.About_AboutLink
     toLink Config.Link {..} =
@@ -779,6 +779,7 @@ handleLogin = do
   aOIDC <- asks aOIDC
   case oidcEnv aOIDC of
     Just oidcenv -> do
+      incCounter monocleAuthProviderRedirectCounter
       loc <- liftIO (genOIDCURL oidcenv)
       redirects loc
       pure NoContent
@@ -824,6 +825,7 @@ handleLoggedIn err codeM stateM = do
       jwtE <- liftIO $ mkJwt (localJWTSettings aOIDC) mUidMap userId (Just expiry)
       case jwtE of
         Right jwt -> do
+          incCounter monocleAuthSuccessCounter
           log $ JWTCreated (show mUidMap) (decodeUtf8 $ redirectUri oidcEnv)
           let liJWT = decodeUtf8 jwt
           pure $ LoginInUser {..}
@@ -833,7 +835,7 @@ handleLoggedIn err codeM stateM = do
   where
     -- Get the Token's claim that identify an unique user
     aUserId :: OIDCEnv -> O.IdTokenClaims Value -> Text
-    aUserId oidcEnv idToken = case userClaim oidcEnv of
+    aUserId OIDCEnv {providerConfig} idToken = case opUserClaim providerConfig of
       Just uc -> case O.otherClaims idToken of
         Object o -> case AKM.lookup (AK.fromText uc) o of
           Just (String s) -> s

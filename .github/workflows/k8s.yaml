@@ -71,6 +71,6 @@ jobs:
           kubectl port-forward --namespace "${namespace}" $( kubectl get --namespace "${namespace}" -f deployment/api-service.yaml --output name) 8080:8080 &
           sleep 30s
 
-          curl -s http://localhost:8080/index.html | grep 'window.TITLE'
+          curl -s http://localhost:8080/index.html | grep 'window.document.title'
 
           kill %1

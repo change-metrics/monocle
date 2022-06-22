@@ -327,16 +327,15 @@ getWorkspaces :: Config -> [Index]
 getWorkspaces Config {..} = workspaces
 
 -- | Get Authentication provider from config
-getAuthProvider :: Config -> IO (Maybe OIDCProviderConfig)
-getAuthProvider Config {auth} = case auth of
+getAuthProvider :: Text -> Config -> IO (Maybe OIDCProviderConfig)
+getAuthProvider publicUrl Config {auth} = case auth of
   Just Auth {..} -> do
     case auth_provider of
       OIDCProvider (OIDC {..}) | (not . any T.null) [oidc_issuer_url, oidc_client_id, oidc_provider_name] ->
         do
           opClientSecretM <- fmap from <$> lookupEnv (secretEnv oidc_provider_name)
-          opAppPublicUrlM <- fmap (ensureTrailingSlash . from) <$> lookupEnv "MONOCLE_PUBLIC_URL"
-          case (opClientSecretM, opAppPublicUrlM) of
-            (Just opClientSecret, from -> Just opAppPublicURL) | (not . any T.null) [opClientSecret, opAppPublicURL] -> mkProvider
+          case opClientSecretM of
+            Just opClientSecret | not (T.null opClientSecret) -> mkProvider
               where
                 mkProvider =
                   let opIssuerURL = ensureTrailingSlash oidc_issuer_url
@@ -350,6 +349,7 @@ getAuthProvider Config {auth} = case auth of
       _ -> pure Nothing
   Nothing -> pure Nothing
   where
+    opAppPublicURL = ensureTrailingSlash publicUrl
     ensureTrailingSlash iss = T.dropWhileEnd (== '/') iss <> "/"
     providerNameToEnvFragment = T.replace " " "_" . T.toUpper
     secretEnv pname = "MONOCLE_OIDC_" <> from (providerNameToEnvFragment pname) <> "_CLIENT_SECRET"

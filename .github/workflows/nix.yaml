@@ -28,7 +28,7 @@ jobs:
       - name: Build the env
         run: nix-build --no-out-link --attr monocle-light.env
       - name: Run Test
-        run: "cd haskell; nix-shell --pure --attr ci-shell ../nix/default.nix --command 'env ELASTIC_URL=http://localhost:9200 monocle-ci-run'"
+        run: "cd haskell; nix-shell --pure --attr ci-shell ../nix/default.nix --command 'env MONOCLE_ELASTIC_URL=http://localhost:9200 monocle-ci-run'"
 name: Nix
 on:
   pull_request: {}
