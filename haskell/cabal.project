@@ -2,5 +2,3 @@ package proto3-suite
   flags: -swagger
 
 packages: .
-
-constraints: turtle < 1.6
