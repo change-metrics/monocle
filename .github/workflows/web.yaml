@@ -16,5 +16,3 @@ jobs:
 name: Web
 on:
   pull_request: {}
-  push: {}
-  release: {}

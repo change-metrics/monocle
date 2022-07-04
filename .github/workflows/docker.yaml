@@ -20,7 +20,7 @@ jobs:
         run: "chmod o+w data"
       - name: Create a config.yaml file
         run: |
-          cat > etc/config.yaml << EOL
+          cat > etc/config.yaml << EOF
           ---
           workspaces:
             - name: monocle
@@ -29,7 +29,7 @@ jobs:
                   update_since: "2020-01-01"
                   provider:
                     github_organization: tekton
-          EOL      
+          EOF
       - name: Create a secret.yaml file
         run: |
           cat > .secrets << EOF
@@ -37,7 +37,9 @@ jobs:
           GITHUB_TOKEN=123
           EOF
       - name: Build docker image
-        run: docker build -t quay.io/change-metrics/monocle:latest .
+        run: |
+          export MONOCLE_COMMIT=$(git show HEAD --format="format:%h" -q)
+          docker build -t quay.io/change-metrics/monocle:latest .
       - name: Start Monocle compose
         run: docker-compose up -d
       - name: Wait for services to start
@@ -55,5 +57,3 @@ jobs:
 name: Docker
 on:
   pull_request: {}
-  push: {}
-  release: {}

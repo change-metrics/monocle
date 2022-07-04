@@ -35,72 +35,19 @@ in  { Nix =
             , run = Some "cd web ; npm run format"
             }
           ]
-    , Docker =
-        mk.makeCompose
-          [ mk.GithubActions.Step::{
-            , name = Some "Set write permission for data directory"
-            , run = Some "chmod o+w data"
-            }
-          , mk.GithubActions.Step::{
-            , name = Some "Create a config.yaml file"
-            , run = Some
-                ''
-                cat > etc/config.yaml << EOL
-                ---
-                workspaces:
-                  - name: monocle
-                    crawlers:
-                      - name: github-tekton
-                        update_since: "2020-01-01"
-                        provider:
-                          github_organization: tekton
-                EOL      
-                ''
-            }
-          , mk.GithubActions.Step::{
-            , name = Some "Create a secret.yaml file"
-            , run = Some
-                ''
-                cat > .secrets << EOF
-                CRAWLERS_API_KEY=secret
-                GITHUB_TOKEN=123
-                EOF
-                ''
-            }
-          , mk.GithubActions.Step::{
-            , name = Some "Build docker image"
-            , run = Some
-                "docker build -t quay.io/change-metrics/monocle:latest ."
-            }
-          , mk.GithubActions.Step::{
-            , name = Some "Start Monocle compose"
-            , run = Some "docker-compose up -d"
-            }
-          , mk.GithubActions.Step::{
-            , name = Some "Wait for services to start"
-            , run = Some "sleep 45"
-            }
-          , mk.GithubActions.Step::{
-            , name = Some "Display docker-compose ps"
-            , run = Some "docker-compose ps"
-            }
-          , mk.GithubActions.Step::{
-            , name = Some "Display docker-compose logs"
-            , run = Some "docker-compose logs"
-            }
-          , mk.GithubActions.Step::{
-            , name = Some "Check services are running"
-            , run = Some "test -z \"\$(sudo docker-compose ps -a | grep Exit)\""
-            }
-          , mk.GithubActions.Step::{
-            , name = Some "Check api service through nginx"
-            , run = Some
-                "curl -s --fail -H 'Content-type: application/json' http://localhost:8080/api/2/get_workspaces -d '{}' | grep 'workspaces'"
-            }
-          , mk.GithubActions.Step::{
-            , name = Some "Check web service to fetch web app"
-            , run = Some
-                "curl -s http://localhost:8080/index.html | grep 'window.document.title'"
-            }
-          ]
+    , Docker = mk.makeCompose mk.validate-compose-steps
+    , Publish-Master-Image =
+        mk.makePublishMaster
+          (   mk.validate-compose-steps
+            # [ mk.GithubActions.Step::{
+                , name = Some "Login on quay.io"
+                , run = Some
+                    "docker login -u \"\${{ secrets.QUAYIO_USERNAME }}\" -p \"\${{ secrets.QUAYIO_PASSWORD }}\" quay.io"
+                }
+              , mk.GithubActions.Step::{
+                , name = Some "Publish images to quay.io"
+                , run = Some "docker push quay.io/change-metrics/monocle:latest"
+                }
+              ]
+          )
     }

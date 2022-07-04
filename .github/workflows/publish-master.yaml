@@ -1,45 +1,27 @@
-on:
-  push:
-    branches:
-      - master
-
 jobs:
-  publish-master:
-    if: github.repository_owner == 'change-metrics'
+  publish-master-container:
+    if: "github.repository_owner == 'change-metrics'"
+    name: publish-master-container
     runs-on: ubuntu-latest
     steps:
-      # See https://github.com/actions/virtual-environments/issues/3812 for more information
-      - name: Download Docker with patched seccomp
-        run: |
-          sudo systemctl stop docker containerd
-          sudo apt-get remove --autoremove -y moby-engine moby-cli moby-buildx moby-containerd moby-runc
-          sudo add-apt-repository -y ppa:pascallj/docker.io-clone3
-          sudo apt-get install -y docker.io
-
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - uses: "actions/checkout@v2.4.0"
         with:
-          submodules: recursive
-
+          submodules: 'true'
+      - name: Stop provided Docker
+        run: sudo systemctl stop docker containerd
+      - name: Remove provided Docker
+        run: sudo apt-get remove --autoremove -y moby-engine moby-cli moby-buildx moby-containerd moby-runc
+      - name: Install patched seccomp Docker repository
+        run: sudo add-apt-repository -y ppa:pascallj/docker.io-clone3
+      - name: Install patched seccomp Docker
+        run: sudo apt-get install -y docker.io
       - name: Configure sysctl limits
-        run: |
-          sudo swapoff -a
-          sudo sysctl -w vm.swappiness=1
-          sudo sysctl -w fs.file-max=262144
-          sudo sysctl -w vm.max_map_count=262144
-
-      - name: Build docker image
-        run: |
-          export MONOCLE_COMMIT=$(git show HEAD --format="format:%h" -q)
-          docker build -t quay.io/change-metrics/monocle:latest .
-
-      - name: Set write permission for others for data directory
-        run: |
-          chmod o+w data
-
+        run: "sudo swapoff -a; sudo sysctl -w vm.swappiness=1; sudo sysctl -w fs.file-max=262144; sudo sysctl -w vm.max_map_count=262144"
+      - name: Set write permission for data directory
+        run: "chmod o+w data"
       - name: Create a config.yaml file
         run: |
-          cat > etc/config.yaml << EOL
+          cat > etc/config.yaml << EOF
           ---
           workspaces:
             - name: monocle
@@ -48,35 +30,37 @@ jobs:
                   update_since: "2020-01-01"
                   provider:
                     github_organization: tekton
-          EOL
-
-      - name: Start Monocle
+          EOF
+      - name: Create a secret.yaml file
         run: |
           cat > .secrets << EOF
           CRAWLERS_API_KEY=secret
           GITHUB_TOKEN=123
           EOF
-          docker-compose up -d
-
+      - name: Build docker image
+        run: |
+          export MONOCLE_COMMIT=$(git show HEAD --format="format:%h" -q)
+          docker build -t quay.io/change-metrics/monocle:latest .
+      - name: Start Monocle compose
+        run: docker-compose up -d
       - name: Wait for services to start
         run: sleep 45
-
-      - name: Display docker-compose information
-        run: |
-          docker-compose ps
-          docker-compose logs
-
+      - name: Display docker-compose ps
+        run: docker-compose ps
+      - name: Display docker-compose logs
+        run: docker-compose logs
       - name: Check services are running
-        run: test -z "$(sudo docker-compose ps -a | grep Exit)"
-
-      - name: Check api service
+        run: "test -z \"$(sudo docker-compose ps -a | grep Exit)\""
+      - name: Check api service through nginx
         run: "curl -s --fail -H 'Content-type: application/json' http://localhost:8080/api/2/get_workspaces -d '{}' | grep 'workspaces'"
-
       - name: Check web service to fetch web app
         run: "curl -s http://localhost:8080/index.html | grep 'window.document.title'"
-
+      - name: Login on quay.io
+        run: "docker login -u \"${{ secrets.QUAYIO_USERNAME }}\" -p \"${{ secrets.QUAYIO_PASSWORD }}\" quay.io"
       - name: Publish images to quay.io
-        run: |
-          docker login -u "${{ secrets.QUAYIO_USERNAME }}" -p "${{ secrets.QUAYIO_PASSWORD }}" quay.io
-          set -x
-          docker push quay.io/change-metrics/monocle:latest
+        run: docker push quay.io/change-metrics/monocle:latest
+name: Publish Master Container
+on:
+  push:
+    branches:
+      - master
