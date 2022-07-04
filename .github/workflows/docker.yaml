@@ -1,0 +1,59 @@
+jobs:
+  compose:
+    name: compose-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: "actions/checkout@v2.4.0"
+        with:
+          submodules: 'true'
+      - name: Stop provided Docker
+        run: sudo systemctl stop docker containerd
+      - name: Remove provided Docker
+        run: sudo apt-get remove --autoremove -y moby-engine moby-cli moby-buildx moby-containerd moby-runc
+      - name: Install patched seccomp Docker repository
+        run: sudo add-apt-repository -y ppa:pascallj/docker.io-clone3
+      - name: Install patched seccomp Docker
+        run: sudo apt-get install -y docker.io
+      - name: Configure sysctl limits
+        run: "sudo swapoff -a; sudo sysctl -w vm.swappiness=1; sudo sysctl -w fs.file-max=262144; sudo sysctl -w vm.max_map_count=262144"
+      - name: Set write permission for data directory
+        run: "chmod o+w data"
+      - name: Create a config.yaml file
+        run: |
+          cat > etc/config.yaml << EOL
+          ---
+          workspaces:
+            - name: monocle
+              crawlers:
+                - name: github-tekton
+                  update_since: "2020-01-01"
+                  provider:
+                    github_organization: tekton
+          EOL      
+      - name: Create a secret.yaml file
+        run: |
+          cat > .secrets << EOF
+          CRAWLERS_API_KEY=secret
+          GITHUB_TOKEN=123
+          EOF
+      - name: Build docker image
+        run: docker build -t quay.io/change-metrics/monocle:latest .
+      - name: Start Monocle compose
+        run: docker-compose up -d
+      - name: Wait for services to start
+        run: sleep 45
+      - name: Display docker-compose ps
+        run: docker-compose ps
+      - name: Display docker-compose logs
+        run: docker-compose logs
+      - name: Check services are running
+        run: "test -z \"$(sudo docker-compose ps -a | grep Exit)\""
+      - name: Check api service through nginx
+        run: "curl -s --fail -H 'Content-type: application/json' http://localhost:8080/api/2/get_workspaces -d '{}' | grep 'workspaces'"
+      - name: Check web service to fetch web app
+        run: "curl -s http://localhost:8080/index.html | grep 'window.document.title'"
+name: Docker
+on:
+  pull_request: {}
+  push: {}
+  release: {}

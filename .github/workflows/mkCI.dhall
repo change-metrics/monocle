@@ -90,4 +90,51 @@ in  { GithubActions
                     }
                   }
               }
+    , makeCompose =
+        \(steps : List GithubActions.Step.Type) ->
+          let init =
+                [ GithubActions.Step::{
+                  , uses = Some "actions/checkout@v2.4.0"
+                  , `with` = Some (toMap { submodules = "true" })
+                  }
+                , GithubActions.Step::{
+                  , name = Some "Stop provided Docker"
+                  , run = Some "sudo systemctl stop docker containerd"
+                  }
+                , GithubActions.Step::{
+                  , name = Some "Remove provided Docker"
+                  , run = Some
+                      "sudo apt-get remove --autoremove -y moby-engine moby-cli moby-buildx moby-containerd moby-runc"
+                  }
+                , GithubActions.Step::{
+                  , name = Some "Install patched seccomp Docker repository"
+                  , run = Some
+                      "sudo add-apt-repository -y ppa:pascallj/docker.io-clone3"
+                  }
+                , GithubActions.Step::{
+                  , name = Some "Install patched seccomp Docker"
+                  , run = Some "sudo apt-get install -y docker.io"
+                  }
+                , GithubActions.Step::{
+                  , name = Some "Configure sysctl limits"
+                  , run = Some
+                      "sudo swapoff -a; sudo sysctl -w vm.swappiness=1; sudo sysctl -w fs.file-max=262144; sudo sysctl -w vm.max_map_count=262144"
+                  }
+                ]
+
+          in  GithubActions.Workflow::{
+              , name = "Docker"
+              , on = GithubActions.On::{
+                , pull_request = Some GithubActions.PullRequest::{=}
+                , push = Some GithubActions.Push::{=}
+                , release = Some GithubActions.Release::{=}
+                }
+              , jobs = toMap
+                  { compose = GithubActions.Job::{
+                    , name = Some "compose-tests"
+                    , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
+                    , steps = init # steps
+                    }
+                  }
+              }
     }
