@@ -33,7 +33,7 @@ spec:
               value: http://elastic:9200
             - name: CHANGE_ME
               value: change_me # done as the value in ./monocle-config.yaml requires an envvar by the name CHANGE_ME to exist
-          image: quay.io/change-metrics/monocle_api:latest
+          image: quay.io/change-metrics/monocle:latest
           livenessProbe:
             httpGet:
               path: /health

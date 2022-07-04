@@ -31,7 +31,7 @@ jobs:
       - name: Build docker image
         run: |
           export MONOCLE_COMMIT=$(git show HEAD --format="format:%h" -q)
-          docker build -t monocle_api:latest . 
+          docker build -t monocle:latest .
 
       - name: Set write permission for others for data directory
         run: |
@@ -80,5 +80,5 @@ jobs:
           docker login -u "${{ secrets.QUAYIO_USERNAME }}" -p "${{ secrets.QUAYIO_PASSWORD }}" quay.io
           set -x
 
-          docker tag monocle_api:latest quay.io/change-metrics/monocle_api:latest
-          docker push quay.io/change-metrics/monocle_api:latest
+          docker tag monocle:latest quay.io/change-metrics/monocle:latest
+          docker push quay.io/change-metrics/monocle:latest
