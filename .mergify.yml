@@ -4,6 +4,7 @@ queue_rules:
       # Conditions to get out of the queue (= merged)
       - check-success=tests
       - check-success=docker
+      - check-success=web-tests
 
 pull_request_rules:
   - name: Automatic merge on approval
@@ -12,6 +13,7 @@ pull_request_rules:
       - label=merge me
       - check-success=tests
       - check-success=docker
+      - check-success=web-tests
     actions:
       queue:
         method: merge

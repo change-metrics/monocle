@@ -19,4 +19,20 @@ in  { Nix =
                 }
               ]
           )
+    , Web =
+        mk.makeNPM
+          [ mk.GithubActions.Step::{
+            , name = Some "Install npm packages"
+            , run = Some
+                "sudo apt-get install git; cd web; npm install --legacy-peer-deps"
+            }
+          , mk.GithubActions.Step::{
+            , name = Some "Run NPM tests"
+            , run = Some "cd web ; npm run test"
+            }
+          , mk.GithubActions.Step::{
+            , name = Some "Run NPM format"
+            , run = Some "cd web ; npm run format"
+            }
+          ]
     }

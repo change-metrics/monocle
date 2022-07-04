@@ -1,6 +1,7 @@
 -- Re-usable github action for cachix
 let GithubActions =
-      https://raw.githubusercontent.com/regadas/github-actions-dhall/afa8b8dad361f795ddd24e6d5c54b23e57bca623/package.dhall sha256:98ee16e6add21cc8ea7804cce55793b8793b14479f248d8f0bda0209d3600e18
+      https://raw.githubusercontent.com/regadas/github-actions-dhall/afa8b8dad361f795ddd24e6d5c54b23e57bca623/package.dhall
+        sha256:98ee16e6add21cc8ea7804cce55793b8793b14479f248d8f0bda0209d3600e18
 
 in  { GithubActions
     , elastic-steps =
@@ -61,6 +62,31 @@ in  { GithubActions
                     , name = Some "tests"
                     , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
                     , steps = boot cache-name # steps
+                    }
+                  }
+              }
+    , makeNPM =
+        \(steps : List GithubActions.Step.Type) ->
+          let init =
+                [ GithubActions.Step::{ uses = Some "actions/checkout@v2.4.0" }
+                , GithubActions.Step::{
+                  , uses = Some "actions/setup-node@v2"
+                  , `with` = Some (toMap { node-version = "16" })
+                  }
+                ]
+
+          in  GithubActions.Workflow::{
+              , name = "Web"
+              , on = GithubActions.On::{
+                , pull_request = Some GithubActions.PullRequest::{=}
+                , push = Some GithubActions.Push::{=}
+                , release = Some GithubActions.Release::{=}
+                }
+              , jobs = toMap
+                  { web-tests = GithubActions.Job::{
+                    , name = Some "web-tests"
+                    , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
+                    , steps = init # steps
                     }
                   }
               }

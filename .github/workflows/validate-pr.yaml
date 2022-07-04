@@ -69,25 +69,3 @@ jobs:
 
       - name: Check web service to fetch web app
         run: "curl -s http://localhost:8080/index.html | grep 'window.document.title'"
-
-  prettier:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: "16"
-
-      - name: Install npm packages
-        run: |
-          sudo apt-get install git
-          cd web ; npm install --legacy-peer-deps
-
-      - name: Run npm test
-        run: |
-          cd web ; npm run test
-
-      - name: Run npm format
-        run: |
-          cd web && npm run format
