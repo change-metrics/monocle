@@ -90,9 +90,6 @@ to [System configuration section](#system).
 Start Monocle:
 
 ```ShellSession
-# Set to the Docker compose file to use the published container images
-ln -s docker-compose.yml.img docker-compose.yml
-# Then start services
 docker-compose up -d
 ```
 

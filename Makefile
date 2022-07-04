@@ -38,17 +38,5 @@ codegen-openapi:
 	protoc $(PINCLUDE) --openapi_out=./doc/ $(BASEDIR)/http.proto
 	@echo Created doc/openapi.yaml
 
-codegen-compose:
-	@dhall-to-yaml  <<< "(./docker-compose.dhall).dev" > ./docker-compose.yml.dev
-	@dhall-to-yaml  <<< "(./docker-compose.dhall).img" > ./docker-compose.yml.img
-
-compose-down:
-	docker-compose down
-
-compose-up:
-	docker-compose up
-
-compose-restart: compose-down codegen-compose compose-up
-
 up-stage:
 	oc -n monocle-stage apply -f deployment/

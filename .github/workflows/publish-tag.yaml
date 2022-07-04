@@ -37,15 +37,10 @@ jobs:
           sudo sysctl -w fs.file-max=262144
           sudo sysctl -w vm.max_map_count=262144
 
-      - name: Build docker images
+      - name: Build docker image
         run: |
-          ln -s docker-compose.yml.dev docker-compose.yml
-          cat > .secrets << EOF
-          CRAWLERS_API_KEY=secret
-          GITHUB_TOKEN=123
-          EOF
           export MONOCLE_COMMIT=$(git show HEAD --format="format:%h" -q)
-          docker-compose build
+          docker build -t monocle_api:latest . 
 
       - name: Set write permission for others for data directory
         run: |
@@ -64,8 +59,13 @@ jobs:
                     github_organization: tekton
           EOL
 
-      - name: Start containers
-        run: docker-compose up -d
+      - name: Start Monocle
+        run: |
+          cat > .secrets << EOF
+          CRAWLERS_API_KEY=secret
+          GITHUB_TOKEN=123
+          EOF
+          docker-compose up -d
 
       - name: Wait for services to start
         run: sleep 45
