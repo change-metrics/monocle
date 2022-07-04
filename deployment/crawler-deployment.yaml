@@ -31,7 +31,7 @@ spec:
               value: /etc/monocle/config.yaml
             - name: CHANGE_ME
               value: change-me
-          image: quay.io/change-metrics/monocle_api:latest
+          image: quay.io/change-metrics/monocle:latest
           name: crawler
           resources: {}
           livenessProbe:
