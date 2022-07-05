@@ -17,8 +17,10 @@ jobs:
         run: sudo apt-get install -y docker.io
       - name: Build Builder image
         run: docker build -f Dockerfile-builder -t quay.io/change-metrics/builder .
+      - name: Login on quay.io
+        run: "docker login -u \"${{ secrets.QUAYIO_USERNAME }}\" -p \"${{ secrets.QUAYIO_PASSWORD }}\" quay.io"
       - name: Publish image to quay.io
-        run: "docker login -u \"${{ secrets.QUAYIO_USERNAME }}\" -p \"${{ secrets.QUAYIO_PASSWORD }}\" quay.io && docker push quay.io/change-metrics/builder:latest"
+        run: docker push quay.io/change-metrics/builder:latest
 name: Publish Builder Container
 on:
   workflow_dispatch: {}
