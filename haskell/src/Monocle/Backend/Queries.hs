@@ -1242,7 +1242,7 @@ metricChangesSelfMergedCount =
   where
     compute = withFilter selfMerged countDocs
     selfMerged =
-      [ BH.TermQuery (BH.Term "type" "Change") Nothing,
+      [ documentType EChangeMergedEvent,
         BH.TermQuery (BH.Term "self_merged" "true") Nothing
       ]
 
