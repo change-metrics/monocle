@@ -152,8 +152,8 @@ in  { GithubActions
                 , pull_request = Some GithubActions.PullRequest::{=}
                 }
               , jobs = toMap
-                  { tests = GithubActions.Job::{
-                    , name = Some "tests"
+                  { api-tests = GithubActions.Job::{
+                    , name = Some "api-tests"
                     , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
                     , steps = boot cache-name # steps
                     }
