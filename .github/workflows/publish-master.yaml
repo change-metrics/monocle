@@ -55,6 +55,8 @@ jobs:
         run: "curl -s --fail -H 'Content-type: application/json' http://localhost:8080/api/2/get_workspaces -d '{}' | grep 'workspaces'"
       - name: Check web service to fetch web app
         run: "curl -s http://localhost:8080/index.html | grep 'window.document.title'"
+      - name: Hide commands
+        run: set -x
       - name: Login on quay.io
         run: "docker login -u \"${{ secrets.QUAYIO_USERNAME }}\" -p \"${{ secrets.QUAYIO_PASSWORD }}\" quay.io"
       - name: Publish images to quay.io

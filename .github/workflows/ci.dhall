@@ -40,6 +40,10 @@ in  { Nix =
         mk.makePublishMaster
           (   mk.validate-compose-steps
             # [ mk.GithubActions.Step::{
+                , name = Some "Hide commands"
+                , run = Some "set -x"
+                }
+              , mk.GithubActions.Step::{
                 , name = Some "Login on quay.io"
                 , run = Some
                     "docker login -u \"\${{ secrets.QUAYIO_USERNAME }}\" -p \"\${{ secrets.QUAYIO_PASSWORD }}\" quay.io"
@@ -47,6 +51,41 @@ in  { Nix =
               , mk.GithubActions.Step::{
                 , name = Some "Publish images to quay.io"
                 , run = Some "docker push quay.io/change-metrics/monocle:latest"
+                }
+              ]
+          )
+    , Publish-Tag-Image =
+        mk.makePublishTag
+          (   mk.validate-compose-steps
+            # [ mk.GithubActions.Step::{
+                , name = Some "Discover GIT tag"
+                , uses = Some "olegtarasov/get-tag@v2.1"
+                , id = Some "tagName"
+                }
+              , mk.GithubActions.Step::{
+                , name = Some "Display tag name"
+                , run = Some "echo \"tag_name: \$TAG_NAME\""
+                , env = Some
+                    (toMap { TAG_NAME = "\${{ steps.tagName.outputs.tag }}" })
+                }
+              , mk.GithubActions.Step::{
+                , name = Some "Tag the container image"
+                , run = Some
+                    "docker tag quay.io/change-metrics/monocle:latest quay.io/change-metrics/monocle:\$TAG_NAME"
+                }
+              , mk.GithubActions.Step::{
+                , name = Some "Hide commands"
+                , run = Some "set -x"
+                }
+              , mk.GithubActions.Step::{
+                , name = Some "Login on quay.io"
+                , run = Some
+                    "docker login -u \"\${{ secrets.QUAYIO_USERNAME }}\" -p \"\${{ secrets.QUAYIO_PASSWORD }}\" quay.io"
+                }
+              , mk.GithubActions.Step::{
+                , name = Some "Publish images to quay.io"
+                , run = Some
+                    "docker push quay.io/change-metrics/monocle:\$TAG_NAME"
                 }
               ]
           )

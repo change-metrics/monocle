@@ -216,4 +216,20 @@ in  { GithubActions
                 }
               }
           }
+    , makePublishTag =
+        \(steps : List GithubActions.Step.Type) ->
+          GithubActions.Workflow::{
+          , name = "Publish Tag Container"
+          , on = GithubActions.On::{
+            , push = Some GithubActions.Push::{ tags = Some [ "*" ] }
+            }
+          , jobs = toMap
+              { publish-master-container = GithubActions.Job::{
+                , name = Some "publish-tag-container"
+                , `if` = Some "github.repository_owner == 'change-metrics'"
+                , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
+                , steps = init-docker-steps # steps
+                }
+              }
+          }
     }
