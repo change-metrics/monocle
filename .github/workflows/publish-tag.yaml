@@ -16,7 +16,11 @@ jobs:
       - name: Install patched seccomp Docker
         run: sudo apt-get install -y docker.io
       - name: Configure sysctl limits
-        run: "sudo swapoff -a; sudo sysctl -w vm.swappiness=1; sudo sysctl -w fs.file-max=262144; sudo sysctl -w vm.max_map_count=262144"
+        run: |
+          sudo swapoff -a
+          sudo sysctl -w vm.swappiness=1
+          sudo sysctl -w fs.file-max=262144
+          sudo sysctl -w vm.max_map_count=262144
       - name: Set write permission for data directory
         run: "chmod o+w data"
       - name: Create a config.yaml file
@@ -64,11 +68,9 @@ jobs:
         run: "echo \"tag_name: $TAG_NAME\""
       - name: Tag the container image
         run: "docker tag quay.io/change-metrics/monocle:latest quay.io/change-metrics/monocle:$TAG_NAME"
-      - name: Hide commands
-        run: set -x
       - name: Login on quay.io
         run: "docker login -u \"${{ secrets.QUAYIO_USERNAME }}\" -p \"${{ secrets.QUAYIO_PASSWORD }}\" quay.io"
-      - name: Publish images to quay.io
+      - name: Publish image to quay.io
         run: "docker push quay.io/change-metrics/monocle:$TAG_NAME"
 name: Publish Tag Container
 on:

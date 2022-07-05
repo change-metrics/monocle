@@ -3,12 +3,14 @@ let GithubActions =
       https://raw.githubusercontent.com/regadas/github-actions-dhall/afa8b8dad361f795ddd24e6d5c54b23e57bca623/package.dhall
         sha256:98ee16e6add21cc8ea7804cce55793b8793b14479f248d8f0bda0209d3600e18
 
+let checkout-step =
+      GithubActions.Step::{
+      , uses = Some "actions/checkout@v2.4.0"
+      , `with` = Some (toMap { submodules = "true" })
+      }
+
 let init-docker-steps =
       [ GithubActions.Step::{
-        , uses = Some "actions/checkout@v2.4.0"
-        , `with` = Some (toMap { submodules = "true" })
-        }
-      , GithubActions.Step::{
         , name = Some "Stop provided Docker"
         , run = Some "sudo systemctl stop docker containerd"
         }
@@ -25,25 +27,23 @@ let init-docker-steps =
         , name = Some "Install patched seccomp Docker"
         , run = Some "sudo apt-get install -y docker.io"
         }
-      , GithubActions.Step::{
-        , name = Some "Configure sysctl limits"
-        , run = Some
-            "sudo swapoff -a; sudo sysctl -w vm.swappiness=1; sudo sysctl -w fs.file-max=262144; sudo sysctl -w vm.max_map_count=262144"
-        }
       ]
+
+let el-sysctl-step =
+      GithubActions.Step::{
+      , name = Some "Configure sysctl limits"
+      , run = Some
+          ''
+          sudo swapoff -a
+          sudo sysctl -w vm.swappiness=1
+          sudo sysctl -w fs.file-max=262144
+          sudo sysctl -w vm.max_map_count=262144
+          ''
+      }
 
 in  { GithubActions
     , elastic-steps =
-      [ GithubActions.Step::{
-        , name = Some "Configure sysctl limits"
-        , run = Some
-            ''
-            sudo swapoff -a
-            sudo sysctl -w vm.swappiness=1
-            sudo sysctl -w fs.file-max=262144
-            sudo sysctl -w vm.max_map_count=262144
-            ''
-        }
+      [ el-sysctl-step
       , GithubActions.Step::{
         , name = Some "Runs Elasticsearch"
         , uses = Some "elastic/elastic-github-actions/elasticsearch@master"
@@ -129,10 +129,7 @@ in  { GithubActions
         \(steps : List GithubActions.Step.Type) ->
           let boot =
                 \(name : Text) ->
-                  [ GithubActions.Step::{
-                    , uses = Some "actions/checkout@v2.4.0"
-                    , `with` = Some (toMap { submodules = "true" })
-                    }
+                  [ checkout-step
                   , GithubActions.Step::{
                     , uses = Some "cachix/install-nix-action@v15"
                     , `with` = Some
@@ -165,7 +162,7 @@ in  { GithubActions
     , makeNPM =
         \(steps : List GithubActions.Step.Type) ->
           let init =
-                [ GithubActions.Step::{ uses = Some "actions/checkout@v2.4.0" }
+                [ checkout-step
                 , GithubActions.Step::{
                   , uses = Some "actions/setup-node@v2"
                   , `with` = Some (toMap { node-version = "16" })
@@ -196,7 +193,11 @@ in  { GithubActions
               { compose = GithubActions.Job::{
                 , name = Some "compose-tests"
                 , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
-                , steps = init-docker-steps # steps
+                , steps =
+                      [ checkout-step ]
+                    # init-docker-steps
+                    # [ el-sysctl-step ]
+                    # steps
                 }
               }
           }
@@ -212,7 +213,11 @@ in  { GithubActions
                 , name = Some "publish-master-container"
                 , `if` = Some "github.repository_owner == 'change-metrics'"
                 , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
-                , steps = init-docker-steps # steps
+                , steps =
+                      [ checkout-step ]
+                    # init-docker-steps
+                    # [ el-sysctl-step ]
+                    # steps
                 }
               }
           }
@@ -228,7 +233,27 @@ in  { GithubActions
                 , name = Some "publish-tag-container"
                 , `if` = Some "github.repository_owner == 'change-metrics'"
                 , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
-                , steps = init-docker-steps # steps
+                , steps =
+                      [ checkout-step ]
+                    # init-docker-steps
+                    # [ el-sysctl-step ]
+                    # steps
+                }
+              }
+          }
+    , makePublishBuilder =
+        \(steps : List GithubActions.Step.Type) ->
+          GithubActions.Workflow::{
+          , name = "Publish Builder Container"
+          , on = GithubActions.On::{
+            , workflow_dispatch = Some GithubActions.WorkflowDispatch::{=}
+            }
+          , jobs = toMap
+              { publish-master-container = GithubActions.Job::{
+                , name = Some "publish-builder-container"
+                , `if` = Some "github.repository_owner == 'change-metrics'"
+                , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
+                , steps = [ checkout-step ] # init-docker-steps # steps
                 }
               }
           }
