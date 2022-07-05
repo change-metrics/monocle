@@ -13,6 +13,11 @@ codegen: codegen-ci codegen-javascript codegen-stubs codegen-openapi codegen-has
 codegen-ci: .github/workflows/nix.yaml
 .github/workflows/nix.yaml: .github/workflows/ci.dhall .github/workflows/mkCI.dhall
 	echo "(./.github/workflows/ci.dhall).Nix" | dhall-to-yaml > .github/workflows/nix.yaml
+	echo "(./.github/workflows/ci.dhall).Web" | dhall-to-yaml > .github/workflows/web.yaml
+	echo "(./.github/workflows/ci.dhall).Docker" | dhall-to-yaml > .github/workflows/docker.yaml
+	echo "(./.github/workflows/ci.dhall).Publish-Master-Image" | dhall-to-yaml > .github/workflows/publish-master.yaml
+	echo "(./.github/workflows/ci.dhall).Publish-Tag-Image" | dhall-to-yaml > .github/workflows/publish-tag.yaml
+	echo "(./.github/workflows/ci.dhall).Publish-Builder-Image" | dhall-to-yaml > .github/workflows/publish-builder.yaml
 
 doc/architecture.png: doc/architecture.plantuml
 	plantuml ./doc/architecture.plantuml

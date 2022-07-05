@@ -2,16 +2,18 @@ queue_rules:
   - name: default
     conditions:
       # Conditions to get out of the queue (= merged)
-      - check-success=tests
-      - check-success=docker
+      - check-success=api-tests
+      - check-success=compose
+      - check-success=web-tests
 
 pull_request_rules:
   - name: Automatic merge on approval
     conditions:
       - "#approved-reviews-by>=1"
       - label=merge me
-      - check-success=tests
-      - check-success=docker
+      - check-success=api-tests
+      - check-success=compose
+      - check-success=web-tests
     actions:
       queue:
         method: merge

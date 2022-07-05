@@ -1,6 +1,6 @@
 jobs:
-  tests:
-    name: tests
+  api-tests:
+    name: api-tests
     runs-on: ubuntu-latest
     steps:
       - uses: "actions/checkout@v2.4.0"
@@ -22,7 +22,7 @@ jobs:
       - name: Runs Elasticsearch
         uses: "elastic/elastic-github-actions/elasticsearch@master"
         with:
-          stack-version: '7.8.0'
+          stack-version: '7.10.1'
       - name: Display indexes
         run: curl -s -I -X GET http://localhost:9200/_cat/indices
       - name: Build the env
@@ -32,5 +32,3 @@ jobs:
 name: Nix
 on:
   pull_request: {}
-  push: {}
-  release: {}
