@@ -40,9 +40,13 @@ in  { Nix =
         mk.makePublishMaster
           (   mk.validate-compose-steps
             # [ mk.GithubActions.Step::{
-                , name = Some "Publish image to quay.io"
+                , name = Some "Login on quay.io"
                 , run = Some
-                    "docker login -u \"\${{ secrets.QUAYIO_USERNAME }}\" -p \"\${{ secrets.QUAYIO_PASSWORD }}\" quay.io && docker push quay.io/change-metrics/monocle:latest"
+                    "docker login -u \"\${{ secrets.QUAYIO_USERNAME }}\" -p \"\${{ secrets.QUAYIO_PASSWORD }}\" quay.io"
+                }
+              , mk.GithubActions.Step::{
+                , name = Some "Publish image to quay.io"
+                , run = Some "docker push quay.io/change-metrics/monocle:latest"
                 }
               ]
           )
@@ -66,9 +70,14 @@ in  { Nix =
                     "docker tag quay.io/change-metrics/monocle:latest quay.io/change-metrics/monocle:\$TAG_NAME"
                 }
               , mk.GithubActions.Step::{
+                , name = Some "Login on quay.io"
+                , run = Some
+                    "docker login -u \"\${{ secrets.QUAYIO_USERNAME }}\" -p \"\${{ secrets.QUAYIO_PASSWORD }}\" quay.io"
+                }
+              , mk.GithubActions.Step::{
                 , name = Some "Publish image to quay.io"
                 , run = Some
-                    "docker login -u \"\${{ secrets.QUAYIO_USERNAME }}\" -p \"\${{ secrets.QUAYIO_PASSWORD }}\" quay.io && docker push quay.io/change-metrics/monocle:\$TAG_NAME"
+                    "docker push quay.io/change-metrics/monocle:\$TAG_NAME"
                 }
               ]
           )
@@ -80,9 +89,13 @@ in  { Nix =
                 "docker build -f Dockerfile-builder -t quay.io/change-metrics/builder ."
             }
           , mk.GithubActions.Step::{
-            , name = Some "Publish image to quay.io"
+            , name = Some "Login on quay.io"
             , run = Some
-                "docker login -u \"\${{ secrets.QUAYIO_USERNAME }}\" -p \"\${{ secrets.QUAYIO_PASSWORD }}\" quay.io && docker push quay.io/change-metrics/builder:latest"
+                "docker login -u \"\${{ secrets.QUAYIO_USERNAME }}\" -p \"\${{ secrets.QUAYIO_PASSWORD }}\" quay.io"
+            }
+          , mk.GithubActions.Step::{
+            , name = Some "Publish image to quay.io"
+            , run = Some "docker push quay.io/change-metrics/builder:latest"
             }
           ]
     }
