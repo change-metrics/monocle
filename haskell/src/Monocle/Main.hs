@@ -35,7 +35,7 @@ type MonocleAPI' = MonocleAPI :<|> AuthAPI
 type RootAPI = "api" :> "2" :> MonocleAPI' :<|> MonocleAPI'
 
 type AuthAPI =
-  "auth" :> "login" :> Get '[JSON] NoContent
+  "auth" :> "login" :> QueryParam "uri" Text :> Get '[JSON] NoContent
     :<|> "auth" :> "cb" :> QueryParam "error" Text :> QueryParam "code" Text :> QueryParam "state" Text :> Get '[HTML] LoginInUser
 
 serverAuth :: ServerT AuthAPI AppM
