@@ -17,12 +17,19 @@ external windowLocationSearch: string = "search"
 let readWindowLocationSearch = () => windowLocationSearch
 
 @val @scope(("window", "location"))
+external windowLocationHash: string = "hash"
+let readWindowLocationHash = () => windowLocationHash
+
+@val @scope(("window", "location"))
 external windowLocationPathname: string = "pathname"
 let readWindowLocationPathname = () => windowLocationPathname
 
 @val @scope(("window", "location"))
 external windowLocationReplace: string => unit = "replace"
 let replaceWindowLocation = (location: string) => windowLocationReplace(location)
+
+let readWindowLocationFull = () =>
+  readWindowLocationPathname() ++ readWindowLocationSearch() ++ readWindowLocationHash()
 
 // Bindings for moment
 %%raw(`

@@ -15,6 +15,8 @@ import Monocle.Api.Jwt
   ( AuthenticatedUser (aDefaultMuid, aMuidMap),
     LoginInUser (..),
     OIDCEnv (..),
+    OIDCState (OIDCState),
+    decodeOIDCState,
     mkJwt,
     mkSessionStore,
   )
@@ -774,8 +776,8 @@ appToErr x msg =
       errHeaders = [("Content-Type", "text/html")]
     }
 
-handleLogin :: AppM NoContent
-handleLogin = do
+handleLogin :: Maybe Text -> AppM NoContent
+handleLogin uriM = do
   aOIDC <- asks aOIDC
   case oidcEnv aOIDC of
     Just oidcenv -> do
@@ -787,7 +789,7 @@ handleLogin = do
   where
     genOIDCURL :: OIDCEnv -> IO ByteString
     genOIDCURL oidcenv@OIDCEnv {oidc} = do
-      loc <- O.prepareAuthenticationRequestUrl (mkSessionStore oidcenv Nothing) oidc [O.openId] mempty
+      loc <- O.prepareAuthenticationRequestUrl (mkSessionStore oidcenv Nothing uriM) oidc [O.openId] mempty
       return (show loc)
 
 handleLoggedIn ::
@@ -811,7 +813,7 @@ handleLoggedIn err codeM stateM = do
       tokens :: O.Tokens Value <-
         liftIO $
           O.getValidTokens
-            (mkSessionStore oidcEnv (Just $ from oauthState))
+            (mkSessionStore oidcEnv (Just $ from oauthState) Nothing)
             (oidc oidcEnv)
             (manager oidcEnv)
             (from oauthState)
@@ -828,6 +830,9 @@ handleLoggedIn err codeM stateM = do
           incCounter monocleAuthSuccessCounter
           log $ JWTCreated (show mUidMap) (decodeUtf8 $ redirectUri oidcEnv)
           let liJWT = decodeUtf8 jwt
+              liRedirectURI = case decodeOIDCState $ encodeUtf8 oauthState of
+                Just (OIDCState _ (Just uri)) -> uri
+                _ -> "/"
           pure $ LoginInUser {..}
         Left err' -> do
           log $ JWTCreateFailed (show mUidMap) (show err')

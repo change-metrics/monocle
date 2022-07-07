@@ -8,6 +8,8 @@ module Monocle.Api.Jwt
     LoginInUser (..),
     initOIDCEnv,
     mkSessionStore,
+    OIDCState (OIDCState),
+    decodeOIDCState,
   )
 where
 
@@ -15,6 +17,7 @@ import Control.Monad.Random (genByteString)
 import Control.Monad.Random qualified as Random
 import Crypto.Hash.SHA256 (hash)
 import Crypto.JWT (Error, JWK, fromOctets)
+import Data.Aeson (decode)
 import Data.ByteString qualified as BS
 import Data.ByteString.Base64 qualified as B64
 import Data.ByteString.Lazy qualified as BSL
@@ -75,7 +78,11 @@ data OIDCEnv = OIDCEnv
     providerConfig :: OIDCProviderConfig
   }
 
-newtype LoginInUser = LoginInUser {liJWT :: Text} deriving (Show, Eq, Ord)
+data LoginInUser = LoginInUser
+  { liJWT :: Text,
+    liRedirectURI :: Text
+  }
+  deriving (Show, Eq, Ord)
 
 instance ToMarkup LoginInUser where
   toMarkup LoginInUser {..} = H.docTypeHtml $ do
@@ -85,7 +92,9 @@ instance ToMarkup LoginInUser where
       H.script
         ( H.toHtml
             ( "localStorage.setItem('api-key','" <> liJWT <> "');"
-                <> "window.location='/';"
+                <> "window.location='"
+                <> liRedirectURI
+                <> "';"
             )
         )
 
@@ -100,9 +109,27 @@ initOIDCEnv providerConfig@OIDCProviderConfig {..} = do
       oidc = O.setCredentials clientId clientSecret redirectUri (O.newOIDC provider)
   pure OIDCEnv {..}
 
-mkSessionStore :: OIDCEnv -> Maybe O.State -> O.SessionStore IO
-mkSessionStore OIDCEnv {sessionStoreStorage} stateM = do
-  let sessionStoreGenerate = liftIO genRandomB64
+data OIDCState = OIDCState
+  { randomT :: Text,
+    uri :: Maybe Text
+  }
+  deriving (Generic, Show)
+
+instance FromJSON OIDCState
+
+instance ToJSON OIDCState
+
+decodeOIDCState :: ByteString -> Maybe OIDCState
+decodeOIDCState bs = case B64.decode bs of
+  Right json -> decode $ from json
+  Left _ -> Nothing
+
+mkSessionStore :: OIDCEnv -> Maybe O.State -> Maybe Text -> O.SessionStore IO
+mkSessionStore OIDCEnv {sessionStoreStorage} stateM uriM = do
+  let sessionStoreGenerate = do
+        rb <- liftIO genRandomB64
+        let s = OIDCState (decodeUtf8 rb) uriM
+        pure (B64.encode $ BSL.toStrict $ encode s)
       sessionStoreSave = storeSave
       sessionStoreGet = storeGet
       sessionStoreDelete = case stateM of
