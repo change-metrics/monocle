@@ -999,24 +999,24 @@ getReviewStats = do
   reviewStatsCommentHisto <- getHisto' EChangeCommentedEvent
   reviewStatsReviewHisto <- getHisto' EChangeReviewedEvent
 
-  commentCount <- withFilter [documentType EChangeCommentedEvent] statCount
-  reviewCount <- withFilter [documentType EChangeReviewedEvent] statCount
-
-  let reviewStatsCommentCount = Just commentCount
-      reviewStatsReviewCount = Just reviewCount
+  reviewStatsCommentCount <- Just <$> statCountC
+  reviewStatsReviewCount <- Just <$> statCountR
 
   reviewStatsCommentDelay <- runMetric metricFirstCommentMeanTime
   reviewStatsReviewDelay <- runMetric metricFirstReviewMeanTime
 
   pure $ SearchPB.ReviewStats {..}
   where
-    qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
-    statCount :: QueryMonad m => m SearchPB.ReviewCount
-    statCount =
+    statCountR =
       SearchPB.ReviewCount
-        <$> fmap countToWord (withFlavor qf countAuthors)
-        <*> fmap countToWord (withFlavor qf countDocs)
+        <$> runMetric metricReviewAuthorsCount
+        <*> runMetric metricReviewsCount
+    statCountC =
+      SearchPB.ReviewCount
+        <$> runMetric metricCommentAuthorsCount
+        <*> runMetric metricCommentsCount
 
+    qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
     getHisto' docType = withDocType docType qf (getHistoPB CreatedAt)
 
 -- | changes lifecycle stats
@@ -1245,6 +1245,58 @@ metricChangesSelfMergedCount =
       [ documentType EChangeMergedEvent,
         BH.TermQuery (BH.Term "self_merged" "true") Nothing
       ]
+
+metricReviewsCount :: QueryMonad m => Metric m Word32
+metricReviewsCount =
+  Metric
+    ( MetricInfo
+        "reviews_count"
+        "Reviews count"
+        "The count of change' reviews"
+    )
+    (countToWord <$> compute)
+  where
+    compute = withFilter [documentType EChangeReviewedEvent] $ eventQF countDocs
+    eventQF = withFlavor $ QueryFlavor Author CreatedAt
+
+metricCommentsCount :: QueryMonad m => Metric m Word32
+metricCommentsCount =
+  Metric
+    ( MetricInfo
+        "comments_count"
+        "Comments count"
+        "The count of change' comments"
+    )
+    (countToWord <$> compute)
+  where
+    compute = withFilter [documentType EChangeCommentedEvent] $ eventQF countDocs
+    eventQF = withFlavor $ QueryFlavor Author CreatedAt
+
+metricReviewAuthorsCount :: QueryMonad m => Metric m Word32
+metricReviewAuthorsCount =
+  Metric
+    ( MetricInfo
+        "review_authors_count"
+        "Review authors count"
+        "The count of change's review authors"
+    )
+    (countToWord <$> compute)
+  where
+    compute = withFilter [documentType EChangeReviewedEvent] $ eventQF countAuthors
+    eventQF = withFlavor $ QueryFlavor Author CreatedAt
+
+metricCommentAuthorsCount :: QueryMonad m => Metric m Word32
+metricCommentAuthorsCount =
+  Metric
+    ( MetricInfo
+        "comment_authors_count"
+        "Comment authors count"
+        "The count of change's comment authors"
+    )
+    (countToWord <$> compute)
+  where
+    compute = withFilter [documentType EChangeCommentedEvent] $ eventQF countAuthors
+    eventQF = withFlavor $ QueryFlavor Author CreatedAt
 
 metricTimeToMerge :: QueryMonad m => Metric m Float
 metricTimeToMerge =
