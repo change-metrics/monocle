@@ -285,7 +285,8 @@ monocleBackendQueriesTests =
       testCase "Test Janitor wipe crawler" testJanitorWipeCrawler,
       testCase "Test Janitor update idents" testJanitorUpdateIdents,
       testCase "Test Config Index initialization" testEnsureConfig,
-      testCase "Test Config Upgrade to version 1" testUpgradeConfigV1
+      testCase "Test Config Upgrade to version 1" testUpgradeConfigV1,
+      testCase "Test Config Upgrade to version 3" testUpgradeConfigV3
     ]
 
 monocleSearchLanguage :: TestTree

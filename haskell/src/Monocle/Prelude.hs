@@ -92,6 +92,7 @@ module Monocle.Prelude
     Count,
     countToWord,
     countToDeci,
+    wordToCount,
     naturalToCount,
 
     -- * time
@@ -416,6 +417,9 @@ newtype Count = MkCount Word32
 
 countToWord :: Count -> Word32
 countToWord (MkCount x) = x
+
+wordToCount :: Word32 -> Count
+wordToCount = MkCount
 
 countToDeci :: Count -> Deci
 countToDeci (MkCount x) = fromInteger (toInteger x)

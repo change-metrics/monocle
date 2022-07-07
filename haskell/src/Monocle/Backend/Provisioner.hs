@@ -128,23 +128,24 @@ fakeChange from' to = do
 
 fakeChangeEvent :: UTCTime -> UTCTime -> Faker.Fake EChangeEvent
 fakeChangeEvent from' to = do
-  let echangeeventId = ""
-  let echangeeventNumber = 0
   echangeeventType <- Faker.Combinators.elements [minBound .. maxBound]
-  let echangeeventChangeId = ""
-  let echangeeventUrl = ""
-  let echangeeventChangedFiles = []
-  let echangeeventRepositoryPrefix = ""
-  let echangeeventRepositoryShortname = ""
-  let echangeeventRepositoryFullname = ""
-  let echangeeventAuthor = Nothing
   echangeeventOnAuthor <- fakeAuthor
-  let echangeeventBranch = ""
   echangeeventCreatedAt <- dropTime <$> Faker.DateTime.utcBetween from' to
   echangeeventOnCreatedAt <- dropTime <$> Faker.DateTime.utcBetween echangeeventCreatedAt to
-  let echangeeventApproval = Nothing
-  let echangeeventTasksData = Nothing
-  let echangeeventLabels = Just []
+  let echangeeventId = ""
+      echangeeventNumber = 0
+      echangeeventChangeId = ""
+      echangeeventUrl = ""
+      echangeeventChangedFiles = []
+      echangeeventRepositoryPrefix = ""
+      echangeeventRepositoryShortname = ""
+      echangeeventRepositoryFullname = ""
+      echangeeventAuthor = Nothing
+      echangeeventSelfMerged = Nothing
+      echangeeventBranch = ""
+      echangeeventApproval = Nothing
+      echangeeventTasksData = Nothing
+      echangeeventLabels = Just []
   pure $ EChangeEvent {..}
 
 fakeTaskId :: Faker.Fake Text

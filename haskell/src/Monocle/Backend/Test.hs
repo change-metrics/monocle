@@ -343,6 +343,29 @@ testEnsureConfig = bracket_ create delete doTest
       assertEqual' "Check expected Config Index" I.configVersion currentVersion
     tenantConfig = Config.mkTenant "test-index"
 
+testUpgradeConfigV3 :: Assertion
+testUpgradeConfigV3 = do
+  -- Index some events, run upgradeConfigV3, and check self_merged added on EChangeMergedEvent
+  withTenant $ do
+    let evt1 = emptyEvent {echangeeventType = EChangeCommentedEvent, echangeeventId = "1"}
+        -- emptyEvent set the same author for author and onAuthor attribute
+        evt2 = emptyEvent {echangeeventType = EChangeMergedEvent, echangeeventId = "2"}
+        evt3 =
+          emptyEvent
+            { echangeeventType = EChangeMergedEvent,
+              echangeeventId = "3",
+              echangeeventOnAuthor = fakeAuthorAlt
+            }
+    I.indexEvents [evt1, evt2, evt3]
+    count <- I.upgradeConfigV3
+    assertEqual' "Expect document count updated" count 1
+    (Just evt1') <- I.getChangeEventById $ I.getEventDocId evt1
+    assertEqual' "Expect not self_merged attr in event" (echangeeventSelfMerged evt1') Nothing
+    (Just evt2') <- I.getChangeEventById $ I.getEventDocId evt2
+    assertEqual' "Expect self_merged attr in event" (echangeeventSelfMerged evt2') (Just True)
+    (Just evt3') <- I.getChangeEventById $ I.getEventDocId evt3
+    assertEqual' "Expect not self_merged attr in event" (echangeeventSelfMerged evt3') Nothing
+
 testUpgradeConfigV1 :: Assertion
 testUpgradeConfigV1 = do
   -- Index docs, run upgradeConfigV1, and check project crawler MD state
@@ -1165,6 +1188,7 @@ emptyEvent = EChangeEvent {..}
     echangeeventAuthor = Just fakeAuthor
     echangeeventOnAuthor = fakeAuthor
     echangeeventBranch = mempty
+    echangeeventSelfMerged = Nothing
     echangeeventCreatedAt = fakeDate
     echangeeventOnCreatedAt = fakeDate
     echangeeventApproval = Nothing
