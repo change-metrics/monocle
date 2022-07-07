@@ -3,7 +3,7 @@ queue_rules:
     conditions:
       # Conditions to get out of the queue (= merged)
       - check-success=api-tests
-      - check-success=compose
+      - check-success=compose-tests
       - check-success=web-tests
 
 pull_request_rules:
@@ -12,7 +12,7 @@ pull_request_rules:
       - "#approved-reviews-by>=1"
       - label=merge me
       - check-success=api-tests
-      - check-success=compose
+      - check-success=compose-tests
       - check-success=web-tests
     actions:
       queue:
