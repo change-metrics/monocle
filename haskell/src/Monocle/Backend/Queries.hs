@@ -294,12 +294,6 @@ changeState state' =
     BH.TermQuery (BH.Term "state" $ from state') Nothing
   ]
 
-selfMerged :: [BH.Query]
-selfMerged =
-  [ BH.TermQuery (BH.Term "type" "Change") Nothing,
-    BH.TermQuery (BH.Term "self_merged" "true") Nothing
-  ]
-
 testIncluded :: BH.Query
 testIncluded =
   BH.QueryRegexpQuery $
@@ -651,21 +645,6 @@ openChangesCount = withFilter (changeState EChangeOpen) (withoutDate countDocs)
   where
     withoutDate = withModified Q.dropDate
 
-mergedChangesCount :: QueryMonad m => m Count
-mergedChangesCount =
-  withFilter
-    [documentType EChangeMergedEvent]
-    (withFlavor (QueryFlavor OnAuthor CreatedAt) countDocs)
-
-abandonedChangesCount :: QueryMonad m => m Count
-abandonedChangesCount =
-  withFilter
-    [documentType EChangeAbandonedEvent]
-    (withFlavor (QueryFlavor OnAuthor CreatedAt) countDocs)
-
-selfMergedChangeCount :: QueryMonad m => m Count
-selfMergedChangeCount = withFilter selfMerged countDocs
-
 -- | The repos_summary query
 getRepos :: QueryMonad m => m TermsResultWTH
 getRepos =
@@ -697,15 +676,14 @@ getReposSummary = do
 
     getRepoSummary fullname = withRepo fullname $ do
       -- Prepare the queries
-      let eventQF = withFlavor (QueryFlavor OnAuthor CreatedAt)
-          changeQF = withFlavor (QueryFlavor Author UpdatedAt)
+      let changeQF = withFlavor (QueryFlavor Author UpdatedAt)
 
       -- Count the events
-      createdChanges <- withFilter [documentType EChangeCreatedEvent] (eventQF countDocs)
+      createdChanges <- wordToCount <$> runMetric metricChangesCreatedCount
       updatedChanges <- withFilter (changeState EChangeOpen) (changeQF countDocs)
-      mergedChanges <- mergedChangesCount
+      mergedChanges <- wordToCount <$> runMetric metricChangesMergedCount
       openChanges <- openChangesCount
-      abandonedChanges <- abandonedChangesCount
+      abandonedChanges <- wordToCount <$> runMetric metricChangesAbandonedCount
 
       pure $ RepoSummary {..}
 
@@ -1057,13 +1035,13 @@ getLifecycleStats = do
         <*> pure (countToWord created)
     pure (created, Just stats)
 
-  merged <- mergedChangesCount
-  selfMerged' <- selfMergedChangeCount
-  abandoned <- abandonedChangesCount
+  merged <- wordToCount <$> runMetric metricChangesMergedCount
+  selfMerged <- runMetric metricChangesSelfMergedCount
+  abandoned <- wordToCount <$> runMetric metricChangesAbandonedCount
 
   let lifecycleStatsMerged = countToWord merged
-      lifecycleStatsSelfMerged = countToWord selfMerged'
-      lifecycleStatsSelfMergedRatio = selfMerged' `ratioF` merged
+      lifecycleStatsSelfMerged = selfMerged
+      lifecycleStatsSelfMergedRatio = wordToCount selfMerged `ratioF` merged
       lifecycleStatsAbandoned = countToWord abandoned
 
   lifecycleStatsTtmMean <- runMetric metricTimeToMerge
@@ -1217,6 +1195,56 @@ data Metric m a = Metric
 
 instance Functor m => Functor (Metric m) where
   fmap f x = Metric (metricInfo x) (f <$> runMetric x)
+
+changeEventCount :: QueryMonad m => MetricInfo -> EDocType -> Metric m Word32
+changeEventCount mi dt =
+  Metric mi (countToWord <$> compute)
+  where
+    compute = withFilter [documentType dt] (eventQF countDocs)
+    eventQF = withFlavor (QueryFlavor OnAuthor CreatedAt)
+
+metricChangesCreatedCount :: QueryMonad m => Metric m Word32
+metricChangesCreatedCount = changeEventCount mi EChangeCreatedEvent
+  where
+    mi =
+      MetricInfo
+        "changes_created_count"
+        "Changes created count"
+        "The count of changes created"
+
+metricChangesMergedCount :: QueryMonad m => Metric m Word32
+metricChangesMergedCount = changeEventCount mi EChangeMergedEvent
+  where
+    mi =
+      MetricInfo
+        "changes_merged_count"
+        "Changes merged count"
+        "The count of changes merged"
+
+metricChangesAbandonedCount :: QueryMonad m => Metric m Word32
+metricChangesAbandonedCount = changeEventCount mi EChangeAbandonedEvent
+  where
+    mi =
+      MetricInfo
+        "changes_abandoned_count"
+        "Changes abandoned count"
+        "The count of changes abandoned"
+
+metricChangesSelfMergedCount :: QueryMonad m => Metric m Word32
+metricChangesSelfMergedCount =
+  Metric
+    ( MetricInfo
+        "changes_self_merged_count"
+        "Changes self merged count"
+        "The count of changes self merged"
+    )
+    (countToWord <$> compute)
+  where
+    compute = withFilter selfMerged countDocs
+    selfMerged =
+      [ documentType EChangeMergedEvent,
+        BH.TermQuery (BH.Term "self_merged" "true") Nothing
+      ]
 
 metricTimeToMerge :: QueryMonad m => Metric m Float
 metricTimeToMerge =

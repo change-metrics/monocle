@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 ### Removed
 ### Fixed
 
+- [api] The self-merged count on the Activity page was incorrect and it is now properly calculated.
+
 ## [1.6.0] - 2022-06-20
 
 ### Added

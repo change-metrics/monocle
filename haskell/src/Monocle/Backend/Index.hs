@@ -220,7 +220,7 @@ createIndex indexName mapping = do
     indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0) BH.defaultIndexMappingsLimits
 
 configVersion :: ConfigVersion
-configVersion = ConfigVersion 2
+configVersion = ConfigVersion 3
 
 configIndex :: BH.IndexName
 configIndex = BH.IndexName "monocle.config"
@@ -288,10 +288,37 @@ upgradeConfigV2 = do
   added <- populateAuthorCache
   logMessage $ "Authors cache populated with " <> show added <> " Monocle uids"
 
+-- | Add self_merged data to event of type ChangeMergedEvent
+upgradeConfigV3 :: QueryM Int
+upgradeConfigV3 = do
+  indexName <- getIndexName
+  logMessage $ "Applying migration to schema V3 on workspace " <> show indexName
+  count <-
+    withQuery eventQuery $
+      scanEvents
+        & ( Streaming.mapMaybe updateEvent
+              >>> Streaming.map (mkEventBulkUpdate indexName)
+              >>> bulkStream
+          )
+  logMessage $ "Migration to schema V3 affected " <> show count <> " documents"
+  pure count
+  where
+    scanEvents :: Stream (Of EChangeEvent) QueryM ()
+    scanEvents = Q.scanSearchHit
+    eventQuery = mkQuery [Q.documentType EChangeMergedEvent]
+    updateEvent :: EChangeEvent -> Maybe EChangeEvent
+    updateEvent se@EChangeEvent {..}
+      | echangeeventAuthor == Just echangeeventOnAuthor = Just $ se {echangeeventSelfMerged = Just True}
+      | otherwise = Nothing
+    mkEventBulkUpdate :: BH.IndexName -> EChangeEvent -> BulkOperation
+    mkEventBulkUpdate indexName ev =
+      BulkUpdate indexName (getEventDocId ev) $ toJSON ev
+
 upgrades :: [(ConfigVersion, QueryM ())]
 upgrades =
   [ (ConfigVersion 1, upgradeConfigV1),
-    (ConfigVersion 2, upgradeConfigV2)
+    (ConfigVersion 2, upgradeConfigV2),
+    (ConfigVersion 3, void upgradeConfigV3)
   ]
 
 newtype ConfigVersion = ConfigVersion Integer deriving (Eq, Show, Ord)
@@ -396,15 +423,18 @@ toEChangeEvent ChangePB.ChangeEvent {..} =
   EChangeEvent
     { echangeeventId = changeEventId,
       echangeeventNumber = fromIntegral changeEventNumber,
-      echangeeventType = getEventType changeEventType,
+      echangeeventType = eType,
       echangeeventChangeId = changeEventChangeId,
       echangeeventUrl = changeEventUrl,
       echangeeventChangedFiles = SimpleFile . ChangePB.changedFilePathPath <$> toList changeEventChangedFiles,
       echangeeventRepositoryPrefix = changeEventRepositoryPrefix,
       echangeeventRepositoryFullname = changeEventRepositoryFullname,
       echangeeventRepositoryShortname = changeEventRepositoryShortname,
-      echangeeventAuthor = Just $ toAuthor changeEventAuthor,
-      echangeeventOnAuthor = toAuthor changeEventOnAuthor,
+      echangeeventAuthor = Just author,
+      echangeeventOnAuthor = onAuthor,
+      echangeeventSelfMerged = case eType of
+        EChangeMergedEvent -> Just $ onAuthor == author
+        _ -> Nothing,
       echangeeventBranch = changeEventBranch,
       echangeeventLabels = Just . toList $ changeEventLabels,
       echangeeventCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventCreatedAt field is mandatory") changeEventCreatedAt,
@@ -414,6 +444,10 @@ toEChangeEvent ChangePB.ChangeEvent {..} =
         _anyOtherApprovals -> Nothing,
       echangeeventTasksData = Nothing
     }
+  where
+    author = toAuthor changeEventAuthor
+    onAuthor = toAuthor changeEventOnAuthor
+    eType = getEventType changeEventType
 
 getEventType :: Maybe ChangePB.ChangeEventType -> EDocType
 getEventType eventTypeM = case eventTypeM of
