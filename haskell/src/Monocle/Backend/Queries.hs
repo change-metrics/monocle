@@ -1134,9 +1134,9 @@ getActivityStats = do
   changeCommentedHisto <- getHisto' EChangeCommentedEvent
   changeReviewedHisto <- getHisto' EChangeReviewedEvent
 
-  changeAuthorsCount <- runCount EChangeCreatedEvent
-  commentAuthorsCount <- runCount EChangeCommentedEvent
-  reviewAuthorsCount <- runCount EChangeReviewedEvent
+  changeAuthorsCount <- runMetric metricChangeCreatedAuthorsCount
+  commentAuthorsCount <- runMetric metricCommentAuthorsCount
+  reviewAuthorsCount <- runMetric metricReviewAuthorsCount
 
   let activityStatsChangeAuthors = changeAuthorsCount
       activityStatsCommentAuthors = commentAuthorsCount
@@ -1147,7 +1147,6 @@ getActivityStats = do
   pure $ SearchPB.ActivityStats {..}
   where
     qf = QueryFlavor Author CreatedAt
-    runCount docType = countToWord <$> withDocType docType qf countAuthors
     getHisto' docType = withDocType docType qf getHistoPB'
     getHistoPB' :: QueryMonad m => m (V.Vector SearchPB.Histo)
     getHistoPB' = fmap toPBHisto <$> getAuthorHisto qf
@@ -1298,6 +1297,19 @@ metricCommentAuthorsCount =
     compute = withFilter [documentType EChangeCommentedEvent] $ eventQF countAuthors
     eventQF = withFlavor $ QueryFlavor Author CreatedAt
 
+metricChangeCreatedAuthorsCount :: QueryMonad m => Metric m Word32
+metricChangeCreatedAuthorsCount =
+  Metric
+    ( MetricInfo
+        "change_authors_count"
+        "Change authors count"
+        "The count of change's authors"
+    )
+    (countToWord <$> compute)
+  where
+    compute = withFilter [documentType EChangeCreatedEvent] $ eventQF countAuthors
+    eventQF = withFlavor $ QueryFlavor Author CreatedAt
+
 metricTimeToMerge :: QueryMonad m => Metric m Float
 metricTimeToMerge =
   Metric
@@ -1351,6 +1363,7 @@ allMetricsJSON =
     toJSON <$> metricCommentsCount,
     toJSON <$> metricReviewAuthorsCount,
     toJSON <$> metricCommentAuthorsCount,
+    toJSON <$> metricChangeCreatedAuthorsCount,
     toJSON <$> metricTimeToMerge,
     toJSON <$> metricFirstCommentMeanTime,
     toJSON <$> metricFirstReviewMeanTime
