@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 ## [master]
 ### Added
 ### Changed
+
+- [web] Keep User-Agent to the URI after an OIDC login to Monocle.
+
 ### Removed
 ### Fixed
 
