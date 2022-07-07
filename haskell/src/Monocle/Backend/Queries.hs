@@ -1342,7 +1342,19 @@ metricFirstCommentMeanTime =
         <$> withEvents [documentType EChangeCommentedEvent] firstEventOnChanges
 
 allMetricsJSON :: QueryMonad m => [Metric m Value]
-allMetricsJSON = [toJSON <$> metricTimeToMerge]
+allMetricsJSON =
+  [ toJSON <$> metricChangesCreatedCount,
+    toJSON <$> metricChangesMergedCount,
+    toJSON <$> metricChangesAbandonedCount,
+    toJSON <$> metricChangesSelfMergedCount,
+    toJSON <$> metricReviewsCount,
+    toJSON <$> metricCommentsCount,
+    toJSON <$> metricReviewAuthorsCount,
+    toJSON <$> metricCommentAuthorsCount,
+    toJSON <$> metricTimeToMerge,
+    toJSON <$> metricFirstCommentMeanTime,
+    toJSON <$> metricFirstReviewMeanTime
+  ]
 
 allMetrics :: [MetricInfo]
 allMetrics = map metricInfo (allMetricsJSON @QueryM)
