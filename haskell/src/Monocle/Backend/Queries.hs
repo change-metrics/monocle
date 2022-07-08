@@ -999,24 +999,24 @@ getReviewStats = do
   reviewStatsCommentHisto <- getHisto' EChangeCommentedEvent
   reviewStatsReviewHisto <- getHisto' EChangeReviewedEvent
 
-  commentCount <- withFilter [documentType EChangeCommentedEvent] statCount
-  reviewCount <- withFilter [documentType EChangeReviewedEvent] statCount
-
-  let reviewStatsCommentCount = Just commentCount
-      reviewStatsReviewCount = Just reviewCount
+  reviewStatsCommentCount <- Just <$> statCountC
+  reviewStatsReviewCount <- Just <$> statCountR
 
   reviewStatsCommentDelay <- runMetric metricFirstCommentMeanTime
   reviewStatsReviewDelay <- runMetric metricFirstReviewMeanTime
 
   pure $ SearchPB.ReviewStats {..}
   where
-    qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
-    statCount :: QueryMonad m => m SearchPB.ReviewCount
-    statCount =
+    statCountR =
       SearchPB.ReviewCount
-        <$> fmap countToWord (withFlavor qf countAuthors)
-        <*> fmap countToWord (withFlavor qf countDocs)
+        <$> runMetric metricReviewAuthorsCount
+        <*> runMetric metricReviewsCount
+    statCountC =
+      SearchPB.ReviewCount
+        <$> runMetric metricCommentAuthorsCount
+        <*> runMetric metricCommentsCount
 
+    qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
     getHisto' docType = withDocType docType qf (getHistoPB CreatedAt)
 
 -- | changes lifecycle stats
@@ -1134,9 +1134,9 @@ getActivityStats = do
   changeCommentedHisto <- getHisto' EChangeCommentedEvent
   changeReviewedHisto <- getHisto' EChangeReviewedEvent
 
-  changeAuthorsCount <- runCount EChangeCreatedEvent
-  commentAuthorsCount <- runCount EChangeCommentedEvent
-  reviewAuthorsCount <- runCount EChangeReviewedEvent
+  changeAuthorsCount <- runMetric metricChangeCreatedAuthorsCount
+  commentAuthorsCount <- runMetric metricCommentAuthorsCount
+  reviewAuthorsCount <- runMetric metricReviewAuthorsCount
 
   let activityStatsChangeAuthors = changeAuthorsCount
       activityStatsCommentAuthors = commentAuthorsCount
@@ -1147,7 +1147,6 @@ getActivityStats = do
   pure $ SearchPB.ActivityStats {..}
   where
     qf = QueryFlavor Author CreatedAt
-    runCount docType = countToWord <$> withDocType docType qf countAuthors
     getHisto' docType = withDocType docType qf getHistoPB'
     getHistoPB' :: QueryMonad m => m (V.Vector SearchPB.Histo)
     getHistoPB' = fmap toPBHisto <$> getAuthorHisto qf
@@ -1246,6 +1245,71 @@ metricChangesSelfMergedCount =
         BH.TermQuery (BH.Term "self_merged" "true") Nothing
       ]
 
+metricReviewsCount :: QueryMonad m => Metric m Word32
+metricReviewsCount =
+  Metric
+    ( MetricInfo
+        "reviews_count"
+        "Reviews count"
+        "The count of change' reviews"
+    )
+    (countToWord <$> compute)
+  where
+    compute = withFilter [documentType EChangeReviewedEvent] $ eventQF countDocs
+    eventQF = withFlavor $ QueryFlavor Author CreatedAt
+
+metricCommentsCount :: QueryMonad m => Metric m Word32
+metricCommentsCount =
+  Metric
+    ( MetricInfo
+        "comments_count"
+        "Comments count"
+        "The count of change' comments"
+    )
+    (countToWord <$> compute)
+  where
+    compute = withFilter [documentType EChangeCommentedEvent] $ eventQF countDocs
+    eventQF = withFlavor $ QueryFlavor Author CreatedAt
+
+metricReviewAuthorsCount :: QueryMonad m => Metric m Word32
+metricReviewAuthorsCount =
+  Metric
+    ( MetricInfo
+        "review_authors_count"
+        "Review authors count"
+        "The count of change's review authors"
+    )
+    (countToWord <$> compute)
+  where
+    compute = withFilter [documentType EChangeReviewedEvent] $ eventQF countAuthors
+    eventQF = withFlavor $ QueryFlavor Author CreatedAt
+
+metricCommentAuthorsCount :: QueryMonad m => Metric m Word32
+metricCommentAuthorsCount =
+  Metric
+    ( MetricInfo
+        "comment_authors_count"
+        "Comment authors count"
+        "The count of change's comment authors"
+    )
+    (countToWord <$> compute)
+  where
+    compute = withFilter [documentType EChangeCommentedEvent] $ eventQF countAuthors
+    eventQF = withFlavor $ QueryFlavor Author CreatedAt
+
+metricChangeCreatedAuthorsCount :: QueryMonad m => Metric m Word32
+metricChangeCreatedAuthorsCount =
+  Metric
+    ( MetricInfo
+        "change_authors_count"
+        "Change authors count"
+        "The count of change's authors"
+    )
+    (countToWord <$> compute)
+  where
+    compute = withFilter [documentType EChangeCreatedEvent] $ eventQF countAuthors
+    eventQF = withFlavor $ QueryFlavor Author CreatedAt
+
 metricTimeToMerge :: QueryMonad m => Metric m Float
 metricTimeToMerge =
   Metric
@@ -1290,7 +1354,20 @@ metricFirstCommentMeanTime =
         <$> withEvents [documentType EChangeCommentedEvent] firstEventOnChanges
 
 allMetricsJSON :: QueryMonad m => [Metric m Value]
-allMetricsJSON = [toJSON <$> metricTimeToMerge]
+allMetricsJSON =
+  [ toJSON <$> metricChangesCreatedCount,
+    toJSON <$> metricChangesMergedCount,
+    toJSON <$> metricChangesAbandonedCount,
+    toJSON <$> metricChangesSelfMergedCount,
+    toJSON <$> metricReviewsCount,
+    toJSON <$> metricCommentsCount,
+    toJSON <$> metricReviewAuthorsCount,
+    toJSON <$> metricCommentAuthorsCount,
+    toJSON <$> metricChangeCreatedAuthorsCount,
+    toJSON <$> metricTimeToMerge,
+    toJSON <$> metricFirstCommentMeanTime,
+    toJSON <$> metricFirstReviewMeanTime
+  ]
 
 allMetrics :: [MetricInfo]
 allMetrics = map metricInfo (allMetricsJSON @QueryM)
