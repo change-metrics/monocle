@@ -266,6 +266,7 @@ monocleBackendQueriesTests =
       testCase "Test top authors" testTopAuthors,
       testCase "Test changes top" testGetChangesTops,
       testCase "Test authors peers strength" testGetAuthorsPeersStrength,
+      testCase "Test lifecycleStats" testLifecycleStats,
       testCase "Test newContributors" testGetNewContributors,
       testCase "Test getActivityStats" testGetActivityStats,
       testCase "Test getAllAuthorsMuid" testGetAllAuthorsMuid,
