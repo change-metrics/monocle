@@ -469,7 +469,7 @@ firstEventAverageDuration :: [FirstEvent] -> Word32
 firstEventAverageDuration = truncate . fromMaybe 0 . average . map firstEventDuration
 
 firstEventOnChanges :: QueryMonad m => m [FirstEvent]
-firstEventOnChanges = withFlavor (QueryFlavor Author CreatedAt) $ do
+firstEventOnChanges = do
   (minDate, _) <- Q.queryBounds <$> getQuery
 
   -- Collect all the events
@@ -1190,6 +1190,22 @@ data Metric m a = Metric
 instance Functor m => Functor (Metric m) where
   fmap f x = Metric (metricInfo x) (f <$> runMetric x)
 
+authorFlavorToDesc :: AuthorFlavor -> Text
+authorFlavorToDesc = \case
+  Author ->
+    "The event's author is matched in case of any author/group query filter."
+  OnAuthor ->
+    "The change's author is matched in case of any author/group query filter."
+
+rangeFlavorToDesc :: RangeFlavor -> Text
+rangeFlavorToDesc = \case
+  CreatedAt -> "The event's creation date is matched in case of any date query filter."
+  OnCreatedAt -> "The change's creation date is matched in case of any date query filter."
+  UpdatedAt -> "The change's update date is matched in case of any date query filter."
+  OnCreatedAndCreated ->
+    "Both, the event and change's creation date is matched in "
+      <> "case of any date query filter."
+
 changeEventCount :: QueryMonad m => MetricInfo -> EDocType -> Metric m Word32
 changeEventCount mi dt =
   Metric mi (countToWord <$> compute)
@@ -1197,6 +1213,10 @@ changeEventCount mi dt =
     compute = withFilter [documentType dt] (eventQF countDocs)
     eventQF = withFlavor (QueryFlavor OnAuthor CreatedAt)
 
+changeEventFlavorDesc :: Text
+changeEventFlavorDesc = authorFlavorToDesc OnAuthor <> " " <> rangeFlavorToDesc CreatedAt
+
+-- | The count of changes created
 metricChangesCreatedCount :: QueryMonad m => Metric m Word32
 metricChangesCreatedCount = changeEventCount mi EChangeCreatedEvent
   where
@@ -1205,8 +1225,12 @@ metricChangesCreatedCount = changeEventCount mi EChangeCreatedEvent
         "changes_created_count"
         "Changes created count"
         "The count of changes created"
-        Nothing
+        ( Just $
+            "The metric is the count change created events."
+              <> changeEventFlavorDesc
+        )
 
+-- | The count of changes merged
 metricChangesMergedCount :: QueryMonad m => Metric m Word32
 metricChangesMergedCount = changeEventCount mi EChangeMergedEvent
   where
@@ -1215,8 +1239,12 @@ metricChangesMergedCount = changeEventCount mi EChangeMergedEvent
         "changes_merged_count"
         "Changes merged count"
         "The count of changes merged"
-        Nothing
+        ( Just $
+            "The metric is the count change merged events."
+              <> changeEventFlavorDesc
+        )
 
+-- | The count of changes abandoned
 metricChangesAbandonedCount :: QueryMonad m => Metric m Word32
 metricChangesAbandonedCount = changeEventCount mi EChangeAbandonedEvent
   where
@@ -1225,8 +1253,12 @@ metricChangesAbandonedCount = changeEventCount mi EChangeAbandonedEvent
         "changes_abandoned_count"
         "Changes abandoned count"
         "The count of changes abandoned"
-        Nothing
+        ( Just $
+            "The metric is the count change abandoned events."
+              <> changeEventFlavorDesc
+        )
 
+-- | The count of updates of changes
 metricChangeUpdatesCount :: QueryMonad m => Metric m Word32
 metricChangeUpdatesCount =
   Metric
@@ -1235,10 +1267,10 @@ metricChangeUpdatesCount =
         "Change updates count"
         "The count of updates of changes"
         ( Just $
-            "The metric's computation is based on the count of commit push and "
-              <> "force commit push events. The event's author is matched in case of any "
-              <> "author/group query filter. The change's creation date is matched "
-              <> "in case of any date query filter."
+            "The metric is the count of commit push and force commit push events. "
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc OnCreatedAt
         )
     )
     (countToWord <$> compute)
@@ -1249,6 +1281,7 @@ metricChangeUpdatesCount =
         (withFlavor' countDocs)
     withFlavor' = withFlavor (QueryFlavor Author OnCreatedAt)
 
+-- | The count of changes self merged
 metricChangesSelfMergedCount :: QueryMonad m => Metric m Word32
 metricChangesSelfMergedCount =
   Metric
@@ -1256,16 +1289,22 @@ metricChangesSelfMergedCount =
         "changes_self_merged_count"
         "Changes self merged count"
         "The count of changes self merged"
-        Nothing
+        ( Just $
+            "The metric is the count change merged events for which "
+              <> "the event's author and the change's author are the same. "
+              <> rangeFlavorToDesc CreatedAt
+        )
     )
     (countToWord <$> compute)
   where
-    compute = withFilter selfMerged countDocs
+    compute = withFilter selfMerged $ withFlavor' countDocs
     selfMerged =
       [ documentType EChangeMergedEvent,
         BH.TermQuery (BH.Term "self_merged" "true") Nothing
       ]
+    withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
 
+-- | The count of change' reviews
 metricReviewsCount :: QueryMonad m => Metric m Word32
 metricReviewsCount =
   Metric
@@ -1273,13 +1312,19 @@ metricReviewsCount =
         "reviews_count"
         "Reviews count"
         "The count of change' reviews"
-        Nothing
+        ( Just $
+            "The metric is the count change' reviews performed by an author. "
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
     )
     (countToWord <$> compute)
   where
     compute = withFilter [documentType EChangeReviewedEvent] $ eventQF countDocs
     eventQF = withFlavor $ QueryFlavor Author CreatedAt
 
+-- | The count of change' comments
 metricCommentsCount :: QueryMonad m => Metric m Word32
 metricCommentsCount =
   Metric
@@ -1287,13 +1332,19 @@ metricCommentsCount =
         "comments_count"
         "Comments count"
         "The count of change' comments"
-        Nothing
+        ( Just $
+            "The metric is the count of change' comments performed by an author. "
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
     )
     (countToWord <$> compute)
   where
     compute = withFilter [documentType EChangeCommentedEvent] $ eventQF countDocs
     eventQF = withFlavor $ QueryFlavor Author CreatedAt
 
+-- | The count of change's review authors
 metricReviewAuthorsCount :: QueryMonad m => Metric m Word32
 metricReviewAuthorsCount =
   Metric
@@ -1301,13 +1352,19 @@ metricReviewAuthorsCount =
         "review_authors_count"
         "Review authors count"
         "The count of change's review authors"
-        Nothing
+        ( Just $
+            "The metric is the count of change' reviews aggregated by unique authors. "
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
     )
     (countToWord <$> compute)
   where
     compute = withFilter [documentType EChangeReviewedEvent] $ eventQF countAuthors
     eventQF = withFlavor $ QueryFlavor Author CreatedAt
 
+-- | The count of change's comment authors
 metricCommentAuthorsCount :: QueryMonad m => Metric m Word32
 metricCommentAuthorsCount =
   Metric
@@ -1315,13 +1372,19 @@ metricCommentAuthorsCount =
         "comment_authors_count"
         "Comment authors count"
         "The count of change's comment authors"
-        Nothing
+        ( Just $
+            "The metric is the count of change' comments aggregated by unique authors. "
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
     )
     (countToWord <$> compute)
   where
     compute = withFilter [documentType EChangeCommentedEvent] $ eventQF countAuthors
     eventQF = withFlavor $ QueryFlavor Author CreatedAt
 
+-- | The count of change's authors
 metricChangeCreatedAuthorsCount :: QueryMonad m => Metric m Word32
 metricChangeCreatedAuthorsCount =
   Metric
@@ -1329,21 +1392,33 @@ metricChangeCreatedAuthorsCount =
         "change_authors_count"
         "Change authors count"
         "The count of change's authors"
-        Nothing
+        ( Just $
+            "The metric is the count of change created events aggregated by unique authors. "
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
     )
     (countToWord <$> compute)
   where
     compute = withFilter [documentType EChangeCreatedEvent] $ eventQF countAuthors
     eventQF = withFlavor $ QueryFlavor Author CreatedAt
 
+-- | The average duration for an open change to be merged
 metricTimeToMerge :: QueryMonad m => Metric m Float
 metricTimeToMerge =
   Metric
     ( MetricInfo
         "time_to_merge"
         "Time to merge"
-        "The average duration for an open change"
-        Nothing
+        "The average duration for an open change to be merged"
+        ( Just $
+            "The metric is the average duration for changes "
+              <> "between their creation date and their merge date."
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
     )
     compute
   where
@@ -1352,21 +1427,29 @@ metricTimeToMerge =
         <$> withFilter (changeState EChangeMerged) (averageDuration qf)
     qf = QueryFlavor Author CreatedAt
 
+-- | The average duration until a change gets a first review event
 metricFirstReviewMeanTime :: QueryMonad m => Metric m Word32
 metricFirstReviewMeanTime =
   Metric
     ( MetricInfo
         "first_review_mean_time"
         "1st review mean time"
-        "The average delay until a change gets a review event"
-        Nothing
+        "The average duration until a change gets a first review event"
+        ( Just $
+            "The metric is the average duration for changes to get their first review."
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
     )
     compute
   where
     compute =
       firstEventAverageDuration
-        <$> withEvents [documentType EChangeReviewedEvent] firstEventOnChanges
+        <$> withEvents [documentType EChangeReviewedEvent] (withFlavor' firstEventOnChanges)
+    withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
 
+-- | The average delay until a change gets a comment event
 metricFirstCommentMeanTime :: QueryMonad m => Metric m Word32
 metricFirstCommentMeanTime =
   Metric
@@ -1374,13 +1457,19 @@ metricFirstCommentMeanTime =
         "first_comment_mean_time"
         "1st comment mean time"
         "The average delay until a change gets a comment event"
-        Nothing
+        ( Just $
+            "The metric is the average duration for changes to get their first comment."
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
     )
     compute
   where
     compute =
       firstEventAverageDuration
-        <$> withEvents [documentType EChangeCommentedEvent] firstEventOnChanges
+        <$> withEvents [documentType EChangeCommentedEvent] (withFlavor' firstEventOnChanges)
+    withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
 
 allMetricsJSON :: QueryMonad m => [Metric m Value]
 allMetricsJSON =
