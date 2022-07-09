@@ -1049,16 +1049,11 @@ getLifecycleStats = do
     double2Float
       <$> withFilter (changeState EChangeMerged) (medianDeviationDuration qf)
 
-  updated <-
-    withFilter
-      [documentTypes $ fromList [EChangeCommitPushedEvent, EChangeCommitForcePushedEvent]]
-      countEvents
-
-  let lifecycleStatsUpdatesOfChanges = countToWord updated
+  lifecycleStatsUpdatesOfChanges <- runMetric metricChangeUpdatesCount
 
   tests <- withFilter [documentType EChangeDoc, testIncluded] countDocs
   let lifecycleStatsChangesWithTests = tests `ratioF` created
-      lifecycleStatsIterationsPerChange = updated `ratioN` created
+      lifecycleStatsIterationsPerChange = wordToCount lifecycleStatsUpdatesOfChanges `ratioN` created
 
   lifecycleStatsCommitsPerChange <-
     double2Float
@@ -1066,7 +1061,6 @@ getLifecycleStats = do
 
   pure $ SearchPB.LifecycleStats {..}
   where
-    countEvents = withFlavor (QueryFlavor Monocle.Search.Query.Author OnCreatedAt) countDocs
     qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
     getHisto' docType = withDocType docType qf (getHistoPB CreatedAt)
     getHistos' docTypes = withDocTypes docTypes qf (getHistoPB CreatedAt)
@@ -1184,7 +1178,8 @@ getSuggestions index = do
 data MetricInfo = MetricInfo
   { miMetricName :: Text,
     miName :: Text,
-    miDesc :: Text
+    miDesc :: Text,
+    miLongDesc :: Maybe Text
   }
 
 data Metric m a = Metric
@@ -1210,6 +1205,7 @@ metricChangesCreatedCount = changeEventCount mi EChangeCreatedEvent
         "changes_created_count"
         "Changes created count"
         "The count of changes created"
+        Nothing
 
 metricChangesMergedCount :: QueryMonad m => Metric m Word32
 metricChangesMergedCount = changeEventCount mi EChangeMergedEvent
@@ -1219,6 +1215,7 @@ metricChangesMergedCount = changeEventCount mi EChangeMergedEvent
         "changes_merged_count"
         "Changes merged count"
         "The count of changes merged"
+        Nothing
 
 metricChangesAbandonedCount :: QueryMonad m => Metric m Word32
 metricChangesAbandonedCount = changeEventCount mi EChangeAbandonedEvent
@@ -1228,6 +1225,29 @@ metricChangesAbandonedCount = changeEventCount mi EChangeAbandonedEvent
         "changes_abandoned_count"
         "Changes abandoned count"
         "The count of changes abandoned"
+        Nothing
+
+metricChangeUpdatesCount :: QueryMonad m => Metric m Word32
+metricChangeUpdatesCount =
+  Metric
+    ( MetricInfo
+        "change_updates_count"
+        "Change updates count"
+        "The count of updates of changes"
+        ( Just $
+            "The metric's computation is based on the count of commit push and "
+              <> "force commit push events. The event's author is matched in case of any "
+              <> "author/group query filter. The change's creation date is matched "
+              <> "in case of any date query filter."
+        )
+    )
+    (countToWord <$> compute)
+  where
+    compute =
+      withFilter
+        [documentTypes $ fromList [EChangeCommitPushedEvent, EChangeCommitForcePushedEvent]]
+        (withFlavor' countDocs)
+    withFlavor' = withFlavor (QueryFlavor Author OnCreatedAt)
 
 metricChangesSelfMergedCount :: QueryMonad m => Metric m Word32
 metricChangesSelfMergedCount =
@@ -1236,6 +1256,7 @@ metricChangesSelfMergedCount =
         "changes_self_merged_count"
         "Changes self merged count"
         "The count of changes self merged"
+        Nothing
     )
     (countToWord <$> compute)
   where
@@ -1252,6 +1273,7 @@ metricReviewsCount =
         "reviews_count"
         "Reviews count"
         "The count of change' reviews"
+        Nothing
     )
     (countToWord <$> compute)
   where
@@ -1265,6 +1287,7 @@ metricCommentsCount =
         "comments_count"
         "Comments count"
         "The count of change' comments"
+        Nothing
     )
     (countToWord <$> compute)
   where
@@ -1278,6 +1301,7 @@ metricReviewAuthorsCount =
         "review_authors_count"
         "Review authors count"
         "The count of change's review authors"
+        Nothing
     )
     (countToWord <$> compute)
   where
@@ -1291,6 +1315,7 @@ metricCommentAuthorsCount =
         "comment_authors_count"
         "Comment authors count"
         "The count of change's comment authors"
+        Nothing
     )
     (countToWord <$> compute)
   where
@@ -1304,6 +1329,7 @@ metricChangeCreatedAuthorsCount =
         "change_authors_count"
         "Change authors count"
         "The count of change's authors"
+        Nothing
     )
     (countToWord <$> compute)
   where
@@ -1317,13 +1343,14 @@ metricTimeToMerge =
         "time_to_merge"
         "Time to merge"
         "The average duration for an open change"
+        Nothing
     )
     compute
   where
     compute =
       double2Float
         <$> withFilter (changeState EChangeMerged) (averageDuration qf)
-    qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
+    qf = QueryFlavor Author CreatedAt
 
 metricFirstReviewMeanTime :: QueryMonad m => Metric m Word32
 metricFirstReviewMeanTime =
@@ -1332,6 +1359,7 @@ metricFirstReviewMeanTime =
         "first_review_mean_time"
         "1st review mean time"
         "The average delay until a change gets a review event"
+        Nothing
     )
     compute
   where
@@ -1346,6 +1374,7 @@ metricFirstCommentMeanTime =
         "first_comment_mean_time"
         "1st comment mean time"
         "The average delay until a change gets a comment event"
+        Nothing
     )
     compute
   where
@@ -1359,6 +1388,7 @@ allMetricsJSON =
     toJSON <$> metricChangesMergedCount,
     toJSON <$> metricChangesAbandonedCount,
     toJSON <$> metricChangesSelfMergedCount,
+    toJSON <$> metricChangeUpdatesCount,
     toJSON <$> metricReviewsCount,
     toJSON <$> metricCommentsCount,
     toJSON <$> metricReviewAuthorsCount,
