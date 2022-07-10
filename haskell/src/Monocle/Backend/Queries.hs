@@ -1045,10 +1045,7 @@ getLifecycleStats = do
       lifecycleStatsAbandoned = countToWord abandoned
 
   lifecycleStatsTtmMean <- runMetric metricTimeToMerge
-  lifecycleStatsTtmVariability <-
-    double2Float
-      <$> withFilter (changeState EChangeMerged) (medianDeviationDuration qf)
-
+  lifecycleStatsTtmVariability <- runMetric metricTimeToMergeVariance
   lifecycleStatsUpdatesOfChanges <- runMetric metricChangeUpdatesCount
 
   tests <- withFilter [documentType EChangeDoc, testIncluded] countDocs
@@ -1427,6 +1424,29 @@ metricTimeToMerge =
         <$> withFilter (changeState EChangeMerged) (averageDuration qf)
     qf = QueryFlavor Author CreatedAt
 
+-- | The variance of the duration for an open change to be merged
+metricTimeToMergeVariance :: QueryMonad m => Metric m Float
+metricTimeToMergeVariance =
+  Metric
+    ( MetricInfo
+        "time_to_merge_variance"
+        "Time to merge_variance"
+        "The variance of the duration for an open change to be merged"
+        ( Just $
+            "The metric is the variance of the duration for changes "
+              <> "between their creation date and their merge date."
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
+    )
+    compute
+  where
+    compute =
+      double2Float
+        <$> withFilter (changeState EChangeMerged) (medianDeviationDuration qf)
+    qf = QueryFlavor Author CreatedAt
+
 -- | The average duration until a change gets a first review event
 metricFirstReviewMeanTime :: QueryMonad m => Metric m Word32
 metricFirstReviewMeanTime =
@@ -1484,6 +1504,7 @@ allMetricsJSON =
     toJSON <$> metricCommentAuthorsCount,
     toJSON <$> metricChangeCreatedAuthorsCount,
     toJSON <$> metricTimeToMerge,
+    toJSON <$> metricTimeToMergeVariance,
     toJSON <$> metricFirstCommentMeanTime,
     toJSON <$> metricFirstReviewMeanTime
   ]
