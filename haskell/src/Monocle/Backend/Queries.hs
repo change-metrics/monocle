@@ -294,11 +294,6 @@ changeState state' =
     BH.TermQuery (BH.Term "state" $ from state') Nothing
   ]
 
-testIncluded :: BH.Query
-testIncluded =
-  BH.QueryRegexpQuery $
-    BH.RegexpQuery (BH.FieldName "changed_files.path") (BH.Regexp ".*[Tt]est.*") BH.AllRegexpFlags Nothing
-
 -- | Add a document type filter to the query
 documentTypes :: NonEmpty EDocType -> BH.Query
 documentTypes doc = BH.TermsQuery "type" $ from <$> doc
@@ -1033,21 +1028,20 @@ getLifecycleStats = do
   created <- wordToCount <$> runMetric metricChangesCreatedCount
   changeCreatedAuthor <- runMetric metricChangeCreatedAuthorsCount
 
+  lifecycleStatsTtmMean <- runMetric metricTimeToMerge
+  lifecycleStatsTtmVariability <- runMetric metricTimeToMergeVariance
+  lifecycleStatsUpdatesOfChanges <- runMetric metricChangeUpdatesCount
+  lifecycleStatsCommitsPerChange <- runMetric metricCommitsPerChange
+
+  tests <- wordToCount <$> runMetric metricChangeWithTestsCount
+
   let lifecycleStatsMerged = countToWord merged
       lifecycleStatsSelfMerged = selfMerged
       lifecycleStatsSelfMergedRatio = wordToCount selfMerged `ratioF` merged
       lifecycleStatsAbandoned = countToWord abandoned
       lifecycleStatsCreated = Just $ SearchPB.ReviewCount changeCreatedAuthor (countToWord created)
-
-  lifecycleStatsTtmMean <- runMetric metricTimeToMerge
-  lifecycleStatsTtmVariability <- runMetric metricTimeToMergeVariance
-  lifecycleStatsUpdatesOfChanges <- runMetric metricChangeUpdatesCount
-
-  tests <- withFilter [documentType EChangeDoc, testIncluded] countDocs
-  let lifecycleStatsChangesWithTests = tests `ratioF` created
+      lifecycleStatsChangesWithTests = tests `ratioF` created
       lifecycleStatsIterationsPerChange = wordToCount lifecycleStatsUpdatesOfChanges `ratioN` created
-
-  lifecycleStatsCommitsPerChange <- runMetric metricCommitsPerChange
 
   pure $ SearchPB.LifecycleStats {..}
   where
@@ -1270,6 +1264,33 @@ metricChangeUpdatesCount =
         [documentTypes $ fromList [EChangeCommitPushedEvent, EChangeCommitForcePushedEvent]]
         (withFlavor' countDocs)
     withFlavor' = withFlavor (QueryFlavor Author OnCreatedAt)
+
+-- | The count of changes with tests related modifications
+metricChangeWithTestsCount :: QueryMonad m => Metric m Word32
+metricChangeWithTestsCount =
+  Metric
+    ( MetricInfo
+        "change_with_tests_count"
+        "Change with tests count"
+        "The count of changes with tests modifications"
+        ( Just $
+            "The metric is the count of changes with modification on files named based on the following regex: "
+              <> regexp
+              <> " "
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
+    )
+    (countToWord <$> compute)
+  where
+    compute =
+      withFilter [documentType EChangeDoc, testIncluded] (withFlavor' countDocs)
+    withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
+    regexp = ".*[Tt]est.*"
+    testIncluded =
+      BH.QueryRegexpQuery $
+        BH.RegexpQuery (BH.FieldName "changed_files.path") (BH.Regexp regexp) BH.AllRegexpFlags Nothing
 
 -- | The count of changes self merged
 metricChangesSelfMergedCount :: QueryMonad m => Metric m Word32
@@ -1513,6 +1534,7 @@ allMetricsJSON =
     toJSON <$> metricChangesAbandonedCount,
     toJSON <$> metricChangesSelfMergedCount,
     toJSON <$> metricChangeUpdatesCount,
+    toJSON <$> metricChangeWithTestsCount,
     toJSON <$> metricReviewsCount,
     toJSON <$> metricCommentsCount,
     toJSON <$> metricReviewAuthorsCount,
