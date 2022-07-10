@@ -720,6 +720,9 @@ components:
                 float_value:
                     type: number
                     format: float
+                int_value:
+                    type: integer
+                    format: int32
         monocle_metric_ListRequest:
             properties:
                 void:

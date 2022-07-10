@@ -31,5 +31,6 @@ message GetResponse {
   oneof result {
     string error = 1;
     float float_value = 2;
+    int32 int_value = 3;
   }
 }

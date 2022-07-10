@@ -35,6 +35,7 @@ import Monocle.Protob.Auth qualified as AuthPB
 import Monocle.Protob.Config qualified as ConfigPB
 import Monocle.Protob.Crawler qualified as CrawlerPB
 import Monocle.Protob.Login qualified as LoginPB
+import Monocle.Protob.Metric (GetRequest (getRequestMetric))
 import Monocle.Protob.Metric qualified as MetricPB
 import Monocle.Protob.Search qualified as SearchPB
 import Monocle.Search.Parser qualified as P
@@ -720,6 +721,7 @@ metricList auth _request = checkAuth auth . const $ response
 metricGet :: AuthResult AuthenticatedUser -> MetricPB.GetRequest -> AppM MetricPB.GetResponse
 metricGet auth request = checkAuth auth response
   where
+    handleError = pure . MetricPB.GetResponse . Just . MetricPB.GetResponseResultError
     response authenticatedUserM = do
       let MetricPB.GetRequest {..} = request
           username = from $ case authenticatedUserM of
@@ -729,19 +731,38 @@ metricGet auth request = checkAuth auth response
       requestE <- validateSearchRequest getRequestIndex getRequestQuery username
       case requestE of
         -- Valid request
-        Right (tenant, query) -> do
-          let runMetric = runQueryM tenant (Q.ensureMinBound query)
-              floatResult metric =
-                MetricPB.GetResponse . Just . MetricPB.GetResponseResultFloatValue <$> runMetric (Q.runMetric metric)
-
-          case getRequestMetric of
-            "time_to_merge" -> floatResult Q.metricTimeToMerge
-            -- Unknown query
-            _ -> handleError $ "Unknown metric: " <> from getRequestMetric
-
+        Right (tenant, query) -> runMetricQuery tenant query getRequestMetric
         -- Invalid request
         Left err -> handleError $ show err
-    handleError = pure . MetricPB.GetResponse . Just . MetricPB.GetResponseResultError
+    runMetricQuery tenant query getRequestMetric = do
+      case getRequestMetric of
+        "changes_created_count" -> intResult Q.metricChangesCreatedCount
+        "changes_merged_count" -> intResult Q.metricChangesMergedCount
+        "changes_abandoned_count" -> intResult Q.metricChangesAbandonedCount
+        "change_updates_count" -> intResult Q.metricChangeUpdatesCount
+        "change_with_tests_count" -> intResult Q.metricChangeWithTestsCount
+        "changes_self_merged_count" -> intResult Q.metricChangesSelfMergedCount
+        "reviews_count" -> intResult Q.metricReviewsCount
+        "comments_count" -> intResult Q.metricCommentsCount
+        "review_authors_count" -> intResult Q.metricReviewAuthorsCount
+        "comment_authors_count" -> intResult Q.metricCommentAuthorsCount
+        "change_authors_count" -> intResult Q.metricChangeCreatedAuthorsCount
+        "time_to_merge" -> floatResult Q.metricTimeToMerge
+        "time_to_merge_variance" -> floatResult Q.metricTimeToMergeVariance
+        "first_review_mean_time" -> intResult Q.metricFirstReviewMeanTime
+        "first_comment_mean_time" -> intResult Q.metricFirstCommentMeanTime
+        "commits_per_change" -> floatResult Q.metricCommitsPerChange
+        -- Unknown query
+        _ -> handleError $ "Unknown metric: " <> from getRequestMetric
+      where
+        runMetric = runQueryM tenant (Q.ensureMinBound query)
+        floatResult metric = do
+          MetricPB.GetResponse . Just . MetricPB.GetResponseResultFloatValue <$> runMetric (Q.runMetric metric)
+        intResult metric = do
+          MetricPB.GetResponse . Just . MetricPB.GetResponseResultIntValue
+            . fromInteger
+            . toInteger
+            <$> runMetric (Q.runMetric metric)
 
 -- | gen a 302 redirect helper
 redirects :: ByteString -> AppM ()
