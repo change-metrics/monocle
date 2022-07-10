@@ -1027,22 +1027,17 @@ getLifecycleStats = do
   lifecycleStatsMergedHisto <- getHisto' EChangeMergedEvent
   lifecycleStatsAbandonedHisto <- getHisto' EChangeAbandonedEvent
 
-  (created, lifecycleStatsCreated) <- withDocType EChangeCreatedEvent qf $ do
-    created <- countDocs
-    stats <-
-      SearchPB.ReviewCount
-        <$> fmap countToWord countAuthors
-        <*> pure (countToWord created)
-    pure (created, Just stats)
-
   merged <- wordToCount <$> runMetric metricChangesMergedCount
   selfMerged <- runMetric metricChangesSelfMergedCount
   abandoned <- wordToCount <$> runMetric metricChangesAbandonedCount
+  created <- wordToCount <$> runMetric metricChangesCreatedCount
+  changeCreatedAuthor <- runMetric metricChangeCreatedAuthorsCount
 
   let lifecycleStatsMerged = countToWord merged
       lifecycleStatsSelfMerged = selfMerged
       lifecycleStatsSelfMergedRatio = wordToCount selfMerged `ratioF` merged
       lifecycleStatsAbandoned = countToWord abandoned
+      lifecycleStatsCreated = Just $ SearchPB.ReviewCount changeCreatedAuthor (countToWord created)
 
   lifecycleStatsTtmMean <- runMetric metricTimeToMerge
   lifecycleStatsTtmVariability <- runMetric metricTimeToMergeVariance
