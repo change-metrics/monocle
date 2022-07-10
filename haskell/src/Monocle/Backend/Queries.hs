@@ -1052,9 +1052,7 @@ getLifecycleStats = do
   let lifecycleStatsChangesWithTests = tests `ratioF` created
       lifecycleStatsIterationsPerChange = wordToCount lifecycleStatsUpdatesOfChanges `ratioN` created
 
-  lifecycleStatsCommitsPerChange <-
-    double2Float
-      <$> withFilter (changeState EChangeMerged) (changeMergedAvgCommits qf)
+  lifecycleStatsCommitsPerChange <- runMetric metricCommitsPerChange
 
   pure $ SearchPB.LifecycleStats {..}
   where
@@ -1430,7 +1428,7 @@ metricTimeToMergeVariance =
   Metric
     ( MetricInfo
         "time_to_merge_variance"
-        "Time to merge_variance"
+        "Time to merge variance"
         "The variance of the duration for an open change to be merged"
         ( Just $
             "The metric is the variance of the duration for changes "
@@ -1491,6 +1489,28 @@ metricFirstCommentMeanTime =
         <$> withEvents [documentType EChangeCommentedEvent] (withFlavor' firstEventOnChanges)
     withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
 
+-- | The average commit count for per change
+metricCommitsPerChange :: QueryMonad m => Metric m Float
+metricCommitsPerChange =
+  Metric
+    ( MetricInfo
+        "commits_per_change"
+        "commits per change"
+        "The average commits count per merged change"
+        ( Just $
+            "The metric is the average of the number of commits a merged change is composed of."
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
+    )
+    compute
+  where
+    compute =
+      double2Float
+        <$> withFilter (changeState EChangeMerged) (changeMergedAvgCommits qf)
+    qf = QueryFlavor Author CreatedAt
+
 allMetricsJSON :: QueryMonad m => [Metric m Value]
 allMetricsJSON =
   [ toJSON <$> metricChangesCreatedCount,
@@ -1506,7 +1526,8 @@ allMetricsJSON =
     toJSON <$> metricTimeToMerge,
     toJSON <$> metricTimeToMergeVariance,
     toJSON <$> metricFirstCommentMeanTime,
-    toJSON <$> metricFirstReviewMeanTime
+    toJSON <$> metricFirstReviewMeanTime,
+    toJSON <$> metricCommitsPerChange
   ]
 
 allMetrics :: [MetricInfo]
