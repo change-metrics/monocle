@@ -125,6 +125,14 @@ let
             };
           in (hpPrev.callCabal2nix "bytesmith" src { });
 
+          weeder = let
+            src = builtins.fetchGit {
+              url = "https://github.com/ocharles/weeder";
+              ref = "master";
+              rev = "c58ed2a8c66dcf0b469f8343efb6b6f61c7c40f3";
+            };
+          in (hpPrev.callCabal2nix "weeder" src { });
+
           # Master version for ghc-9.2
           bytebuild = let
             src = builtins.fetchGit {
@@ -470,7 +478,13 @@ in rec {
   # haskell dependencies for codegen
   hsPkgs = pkgs.myHaskellPackages;
 
-  hs-req = [ pkgs.cabal-install pkgs.ormolu hsPkgs.proto3-suite pkgs.zlib ];
+  hs-req = [
+    pkgs.cabal-install
+    pkgs.ormolu
+    hsPkgs.proto3-suite
+    pkgs.zlib
+    hsPkgs.weeder
+  ];
 
   # define javascript requirements
   javascript-req = [ pkgs.nodejs ];

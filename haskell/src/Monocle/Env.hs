@@ -209,8 +209,8 @@ withQuery query = local addQuery
   where
     addQuery e = e {tQuery = query}
 
-withContext :: QueryMonad m => HasCallStack => Text -> m a -> m a
-withContext context = local setContext
+withCallStackContext :: QueryMonad m => HasCallStack => Text -> m a -> m a
+withCallStackContext context = local setContext
   where
     setContext (QueryEnv tenant tEnv query _) = QueryEnv tenant tEnv query (Just contextName)
     contextName = maybe context getLoc $ headMaybe (getCallStack callStack)
