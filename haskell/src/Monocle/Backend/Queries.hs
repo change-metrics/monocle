@@ -215,9 +215,6 @@ doTermsCompositeAgg term = getPages Nothing
     getBuckets :: BHR.TermsCompositeAggResult -> V.Vector BHR.TermsCompositeAggBucket
     getBuckets (BHR.TermsCompositeAggResult _ buckets) = buckets
 
-doTermsCompositeAgg' :: QueryMonad m => Text -> m [TermsCompositeAggBucket]
-doTermsCompositeAgg' = Streaming.toList_ . doTermsCompositeAgg
-
 -------------------------------------------------------------------------------
 -- High level queries
 changes :: QueryMonad m => Maybe SearchPB.Order -> Word32 -> m [EChange]
@@ -319,39 +316,6 @@ data EventCounts = EventCounts
     selfMergedCount :: Count
   }
   deriving (Eq, Show)
-
-getEventCounts :: QueryMonad m => m EventCounts
-getEventCounts =
-  -- TODO: ensure the right flavor is used
-  EventCounts
-    <$> withFilter (changeState EChangeOpen) countDocs
-      <*> withFilter (changeState EChangeMerged) countDocs
-      <*> withFilter (changeState EChangeClosed) countDocs
-      <*> withFilter selfMergedQ countDocs
-  where
-    selfMergedQ = [BH.TermQuery (BH.Term "self_merged" "true") Nothing]
-
--- $setup
--- >>> import Data.Aeson.Encode.Pretty (encodePretty', Config (..), defConfig, compare)
-
--- | The histo event query
--- >>> :{
---  let
---    conf = defConfig {confCompare = compare}
---  in putTextLn $ decodeUtf8 $ encodePretty' conf histoEventAgg
--- :}
--- {
---     "date_histogram": {
---         "field": "created_at",
---         "interval": "day"
---     }
--- }
-histoEventAgg :: BH.Aggregation
-histoEventAgg = BH.DateHistogramAgg dateAgg
-  where
-    interval = BH.Day
-    dateAgg =
-      BH.mkDateHistogram (BH.FieldName "created_at") interval
 
 -- | Author histo
 data HistoAuthorBucket = HistoAuthorBucket

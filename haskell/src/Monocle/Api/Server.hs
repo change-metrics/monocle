@@ -10,7 +10,6 @@ import Data.List (lookup)
 import Data.Map qualified as Map
 import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
-import Google.Protobuf.Timestamp qualified as T
 import Monocle.Api.Jwt
   ( AuthenticatedUser (aDefaultMuid, aMuidMap),
     LoginInUser (..),
@@ -438,30 +437,6 @@ data TDError
   | TDAddLenExcedeed
   deriving (Show)
 
-validateTaskDataRequest ::
-  -- | The index name
-  LText ->
-  -- | The crawler name
-  LText ->
-  -- | The api key
-  Maybe LText ->
-  -- | True if the timestamp must be checked
-  Bool ->
-  -- | the commit timestamp
-  Maybe T.Timestamp ->
-  -- | an AppM with either an Error or extracted info
-  AppM (Either TDError (Config.Index, Config.Crawler, Maybe UTCTime))
-validateTaskDataRequest indexName crawlerName apiKey checkCommitDate commitDate = do
-  GetTenants tenants <- getConfig
-  pure $ do
-    index <- Config.lookupTenant tenants (from indexName) `orDie` TDUnknownIndex
-    crawler <- Config.lookupCrawler index (from crawlerName) `orDie` TDUnknownCrawler
-    when (isJust apiKey) $
-      when (Config.crawlers_api_key index /= (from <$> apiKey)) (Left TDUnknownApiKey)
-    when checkCommitDate $
-      void commitDate `orDie` TDDateInvalid
-    pure (index, crawler, T.toUTCTime <$> commitDate)
-
 -- | /suggestions endpoint
 searchSuggestions :: AuthResult AuthenticatedUser -> SearchPB.SuggestionsRequest -> AppM SearchPB.SuggestionsResponse
 searchSuggestions auth request = checkAuth auth . const $ do
@@ -700,11 +675,6 @@ searchFields auth _request = checkAuth auth . const $ response
           fieldDescription = from desc
           fieldType = Enumerated . Right $ fieldType'
        in SearchPB.Field {..}
-
-lookupTenant :: Text -> AppM (Maybe Config.Index)
-lookupTenant name = do
-  GetTenants tenants <- getConfig
-  pure $ Config.lookupTenant tenants name
 
 metricList :: AuthResult AuthenticatedUser -> MetricPB.ListRequest -> AppM MetricPB.ListResponse
 metricList auth _request = checkAuth auth . const $ response
