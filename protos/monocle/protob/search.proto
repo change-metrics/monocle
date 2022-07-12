@@ -6,6 +6,7 @@ package monocle_search;
 option go_package = "monocle/search";
 
 import "google/protobuf/timestamp.proto";
+import "monocle/protob/metric.proto";
 
 message TaskData {
   google.protobuf.Timestamp updated_at = 1;
@@ -229,31 +230,22 @@ message ReviewCount {
   uint32 events_count = 2;
 }
 
-message Histo {
-  string date = 1;
-  uint32 count = 2;
-}
-
-message HistoStat {
-  repeated Histo histo = 1;
-}
-
 message ReviewStats {
   ReviewCount comment_count = 1;
   ReviewCount review_count = 2;
   uint32 comment_delay = 5;
   uint32 review_delay = 6;
-  repeated Histo comment_histo = 10;
-  repeated Histo review_histo = 11;
+  repeated monocle_metric.Histo comment_histo = 10;
+  repeated monocle_metric.Histo review_histo = 11;
 }
 
 message ActivityStats {
   uint32 change_authors = 1;
   uint32 comment_authors = 2;
   uint32 review_authors = 3;
-  repeated Histo comments_histo = 10;
-  repeated Histo reviews_histo = 11;
-  repeated Histo changes_histo = 12;
+  repeated monocle_metric.Histo comments_histo = 10;
+  repeated monocle_metric.Histo reviews_histo = 11;
+  repeated monocle_metric.Histo changes_histo = 12;
 }
 
 message QueryResponse {
@@ -270,15 +262,15 @@ message QueryResponse {
     ChangeAndEvents change_events = 30;
     ChangesTops changes_tops = 31;
     float ratio = 40;
-    HistoStat histo = 50;
+    monocle_metric.HistoStat histo = 50;
   }
 }
 
 message LifecycleStats {
-  repeated Histo created_histo = 1;
-  repeated Histo updated_histo = 2;
-  repeated Histo merged_histo = 3;
-  repeated Histo abandoned_histo = 4;
+  repeated monocle_metric.Histo created_histo = 1;
+  repeated monocle_metric.Histo updated_histo = 2;
+  repeated monocle_metric.Histo merged_histo = 3;
+  repeated monocle_metric.Histo abandoned_histo = 4;
 
   ReviewCount created = 5;
 

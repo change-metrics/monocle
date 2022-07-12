@@ -22,6 +22,7 @@ import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Crawler qualified as CrawlerPB
 import Monocle.Protob.Metric qualified as MetricPB
+import Monocle.Protob.Search qualified as MetricPB
 import Monocle.Protob.Search qualified as SearchPB
 import Monocle.Search.Query (defaultQueryFlavor)
 import Monocle.Search.Query qualified as Q
@@ -850,21 +851,21 @@ testGetActivityStats = withTenant doTest
               1
               2
               ( V.fromList
-                  [ SearchPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
-                    SearchPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 1},
-                    SearchPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
+                  [ MetricPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
+                    MetricPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 1},
+                    MetricPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
                   ]
               )
               ( V.fromList
-                  [ SearchPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
-                    SearchPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 2},
-                    SearchPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
+                  [ MetricPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
+                    MetricPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 2},
+                    MetricPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
                   ]
               )
               ( V.fromList
-                  [ SearchPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
-                    SearchPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 1},
-                    SearchPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
+                  [ MetricPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
+                    MetricPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 1},
+                    MetricPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
                   ]
               )
           )

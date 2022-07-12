@@ -44,6 +44,24 @@ let default_get_request_mutable () : get_request_mutable = {
   metric = "";
 }
 
+type histo_mutable = {
+  mutable date : string;
+  mutable count : int32;
+}
+
+let default_histo_mutable () : histo_mutable = {
+  date = "";
+  count = 0l;
+}
+
+type histo_stat_mutable = {
+  mutable histo : MetricTypes.histo list;
+}
+
+let default_histo_stat_mutable () : histo_stat_mutable = {
+  histo = [];
+}
+
 
 let rec decode_metric_info json =
   let v = default_metric_info_mutable () in
@@ -139,6 +157,48 @@ let rec decode_get_request json =
     MetricTypes.metric = v.metric;
   } : MetricTypes.get_request)
 
+let rec decode_histo json =
+  let v = default_histo_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "date" -> 
+      let json = Js.Dict.unsafeGet json "date" in
+      v.date <- Pbrt_bs.string json "histo" "date"
+    | "count" -> 
+      let json = Js.Dict.unsafeGet json "count" in
+      v.count <- Pbrt_bs.int32 json "histo" "count"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    MetricTypes.date = v.date;
+    MetricTypes.count = v.count;
+  } : MetricTypes.histo)
+
+let rec decode_histo_stat json =
+  let v = default_histo_stat_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "histo" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "histo" in 
+        Pbrt_bs.array_ a "histo_stat" "histo"
+      in
+      v.histo <- Array.map (fun json -> 
+        (decode_histo (Pbrt_bs.object_ json "histo_stat" "histo"))
+      ) a |> Array.to_list;
+    end
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    MetricTypes.histo = v.histo;
+  } : MetricTypes.histo_stat)
+
 let rec decode_get_response json =
   let keys = Js.Dict.keys json in
   let rec loop = function 
@@ -154,6 +214,9 @@ let rec decode_get_response json =
       | "int_value" -> 
         let json = Js.Dict.unsafeGet json "int_value" in
         (MetricTypes.Int_value (Pbrt_bs.int32 json "get_response" "Int_value") : MetricTypes.get_response)
+      | "histo_value" -> 
+        let json = Js.Dict.unsafeGet json "histo_value" in
+        (MetricTypes.Histo_value ((decode_histo_stat (Pbrt_bs.object_ json "get_response" "Histo_value"))) : MetricTypes.get_response)
       
       | _ -> loop (i - 1)
       end
@@ -196,6 +259,27 @@ let rec encode_get_request (v:MetricTypes.get_request) =
   Js.Dict.set json "metric" (Js.Json.string v.MetricTypes.metric);
   json
 
+let rec encode_histo (v:MetricTypes.histo) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "date" (Js.Json.string v.MetricTypes.date);
+  Js.Dict.set json "count" (Js.Json.number (Int32.to_float v.MetricTypes.count));
+  json
+
+let rec encode_histo_stat (v:MetricTypes.histo_stat) = 
+  let json = Js.Dict.empty () in
+  begin (* histo field *)
+    let (histo':Js.Json.t) =
+      v.MetricTypes.histo
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_histo |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "histo" histo';
+  end;
+  json
+
 let rec encode_get_response (v:MetricTypes.get_response) = 
   let json = Js.Dict.empty () in
   begin match v with
@@ -205,5 +289,10 @@ let rec encode_get_response (v:MetricTypes.get_response) =
     Js.Dict.set json "float_value" (Js.Json.number v);
   | MetricTypes.Int_value v ->
     Js.Dict.set json "int_value" (Js.Json.number (Int32.to_float v));
+  | MetricTypes.Histo_value v ->
+    begin (* histoValue field *)
+      let json' = encode_histo_stat v in
+      Js.Dict.set json "histo_value" (Js.Json.object_ json');
+    end;
   end;
   json

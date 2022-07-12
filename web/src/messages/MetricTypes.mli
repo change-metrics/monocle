@@ -26,10 +26,20 @@ type get_request = {
   metric : string;
 }
 
+type histo = {
+  date : string;
+  count : int32;
+}
+
+type histo_stat = {
+  histo : histo list;
+}
+
 type get_response =
   | Error of string
   | Float_value of float
   | Int_value of int32
+  | Histo_value of histo_stat
 
 
 (** {2 Default values} *)
@@ -63,6 +73,19 @@ val default_get_request :
   unit ->
   get_request
 (** [default_get_request ()] is the default value for type [get_request] *)
+
+val default_histo : 
+  ?date:string ->
+  ?count:int32 ->
+  unit ->
+  histo
+(** [default_histo ()] is the default value for type [histo] *)
+
+val default_histo_stat : 
+  ?histo:histo list ->
+  unit ->
+  histo_stat
+(** [default_histo_stat ()] is the default value for type [histo_stat] *)
 
 val default_get_response : unit -> get_response
 (** [default_get_response ()] is the default value for type [get_response] *)

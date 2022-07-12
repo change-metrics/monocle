@@ -23,10 +23,20 @@ type get_request = {
   metric : string;
 }
 
+type histo = {
+  date : string;
+  count : int32;
+}
+
+type histo_stat = {
+  histo : histo list;
+}
+
 type get_response =
   | Error of string
   | Float_value of float
   | Int_value of int32
+  | Histo_value of histo_stat
 
 let rec default_metric_info 
   ?name:((name:string) = "")
@@ -62,6 +72,20 @@ let rec default_get_request
   username;
   query;
   metric;
+}
+
+let rec default_histo 
+  ?date:((date:string) = "")
+  ?count:((count:int32) = 0l)
+  () : histo  = {
+  date;
+  count;
+}
+
+let rec default_histo_stat 
+  ?histo:((histo:histo list) = [])
+  () : histo_stat  = {
+  histo;
 }
 
 let rec default_get_response () : get_response = Error ("")

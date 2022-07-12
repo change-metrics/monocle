@@ -2,7 +2,7 @@ open Prelude
 
 module HistoBox = {
   @react.component
-  let make = (~bucket: SearchTypes.histo) => {
+  let make = (~bucket: MetricTypes.histo) => {
     let count = bucket.count->Int32.to_int->Belt.Int.toFloat
     let countStr = switch bucket.count->Int32.to_int {
     | 0 => ""

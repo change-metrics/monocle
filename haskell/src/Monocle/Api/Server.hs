@@ -605,11 +605,11 @@ searchQuery auth request = checkAuth auth response
             SearchPB.QueryRequest_QueryTypeQUERY_HISTO_COMMITS -> do
               histo <- Q.getHisto Q.COMMITS_HISTO
               pure . SearchPB.QueryResponse . Just $
-                SearchPB.QueryResponseResultHisto $ SearchPB.HistoStat histo
+                SearchPB.QueryResponseResultHisto $ MetricPB.HistoStat histo
             SearchPB.QueryRequest_QueryTypeQUERY_HISTO_REVIEWS_AND_COMMENTS -> do
               histo <- Q.getHisto Q.REVIEWS_AND_COMMENTS_HISTO
               pure . SearchPB.QueryResponse . Just $
-                SearchPB.QueryResponseResultHisto $ SearchPB.HistoStat histo
+                SearchPB.QueryResponseResultHisto $ MetricPB.HistoStat histo
         Left err -> pure . handleError $ err
 
     handleError :: ParseError -> SearchPB.QueryResponse

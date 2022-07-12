@@ -15,6 +15,12 @@ val encode_list_response : MetricTypes.list_response -> Js.Json.t Js.Dict.t
 val encode_get_request : MetricTypes.get_request -> Js.Json.t Js.Dict.t
 (** [encode_get_request v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_histo : MetricTypes.histo -> Js.Json.t Js.Dict.t
+(** [encode_histo v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_histo_stat : MetricTypes.histo_stat -> Js.Json.t Js.Dict.t
+(** [encode_histo_stat v dict] encodes [v] int the given JSON [dict] *)
+
 val encode_get_response : MetricTypes.get_response -> Js.Json.t Js.Dict.t
 (** [encode_get_response v dict] encodes [v] int the given JSON [dict] *)
 
@@ -32,6 +38,12 @@ val decode_list_response : Js.Json.t Js.Dict.t -> MetricTypes.list_response
 
 val decode_get_request : Js.Json.t Js.Dict.t -> MetricTypes.get_request
 (** [decode_get_request decoder] decodes a [get_request] value from [decoder] *)
+
+val decode_histo : Js.Json.t Js.Dict.t -> MetricTypes.histo
+(** [decode_histo decoder] decodes a [histo] value from [decoder] *)
+
+val decode_histo_stat : Js.Json.t Js.Dict.t -> MetricTypes.histo_stat
+(** [decode_histo_stat decoder] decodes a [histo_stat] value from [decoder] *)
 
 val decode_get_response : Js.Json.t Js.Dict.t -> MetricTypes.get_response
 (** [decode_get_response decoder] decodes a [get_response] value from [decoder] *)

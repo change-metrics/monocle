@@ -16,6 +16,7 @@ import Monocle.Backend.Documents (EChange (..), EChangeEvent (..), EChangeState 
 import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Prelude hiding (doSearch)
+import Monocle.Protob.Metric qualified as MetricPB
 import Monocle.Protob.Search qualified as SearchPB
 import Monocle.Search.Query (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), rangeField)
 import Monocle.Search.Query qualified as Q
@@ -840,7 +841,7 @@ getChangesTops limit = do
 
 data HistoType = COMMITS_HISTO | REVIEWS_AND_COMMENTS_HISTO
 
-getHisto :: QueryMonad m => HistoType -> m (V.Vector SearchPB.Histo)
+getHisto :: QueryMonad m => HistoType -> m (V.Vector MetricPB.Histo)
 getHisto = \case
   COMMITS_HISTO ->
     withFilter
@@ -896,14 +897,14 @@ baseGetHisto rf = do
 
   hBuckets . parseAggregationResults "agg1" <$> doAggregation search
 
-getHistoPB :: QueryMonad m => RangeFlavor -> m (V.Vector SearchPB.Histo)
+getHistoPB :: QueryMonad m => RangeFlavor -> m (V.Vector MetricPB.Histo)
 getHistoPB rf = fmap toPBHisto <$> baseGetHisto rf
   where
-    toPBHisto :: HistoSimple -> SearchPB.Histo
+    toPBHisto :: HistoSimple -> MetricPB.Histo
     toPBHisto HistoBucket {..} =
       let histoDate = hbDate
           histoCount = hbCount
-       in SearchPB.Histo {..}
+       in MetricPB.Histo {..}
 
 searchBody :: QueryMonad m => QueryFlavor -> Value -> m Value
 searchBody qf agg = withFlavor qf $ do
@@ -1090,9 +1091,9 @@ getActivityStats = do
   where
     qf = QueryFlavor Author CreatedAt
     getHisto' docType = withDocType docType qf getHistoPB'
-    getHistoPB' :: QueryMonad m => m (V.Vector SearchPB.Histo)
+    getHistoPB' :: QueryMonad m => m (V.Vector MetricPB.Histo)
     getHistoPB' = fmap toPBHisto <$> getAuthorHisto qf
-    toPBHisto :: HistoBucket HistoAuthors -> SearchPB.Histo
+    toPBHisto :: HistoBucket HistoAuthors -> MetricPB.Histo
     toPBHisto HistoBucket {..} =
       let histoDate = hbDate
           histoCount =
@@ -1102,7 +1103,7 @@ getActivityStats = do
               . haBuckets
               . fromMaybe (error "subbucket not found")
               $ hbSubBuckets
-       in SearchPB.Histo {..}
+       in MetricPB.Histo {..}
 
 getSuggestions :: QueryMonad m => Config.Index -> m SearchPB.SuggestionsResponse
 getSuggestions index = do
