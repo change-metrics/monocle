@@ -426,6 +426,11 @@ instance HsProtobuf.Message GetResponse where
                       (HsProtobuf.FieldNumber 2)
                       (HsProtobuf.ForceEmit y)
                   )
+                GetResponseResultIntValue y ->
+                  ( HsProtobuf.encodeMessageField
+                      (HsProtobuf.FieldNumber 3)
+                      (HsProtobuf.ForceEmit y)
+                  )
         ]
     )
   decodeMessage _ =
@@ -439,19 +444,25 @@ instance HsProtobuf.Message GetResponse where
                 ( (HsProtobuf.FieldNumber 2),
                   (Hs.pure (Hs.Just Hs.. GetResponseResultFloatValue))
                     <*> HsProtobuf.decodeMessageField
+                ),
+                ( (HsProtobuf.FieldNumber 3),
+                  (Hs.pure (Hs.Just Hs.. GetResponseResultIntValue))
+                    <*> HsProtobuf.decodeMessageField
                 )
               ]
           )
   dotProto _ = []
 
 instance HsJSONPB.ToJSONPB GetResponse where
-  toJSONPB (GetResponse f1_or_f2) =
+  toJSONPB (GetResponse f1_or_f2_or_f3) =
     ( HsJSONPB.object
         [ ( let encodeResult =
-                  ( case f1_or_f2 of
+                  ( case f1_or_f2_or_f3 of
                       Hs.Just (GetResponseResultError f1) -> (HsJSONPB.pair "error" f1)
                       Hs.Just (GetResponseResultFloatValue f2) ->
                         (HsJSONPB.pair "float_value" f2)
+                      Hs.Just (GetResponseResultIntValue f3) ->
+                        (HsJSONPB.pair "int_value" f3)
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -463,13 +474,15 @@ instance HsJSONPB.ToJSONPB GetResponse where
           )
         ]
     )
-  toEncodingPB (GetResponse f1_or_f2) =
+  toEncodingPB (GetResponse f1_or_f2_or_f3) =
     ( HsJSONPB.pairs
         [ ( let encodeResult =
-                  ( case f1_or_f2 of
+                  ( case f1_or_f2_or_f3 of
                       Hs.Just (GetResponseResultError f1) -> (HsJSONPB.pair "error" f1)
                       Hs.Just (GetResponseResultFloatValue f2) ->
                         (HsJSONPB.pair "float_value" f2)
+                      Hs.Just (GetResponseResultIntValue f3) ->
+                        (HsJSONPB.pair "int_value" f3)
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -492,6 +505,8 @@ instance HsJSONPB.FromJSONPB GetResponse where
                                 <$> (HsJSONPB.parseField parseObj "error"),
                               Hs.Just Hs.. GetResponseResultFloatValue
                                 <$> (HsJSONPB.parseField parseObj "float_value"),
+                              Hs.Just Hs.. GetResponseResultIntValue
+                                <$> (HsJSONPB.parseField parseObj "int_value"),
                               Hs.pure Hs.Nothing
                             ]
                      in ( (obj .: "result")
@@ -512,6 +527,7 @@ instance HsJSONPB.FromJSON GetResponse where
 data GetResponseResult
   = GetResponseResultError Hs.Text
   | GetResponseResultFloatValue Hs.Float
+  | GetResponseResultIntValue Hs.Int32
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named GetResponseResult where

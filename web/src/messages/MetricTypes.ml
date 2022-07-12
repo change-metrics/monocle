@@ -26,6 +26,7 @@ type get_request = {
 type get_response =
   | Error of string
   | Float_value of float
+  | Int_value of int32
 
 let rec default_metric_info 
   ?name:((name:string) = "")

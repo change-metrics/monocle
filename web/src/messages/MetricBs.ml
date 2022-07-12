@@ -151,6 +151,9 @@ let rec decode_get_response json =
       | "float_value" -> 
         let json = Js.Dict.unsafeGet json "float_value" in
         (MetricTypes.Float_value (Pbrt_bs.float json "get_response" "Float_value") : MetricTypes.get_response)
+      | "int_value" -> 
+        let json = Js.Dict.unsafeGet json "int_value" in
+        (MetricTypes.Int_value (Pbrt_bs.int32 json "get_response" "Int_value") : MetricTypes.get_response)
       
       | _ -> loop (i - 1)
       end
@@ -200,5 +203,7 @@ let rec encode_get_response (v:MetricTypes.get_response) =
     Js.Dict.set json "error" (Js.Json.string v);
   | MetricTypes.Float_value v ->
     Js.Dict.set json "float_value" (Js.Json.number v);
+  | MetricTypes.Int_value v ->
+    Js.Dict.set json "int_value" (Js.Json.number (Int32.to_float v));
   end;
   json
