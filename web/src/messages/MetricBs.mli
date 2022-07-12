@@ -12,6 +12,12 @@ val encode_list_request : MetricTypes.list_request -> Js.Json.t Js.Dict.t
 val encode_list_response : MetricTypes.list_response -> Js.Json.t Js.Dict.t
 (** [encode_list_response v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_trend : MetricTypes.trend -> Js.Json.t Js.Dict.t
+(** [encode_trend v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_get_request_options : MetricTypes.get_request_options -> Js.Json.t Js.Dict.t
+(** [encode_get_request_options v dict] encodes [v] int the given JSON [dict] *)
+
 val encode_get_request : MetricTypes.get_request -> Js.Json.t Js.Dict.t
 (** [encode_get_request v dict] encodes [v] int the given JSON [dict] *)
 
@@ -35,6 +41,12 @@ val decode_list_request : Js.Json.t Js.Dict.t -> MetricTypes.list_request
 
 val decode_list_response : Js.Json.t Js.Dict.t -> MetricTypes.list_response
 (** [decode_list_response decoder] decodes a [list_response] value from [decoder] *)
+
+val decode_trend : Js.Json.t Js.Dict.t -> MetricTypes.trend
+(** [decode_trend decoder] decodes a [trend] value from [decoder] *)
+
+val decode_get_request_options : Js.Json.t Js.Dict.t -> MetricTypes.get_request_options
+(** [decode_get_request_options decoder] decodes a [get_request_options] value from [decoder] *)
 
 val decode_get_request : Js.Json.t Js.Dict.t -> MetricTypes.get_request
 (** [decode_get_request decoder] decodes a [get_request] value from [decoder] *)

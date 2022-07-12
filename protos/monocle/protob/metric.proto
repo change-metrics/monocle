@@ -21,11 +21,18 @@ message ListResponse {
   repeated MetricInfo metrics = 1;
 }
 
+message Trend {
+  uint32 interval = 1;
+}
+
 message GetRequest {
   string index = 1;
   string username = 2;
   string query = 3;
   string metric = 4;
+  oneof options {
+    Trend trend = 5;
+  }
 }
 
 message Histo {

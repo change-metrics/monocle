@@ -280,11 +280,63 @@ instance HsJSONPB.ToJSON ListResponse where
 instance HsJSONPB.FromJSON ListResponse where
   parseJSON = HsJSONPB.parseJSONPB
 
+newtype Trend = Trend {trendInterval :: Hs.Word32}
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named Trend where
+  nameOf _ = (Hs.fromString "Trend")
+
+instance HsProtobuf.HasDefault Trend
+
+instance HsProtobuf.Message Trend where
+  encodeMessage _ Trend {trendInterval = trendInterval} =
+    ( Hs.mconcat
+        [ ( HsProtobuf.encodeMessageField
+              (HsProtobuf.FieldNumber 1)
+              trendInterval
+          )
+        ]
+    )
+  decodeMessage _ =
+    (Hs.pure Trend)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "interval")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB Trend where
+  toJSONPB (Trend f1) = (HsJSONPB.object ["interval" .= f1])
+  toEncodingPB (Trend f1) = (HsJSONPB.pairs ["interval" .= f1])
+
+instance HsJSONPB.FromJSONPB Trend where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "Trend"
+        (\obj -> (Hs.pure Trend) <*> obj .: "interval")
+    )
+
+instance HsJSONPB.ToJSON Trend where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON Trend where
+  parseJSON = HsJSONPB.parseJSONPB
+
 data GetRequest = GetRequest
   { getRequestIndex :: Hs.Text,
     getRequestUsername :: Hs.Text,
     getRequestQuery :: Hs.Text,
-    getRequestMetric :: Hs.Text
+    getRequestMetric :: Hs.Text,
+    getRequestOptions :: Hs.Maybe GetRequestOptions
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -300,7 +352,8 @@ instance HsProtobuf.Message GetRequest where
       { getRequestIndex = getRequestIndex,
         getRequestUsername = getRequestUsername,
         getRequestQuery = getRequestQuery,
-        getRequestMetric = getRequestMetric
+        getRequestMetric = getRequestMetric,
+        getRequestOptions = getRequestOptions
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -318,7 +371,19 @@ instance HsProtobuf.Message GetRequest where
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 4)
                 getRequestMetric
-            )
+            ),
+            case getRequestOptions of
+              Hs.Nothing -> Hs.mempty
+              Hs.Just x ->
+                case x of
+                  GetRequestOptionsTrend y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 5)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Protob.Metric.Trend)
+                            @(HsProtobuf.Nested Monocle.Protob.Metric.Trend)
+                            (Hs.Just y)
+                        )
+                    )
           ]
       )
   decodeMessage _ =
@@ -338,6 +403,17 @@ instance HsProtobuf.Message GetRequest where
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 4)
+          )
+      <*> ( HsProtobuf.oneof
+              Hs.Nothing
+              [ ( (HsProtobuf.FieldNumber 5),
+                  (Hs.pure (Hs.fmap GetRequestOptionsTrend))
+                    <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Protob.Metric.Trend))
+                            @(_ (Hs.Maybe Monocle.Protob.Metric.Trend))
+                            HsProtobuf.decodeMessageField
+                        )
+                )
+              ]
           )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
@@ -371,13 +447,45 @@ instance HsProtobuf.Message GetRequest where
     ]
 
 instance HsJSONPB.ToJSONPB GetRequest where
-  toJSONPB (GetRequest f1 f2 f3 f4) =
+  toJSONPB (GetRequest f1 f2 f3 f4 f5) =
     ( HsJSONPB.object
-        ["index" .= f1, "username" .= f2, "query" .= f3, "metric" .= f4]
+        [ "index" .= f1,
+          "username" .= f2,
+          "query" .= f3,
+          "metric" .= f4,
+          ( let encodeOptions =
+                  ( case f5 of
+                      Hs.Just (GetRequestOptionsTrend f5) -> (HsJSONPB.pair "trend" f5)
+                      Hs.Nothing -> Hs.mempty
+                  )
+             in \options ->
+                  if HsJSONPB.optEmitNamedOneof options
+                    then
+                      ("options" .= (HsJSONPB.objectOrNull [encodeOptions] options))
+                        options
+                    else encodeOptions options
+          )
+        ]
     )
-  toEncodingPB (GetRequest f1 f2 f3 f4) =
+  toEncodingPB (GetRequest f1 f2 f3 f4 f5) =
     ( HsJSONPB.pairs
-        ["index" .= f1, "username" .= f2, "query" .= f3, "metric" .= f4]
+        [ "index" .= f1,
+          "username" .= f2,
+          "query" .= f3,
+          "metric" .= f4,
+          ( let encodeOptions =
+                  ( case f5 of
+                      Hs.Just (GetRequestOptionsTrend f5) -> (HsJSONPB.pair "trend" f5)
+                      Hs.Nothing -> Hs.mempty
+                  )
+             in \options ->
+                  if HsJSONPB.optEmitNamedOneof options
+                    then
+                      ("options" .= (HsJSONPB.pairsOrNull [encodeOptions] options))
+                        options
+                    else encodeOptions options
+          )
+        ]
     )
 
 instance HsJSONPB.FromJSONPB GetRequest where
@@ -388,6 +496,17 @@ instance HsJSONPB.FromJSONPB GetRequest where
             (Hs.pure GetRequest) <*> obj .: "index" <*> obj .: "username"
               <*> obj .: "query"
               <*> obj .: "metric"
+              <*> ( let parseOptions parseObj =
+                          Hs.msum
+                            [ Hs.Just Hs.. GetRequestOptionsTrend
+                                <$> (HsJSONPB.parseField parseObj "trend"),
+                              Hs.pure Hs.Nothing
+                            ]
+                     in ( (obj .: "options")
+                            Hs.>>= (HsJSONPB.withObject "options" parseOptions)
+                        )
+                          <|> (parseOptions obj)
+                  )
         )
     )
 
@@ -397,6 +516,12 @@ instance HsJSONPB.ToJSON GetRequest where
 
 instance HsJSONPB.FromJSON GetRequest where
   parseJSON = HsJSONPB.parseJSONPB
+
+data GetRequestOptions = GetRequestOptionsTrend Monocle.Protob.Metric.Trend
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named GetRequestOptions where
+  nameOf _ = (Hs.fromString "GetRequestOptions")
 
 data Histo = Histo {histoDate :: Hs.Text, histoCount :: Hs.Word32}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)

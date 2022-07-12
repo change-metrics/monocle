@@ -650,7 +650,8 @@ testGetMetrics = withTenantConfig tenant $ do
         { MetricPB.getRequestIndex = from tenantName,
           MetricPB.getRequestUsername = "",
           MetricPB.getRequestQuery = "from:2021-01-01 to:2022-01-01",
-          MetricPB.getRequestMetric = getRequestMetric
+          MetricPB.getRequestMetric = getRequestMetric,
+          MetricPB.getRequestOptions = Nothing
         }
     env = Monocle.Api.Test.mkAppEnv tenant
     tenantName = "test-metric-tenant"

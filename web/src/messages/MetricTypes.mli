@@ -19,11 +19,19 @@ type list_response = {
   metrics : metric_info list;
 }
 
-type get_request = {
+type trend = {
+  interval : int32;
+}
+
+type get_request_options =
+  | Trend of trend
+
+and get_request = {
   index : string;
   username : string;
   query : string;
   metric : string;
+  options : get_request_options;
 }
 
 type histo = {
@@ -65,11 +73,21 @@ val default_list_response :
   list_response
 (** [default_list_response ()] is the default value for type [list_response] *)
 
+val default_trend : 
+  ?interval:int32 ->
+  unit ->
+  trend
+(** [default_trend ()] is the default value for type [trend] *)
+
+val default_get_request_options : unit -> get_request_options
+(** [default_get_request_options ()] is the default value for type [get_request_options] *)
+
 val default_get_request : 
   ?index:string ->
   ?username:string ->
   ?query:string ->
   ?metric:string ->
+  ?options:get_request_options ->
   unit ->
   get_request
 (** [default_get_request ()] is the default value for type [get_request] *)

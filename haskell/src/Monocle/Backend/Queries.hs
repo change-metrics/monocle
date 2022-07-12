@@ -1020,62 +1020,11 @@ getLifecycleStats = do
     ratioF x = fromFixed . ratio 100 x
     ratioN x = fromFixed . ratio 1 x
 
--- | authors activity stats
-getAuthorHisto :: QueryMonad m => QueryFlavor -> m (V.Vector (HistoBucket HistoAuthors))
-getAuthorHisto qf = withFlavor qf $ do
-  query <- getQuery
-  queryBH <- getQueryBH
-
-  let (minDate, maxDate) = Q.queryBounds query
-      duration = elapsedSeconds minDate maxDate
-      interval = from duration
-
-      bound =
-        Aeson.object
-          [ "min" .= dateInterval interval minDate,
-            "max" .= dateInterval interval maxDate
-          ]
-      date_histo =
-        Aeson.object
-          [ "field" .= rangeField (qfRange qf),
-            "calendar_interval" .= into @Text interval,
-            "format" .= getFormat (from interval),
-            "min_doc_count" .= (0 :: Word),
-            "extended_bounds" .= bound
-          ]
-      author_agg =
-        Aeson.object
-          [ "authors"
-              .= Aeson.object
-                [ "terms"
-                    .= Aeson.object
-                      [ "field" .= ("author.muid" :: Text),
-                        "size" .= (10000 :: Word)
-                      ]
-                ]
-          ]
-      agg =
-        Aeson.object
-          [ "agg1"
-              .= Aeson.object
-                [ "date_histogram" .= date_histo,
-                  "aggs" .= author_agg
-                ]
-          ]
-      search =
-        Aeson.object
-          [ "aggregations" .= agg,
-            "size" .= (0 :: Word),
-            "query" .= fromMaybe (error "need query") queryBH
-          ]
-
-  hBuckets . parseAggregationResults "agg1" <$> doAggregation search
-
 getActivityStats :: QueryMonad m => m SearchPB.ActivityStats
 getActivityStats = do
-  changeCreatedHisto <- getHisto' EChangeCreatedEvent
-  changeCommentedHisto <- getHisto' EChangeCommentedEvent
-  changeReviewedHisto <- getHisto' EChangeReviewedEvent
+  changeCreatedHisto <- runMetric metricChangeAuthorsCountHisto
+  changeCommentedHisto <- runMetric metricCommentAuthorsCountHisto
+  changeReviewedHisto <- runMetric metricReviewAuthorsCountHisto
 
   changeAuthorsCount <- runMetric metricChangeCreatedAuthorsCount
   commentAuthorsCount <- runMetric metricCommentAuthorsCount
@@ -1088,22 +1037,6 @@ getActivityStats = do
       activityStatsReviewsHisto = changeReviewedHisto
       activityStatsChangesHisto = changeCreatedHisto
   pure $ SearchPB.ActivityStats {..}
-  where
-    qf = QueryFlavor Author CreatedAt
-    getHisto' docType = withDocType docType qf getHistoPB'
-    getHistoPB' :: QueryMonad m => m (V.Vector MetricPB.Histo)
-    getHistoPB' = fmap toPBHisto <$> getAuthorHisto qf
-    toPBHisto :: HistoBucket HistoAuthors -> MetricPB.Histo
-    toPBHisto HistoBucket {..} =
-      let histoDate = hbDate
-          histoCount =
-            fromInteger
-              . toInteger
-              . length
-              . haBuckets
-              . fromMaybe (error "subbucket not found")
-              $ hbSubBuckets
-       in MetricPB.Histo {..}
 
 getSuggestions :: QueryMonad m => Config.Index -> m SearchPB.SuggestionsResponse
 getSuggestions index = do
@@ -1492,6 +1425,122 @@ metricCommitsPerChange =
         <$> withFilter (changeState EChangeMerged) (changeMergedAvgCommits qf)
     qf = QueryFlavor Author CreatedAt
 
+authorCountHisto :: forall m. QueryMonad m => EDocType -> m (V.Vector MetricPB.Histo)
+authorCountHisto changeEvent = withDocType changeEvent qf getAuthorHistoPB
+  where
+    qf = QueryFlavor Author CreatedAt
+    getAuthorHistoPB = fmap toHistoPB <$> getAuthorCountHisto
+    toHistoPB HistoBucket {..} =
+      let histoDate = hbDate
+          histoCount =
+            fromInteger
+              . toInteger
+              . length
+              . haBuckets
+              . fromMaybe (error "subbucket not found")
+              $ hbSubBuckets
+       in MetricPB.Histo {..}
+    getAuthorCountHisto :: m (V.Vector (HistoBucket HistoAuthors))
+    getAuthorCountHisto = do
+      query <- getQuery
+      queryBH <- getQueryBH
+
+      let (minDate, maxDate) = Q.queryBounds query
+          duration = elapsedSeconds minDate maxDate
+          interval = from duration
+
+          bound =
+            Aeson.object
+              [ "min" .= dateInterval interval minDate,
+                "max" .= dateInterval interval maxDate
+              ]
+          date_histo =
+            Aeson.object
+              [ "field" .= rangeField (qfRange qf),
+                "calendar_interval" .= into @Text interval,
+                "format" .= getFormat (from interval),
+                "min_doc_count" .= (0 :: Word),
+                "extended_bounds" .= bound
+              ]
+          author_agg =
+            Aeson.object
+              [ "authors"
+                  .= Aeson.object
+                    [ "terms"
+                        .= Aeson.object
+                          [ "field" .= ("author.muid" :: Text),
+                            "size" .= (10000 :: Word)
+                          ]
+                    ]
+              ]
+          agg =
+            Aeson.object
+              [ "agg1"
+                  .= Aeson.object
+                    [ "date_histogram" .= date_histo,
+                      "aggs" .= author_agg
+                    ]
+              ]
+          search =
+            Aeson.object
+              [ "aggregations" .= agg,
+                "size" .= (0 :: Word),
+                "query" .= fromMaybe (error "need query") queryBH
+              ]
+
+      hBuckets . parseAggregationResults "agg1" <$> doAggregation search
+
+metricChangeAuthorsCountHisto :: QueryMonad m => Metric m (V.Vector MetricPB.Histo)
+metricChangeAuthorsCountHisto =
+  Metric
+    ( MetricInfo
+        "change_authors_count_histo"
+        "change authors count histogram"
+        "A date histogram of change' authors count"
+        ( Just $
+            "The metric is a date histogram of the count of change' authors."
+              <> " "
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
+    )
+    $ authorCountHisto EChangeCreatedEvent
+
+metricCommentAuthorsCountHisto :: QueryMonad m => Metric m (V.Vector MetricPB.Histo)
+metricCommentAuthorsCountHisto =
+  Metric
+    ( MetricInfo
+        "comment_authors_count_histo"
+        "comment authors count histogram"
+        "A date histogram of change comment' authors count"
+        ( Just $
+            "The metric is a date histogram of the count of comment' authors on changes."
+              <> " "
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
+    )
+    $ authorCountHisto EChangeCommentedEvent
+
+metricReviewAuthorsCountHisto :: QueryMonad m => Metric m (V.Vector MetricPB.Histo)
+metricReviewAuthorsCountHisto =
+  Metric
+    ( MetricInfo
+        "review_authors_count_histo"
+        "review authors count histogram"
+        "A date histogram of change review' authors count"
+        ( Just $
+            "The metric is a date histogram of the count of review' authors on changes."
+              <> " "
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
+    )
+    $ authorCountHisto EChangeReviewedEvent
+
 allMetricsJSON :: QueryMonad m => [Metric m Value]
 allMetricsJSON =
   [ toJSON <$> metricChangesCreatedCount,
@@ -1509,7 +1558,10 @@ allMetricsJSON =
     toJSON <$> metricTimeToMergeVariance,
     toJSON <$> metricFirstCommentMeanTime,
     toJSON <$> metricFirstReviewMeanTime,
-    toJSON <$> metricCommitsPerChange
+    toJSON <$> metricCommitsPerChange,
+    toJSON <$> metricChangeAuthorsCountHisto,
+    toJSON <$> metricCommentAuthorsCountHisto,
+    toJSON <$> metricReviewAuthorsCountHisto
   ]
 
 allMetrics :: [MetricInfo]

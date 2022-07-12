@@ -16,11 +16,19 @@ type list_response = {
   metrics : metric_info list;
 }
 
-type get_request = {
+type trend = {
+  interval : int32;
+}
+
+type get_request_options =
+  | Trend of trend
+
+and get_request = {
   index : string;
   username : string;
   query : string;
   metric : string;
+  options : get_request_options;
 }
 
 type histo = {
@@ -62,16 +70,26 @@ let rec default_list_response
   metrics;
 }
 
-let rec default_get_request 
+let rec default_trend 
+  ?interval:((interval:int32) = 0l)
+  () : trend  = {
+  interval;
+}
+
+let rec default_get_request_options () : get_request_options = Trend (default_trend ())
+
+and default_get_request 
   ?index:((index:string) = "")
   ?username:((username:string) = "")
   ?query:((query:string) = "")
   ?metric:((metric:string) = "")
+  ?options:((options:get_request_options) = Trend (default_trend ()))
   () : get_request  = {
   index;
   username;
   query;
   metric;
+  options;
 }
 
 let rec default_histo 

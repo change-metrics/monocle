@@ -713,6 +713,8 @@ components:
                     type: string
                 metric:
                     type: string
+                trend:
+                    $ref: '#/components/schemas/monocle_metric_Trend'
         monocle_metric_GetResponse:
             properties:
                 error:
@@ -758,6 +760,11 @@ components:
                     type: string
                 metric:
                     type: string
+        monocle_metric_Trend:
+            properties:
+                interval:
+                    type: integer
+                    format: uint32
         monocle_search_ActivityStats:
             properties:
                 change_authors:

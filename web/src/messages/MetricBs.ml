@@ -30,11 +30,20 @@ let default_list_response_mutable () : list_response_mutable = {
   metrics = [];
 }
 
+type trend_mutable = {
+  mutable interval : int32;
+}
+
+let default_trend_mutable () : trend_mutable = {
+  interval = 0l;
+}
+
 type get_request_mutable = {
   mutable index : string;
   mutable username : string;
   mutable query : string;
   mutable metric : string;
+  mutable options : MetricTypes.get_request_options;
 }
 
 let default_get_request_mutable () : get_request_mutable = {
@@ -42,6 +51,7 @@ let default_get_request_mutable () : get_request_mutable = {
   username = "";
   query = "";
   metric = "";
+  options = MetricTypes.Trend (MetricTypes.default_trend ());
 }
 
 type histo_mutable = {
@@ -129,7 +139,38 @@ let rec decode_list_response json =
     MetricTypes.metrics = v.metrics;
   } : MetricTypes.list_response)
 
-let rec decode_get_request json =
+let rec decode_trend json =
+  let v = default_trend_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "interval" -> 
+      let json = Js.Dict.unsafeGet json "interval" in
+      v.interval <- Pbrt_bs.int32 json "trend" "interval"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    MetricTypes.interval = v.interval;
+  } : MetricTypes.trend)
+
+let rec decode_get_request_options json =
+  let keys = Js.Dict.keys json in
+  let rec loop = function 
+    | -1 -> Pbrt_bs.E.malformed_variant "get_request_options"
+    | i -> 
+      begin match Array.unsafe_get keys i with
+      | "trend" -> 
+        let json = Js.Dict.unsafeGet json "trend" in
+        (MetricTypes.Trend ((decode_trend (Pbrt_bs.object_ json "get_request_options" "Trend"))) : MetricTypes.get_request_options)
+      
+      | _ -> loop (i - 1)
+      end
+  in
+  loop (Array.length keys - 1)
+
+and decode_get_request json =
   let v = default_get_request_mutable () in
   let keys = Js.Dict.keys json in
   let last_key_index = Array.length keys - 1 in
@@ -147,6 +188,9 @@ let rec decode_get_request json =
     | "metric" -> 
       let json = Js.Dict.unsafeGet json "metric" in
       v.metric <- Pbrt_bs.string json "get_request" "metric"
+    | "trend" -> 
+      let json = Js.Dict.unsafeGet json "trend" in
+      v.options <- Trend ((decode_trend (Pbrt_bs.object_ json "get_request" "options")))
     
     | _ -> () (*Unknown fields are ignored*)
   done;
@@ -155,6 +199,7 @@ let rec decode_get_request json =
     MetricTypes.username = v.username;
     MetricTypes.query = v.query;
     MetricTypes.metric = v.metric;
+    MetricTypes.options = v.options;
   } : MetricTypes.get_request)
 
 let rec decode_histo json =
@@ -251,12 +296,35 @@ let rec encode_list_response (v:MetricTypes.list_response) =
   end;
   json
 
-let rec encode_get_request (v:MetricTypes.get_request) = 
+let rec encode_trend (v:MetricTypes.trend) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "interval" (Js.Json.number (Int32.to_float v.MetricTypes.interval));
+  json
+
+let rec encode_get_request_options (v:MetricTypes.get_request_options) = 
+  let json = Js.Dict.empty () in
+  begin match v with
+  | MetricTypes.Trend v ->
+    begin (* trend field *)
+      let json' = encode_trend v in
+      Js.Dict.set json "trend" (Js.Json.object_ json');
+    end;
+  end;
+  json
+
+and encode_get_request (v:MetricTypes.get_request) = 
   let json = Js.Dict.empty () in
   Js.Dict.set json "index" (Js.Json.string v.MetricTypes.index);
   Js.Dict.set json "username" (Js.Json.string v.MetricTypes.username);
   Js.Dict.set json "query" (Js.Json.string v.MetricTypes.query);
   Js.Dict.set json "metric" (Js.Json.string v.MetricTypes.metric);
+  begin match v.MetricTypes.options with
+    | Trend v ->
+      begin (* trend field *)
+        let json' = encode_trend v in
+        Js.Dict.set json "trend" (Js.Json.object_ json');
+      end;
+  end; (* match v.options *)
   json
 
 let rec encode_histo (v:MetricTypes.histo) = 
