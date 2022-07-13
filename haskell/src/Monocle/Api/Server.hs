@@ -713,9 +713,13 @@ metricGet auth request = checkAuth auth response
     runMetricQuery tenant query getRequestMetric getRequestOptions = do
       case (getRequestMetric, getRequestOptions) of
         ("changes_created_count", Nothing) -> intResult Q.metricChangesCreatedCount
+        ("changes_created_count", Just (MetricPB.GetRequestOptionsTrend _)) -> histoResult Q.metricChangesCreatedCountHisto
         ("changes_merged_count", Nothing) -> intResult Q.metricChangesMergedCount
+        ("changes_merged_count", Just (MetricPB.GetRequestOptionsTrend _)) -> histoResult Q.metricChangesMergedCountHisto
         ("changes_abandoned_count", Nothing) -> intResult Q.metricChangesAbandonedCount
+        ("changes_abandoned_count", Just (MetricPB.GetRequestOptionsTrend _)) -> histoResult Q.metricChangesAbandonedCountHisto
         ("change_updates_count", Nothing) -> intResult Q.metricChangeUpdatesCount
+        ("change_updates_count", Just (MetricPB.GetRequestOptionsTrend _)) -> histoResult Q.metricChangeUpdatesCountHisto
         ("change_with_tests_count", Nothing) -> intResult Q.metricChangeWithTestsCount
         ("changes_self_merged_count", Nothing) -> intResult Q.metricChangesSelfMergedCount
         ("reviews_count", Nothing) -> intResult Q.metricReviewsCount
