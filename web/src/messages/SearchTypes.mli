@@ -199,31 +199,22 @@ type review_count = {
   events_count : int32;
 }
 
-type histo = {
-  date : string;
-  count : int32;
-}
-
-type histo_stat = {
-  histo : histo list;
-}
-
 type review_stats = {
   comment_count : review_count option;
   review_count : review_count option;
   comment_delay : int32;
   review_delay : int32;
-  comment_histo : histo list;
-  review_histo : histo list;
+  comment_histo : MetricTypes.histo list;
+  review_histo : MetricTypes.histo list;
 }
 
 type activity_stats = {
   change_authors : int32;
   comment_authors : int32;
   review_authors : int32;
-  comments_histo : histo list;
-  reviews_histo : histo list;
-  changes_histo : histo list;
+  comments_histo : MetricTypes.histo list;
+  reviews_histo : MetricTypes.histo list;
+  changes_histo : MetricTypes.histo list;
 }
 
 type repo_summary = {
@@ -260,10 +251,10 @@ type authors_peers = {
 }
 
 type lifecycle_stats = {
-  created_histo : histo list;
-  updated_histo : histo list;
-  merged_histo : histo list;
-  abandoned_histo : histo list;
+  created_histo : MetricTypes.histo list;
+  updated_histo : MetricTypes.histo list;
+  merged_histo : MetricTypes.histo list;
+  abandoned_histo : MetricTypes.histo list;
   created : review_count option;
   abandoned : int32;
   merged : int32;
@@ -296,7 +287,7 @@ type query_response =
   | Change_events of change_and_events
   | Changes_tops of changes_tops
   | Ratio of float
-  | Histo of histo_stat
+  | Histo of MetricTypes.histo_stat
 
 
 (** {2 Default values} *)
@@ -515,26 +506,13 @@ val default_review_count :
   review_count
 (** [default_review_count ()] is the default value for type [review_count] *)
 
-val default_histo : 
-  ?date:string ->
-  ?count:int32 ->
-  unit ->
-  histo
-(** [default_histo ()] is the default value for type [histo] *)
-
-val default_histo_stat : 
-  ?histo:histo list ->
-  unit ->
-  histo_stat
-(** [default_histo_stat ()] is the default value for type [histo_stat] *)
-
 val default_review_stats : 
   ?comment_count:review_count option ->
   ?review_count:review_count option ->
   ?comment_delay:int32 ->
   ?review_delay:int32 ->
-  ?comment_histo:histo list ->
-  ?review_histo:histo list ->
+  ?comment_histo:MetricTypes.histo list ->
+  ?review_histo:MetricTypes.histo list ->
   unit ->
   review_stats
 (** [default_review_stats ()] is the default value for type [review_stats] *)
@@ -543,9 +521,9 @@ val default_activity_stats :
   ?change_authors:int32 ->
   ?comment_authors:int32 ->
   ?review_authors:int32 ->
-  ?comments_histo:histo list ->
-  ?reviews_histo:histo list ->
-  ?changes_histo:histo list ->
+  ?comments_histo:MetricTypes.histo list ->
+  ?reviews_histo:MetricTypes.histo list ->
+  ?changes_histo:MetricTypes.histo list ->
   unit ->
   activity_stats
 (** [default_activity_stats ()] is the default value for type [activity_stats] *)
@@ -596,10 +574,10 @@ val default_authors_peers :
 (** [default_authors_peers ()] is the default value for type [authors_peers] *)
 
 val default_lifecycle_stats : 
-  ?created_histo:histo list ->
-  ?updated_histo:histo list ->
-  ?merged_histo:histo list ->
-  ?abandoned_histo:histo list ->
+  ?created_histo:MetricTypes.histo list ->
+  ?updated_histo:MetricTypes.histo list ->
+  ?merged_histo:MetricTypes.histo list ->
+  ?abandoned_histo:MetricTypes.histo list ->
   ?created:review_count option ->
   ?abandoned:int32 ->
   ?merged:int32 ->

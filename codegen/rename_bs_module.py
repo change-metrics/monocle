@@ -73,7 +73,7 @@ def fix_timestamp(content):
 def fix_module(filepath):
     newFile = filepath.rename(filepath.parent / pascalCases(filepath.name))
     content = newFile.read_text()
-    for shared_msg in ("Timestamp",):
+    for shared_msg in ("Timestamp", "Metric"):
         for suffix in ("types", "bs"):
             content = content.replace(
                 shared_msg + "_" + suffix, shared_msg + pascalCase(suffix)

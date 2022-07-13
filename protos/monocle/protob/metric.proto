@@ -5,6 +5,7 @@ syntax = "proto3";
 package monocle_metric;
 option go_package = "monocle/metric";
 
+
 message MetricInfo {
   string name = 1;
   string description = 2;
@@ -20,11 +21,27 @@ message ListResponse {
   repeated MetricInfo metrics = 1;
 }
 
+message Trend {
+  uint32 interval = 1;
+}
+
 message GetRequest {
   string index = 1;
   string username = 2;
   string query = 3;
   string metric = 4;
+  oneof options {
+    Trend trend = 5;
+  }
+}
+
+message Histo {
+  string date = 1;
+  uint32 count = 2;
+}
+
+message HistoStat {
+  repeated Histo histo = 1;
 }
 
 message GetResponse {
@@ -32,5 +49,6 @@ message GetResponse {
     string error = 1;
     float float_value = 2;
     int32 int_value = 3;
+    HistoStat histo_value = 4;
   }
 }

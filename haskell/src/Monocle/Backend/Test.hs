@@ -22,6 +22,7 @@ import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Crawler qualified as CrawlerPB
 import Monocle.Protob.Metric qualified as MetricPB
+import Monocle.Protob.Search qualified as MetricPB
 import Monocle.Protob.Search qualified as SearchPB
 import Monocle.Search.Query (defaultQueryFlavor)
 import Monocle.Search.Query qualified as Q
@@ -649,7 +650,8 @@ testGetMetrics = withTenantConfig tenant $ do
         { MetricPB.getRequestIndex = from tenantName,
           MetricPB.getRequestUsername = "",
           MetricPB.getRequestQuery = "from:2021-01-01 to:2022-01-01",
-          MetricPB.getRequestMetric = getRequestMetric
+          MetricPB.getRequestMetric = getRequestMetric,
+          MetricPB.getRequestOptions = Nothing
         }
     env = Monocle.Api.Test.mkAppEnv tenant
     tenantName = "test-metric-tenant"
@@ -850,21 +852,21 @@ testGetActivityStats = withTenant doTest
               1
               2
               ( V.fromList
-                  [ SearchPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
-                    SearchPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 1},
-                    SearchPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
+                  [ MetricPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
+                    MetricPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 1},
+                    MetricPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
                   ]
               )
               ( V.fromList
-                  [ SearchPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
-                    SearchPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 2},
-                    SearchPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
+                  [ MetricPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
+                    MetricPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 2},
+                    MetricPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
                   ]
               )
               ( V.fromList
-                  [ SearchPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
-                    SearchPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 1},
-                    SearchPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
+                  [ MetricPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
+                    MetricPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 1},
+                    MetricPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
                   ]
               )
           )
