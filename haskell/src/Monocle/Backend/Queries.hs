@@ -956,8 +956,8 @@ withEvents ev = withFlavor (QueryFlavor Author OnCreatedAndCreated) . withFilter
 -- | changes review stats
 getReviewStats :: QueryMonad m => m SearchPB.ReviewStats
 getReviewStats = do
-  reviewStatsCommentHisto <- getHisto' EChangeCommentedEvent
-  reviewStatsReviewHisto <- getHisto' EChangeReviewedEvent
+  reviewStatsCommentHisto <- runMetric metricCommentsCountHisto
+  reviewStatsReviewHisto <- runMetric metricReviewsCountHisto
 
   reviewStatsCommentCount <- Just <$> statCountC
   reviewStatsReviewCount <- Just <$> statCountR
@@ -975,9 +975,6 @@ getReviewStats = do
       SearchPB.ReviewCount
         <$> runMetric metricCommentAuthorsCount
         <*> runMetric metricCommentsCount
-
-    qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
-    getHisto' docType = withDocType docType qf (getHistoPB CreatedAt)
 
 -- | changes lifecycle stats
 getLifecycleStats :: QueryMonad m => m SearchPB.LifecycleStats
@@ -1372,47 +1369,64 @@ metricChangesSelfMergedCount =
       ]
     withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
 
+metricReviewsInfo :: MetricInfo
+metricReviewsInfo =
+  MetricInfo
+    "reviews_count"
+    "Reviews count"
+    "The count of change' reviews"
+    ( Just $
+        "The metric is the count change' code reviews. "
+          <> authorFlavorToDesc Author
+          <> " "
+          <> rangeFlavorToDesc CreatedAt
+    )
+    [Num, Trend]
+
 -- | The count of change' reviews
 metricReviewsCount :: QueryMonad m => Metric m Word32
-metricReviewsCount =
-  Metric
-    ( MetricInfo
-        "reviews_count"
-        "Reviews count"
-        "The count of change' reviews"
-        ( Just $
-            "The metric is the count change' reviews performed by an author. "
-              <> authorFlavorToDesc Author
-              <> " "
-              <> rangeFlavorToDesc CreatedAt
-        )
-        [Num]
-    )
-    (countToWord <$> compute)
+metricReviewsCount = Metric metricReviewsInfo (countToWord <$> compute)
   where
     compute = withFilter [documentType EChangeReviewedEvent] $ eventQF countDocs
     eventQF = withFlavor $ QueryFlavor Author CreatedAt
 
+-- | The count trend of change' reviews
+metricReviewsCountHisto :: QueryMonad m => Metric m (V.Vector MetricPB.Histo)
+metricReviewsCountHisto =
+  Metric metricReviewsInfo $
+    withDocType EChangeReviewedEvent qf $ countHisto CreatedAt
+  where
+    qf = QueryFlavor Author CreatedAt
+
+-- | The count of change' comments
+metricCommentsInfo :: MetricInfo
+metricCommentsInfo =
+  MetricInfo
+    "comments_count"
+    "Comments count"
+    "The count of change' comments"
+    ( Just $
+        "The metric is the count of change' comments. "
+          <> authorFlavorToDesc Author
+          <> " "
+          <> rangeFlavorToDesc CreatedAt
+    )
+    [Num, Trend]
+
 -- | The count of change' comments
 metricCommentsCount :: QueryMonad m => Metric m Word32
-metricCommentsCount =
-  Metric
-    ( MetricInfo
-        "comments_count"
-        "Comments count"
-        "The count of change' comments"
-        ( Just $
-            "The metric is the count of change' comments performed by an author. "
-              <> authorFlavorToDesc Author
-              <> " "
-              <> rangeFlavorToDesc CreatedAt
-        )
-        [Num]
-    )
-    (countToWord <$> compute)
+metricCommentsCount = Metric metricCommentsInfo (countToWord <$> compute)
   where
     compute = withFilter [documentType EChangeCommentedEvent] $ eventQF countDocs
     eventQF = withFlavor $ QueryFlavor Author CreatedAt
+
+-- | The count trend of change' comments
+metricCommentsCountHisto :: QueryMonad m => Metric m (V.Vector MetricPB.Histo)
+metricCommentsCountHisto =
+  Metric metricCommentsInfo $
+    withDocType EChangeCommentedEvent qf $ countHisto CreatedAt
+  where
+    qf = QueryFlavor Author CreatedAt
 
 metricReviewAuthorsInfo :: MetricInfo
 metricReviewAuthorsInfo =

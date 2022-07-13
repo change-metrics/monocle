@@ -723,7 +723,9 @@ metricGet auth request = checkAuth auth response
         ("change_with_tests_count", Nothing) -> intResult Q.metricChangeWithTestsCount
         ("changes_self_merged_count", Nothing) -> intResult Q.metricChangesSelfMergedCount
         ("reviews_count", Nothing) -> intResult Q.metricReviewsCount
+        ("reviews_count", Just (MetricPB.GetRequestOptionsTrend _)) -> histoResult Q.metricReviewsCountHisto
         ("comments_count", Nothing) -> intResult Q.metricCommentsCount
+        ("comments_count", Just (MetricPB.GetRequestOptionsTrend _)) -> histoResult Q.metricCommentsCountHisto
         ("review_authors_count", Nothing) -> intResult Q.metricReviewAuthorsCount
         ("review_authors_count", Just (MetricPB.GetRequestOptionsTrend _)) -> histoResult Q.metricChangeAuthorsCountHisto
         ("comment_authors_count", Nothing) -> intResult Q.metricCommentAuthorsCount
