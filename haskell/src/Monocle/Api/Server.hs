@@ -24,6 +24,7 @@ import Monocle.Backend.Documents
     EChangeEvent (..),
   )
 import Monocle.Backend.Index as I
+import Monocle.Backend.Queries (Metric (runMetric))
 import Monocle.Backend.Queries qualified as Q
 import Monocle.Config (Config, OIDCProviderConfig (..))
 import Monocle.Config qualified as Config
@@ -603,11 +604,11 @@ searchQuery auth request = checkAuth auth response
               pure . SearchPB.QueryResponse . Just $
                 SearchPB.QueryResponseResultRatio ratio
             SearchPB.QueryRequest_QueryTypeQUERY_HISTO_COMMITS -> do
-              histo <- Q.getHisto Q.COMMITS_HISTO
+              histo <- runMetric Q.metricChangeUpdatesCountHisto
               pure . SearchPB.QueryResponse . Just $
                 SearchPB.QueryResponseResultHisto $ MetricPB.HistoStat histo
             SearchPB.QueryRequest_QueryTypeQUERY_HISTO_REVIEWS_AND_COMMENTS -> do
-              histo <- Q.getHisto Q.REVIEWS_AND_COMMENTS_HISTO
+              histo <- runMetric Q.metricReviewsAndCommentsCountHisto
               pure . SearchPB.QueryResponse . Just $
                 SearchPB.QueryResponseResultHisto $ MetricPB.HistoStat histo
         Left err -> pure . handleError $ err
@@ -726,6 +727,8 @@ metricGet auth request = checkAuth auth response
         ("reviews_count", Just (MetricPB.GetRequestOptionsTrend _)) -> histoResult Q.metricReviewsCountHisto
         ("comments_count", Nothing) -> intResult Q.metricCommentsCount
         ("comments_count", Just (MetricPB.GetRequestOptionsTrend _)) -> histoResult Q.metricCommentsCountHisto
+        ("reviews_and_comments_count", Nothing) -> intResult Q.metricReviewsAndCommentsCount
+        ("reviews_and_comments_count", Just (MetricPB.GetRequestOptionsTrend _)) -> histoResult Q.metricReviewsAndCommentsCountHisto
         ("review_authors_count", Nothing) -> intResult Q.metricReviewAuthorsCount
         ("review_authors_count", Just (MetricPB.GetRequestOptionsTrend _)) -> histoResult Q.metricChangeAuthorsCountHisto
         ("comment_authors_count", Nothing) -> intResult Q.metricCommentAuthorsCount

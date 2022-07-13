@@ -839,73 +839,6 @@ getChangesTops limit = do
             termsCountTotalHits = total
           }
 
-data HistoType = COMMITS_HISTO | REVIEWS_AND_COMMENTS_HISTO
-
-getHisto :: QueryMonad m => HistoType -> m (V.Vector MetricPB.Histo)
-getHisto = \case
-  COMMITS_HISTO ->
-    withFilter
-      [ documentTypes $
-          fromList
-            [ EChangeCommitForcePushedEvent,
-              EChangeCommitPushedEvent
-            ]
-      ]
-      $ getHistoPB CreatedAt
-  REVIEWS_AND_COMMENTS_HISTO ->
-    withFilter
-      [ documentTypes $
-          fromList
-            [ EChangeReviewedEvent,
-              EChangeCommentedEvent
-            ]
-      ]
-      $ getHistoPB CreatedAt
-
-baseGetHisto :: QueryMonad m => RangeFlavor -> m (V.Vector HistoSimple)
-baseGetHisto rf = do
-  query <- getQuery
-  queryBH <- getQueryBH
-
-  let (minDate, maxDate) = Q.queryBounds query
-      duration = elapsedSeconds minDate maxDate
-      interval = from duration
-
-      bound =
-        Aeson.object
-          [ "min" .= dateInterval interval minDate,
-            "max" .= dateInterval interval maxDate
-          ]
-      date_histo =
-        Aeson.object
-          [ "field" .= rangeField rf,
-            "calendar_interval" .= into @Text interval,
-            "format" .= getFormat (from interval),
-            "min_doc_count" .= (0 :: Word),
-            "extended_bounds" .= bound
-          ]
-      agg =
-        Aeson.object
-          [ "agg1" .= Aeson.object ["date_histogram" .= date_histo]
-          ]
-      search =
-        Aeson.object
-          [ "aggregations" .= agg,
-            "size" .= (0 :: Word),
-            "query" .= fromMaybe (error "need query") queryBH
-          ]
-
-  hBuckets . parseAggregationResults "agg1" <$> doAggregation search
-
-getHistoPB :: QueryMonad m => RangeFlavor -> m (V.Vector MetricPB.Histo)
-getHistoPB rf = fmap toPBHisto <$> baseGetHisto rf
-  where
-    toPBHisto :: HistoSimple -> MetricPB.Histo
-    toPBHisto HistoBucket {..} =
-      let histoDate = hbDate
-          histoCount = hbCount
-       in MetricPB.Histo {..}
-
 searchBody :: QueryMonad m => QueryFlavor -> Value -> m Value
 searchBody qf agg = withFlavor qf $ do
   queryBH <- getQueryBH
@@ -1398,6 +1331,40 @@ metricReviewsCountHisto =
   where
     qf = QueryFlavor Author CreatedAt
 
+metricReviewsAndCommentsInfo :: MetricInfo
+metricReviewsAndCommentsInfo =
+  MetricInfo
+    "reviews_and_comments_count"
+    "Reviews and comments count"
+    "The count of change' reviews + comments"
+    ( Just $
+        "The metric is the count change' code reviews + comments. "
+          <> authorFlavorToDesc Author
+          <> " "
+          <> rangeFlavorToDesc CreatedAt
+    )
+    [Num, Trend]
+
+-- | The count of change' reviews + comments
+metricReviewsAndCommentsCount :: QueryMonad m => Metric m Word32
+metricReviewsAndCommentsCount = Metric metricReviewsInfo (countToWord <$> compute)
+  where
+    compute =
+      withFilter
+        [ documentTypes $
+            fromList [EChangeReviewedEvent, EChangeCommentedEvent]
+        ]
+        $ eventQF countDocs
+    eventQF = withFlavor $ QueryFlavor Author CreatedAt
+
+-- | The count trend of change' reviews + comments
+metricReviewsAndCommentsCountHisto :: QueryMonad m => Metric m (V.Vector MetricPB.Histo)
+metricReviewsAndCommentsCountHisto =
+  Metric metricReviewsInfo $
+    withDocTypes [EChangeReviewedEvent, EChangeCommentedEvent] qf $ countHisto CreatedAt
+  where
+    qf = QueryFlavor Author CreatedAt
+
 -- | The count of change' comments
 metricCommentsInfo :: MetricInfo
 metricCommentsInfo =
@@ -1647,6 +1614,7 @@ allMetricsJSON =
     toJSON <$> metricChangeWithTestsCount,
     toJSON <$> metricReviewsCount,
     toJSON <$> metricCommentsCount,
+    toJSON <$> metricReviewsAndCommentsCount,
     toJSON <$> metricReviewAuthorsCount,
     toJSON <$> metricCommentAuthorsCount,
     toJSON <$> metricChangeCreatedAuthorsCount,
