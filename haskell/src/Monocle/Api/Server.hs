@@ -24,7 +24,6 @@ import Monocle.Backend.Documents
     EChangeEvent (..),
   )
 import Monocle.Backend.Index as I
-import Monocle.Backend.Queries (Metric (runMetric))
 import Monocle.Backend.Queries qualified as Q
 import Monocle.Config (Config, OIDCProviderConfig (..))
 import Monocle.Config qualified as Config
@@ -604,11 +603,11 @@ searchQuery auth request = checkAuth auth response
               pure . SearchPB.QueryResponse . Just $
                 SearchPB.QueryResponseResultRatio ratio
             SearchPB.QueryRequest_QueryTypeQUERY_HISTO_COMMITS -> do
-              histo <- runMetric Q.metricChangeUpdatesCountHisto
+              histo <- Q.runMetricTrend Q.metricChangeUpdates
               pure . SearchPB.QueryResponse . Just $
                 SearchPB.QueryResponseResultHisto $ MetricPB.HistoStat histo
             SearchPB.QueryRequest_QueryTypeQUERY_HISTO_REVIEWS_AND_COMMENTS -> do
-              histo <- runMetric Q.metricReviewsAndCommentsCountHisto
+              histo <- Q.runMetricTrend Q.metricReviewsAndComments
               pure . SearchPB.QueryResponse . Just $
                 SearchPB.QueryResponseResultHisto $ MetricPB.HistoStat histo
         Left err -> pure . handleError $ err
@@ -713,40 +712,35 @@ metricGet auth request = checkAuth auth response
       AppM MetricPB.GetResponse
     runMetricQuery tenant query getRequestMetric getRequestOptions = do
       case getRequestMetric of
-        "changes_created" -> toResult $ Q.metricChangesCreated metricType
-        "changes_merged" -> toResult $ Q.metricChangesMerged metricType
-        "changes_abandoned" -> toResult $ Q.metricChangesAbandoned metricType
-        "change_updates" -> toResult $ Q.metricChangeUpdates metricType
-        "change_with_tests_count" -> intResult Q.metricChangeWithTestsCount
-        "changes_self_merged_count" -> intResult Q.metricChangesSelfMergedCount
-        "reviews" -> toResult $ Q.metricReviews metricType
-        "comments" -> toResult $ Q.metricComments metricType
-        "reviews_and_comments" -> toResult $ Q.metricReviewsAndComments metricType
-        "review_authors" -> toResult $ Q.metricReviewAuthors metricType
-        "comment_authors" -> toResult $ Q.metricCommentAuthors metricType
-        "change_authors" -> toResult $ Q.metricChangeAuthors metricType
-        "time_to_merge" -> floatResult Q.metricTimeToMerge
-        "time_to_merge_variance" -> floatResult Q.metricTimeToMergeVariance
-        "first_review_mean_time" -> intResult Q.metricFirstReviewMeanTime
-        "first_comment_mean_time" -> intResult Q.metricFirstCommentMeanTime
-        "commits_per_change" -> floatResult Q.metricCommitsPerChange
+        "changes_created" -> runMetric Q.metricChangesCreated
+        "changes_merged" -> runMetric Q.metricChangesMerged
+        "changes_abandoned" -> runMetric Q.metricChangesAbandoned
+        "change_updates" -> runMetric Q.metricChangeUpdates
+        "change_with_tests_count" -> runMetric Q.metricChangeWithTests
+        "changes_self_merged_count" -> runMetric Q.metricChangesSelfMerged
+        "reviews" -> runMetric Q.metricReviews
+        "comments" -> runMetric Q.metricComments
+        "reviews_and_comments" -> runMetric Q.metricReviewsAndComments
+        "review_authors" -> runMetric Q.metricReviewAuthors
+        "comment_authors" -> runMetric Q.metricCommentAuthors
+        "change_authors" -> runMetric Q.metricChangeAuthors
+        "time_to_merge" -> runMetric Q.metricTimeToMerge
+        "time_to_merge_variance" -> runMetric Q.metricTimeToMergeVariance
+        "first_review_mean_time" -> runMetric Q.metricFirstReviewMeanTime
+        "first_comment_mean_time" -> runMetric Q.metricFirstCommentMeanTime
+        "commits_per_change" -> runMetric Q.metricCommitsPerChange
         -- Unknown query
         _ -> handleError $ "Unknown metric: " <> from getRequestMetric
       where
-        runMetric = runQueryM tenant (Q.ensureMinBound query)
-        metricType = case getRequestOptions of
-          Just (MetricPB.GetRequestOptionsTrend _) -> Q.Trend
-          _ -> Q.Num
-        floatResult metric = toFloatResult <$> runMetric (Q.runMetric metric)
-        intResult metric = toIntResult <$> runMetric (Q.runMetric metric)
-        toResult metric = toPBResult <$> runMetric (Q.runMetric metric)
+        runM = runQueryM tenant (Q.ensureMinBound query)
+        runMetric m = case getRequestOptions of
+          Just (MetricPB.GetRequestOptionsTrend _) -> toTrendResult <$> runM (Q.runMetricTrend m)
+          _ -> toNumResult <$> runM (Q.runMetric m)
           where
-            toPBResult ret = case ret of
-              Q.Word32Result v -> toIntResult v
-              Q.FloatResult v -> toFloatResult v
-              Q.TrendResult v -> MetricPB.GetResponse . Just . MetricPB.GetResponseResultHistoValue $ MetricPB.HistoStat v
-        toFloatResult = MetricPB.GetResponse . Just . MetricPB.GetResponseResultFloatValue
-        toIntResult = MetricPB.GetResponse . Just . MetricPB.GetResponseResultIntValue . fromInteger . toInteger
+            toTrendResult ret = MetricPB.GetResponse . Just . MetricPB.GetResponseResultHistoValue $ MetricPB.HistoStat ret
+            toNumResult ret = case ret of
+              Q.Word32NumResult r -> MetricPB.GetResponse . Just . MetricPB.GetResponseResultIntValue . fromInteger $ toInteger r
+              Q.FloatNumResult r -> MetricPB.GetResponse . Just $ MetricPB.GetResponseResultFloatValue r
 
 -- | gen a 302 redirect helper
 redirects :: ByteString -> AppM ()
