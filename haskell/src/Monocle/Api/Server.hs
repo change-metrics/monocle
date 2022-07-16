@@ -688,6 +688,15 @@ metricList auth _request = checkAuth auth . const $ response
           metricInfoMetric = from miMetricName
         }
 
+class Num a => NumPB a where
+  toNumResult :: Q.Numeric a -> MetricPB.GetResponse
+
+instance NumPB Float where
+  toNumResult (Q.Num v) = MetricPB.GetResponse . Just $ MetricPB.GetResponseResultFloatValue v
+
+instance NumPB Word32 where
+  toNumResult (Q.Num v) = MetricPB.GetResponse . Just . MetricPB.GetResponseResultIntValue . fromInteger $ toInteger v
+
 metricGet :: AuthResult AuthenticatedUser -> MetricPB.GetRequest -> AppM MetricPB.GetResponse
 metricGet auth request = checkAuth auth response
   where
@@ -738,9 +747,6 @@ metricGet auth request = checkAuth auth response
           _ -> toNumResult <$> runM (Q.runMetric m)
           where
             toTrendResult ret = MetricPB.GetResponse . Just . MetricPB.GetResponseResultHistoValue $ MetricPB.HistoStat ret
-            toNumResult ret = case ret of
-              Q.Word32NumResult r -> MetricPB.GetResponse . Just . MetricPB.GetResponseResultIntValue . fromInteger $ toInteger r
-              Q.FloatNumResult r -> MetricPB.GetResponse . Just $ MetricPB.GetResponseResultFloatValue r
 
 -- | gen a 302 redirect helper
 redirects :: ByteString -> AppM ()

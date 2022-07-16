@@ -639,11 +639,11 @@ getReposSummary = do
       let changeQF = withFlavor (QueryFlavor Author UpdatedAt)
 
       -- Count the events
-      createdChanges <- wordToCount <$> runMetricInt metricChangesCreated
+      createdChanges <- wordToCount <$> runMetricNum metricChangesCreated
       updatedChanges <- withFilter (changeState EChangeOpen) (changeQF countDocs)
-      mergedChanges <- wordToCount <$> runMetricInt metricChangesMerged
+      mergedChanges <- wordToCount <$> runMetricNum metricChangesMerged
       openChanges <- openChangesCount
-      abandonedChanges <- wordToCount <$> runMetricInt metricChangesAbandoned
+      abandonedChanges <- wordToCount <$> runMetricNum metricChangesAbandoned
 
       pure $ RepoSummary {..}
 
@@ -895,19 +895,19 @@ getReviewStats = do
   reviewStatsCommentCount <- Just <$> statCountC
   reviewStatsReviewCount <- Just <$> statCountR
 
-  reviewStatsCommentDelay <- runMetricInt metricFirstCommentMeanTime
-  reviewStatsReviewDelay <- runMetricInt metricFirstReviewMeanTime
+  reviewStatsCommentDelay <- runMetricNum metricFirstCommentMeanTime
+  reviewStatsReviewDelay <- runMetricNum metricFirstReviewMeanTime
 
   pure $ SearchPB.ReviewStats {..}
   where
     statCountR =
       SearchPB.ReviewCount
-        <$> runMetricInt metricReviewAuthors
-        <*> runMetricInt metricReviews
+        <$> runMetricNum metricReviewAuthors
+        <*> runMetricNum metricReviews
     statCountC =
       SearchPB.ReviewCount
-        <$> runMetricInt metricCommentAuthors
-        <*> runMetricInt metricComments
+        <$> runMetricNum metricCommentAuthors
+        <*> runMetricNum metricComments
 
 -- | changes lifecycle stats
 getLifecycleStats :: QueryMonad m => m SearchPB.LifecycleStats
@@ -917,18 +917,18 @@ getLifecycleStats = do
   lifecycleStatsMergedHisto <- runMetricTrend metricChangesMerged
   lifecycleStatsAbandonedHisto <- runMetricTrend metricChangesAbandoned
 
-  merged <- wordToCount <$> runMetricInt metricChangesMerged
-  selfMerged <- runMetricInt metricChangesSelfMerged
-  abandoned <- wordToCount <$> runMetricInt metricChangesAbandoned
-  created <- wordToCount <$> runMetricInt metricChangesCreated
-  changeCreatedAuthor <- runMetricInt metricChangeAuthors
+  merged <- wordToCount <$> runMetricNum metricChangesMerged
+  selfMerged <- runMetricNum metricChangesSelfMerged
+  abandoned <- wordToCount <$> runMetricNum metricChangesAbandoned
+  created <- wordToCount <$> runMetricNum metricChangesCreated
+  changeCreatedAuthor <- runMetricNum metricChangeAuthors
 
-  lifecycleStatsTtmMean <- runMetricFloat metricTimeToMerge
-  lifecycleStatsTtmVariability <- runMetricFloat metricTimeToMergeVariance
-  lifecycleStatsUpdatesOfChanges <- runMetricInt metricChangeUpdates
-  lifecycleStatsCommitsPerChange <- runMetricFloat metricCommitsPerChange
+  lifecycleStatsTtmMean <- runMetricNum metricTimeToMerge
+  lifecycleStatsTtmVariability <- runMetricNum metricTimeToMergeVariance
+  lifecycleStatsUpdatesOfChanges <- runMetricNum metricChangeUpdates
+  lifecycleStatsCommitsPerChange <- runMetricNum metricCommitsPerChange
 
-  tests <- wordToCount <$> runMetricInt metricChangeWithTests
+  tests <- wordToCount <$> runMetricNum metricChangeWithTests
 
   let lifecycleStatsMerged = countToWord merged
       lifecycleStatsSelfMerged = selfMerged
@@ -953,9 +953,9 @@ getActivityStats = do
   changeCommentedHisto <- runMetricTrend metricCommentAuthors
   changeReviewedHisto <- runMetricTrend metricReviewAuthors
 
-  changeAuthorsCount <- runMetricInt metricChangeAuthors
-  commentAuthorsCount <- runMetricInt metricCommentAuthors
-  reviewAuthorsCount <- runMetricInt metricReviewAuthors
+  changeAuthorsCount <- runMetricNum metricChangeAuthors
+  commentAuthorsCount <- runMetricNum metricCommentAuthors
+  reviewAuthorsCount <- runMetricNum metricReviewAuthors
 
   let activityStatsChangeAuthors = changeAuthorsCount
       activityStatsCommentAuthors = commentAuthorsCount
@@ -985,10 +985,7 @@ getSuggestions index = do
 -------------------------------------------------------------------------------
 -- The final metrics
 
-data MetricNumResult
-  = Word32NumResult Word32
-  | FloatNumResult Float
-  deriving (Generic)
+newtype Numeric a = Num {unNum :: a}
 
 data MetricInfo = MetricInfo
   { miMetricName :: Text,
@@ -999,23 +996,17 @@ data MetricInfo = MetricInfo
 
 data Metric m a = Metric
   { metricInfo :: MetricInfo,
-    runMetric :: m a,
+    runMetric :: m (Numeric a),
     runMetricTrend :: m (V.Vector MetricPB.Histo)
   }
 
-runMetricInt :: QueryMonad m => Metric m MetricNumResult -> m Word32
-runMetricInt m = do
-  ret <- runMetric m
-  case ret of
-    Word32NumResult r -> pure r
-    _ -> error "Unexpected type"
+instance (Functor m) => Functor (Metric m) where
+  fmap f x = Metric (metricInfo x) (conv <$> runMetric x) (runMetricTrend x)
+    where
+      conv n = Num $ f (unNum n)
 
-runMetricFloat :: QueryMonad m => Metric m MetricNumResult -> m Float
-runMetricFloat m = do
-  ret <- runMetric m
-  case ret of
-    FloatNumResult r -> pure r
-    _ -> error "Unexpected type"
+runMetricNum :: QueryMonad m => Metric m a -> m a
+runMetricNum m = unNum <$> runMetric m
 
 authorFlavorToDesc :: AuthorFlavor -> Text
 authorFlavorToDesc = \case
@@ -1141,9 +1132,9 @@ authorCountHisto changeEvent = withDocType changeEvent qf getAuthorHistoPB
 
       hBuckets . parseAggregationResults "agg1" <$> doAggregation search
 
-changeEventCount :: QueryMonad m => MetricInfo -> EDocType -> Metric m MetricNumResult
+changeEventCount :: QueryMonad m => MetricInfo -> EDocType -> Metric m Word32
 changeEventCount mi dt =
-  Metric mi (Word32NumResult . countToWord <$> compute) computeTrend
+  Metric mi (Num . countToWord <$> compute) computeTrend
   where
     compute = withFilter [documentType dt] (withFlavor qf countDocs)
     computeTrend = withDocType EChangeCreatedEvent qf $ countHisto CreatedAt
@@ -1152,7 +1143,7 @@ changeEventCount mi dt =
 changeEventFlavorDesc :: Text
 changeEventFlavorDesc = authorFlavorToDesc OnAuthor <> " " <> rangeFlavorToDesc CreatedAt
 
-metricChangesCreated :: QueryMonad m => Metric m MetricNumResult
+metricChangesCreated :: QueryMonad m => Metric m Word32
 metricChangesCreated = changeEventCount mi EChangeCreatedEvent
   where
     mi =
@@ -1165,7 +1156,7 @@ metricChangesCreated = changeEventCount mi EChangeCreatedEvent
               <> changeEventFlavorDesc
         )
 
-metricChangesMerged :: QueryMonad m => Metric m MetricNumResult
+metricChangesMerged :: QueryMonad m => Metric m Word32
 metricChangesMerged = changeEventCount mi EChangeMergedEvent
   where
     mi =
@@ -1178,7 +1169,7 @@ metricChangesMerged = changeEventCount mi EChangeMergedEvent
               <> changeEventFlavorDesc
         )
 
-metricChangesAbandoned :: QueryMonad m => Metric m MetricNumResult
+metricChangesAbandoned :: QueryMonad m => Metric m Word32
 metricChangesAbandoned = changeEventCount mi EChangeAbandonedEvent
   where
     mi =
@@ -1191,7 +1182,7 @@ metricChangesAbandoned = changeEventCount mi EChangeAbandonedEvent
               <> changeEventFlavorDesc
         )
 
-metricChangeUpdates :: QueryMonad m => Metric m MetricNumResult
+metricChangeUpdates :: QueryMonad m => Metric m Word32
 metricChangeUpdates = Metric mi compute computeTrend
   where
     mi =
@@ -1206,7 +1197,7 @@ metricChangeUpdates = Metric mi compute computeTrend
               <> rangeFlavorToDesc OnCreatedAt
         )
     compute =
-      Word32NumResult . countToWord
+      Num . countToWord
         <$> withFilter
           [documentTypes $ fromList docs]
           ( withFlavor qf countDocs
@@ -1216,7 +1207,7 @@ metricChangeUpdates = Metric mi compute computeTrend
     docs = [EChangeCommitPushedEvent, EChangeCommitForcePushedEvent]
 
 -- | The count of changes with tests related modifications
-metricChangeWithTests :: QueryMonad m => Metric m MetricNumResult
+metricChangeWithTests :: QueryMonad m => Metric m Word32
 metricChangeWithTests =
   Metric
     ( MetricInfo
@@ -1232,7 +1223,7 @@ metricChangeWithTests =
               <> rangeFlavorToDesc CreatedAt
         )
     )
-    (Word32NumResult . countToWord <$> compute)
+    (Num . countToWord <$> compute)
     (pure $ fromList [])
   where
     compute =
@@ -1244,7 +1235,7 @@ metricChangeWithTests =
         BH.RegexpQuery (BH.FieldName "changed_files.path") (BH.Regexp regexp) BH.AllRegexpFlags Nothing
 
 -- | The count of changes self merged
-metricChangesSelfMerged :: QueryMonad m => Metric m MetricNumResult
+metricChangesSelfMerged :: QueryMonad m => Metric m Word32
 metricChangesSelfMerged =
   Metric
     ( MetricInfo
@@ -1257,7 +1248,7 @@ metricChangesSelfMerged =
               <> rangeFlavorToDesc CreatedAt
         )
     )
-    (Word32NumResult . countToWord <$> compute)
+    (Num . countToWord <$> compute)
     (pure $ fromList [])
   where
     compute = withFilter selfMerged $ withFlavor' countDocs
@@ -1267,7 +1258,7 @@ metricChangesSelfMerged =
       ]
     withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
 
-metricReviews :: QueryMonad m => Metric m MetricNumResult
+metricReviews :: QueryMonad m => Metric m Word32
 metricReviews = Metric mi compute computeTrend
   where
     mi =
@@ -1282,7 +1273,7 @@ metricReviews = Metric mi compute computeTrend
               <> rangeFlavorToDesc CreatedAt
         )
     compute =
-      Word32NumResult . countToWord
+      Num . countToWord
         <$> withFilter
           [documentType EChangeReviewedEvent]
           ( withFlavor qf countDocs
@@ -1290,7 +1281,7 @@ metricReviews = Metric mi compute computeTrend
     computeTrend = withDocType EChangeReviewedEvent qf $ countHisto CreatedAt
     qf = QueryFlavor Author CreatedAt
 
-metricReviewsAndComments :: QueryMonad m => Metric m MetricNumResult
+metricReviewsAndComments :: QueryMonad m => Metric m Word32
 metricReviewsAndComments = Metric mi compute computeTrend
   where
     mi =
@@ -1305,7 +1296,7 @@ metricReviewsAndComments = Metric mi compute computeTrend
               <> rangeFlavorToDesc CreatedAt
         )
     compute =
-      Word32NumResult . countToWord
+      Num . countToWord
         <$> withFilter
           [documentTypes $ fromList docs]
           (withFlavor qf countDocs)
@@ -1313,7 +1304,7 @@ metricReviewsAndComments = Metric mi compute computeTrend
     qf = QueryFlavor Author CreatedAt
     docs = [EChangeReviewedEvent, EChangeCommentedEvent]
 
-metricComments :: QueryMonad m => Metric m MetricNumResult
+metricComments :: QueryMonad m => Metric m Word32
 metricComments = Metric mi compute computeTrend
   where
     mi =
@@ -1328,12 +1319,12 @@ metricComments = Metric mi compute computeTrend
               <> rangeFlavorToDesc CreatedAt
         )
     compute =
-      Word32NumResult . countToWord
+      Num . countToWord
         <$> withFilter [documentType EChangeCommentedEvent] (withFlavor qf countDocs)
     computeTrend = withDocType EChangeCommentedEvent qf $ countHisto CreatedAt
     qf = QueryFlavor Author CreatedAt
 
-metricReviewAuthors :: QueryMonad m => Metric m MetricNumResult
+metricReviewAuthors :: QueryMonad m => Metric m Word32
 metricReviewAuthors = Metric mi compute computeTrend
   where
     mi =
@@ -1348,12 +1339,12 @@ metricReviewAuthors = Metric mi compute computeTrend
               <> rangeFlavorToDesc CreatedAt
         )
     compute =
-      Word32NumResult . countToWord
+      Num . countToWord
         <$> withFilter [documentType EChangeReviewedEvent] (withFlavor qf countAuthors)
     computeTrend = authorCountHisto EChangeReviewedEvent
     qf = QueryFlavor Author CreatedAt
 
-metricCommentAuthors :: QueryMonad m => Metric m MetricNumResult
+metricCommentAuthors :: QueryMonad m => Metric m Word32
 metricCommentAuthors = Metric mi compute computeTrend
   where
     mi =
@@ -1368,12 +1359,12 @@ metricCommentAuthors = Metric mi compute computeTrend
               <> rangeFlavorToDesc CreatedAt
         )
     compute =
-      Word32NumResult . countToWord
+      Num . countToWord
         <$> withFilter [documentType EChangeCommentedEvent] (withFlavor qf countAuthors)
     computeTrend = authorCountHisto EChangeCommentedEvent
     qf = QueryFlavor Author CreatedAt
 
-metricChangeAuthors :: QueryMonad m => Metric m MetricNumResult
+metricChangeAuthors :: QueryMonad m => Metric m Word32
 metricChangeAuthors = Metric mi compute computeTrend
   where
     mi =
@@ -1388,13 +1379,13 @@ metricChangeAuthors = Metric mi compute computeTrend
               <> rangeFlavorToDesc CreatedAt
         )
     compute =
-      Word32NumResult . countToWord
+      Num . countToWord
         <$> withFilter [documentType EChangeCreatedEvent] (withFlavor qf countAuthors)
     computeTrend = authorCountHisto EChangeCreatedEvent
     qf = QueryFlavor Author CreatedAt
 
 -- | The average duration for an open change to be merged
-metricTimeToMerge :: QueryMonad m => Metric m MetricNumResult
+metricTimeToMerge :: QueryMonad m => Metric m Float
 metricTimeToMerge =
   Metric
     ( MetricInfo
@@ -1409,7 +1400,7 @@ metricTimeToMerge =
               <> rangeFlavorToDesc CreatedAt
         )
     )
-    (FloatNumResult <$> compute)
+    (Num <$> compute)
     (pure $ fromList [])
   where
     compute =
@@ -1418,7 +1409,7 @@ metricTimeToMerge =
     qf = QueryFlavor Author CreatedAt
 
 -- | The variance of the duration for an open change to be merged
-metricTimeToMergeVariance :: QueryMonad m => Metric m MetricNumResult
+metricTimeToMergeVariance :: QueryMonad m => Metric m Float
 metricTimeToMergeVariance =
   Metric
     ( MetricInfo
@@ -1433,7 +1424,7 @@ metricTimeToMergeVariance =
               <> rangeFlavorToDesc CreatedAt
         )
     )
-    (FloatNumResult <$> compute)
+    (Num <$> compute)
     (pure $ fromList [])
   where
     compute =
@@ -1442,7 +1433,7 @@ metricTimeToMergeVariance =
     qf = QueryFlavor Author CreatedAt
 
 -- | The average duration until a change gets a first review event
-metricFirstReviewMeanTime :: QueryMonad m => Metric m MetricNumResult
+metricFirstReviewMeanTime :: QueryMonad m => Metric m Word32
 metricFirstReviewMeanTime =
   Metric
     ( MetricInfo
@@ -1456,7 +1447,7 @@ metricFirstReviewMeanTime =
               <> rangeFlavorToDesc CreatedAt
         )
     )
-    (Word32NumResult <$> compute)
+    (Num <$> compute)
     (pure $ fromList [])
   where
     compute =
@@ -1465,7 +1456,7 @@ metricFirstReviewMeanTime =
     withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
 
 -- | The average delay until a change gets a comment event
-metricFirstCommentMeanTime :: QueryMonad m => Metric m MetricNumResult
+metricFirstCommentMeanTime :: QueryMonad m => Metric m Word32
 metricFirstCommentMeanTime =
   Metric
     ( MetricInfo
@@ -1479,7 +1470,7 @@ metricFirstCommentMeanTime =
               <> rangeFlavorToDesc CreatedAt
         )
     )
-    (Word32NumResult <$> compute)
+    (Num <$> compute)
     (pure $ fromList [])
   where
     compute =
@@ -1488,7 +1479,7 @@ metricFirstCommentMeanTime =
     withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
 
 -- | The average commit count for per change
-metricCommitsPerChange :: QueryMonad m => Metric m MetricNumResult
+metricCommitsPerChange :: QueryMonad m => Metric m Float
 metricCommitsPerChange =
   Metric
     ( MetricInfo
@@ -1502,7 +1493,7 @@ metricCommitsPerChange =
               <> rangeFlavorToDesc CreatedAt
         )
     )
-    (FloatNumResult <$> compute)
+    (Num <$> compute)
     (pure $ fromList [])
   where
     compute =
@@ -1514,21 +1505,21 @@ allMetrics :: [MetricInfo]
 allMetrics =
   map
     metricInfo
-    [ metricChangesCreated @QueryM,
-      metricChangesMerged,
-      metricChangesAbandoned,
-      metricChangesSelfMerged,
-      metricChangeUpdates,
-      metricChangeWithTests,
-      metricReviews,
-      metricComments,
-      metricReviewsAndComments,
-      metricReviewAuthors,
-      metricCommentAuthors,
-      metricChangeAuthors,
-      metricTimeToMerge,
-      metricTimeToMergeVariance,
-      metricFirstCommentMeanTime,
-      metricFirstReviewMeanTime,
-      metricCommitsPerChange
+    [ toJSON <$> metricChangesCreated @QueryM,
+      toJSON <$> metricChangesMerged,
+      toJSON <$> metricChangesAbandoned,
+      toJSON <$> metricChangesSelfMerged,
+      toJSON <$> metricChangeUpdates,
+      toJSON <$> metricChangeWithTests,
+      toJSON <$> metricReviews,
+      toJSON <$> metricComments,
+      toJSON <$> metricReviewsAndComments,
+      toJSON <$> metricReviewAuthors,
+      toJSON <$> metricCommentAuthors,
+      toJSON <$> metricChangeAuthors,
+      toJSON <$> metricTimeToMerge,
+      toJSON <$> metricTimeToMergeVariance,
+      toJSON <$> metricFirstCommentMeanTime,
+      toJSON <$> metricFirstReviewMeanTime,
+      toJSON <$> metricCommitsPerChange
     ]
