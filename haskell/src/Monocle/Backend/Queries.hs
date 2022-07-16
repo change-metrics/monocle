@@ -889,8 +889,8 @@ withEvents ev = withFlavor (QueryFlavor Author OnCreatedAndCreated) . withFilter
 -- | changes review stats
 getReviewStats :: QueryMonad m => m SearchPB.ReviewStats
 getReviewStats = do
-  reviewStatsCommentHisto <- runMetricTrend metricComments
-  reviewStatsReviewHisto <- runMetricTrend metricReviews
+  reviewStatsCommentHisto <- runMetricTrendIntPB metricComments
+  reviewStatsReviewHisto <- runMetricTrendIntPB metricReviews
 
   reviewStatsCommentCount <- Just <$> statCountC
   reviewStatsReviewCount <- Just <$> statCountR
@@ -912,10 +912,10 @@ getReviewStats = do
 -- | changes lifecycle stats
 getLifecycleStats :: QueryMonad m => m SearchPB.LifecycleStats
 getLifecycleStats = do
-  lifecycleStatsCreatedHisto <- runMetricTrend metricChangesCreated
-  lifecycleStatsUpdatedHisto <- runMetricTrend metricChangeAuthors
-  lifecycleStatsMergedHisto <- runMetricTrend metricChangesMerged
-  lifecycleStatsAbandonedHisto <- runMetricTrend metricChangesAbandoned
+  lifecycleStatsCreatedHisto <- runMetricTrendIntPB metricChangesCreated
+  lifecycleStatsUpdatedHisto <- runMetricTrendIntPB metricChangeAuthors
+  lifecycleStatsMergedHisto <- runMetricTrendIntPB metricChangesMerged
+  lifecycleStatsAbandonedHisto <- runMetricTrendIntPB metricChangesAbandoned
 
   merged <- wordToCount <$> runMetricNum metricChangesMerged
   selfMerged <- runMetricNum metricChangesSelfMerged
@@ -949,9 +949,9 @@ getLifecycleStats = do
 
 getActivityStats :: QueryMonad m => m SearchPB.ActivityStats
 getActivityStats = do
-  changeCreatedHisto <- runMetricTrend metricChangeAuthors
-  changeCommentedHisto <- runMetricTrend metricCommentAuthors
-  changeReviewedHisto <- runMetricTrend metricReviewAuthors
+  changeCreatedHisto <- runMetricTrendIntPB metricChangeAuthors
+  changeCommentedHisto <- runMetricTrendIntPB metricCommentAuthors
+  changeReviewedHisto <- runMetricTrendIntPB metricReviewAuthors
 
   changeAuthorsCount <- runMetricNum metricChangeAuthors
   commentAuthorsCount <- runMetricNum metricCommentAuthors
@@ -987,6 +987,11 @@ getSuggestions index = do
 
 newtype Numeric a = Num {unNum :: a}
 
+data Histo a = Histo
+  { hDate :: String,
+    hValue :: a
+  }
+
 data MetricInfo = MetricInfo
   { miMetricName :: Text,
     miName :: Text,
@@ -997,16 +1002,33 @@ data MetricInfo = MetricInfo
 data Metric m a = Metric
   { metricInfo :: MetricInfo,
     runMetric :: m (Numeric a),
-    runMetricTrend :: m (V.Vector MetricPB.Histo)
+    runMetricTrend :: m (V.Vector (Histo a))
   }
 
 instance (Functor m) => Functor (Metric m) where
-  fmap f x = Metric (metricInfo x) (conv <$> runMetric x) (runMetricTrend x)
+  fmap f x = Metric (metricInfo x) (convN <$> runMetric x) (convT <$> runMetricTrend x)
     where
-      conv n = Num $ f (unNum n)
+      convN n = Num $ f (unNum n)
+      convT vh = conv <$> vh
+      conv h = Histo (hDate h) (f $ hValue h)
 
 runMetricNum :: QueryMonad m => Metric m a -> m a
 runMetricNum m = unNum <$> runMetric m
+
+toPBHistoInt :: Histo Word32 -> MetricPB.HistoInt
+toPBHistoInt (Histo {..}) =
+  let histoIntDate = from hDate
+      histoIntCount = hValue
+   in MetricPB.HistoInt {..}
+
+toPBHistoFloat :: Histo Float -> MetricPB.HistoFloat
+toPBHistoFloat (Histo {..}) =
+  let histoFloatDate = from hDate
+      histoFloatCount = hValue
+   in MetricPB.HistoFloat {..}
+
+runMetricTrendIntPB :: QueryMonad m => Metric m Word32 -> m (V.Vector MetricPB.HistoInt)
+runMetricTrendIntPB m = fmap toPBHistoInt <$> runMetricTrend m
 
 authorFlavorToDesc :: AuthorFlavor -> Text
 authorFlavorToDesc = \case
@@ -1024,14 +1046,14 @@ rangeFlavorToDesc = \case
     "Both, the event and change's creation date is matched in "
       <> "case of any date query filter."
 
-countHisto :: forall m. QueryMonad m => RangeFlavor -> m (V.Vector MetricPB.Histo)
-countHisto rf = fmap toPBHisto <$> getCountHisto
+countHisto :: forall m. QueryMonad m => RangeFlavor -> m (V.Vector (Histo Word32))
+countHisto rf = fmap toHisto <$> getCountHisto
   where
-    toPBHisto :: HistoSimple -> MetricPB.Histo
-    toPBHisto HistoBucket {..} =
-      let histoDate = hbDate
-          histoCount = hbCount
-       in MetricPB.Histo {..}
+    toHisto :: HistoSimple -> Histo Word32
+    toHisto HistoBucket {..} =
+      let hDate = from hbDate
+          hValue = hbCount
+       in Histo {..}
     getCountHisto :: m (V.Vector HistoSimple)
     getCountHisto = do
       query <- getQuery
@@ -1067,21 +1089,21 @@ countHisto rf = fmap toPBHisto <$> getCountHisto
 
       hBuckets . parseAggregationResults "agg1" <$> doAggregation search
 
-authorCountHisto :: forall m. QueryMonad m => EDocType -> m (V.Vector MetricPB.Histo)
+authorCountHisto :: forall m. QueryMonad m => EDocType -> m (V.Vector (Histo Word32))
 authorCountHisto changeEvent = withDocType changeEvent qf getAuthorHistoPB
   where
     qf = QueryFlavor Author CreatedAt
-    getAuthorHistoPB = fmap toHistoPB <$> getAuthorCountHisto
-    toHistoPB HistoBucket {..} =
-      let histoDate = hbDate
-          histoCount =
+    getAuthorHistoPB = fmap toHisto <$> getAuthorCountHisto
+    toHisto HistoBucket {..} =
+      let hDate = from hbDate
+          hValue =
             fromInteger
               . toInteger
               . length
               . haBuckets
               . fromMaybe (error "subbucket not found")
               $ hbSubBuckets
-       in MetricPB.Histo {..}
+       in Histo {..}
     getAuthorCountHisto :: m (V.Vector (HistoBucket HistoAuthors))
     getAuthorCountHisto = do
       query <- getQuery

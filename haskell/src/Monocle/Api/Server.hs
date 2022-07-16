@@ -603,13 +603,13 @@ searchQuery auth request = checkAuth auth response
               pure . SearchPB.QueryResponse . Just $
                 SearchPB.QueryResponseResultRatio ratio
             SearchPB.QueryRequest_QueryTypeQUERY_HISTO_COMMITS -> do
-              histo <- Q.runMetricTrend Q.metricChangeUpdates
+              histo <- Q.runMetricTrendIntPB Q.metricChangeUpdates
               pure . SearchPB.QueryResponse . Just $
-                SearchPB.QueryResponseResultHisto $ MetricPB.HistoStat histo
+                SearchPB.QueryResponseResultHisto $ MetricPB.HistoIntStat histo
             SearchPB.QueryRequest_QueryTypeQUERY_HISTO_REVIEWS_AND_COMMENTS -> do
-              histo <- Q.runMetricTrend Q.metricReviewsAndComments
+              histo <- Q.runMetricTrendIntPB Q.metricReviewsAndComments
               pure . SearchPB.QueryResponse . Just $
-                SearchPB.QueryResponseResultHisto $ MetricPB.HistoStat histo
+                SearchPB.QueryResponseResultHisto $ MetricPB.HistoIntStat histo
         Left err -> pure . handleError $ err
 
     handleError :: ParseError -> SearchPB.QueryResponse
@@ -697,6 +697,25 @@ instance NumPB Float where
 instance NumPB Word32 where
   toNumResult (Q.Num v) = MetricPB.GetResponse . Just . MetricPB.GetResponseResultIntValue . fromInteger $ toInteger v
 
+class Num a => TrendPB a where
+  toTrendResult :: V.Vector (Q.Histo a) -> MetricPB.GetResponse
+
+instance TrendPB Float where
+  toTrendResult v =
+    MetricPB.GetResponse
+      . Just
+      . MetricPB.GetResponseResultHistoFloatValue
+      . MetricPB.HistoFloatStat
+      $ Q.toPBHistoFloat <$> v
+
+instance TrendPB Word32 where
+  toTrendResult v =
+    MetricPB.GetResponse
+      . Just
+      . MetricPB.GetResponseResultHistoIntValue
+      . MetricPB.HistoIntStat
+      $ Q.toPBHistoInt <$> v
+
 metricGet :: AuthResult AuthenticatedUser -> MetricPB.GetRequest -> AppM MetricPB.GetResponse
 metricGet auth request = checkAuth auth response
   where
@@ -745,8 +764,6 @@ metricGet auth request = checkAuth auth response
         runMetric m = case getRequestOptions of
           Just (MetricPB.GetRequestOptionsTrend _) -> toTrendResult <$> runM (Q.runMetricTrend m)
           _ -> toNumResult <$> runM (Q.runMetric m)
-          where
-            toTrendResult ret = MetricPB.GetResponse . Just . MetricPB.GetResponseResultHistoValue $ MetricPB.HistoStat ret
 
 -- | gen a 302 redirect helper
 redirects :: ByteString -> AppM ()

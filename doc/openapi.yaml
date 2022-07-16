@@ -725,21 +725,36 @@ components:
                 int_value:
                     type: integer
                     format: int32
-                histo_value:
-                    $ref: '#/components/schemas/monocle_metric_HistoStat'
-        monocle_metric_Histo:
+                histo_int_value:
+                    $ref: '#/components/schemas/monocle_metric_HistoIntStat'
+                histo_float_value:
+                    $ref: '#/components/schemas/monocle_metric_HistoFloatStat'
+        monocle_metric_HistoFloat:
+            properties:
+                date:
+                    type: string
+                count:
+                    type: number
+                    format: float
+        monocle_metric_HistoFloatStat:
+            properties:
+                histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_metric_HistoFloat'
+        monocle_metric_HistoInt:
             properties:
                 date:
                     type: string
                 count:
                     type: integer
                     format: uint32
-        monocle_metric_HistoStat:
+        monocle_metric_HistoIntStat:
             properties:
                 histo:
                     type: array
                     items:
-                        $ref: '#/components/schemas/monocle_metric_Histo'
+                        $ref: '#/components/schemas/monocle_metric_HistoInt'
         monocle_metric_ListRequest:
             properties:
                 void:
@@ -779,15 +794,15 @@ components:
                 comments_histo:
                     type: array
                     items:
-                        $ref: '#/components/schemas/monocle_metric_Histo'
+                        $ref: '#/components/schemas/monocle_metric_HistoInt'
                 reviews_histo:
                     type: array
                     items:
-                        $ref: '#/components/schemas/monocle_metric_Histo'
+                        $ref: '#/components/schemas/monocle_metric_HistoInt'
                 changes_histo:
                     type: array
                     items:
-                        $ref: '#/components/schemas/monocle_metric_Histo'
+                        $ref: '#/components/schemas/monocle_metric_HistoInt'
         monocle_search_Author:
             properties:
                 muid:
@@ -1011,19 +1026,19 @@ components:
                 created_histo:
                     type: array
                     items:
-                        $ref: '#/components/schemas/monocle_metric_Histo'
+                        $ref: '#/components/schemas/monocle_metric_HistoInt'
                 updated_histo:
                     type: array
                     items:
-                        $ref: '#/components/schemas/monocle_metric_Histo'
+                        $ref: '#/components/schemas/monocle_metric_HistoInt'
                 merged_histo:
                     type: array
                     items:
-                        $ref: '#/components/schemas/monocle_metric_Histo'
+                        $ref: '#/components/schemas/monocle_metric_HistoInt'
                 abandoned_histo:
                     type: array
                     items:
-                        $ref: '#/components/schemas/monocle_metric_Histo'
+                        $ref: '#/components/schemas/monocle_metric_HistoInt'
                 created:
                     $ref: '#/components/schemas/monocle_search_ReviewCount'
                 abandoned:
@@ -1118,7 +1133,7 @@ components:
                     type: number
                     format: float
                 histo:
-                    $ref: '#/components/schemas/monocle_metric_HistoStat'
+                    $ref: '#/components/schemas/monocle_metric_HistoIntStat'
         monocle_search_RepoSummary:
             properties:
                 fullname:
@@ -1167,11 +1182,11 @@ components:
                 comment_histo:
                     type: array
                     items:
-                        $ref: '#/components/schemas/monocle_metric_Histo'
+                        $ref: '#/components/schemas/monocle_metric_HistoInt'
                 review_histo:
                     type: array
                     items:
-                        $ref: '#/components/schemas/monocle_metric_Histo'
+                        $ref: '#/components/schemas/monocle_metric_HistoInt'
         monocle_search_SuggestionsRequest:
             properties:
                 index:

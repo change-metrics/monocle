@@ -31,20 +31,30 @@ and get_request = {
   options : get_request_options;
 }
 
-type histo = {
+type histo_int = {
   date : string;
   count : int32;
 }
 
-type histo_stat = {
-  histo : histo list;
+type histo_float = {
+  date : string;
+  count : float;
+}
+
+type histo_int_stat = {
+  histo : histo_int list;
+}
+
+type histo_float_stat = {
+  histo : histo_float list;
 }
 
 type get_response =
   | Error of string
   | Float_value of float
   | Int_value of int32
-  | Histo_value of histo_stat
+  | Histo_int_value of histo_int_stat
+  | Histo_float_value of histo_float_stat
 
 let rec default_metric_info 
   ?name:((name:string) = "")
@@ -92,17 +102,31 @@ and default_get_request
   options;
 }
 
-let rec default_histo 
+let rec default_histo_int 
   ?date:((date:string) = "")
   ?count:((count:int32) = 0l)
-  () : histo  = {
+  () : histo_int  = {
   date;
   count;
 }
 
-let rec default_histo_stat 
-  ?histo:((histo:histo list) = [])
-  () : histo_stat  = {
+let rec default_histo_float 
+  ?date:((date:string) = "")
+  ?count:((count:float) = 0.)
+  () : histo_float  = {
+  date;
+  count;
+}
+
+let rec default_histo_int_stat 
+  ?histo:((histo:histo_int list) = [])
+  () : histo_int_stat  = {
+  histo;
+}
+
+let rec default_histo_float_stat 
+  ?histo:((histo:histo_float list) = [])
+  () : histo_float_stat  = {
   histo;
 }
 

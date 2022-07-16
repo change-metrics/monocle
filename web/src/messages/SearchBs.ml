@@ -319,8 +319,8 @@ type review_stats_mutable = {
   mutable review_count : SearchTypes.review_count option;
   mutable comment_delay : int32;
   mutable review_delay : int32;
-  mutable comment_histo : MetricTypes.histo list;
-  mutable review_histo : MetricTypes.histo list;
+  mutable comment_histo : MetricTypes.histo_int list;
+  mutable review_histo : MetricTypes.histo_int list;
 }
 
 let default_review_stats_mutable () : review_stats_mutable = {
@@ -336,9 +336,9 @@ type activity_stats_mutable = {
   mutable change_authors : int32;
   mutable comment_authors : int32;
   mutable review_authors : int32;
-  mutable comments_histo : MetricTypes.histo list;
-  mutable reviews_histo : MetricTypes.histo list;
-  mutable changes_histo : MetricTypes.histo list;
+  mutable comments_histo : MetricTypes.histo_int list;
+  mutable reviews_histo : MetricTypes.histo_int list;
+  mutable changes_histo : MetricTypes.histo_int list;
 }
 
 let default_activity_stats_mutable () : activity_stats_mutable = {
@@ -417,10 +417,10 @@ let default_authors_peers_mutable () : authors_peers_mutable = {
 }
 
 type lifecycle_stats_mutable = {
-  mutable created_histo : MetricTypes.histo list;
-  mutable updated_histo : MetricTypes.histo list;
-  mutable merged_histo : MetricTypes.histo list;
-  mutable abandoned_histo : MetricTypes.histo list;
+  mutable created_histo : MetricTypes.histo_int list;
+  mutable updated_histo : MetricTypes.histo_int list;
+  mutable merged_histo : MetricTypes.histo_int list;
+  mutable abandoned_histo : MetricTypes.histo_int list;
   mutable created : SearchTypes.review_count option;
   mutable abandoned : int32;
   mutable merged : int32;
@@ -1316,7 +1316,7 @@ let rec decode_review_stats json =
         Pbrt_bs.array_ a "review_stats" "comment_histo"
       in
       v.comment_histo <- Array.map (fun json -> 
-        (MetricBs.decode_histo (Pbrt_bs.object_ json "review_stats" "comment_histo"))
+        (MetricBs.decode_histo_int (Pbrt_bs.object_ json "review_stats" "comment_histo"))
       ) a |> Array.to_list;
     end
     | "review_histo" -> begin
@@ -1325,7 +1325,7 @@ let rec decode_review_stats json =
         Pbrt_bs.array_ a "review_stats" "review_histo"
       in
       v.review_histo <- Array.map (fun json -> 
-        (MetricBs.decode_histo (Pbrt_bs.object_ json "review_stats" "review_histo"))
+        (MetricBs.decode_histo_int (Pbrt_bs.object_ json "review_stats" "review_histo"))
       ) a |> Array.to_list;
     end
     
@@ -1361,7 +1361,7 @@ let rec decode_activity_stats json =
         Pbrt_bs.array_ a "activity_stats" "comments_histo"
       in
       v.comments_histo <- Array.map (fun json -> 
-        (MetricBs.decode_histo (Pbrt_bs.object_ json "activity_stats" "comments_histo"))
+        (MetricBs.decode_histo_int (Pbrt_bs.object_ json "activity_stats" "comments_histo"))
       ) a |> Array.to_list;
     end
     | "reviews_histo" -> begin
@@ -1370,7 +1370,7 @@ let rec decode_activity_stats json =
         Pbrt_bs.array_ a "activity_stats" "reviews_histo"
       in
       v.reviews_histo <- Array.map (fun json -> 
-        (MetricBs.decode_histo (Pbrt_bs.object_ json "activity_stats" "reviews_histo"))
+        (MetricBs.decode_histo_int (Pbrt_bs.object_ json "activity_stats" "reviews_histo"))
       ) a |> Array.to_list;
     end
     | "changes_histo" -> begin
@@ -1379,7 +1379,7 @@ let rec decode_activity_stats json =
         Pbrt_bs.array_ a "activity_stats" "changes_histo"
       in
       v.changes_histo <- Array.map (fun json -> 
-        (MetricBs.decode_histo (Pbrt_bs.object_ json "activity_stats" "changes_histo"))
+        (MetricBs.decode_histo_int (Pbrt_bs.object_ json "activity_stats" "changes_histo"))
       ) a |> Array.to_list;
     end
     
@@ -1556,7 +1556,7 @@ let rec decode_lifecycle_stats json =
         Pbrt_bs.array_ a "lifecycle_stats" "created_histo"
       in
       v.created_histo <- Array.map (fun json -> 
-        (MetricBs.decode_histo (Pbrt_bs.object_ json "lifecycle_stats" "created_histo"))
+        (MetricBs.decode_histo_int (Pbrt_bs.object_ json "lifecycle_stats" "created_histo"))
       ) a |> Array.to_list;
     end
     | "updated_histo" -> begin
@@ -1565,7 +1565,7 @@ let rec decode_lifecycle_stats json =
         Pbrt_bs.array_ a "lifecycle_stats" "updated_histo"
       in
       v.updated_histo <- Array.map (fun json -> 
-        (MetricBs.decode_histo (Pbrt_bs.object_ json "lifecycle_stats" "updated_histo"))
+        (MetricBs.decode_histo_int (Pbrt_bs.object_ json "lifecycle_stats" "updated_histo"))
       ) a |> Array.to_list;
     end
     | "merged_histo" -> begin
@@ -1574,7 +1574,7 @@ let rec decode_lifecycle_stats json =
         Pbrt_bs.array_ a "lifecycle_stats" "merged_histo"
       in
       v.merged_histo <- Array.map (fun json -> 
-        (MetricBs.decode_histo (Pbrt_bs.object_ json "lifecycle_stats" "merged_histo"))
+        (MetricBs.decode_histo_int (Pbrt_bs.object_ json "lifecycle_stats" "merged_histo"))
       ) a |> Array.to_list;
     end
     | "abandoned_histo" -> begin
@@ -1583,7 +1583,7 @@ let rec decode_lifecycle_stats json =
         Pbrt_bs.array_ a "lifecycle_stats" "abandoned_histo"
       in
       v.abandoned_histo <- Array.map (fun json -> 
-        (MetricBs.decode_histo (Pbrt_bs.object_ json "lifecycle_stats" "abandoned_histo"))
+        (MetricBs.decode_histo_int (Pbrt_bs.object_ json "lifecycle_stats" "abandoned_histo"))
       ) a |> Array.to_list;
     end
     | "created" -> 
@@ -1708,7 +1708,7 @@ let rec decode_query_response json =
         (SearchTypes.Ratio (Pbrt_bs.float json "query_response" "Ratio") : SearchTypes.query_response)
       | "histo" -> 
         let json = Js.Dict.unsafeGet json "histo" in
-        (SearchTypes.Histo ((MetricBs.decode_histo_stat (Pbrt_bs.object_ json "query_response" "Histo"))) : SearchTypes.query_response)
+        (SearchTypes.Histo ((MetricBs.decode_histo_int_stat (Pbrt_bs.object_ json "query_response" "Histo"))) : SearchTypes.query_response)
       
       | _ -> loop (i - 1)
       end
@@ -2130,7 +2130,7 @@ let rec encode_review_stats (v:SearchTypes.review_stats) =
       v.SearchTypes.comment_histo
       |> Array.of_list
       |> Array.map (fun v ->
-        v |> MetricBs.encode_histo |> Js.Json.object_
+        v |> MetricBs.encode_histo_int |> Js.Json.object_
       )
       |> Js.Json.array
     in
@@ -2141,7 +2141,7 @@ let rec encode_review_stats (v:SearchTypes.review_stats) =
       v.SearchTypes.review_histo
       |> Array.of_list
       |> Array.map (fun v ->
-        v |> MetricBs.encode_histo |> Js.Json.object_
+        v |> MetricBs.encode_histo_int |> Js.Json.object_
       )
       |> Js.Json.array
     in
@@ -2159,7 +2159,7 @@ let rec encode_activity_stats (v:SearchTypes.activity_stats) =
       v.SearchTypes.comments_histo
       |> Array.of_list
       |> Array.map (fun v ->
-        v |> MetricBs.encode_histo |> Js.Json.object_
+        v |> MetricBs.encode_histo_int |> Js.Json.object_
       )
       |> Js.Json.array
     in
@@ -2170,7 +2170,7 @@ let rec encode_activity_stats (v:SearchTypes.activity_stats) =
       v.SearchTypes.reviews_histo
       |> Array.of_list
       |> Array.map (fun v ->
-        v |> MetricBs.encode_histo |> Js.Json.object_
+        v |> MetricBs.encode_histo_int |> Js.Json.object_
       )
       |> Js.Json.array
     in
@@ -2181,7 +2181,7 @@ let rec encode_activity_stats (v:SearchTypes.activity_stats) =
       v.SearchTypes.changes_histo
       |> Array.of_list
       |> Array.map (fun v ->
-        v |> MetricBs.encode_histo |> Js.Json.object_
+        v |> MetricBs.encode_histo_int |> Js.Json.object_
       )
       |> Js.Json.array
     in
@@ -2265,7 +2265,7 @@ let rec encode_lifecycle_stats (v:SearchTypes.lifecycle_stats) =
       v.SearchTypes.created_histo
       |> Array.of_list
       |> Array.map (fun v ->
-        v |> MetricBs.encode_histo |> Js.Json.object_
+        v |> MetricBs.encode_histo_int |> Js.Json.object_
       )
       |> Js.Json.array
     in
@@ -2276,7 +2276,7 @@ let rec encode_lifecycle_stats (v:SearchTypes.lifecycle_stats) =
       v.SearchTypes.updated_histo
       |> Array.of_list
       |> Array.map (fun v ->
-        v |> MetricBs.encode_histo |> Js.Json.object_
+        v |> MetricBs.encode_histo_int |> Js.Json.object_
       )
       |> Js.Json.array
     in
@@ -2287,7 +2287,7 @@ let rec encode_lifecycle_stats (v:SearchTypes.lifecycle_stats) =
       v.SearchTypes.merged_histo
       |> Array.of_list
       |> Array.map (fun v ->
-        v |> MetricBs.encode_histo |> Js.Json.object_
+        v |> MetricBs.encode_histo_int |> Js.Json.object_
       )
       |> Js.Json.array
     in
@@ -2298,7 +2298,7 @@ let rec encode_lifecycle_stats (v:SearchTypes.lifecycle_stats) =
       v.SearchTypes.abandoned_histo
       |> Array.of_list
       |> Array.map (fun v ->
-        v |> MetricBs.encode_histo |> Js.Json.object_
+        v |> MetricBs.encode_histo_int |> Js.Json.object_
       )
       |> Js.Json.array
     in
@@ -2414,7 +2414,7 @@ let rec encode_query_response (v:SearchTypes.query_response) =
     Js.Dict.set json "ratio" (Js.Json.number v);
   | SearchTypes.Histo v ->
     begin (* histo field *)
-      let json' = MetricBs.encode_histo_stat v in
+      let json' = MetricBs.encode_histo_int_stat v in
       Js.Dict.set json "histo" (Js.Json.object_ json');
     end;
   end;

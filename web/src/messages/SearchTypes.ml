@@ -201,17 +201,17 @@ type review_stats = {
   review_count : review_count option;
   comment_delay : int32;
   review_delay : int32;
-  comment_histo : MetricTypes.histo list;
-  review_histo : MetricTypes.histo list;
+  comment_histo : MetricTypes.histo_int list;
+  review_histo : MetricTypes.histo_int list;
 }
 
 type activity_stats = {
   change_authors : int32;
   comment_authors : int32;
   review_authors : int32;
-  comments_histo : MetricTypes.histo list;
-  reviews_histo : MetricTypes.histo list;
-  changes_histo : MetricTypes.histo list;
+  comments_histo : MetricTypes.histo_int list;
+  reviews_histo : MetricTypes.histo_int list;
+  changes_histo : MetricTypes.histo_int list;
 }
 
 type repo_summary = {
@@ -248,10 +248,10 @@ type authors_peers = {
 }
 
 type lifecycle_stats = {
-  created_histo : MetricTypes.histo list;
-  updated_histo : MetricTypes.histo list;
-  merged_histo : MetricTypes.histo list;
-  abandoned_histo : MetricTypes.histo list;
+  created_histo : MetricTypes.histo_int list;
+  updated_histo : MetricTypes.histo_int list;
+  merged_histo : MetricTypes.histo_int list;
+  abandoned_histo : MetricTypes.histo_int list;
   created : review_count option;
   abandoned : int32;
   merged : int32;
@@ -284,7 +284,7 @@ type query_response =
   | Change_events of change_and_events
   | Changes_tops of changes_tops
   | Ratio of float
-  | Histo of MetricTypes.histo_stat
+  | Histo of MetricTypes.histo_int_stat
 
 let rec default_task_data 
   ?updated_at:((updated_at:TimestampTypes.timestamp option) = None)
@@ -573,8 +573,8 @@ let rec default_review_stats
   ?review_count:((review_count:review_count option) = None)
   ?comment_delay:((comment_delay:int32) = 0l)
   ?review_delay:((review_delay:int32) = 0l)
-  ?comment_histo:((comment_histo:MetricTypes.histo list) = [])
-  ?review_histo:((review_histo:MetricTypes.histo list) = [])
+  ?comment_histo:((comment_histo:MetricTypes.histo_int list) = [])
+  ?review_histo:((review_histo:MetricTypes.histo_int list) = [])
   () : review_stats  = {
   comment_count;
   review_count;
@@ -588,9 +588,9 @@ let rec default_activity_stats
   ?change_authors:((change_authors:int32) = 0l)
   ?comment_authors:((comment_authors:int32) = 0l)
   ?review_authors:((review_authors:int32) = 0l)
-  ?comments_histo:((comments_histo:MetricTypes.histo list) = [])
-  ?reviews_histo:((reviews_histo:MetricTypes.histo list) = [])
-  ?changes_histo:((changes_histo:MetricTypes.histo list) = [])
+  ?comments_histo:((comments_histo:MetricTypes.histo_int list) = [])
+  ?reviews_histo:((reviews_histo:MetricTypes.histo_int list) = [])
+  ?changes_histo:((changes_histo:MetricTypes.histo_int list) = [])
   () : activity_stats  = {
   change_authors;
   comment_authors;
@@ -655,10 +655,10 @@ let rec default_authors_peers
 }
 
 let rec default_lifecycle_stats 
-  ?created_histo:((created_histo:MetricTypes.histo list) = [])
-  ?updated_histo:((updated_histo:MetricTypes.histo list) = [])
-  ?merged_histo:((merged_histo:MetricTypes.histo list) = [])
-  ?abandoned_histo:((abandoned_histo:MetricTypes.histo list) = [])
+  ?created_histo:((created_histo:MetricTypes.histo_int list) = [])
+  ?updated_histo:((updated_histo:MetricTypes.histo_int list) = [])
+  ?merged_histo:((merged_histo:MetricTypes.histo_int list) = [])
+  ?abandoned_histo:((abandoned_histo:MetricTypes.histo_int list) = [])
   ?created:((created:review_count option) = None)
   ?abandoned:((abandoned:int32) = 0l)
   ?merged:((merged:int32) = 0l)

@@ -25,10 +25,10 @@ module ChangesLifeCycleStats = {
   module ChangesLifeCycleHisto = {
     @react.component @module("./chartjs.jsx")
     external make: (
-      ~created: array<MetricTypes.histo>,
-      ~updated: array<MetricTypes.histo>,
-      ~merged: array<MetricTypes.histo>,
-      ~abandoned: array<MetricTypes.histo>,
+      ~created: array<MetricTypes.histo_int>,
+      ~updated: array<MetricTypes.histo_int>,
+      ~merged: array<MetricTypes.histo_int>,
+      ~abandoned: array<MetricTypes.histo_int>,
     ) => React.element = "CChangesLifeCycleHisto"
   }
   @react.component
@@ -165,8 +165,8 @@ module ChangesReviewStats = {
   module CChangesReviewHisto = {
     @react.component @module("./chartjs.jsx")
     external make: (
-      ~comment_histo: array<MetricTypes.histo>,
-      ~review_histo: array<MetricTypes.histo>,
+      ~comment_histo: array<MetricTypes.histo_int>,
+      ~review_histo: array<MetricTypes.histo_int>,
     ) => React.element = "CChangeReviewEventsHisto"
   }
   @react.component
@@ -283,9 +283,9 @@ module AuthorHistoStats = {
   module CAuthorsHistoChart = {
     @react.component @module("./chartjs.jsx")
     external make: (
-      ~change_histo: array<MetricTypes.histo>,
-      ~comment_histo: array<MetricTypes.histo>,
-      ~review_histo: array<MetricTypes.histo>,
+      ~change_histo: array<MetricTypes.histo_int>,
+      ~comment_histo: array<MetricTypes.histo_int>,
+      ~review_histo: array<MetricTypes.histo_int>,
     ) => React.element = "CAuthorsHistoStats"
   }
   @react.component

@@ -3509,8 +3509,9 @@ data ReviewStats = ReviewStats
       Hs.Maybe Monocle.Protob.Search.ReviewCount,
     reviewStatsCommentDelay :: Hs.Word32,
     reviewStatsReviewDelay :: Hs.Word32,
-    reviewStatsCommentHisto :: Hs.Vector Monocle.Protob.Metric.Histo,
-    reviewStatsReviewHisto :: Hs.Vector Monocle.Protob.Metric.Histo
+    reviewStatsCommentHisto ::
+      Hs.Vector Monocle.Protob.Metric.HistoInt,
+    reviewStatsReviewHisto :: Hs.Vector Monocle.Protob.Metric.HistoInt
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -3555,15 +3556,15 @@ instance HsProtobuf.Message ReviewStats where
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 10)
-                ( Hs.coerce @(Hs.Vector Monocle.Protob.Metric.Histo)
-                    @(HsProtobuf.NestedVec Monocle.Protob.Metric.Histo)
+                ( Hs.coerce @(Hs.Vector Monocle.Protob.Metric.HistoInt)
+                    @(HsProtobuf.NestedVec Monocle.Protob.Metric.HistoInt)
                     reviewStatsCommentHisto
                 )
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 11)
-                ( Hs.coerce @(Hs.Vector Monocle.Protob.Metric.Histo)
-                    @(HsProtobuf.NestedVec Monocle.Protob.Metric.Histo)
+                ( Hs.coerce @(Hs.Vector Monocle.Protob.Metric.HistoInt)
+                    @(HsProtobuf.NestedVec Monocle.Protob.Metric.HistoInt)
                     reviewStatsReviewHisto
                 )
             )
@@ -3595,15 +3596,17 @@ instance HsProtobuf.Message ReviewStats where
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 6)
           )
-      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Protob.Metric.Histo))
-              @(_ (Hs.Vector Monocle.Protob.Metric.Histo))
+      <*> ( Hs.coerce
+              @(_ (HsProtobuf.NestedVec Monocle.Protob.Metric.HistoInt))
+              @(_ (Hs.Vector Monocle.Protob.Metric.HistoInt))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 10)
               )
           )
-      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Protob.Metric.Histo))
-              @(_ (Hs.Vector Monocle.Protob.Metric.Histo))
+      <*> ( Hs.coerce
+              @(_ (HsProtobuf.NestedVec Monocle.Protob.Metric.HistoInt))
+              @(_ (Hs.Vector Monocle.Protob.Metric.HistoInt))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 11)
@@ -3647,7 +3650,7 @@ instance HsProtobuf.Message ReviewStats where
           ( HsProtobuf.Repeated
               ( HsProtobuf.Named
                   ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("monocle_metric" Hs.:| ["Histo"]))
+                      (HsProtobuf.Path ("monocle_metric" Hs.:| ["HistoInt"]))
                   )
               )
           )
@@ -3660,7 +3663,7 @@ instance HsProtobuf.Message ReviewStats where
           ( HsProtobuf.Repeated
               ( HsProtobuf.Named
                   ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("monocle_metric" Hs.:| ["Histo"]))
+                      (HsProtobuf.Path ("monocle_metric" Hs.:| ["HistoInt"]))
                   )
               )
           )
@@ -3719,11 +3722,11 @@ data ActivityStats = ActivityStats
     activityStatsCommentAuthors :: Hs.Word32,
     activityStatsReviewAuthors :: Hs.Word32,
     activityStatsCommentsHisto ::
-      Hs.Vector Monocle.Protob.Metric.Histo,
+      Hs.Vector Monocle.Protob.Metric.HistoInt,
     activityStatsReviewsHisto ::
-      Hs.Vector Monocle.Protob.Metric.Histo,
+      Hs.Vector Monocle.Protob.Metric.HistoInt,
     activityStatsChangesHisto ::
-      Hs.Vector Monocle.Protob.Metric.Histo
+      Hs.Vector Monocle.Protob.Metric.HistoInt
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -3759,22 +3762,22 @@ instance HsProtobuf.Message ActivityStats where
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 10)
-                ( Hs.coerce @(Hs.Vector Monocle.Protob.Metric.Histo)
-                    @(HsProtobuf.NestedVec Monocle.Protob.Metric.Histo)
+                ( Hs.coerce @(Hs.Vector Monocle.Protob.Metric.HistoInt)
+                    @(HsProtobuf.NestedVec Monocle.Protob.Metric.HistoInt)
                     activityStatsCommentsHisto
                 )
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 11)
-                ( Hs.coerce @(Hs.Vector Monocle.Protob.Metric.Histo)
-                    @(HsProtobuf.NestedVec Monocle.Protob.Metric.Histo)
+                ( Hs.coerce @(Hs.Vector Monocle.Protob.Metric.HistoInt)
+                    @(HsProtobuf.NestedVec Monocle.Protob.Metric.HistoInt)
                     activityStatsReviewsHisto
                 )
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 12)
-                ( Hs.coerce @(Hs.Vector Monocle.Protob.Metric.Histo)
-                    @(HsProtobuf.NestedVec Monocle.Protob.Metric.Histo)
+                ( Hs.coerce @(Hs.Vector Monocle.Protob.Metric.HistoInt)
+                    @(HsProtobuf.NestedVec Monocle.Protob.Metric.HistoInt)
                     activityStatsChangesHisto
                 )
             )
@@ -3794,22 +3797,25 @@ instance HsProtobuf.Message ActivityStats where
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 3)
           )
-      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Protob.Metric.Histo))
-              @(_ (Hs.Vector Monocle.Protob.Metric.Histo))
+      <*> ( Hs.coerce
+              @(_ (HsProtobuf.NestedVec Monocle.Protob.Metric.HistoInt))
+              @(_ (Hs.Vector Monocle.Protob.Metric.HistoInt))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 10)
               )
           )
-      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Protob.Metric.Histo))
-              @(_ (Hs.Vector Monocle.Protob.Metric.Histo))
+      <*> ( Hs.coerce
+              @(_ (HsProtobuf.NestedVec Monocle.Protob.Metric.HistoInt))
+              @(_ (Hs.Vector Monocle.Protob.Metric.HistoInt))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 11)
               )
           )
-      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Protob.Metric.Histo))
-              @(_ (Hs.Vector Monocle.Protob.Metric.Histo))
+      <*> ( Hs.coerce
+              @(_ (HsProtobuf.NestedVec Monocle.Protob.Metric.HistoInt))
+              @(_ (Hs.Vector Monocle.Protob.Metric.HistoInt))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 12)
@@ -3842,7 +3848,7 @@ instance HsProtobuf.Message ActivityStats where
           ( HsProtobuf.Repeated
               ( HsProtobuf.Named
                   ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("monocle_metric" Hs.:| ["Histo"]))
+                      (HsProtobuf.Path ("monocle_metric" Hs.:| ["HistoInt"]))
                   )
               )
           )
@@ -3855,7 +3861,7 @@ instance HsProtobuf.Message ActivityStats where
           ( HsProtobuf.Repeated
               ( HsProtobuf.Named
                   ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("monocle_metric" Hs.:| ["Histo"]))
+                      (HsProtobuf.Path ("monocle_metric" Hs.:| ["HistoInt"]))
                   )
               )
           )
@@ -3868,7 +3874,7 @@ instance HsProtobuf.Message ActivityStats where
           ( HsProtobuf.Repeated
               ( HsProtobuf.Named
                   ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("monocle_metric" Hs.:| ["Histo"]))
+                      (HsProtobuf.Path ("monocle_metric" Hs.:| ["HistoInt"]))
                   )
               )
           )
@@ -4037,8 +4043,8 @@ instance HsProtobuf.Message QueryResponse where
                   QueryResponseResultHisto y ->
                     ( HsProtobuf.encodeMessageField
                         (HsProtobuf.FieldNumber 50)
-                        ( Hs.coerce @(Hs.Maybe Monocle.Protob.Metric.HistoStat)
-                            @(HsProtobuf.Nested Monocle.Protob.Metric.HistoStat)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Protob.Metric.HistoIntStat)
+                            @(HsProtobuf.Nested Monocle.Protob.Metric.HistoIntStat)
                             (Hs.Just y)
                         )
                     )
@@ -4141,8 +4147,9 @@ instance HsProtobuf.Message QueryResponse where
                 ),
                 ( (HsProtobuf.FieldNumber 50),
                   (Hs.pure (Hs.fmap QueryResponseResultHisto))
-                    <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Protob.Metric.HistoStat))
-                            @(_ (Hs.Maybe Monocle.Protob.Metric.HistoStat))
+                    <*> ( Hs.coerce
+                            @(_ (HsProtobuf.Nested Monocle.Protob.Metric.HistoIntStat))
+                            @(_ (Hs.Maybe Monocle.Protob.Metric.HistoIntStat))
                             HsProtobuf.decodeMessageField
                         )
                 )
@@ -4300,7 +4307,7 @@ data QueryResponseResult
   | QueryResponseResultChangeEvents Monocle.Protob.Search.ChangeAndEvents
   | QueryResponseResultChangesTops Monocle.Protob.Search.ChangesTops
   | QueryResponseResultRatio Hs.Float
-  | QueryResponseResultHisto Monocle.Protob.Metric.HistoStat
+  | QueryResponseResultHisto Monocle.Protob.Metric.HistoIntStat
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named QueryResponseResult where
@@ -4308,13 +4315,13 @@ instance HsProtobuf.Named QueryResponseResult where
 
 data LifecycleStats = LifecycleStats
   { lifecycleStatsCreatedHisto ::
-      Hs.Vector Monocle.Protob.Metric.Histo,
+      Hs.Vector Monocle.Protob.Metric.HistoInt,
     lifecycleStatsUpdatedHisto ::
-      Hs.Vector Monocle.Protob.Metric.Histo,
+      Hs.Vector Monocle.Protob.Metric.HistoInt,
     lifecycleStatsMergedHisto ::
-      Hs.Vector Monocle.Protob.Metric.Histo,
+      Hs.Vector Monocle.Protob.Metric.HistoInt,
     lifecycleStatsAbandonedHisto ::
-      Hs.Vector Monocle.Protob.Metric.Histo,
+      Hs.Vector Monocle.Protob.Metric.HistoInt,
     lifecycleStatsCreated ::
       Hs.Maybe Monocle.Protob.Search.ReviewCount,
     lifecycleStatsAbandoned :: Hs.Word32,
@@ -4360,29 +4367,29 @@ instance HsProtobuf.Message LifecycleStats where
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
-                ( Hs.coerce @(Hs.Vector Monocle.Protob.Metric.Histo)
-                    @(HsProtobuf.NestedVec Monocle.Protob.Metric.Histo)
+                ( Hs.coerce @(Hs.Vector Monocle.Protob.Metric.HistoInt)
+                    @(HsProtobuf.NestedVec Monocle.Protob.Metric.HistoInt)
                     lifecycleStatsCreatedHisto
                 )
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
-                ( Hs.coerce @(Hs.Vector Monocle.Protob.Metric.Histo)
-                    @(HsProtobuf.NestedVec Monocle.Protob.Metric.Histo)
+                ( Hs.coerce @(Hs.Vector Monocle.Protob.Metric.HistoInt)
+                    @(HsProtobuf.NestedVec Monocle.Protob.Metric.HistoInt)
                     lifecycleStatsUpdatedHisto
                 )
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 3)
-                ( Hs.coerce @(Hs.Vector Monocle.Protob.Metric.Histo)
-                    @(HsProtobuf.NestedVec Monocle.Protob.Metric.Histo)
+                ( Hs.coerce @(Hs.Vector Monocle.Protob.Metric.HistoInt)
+                    @(HsProtobuf.NestedVec Monocle.Protob.Metric.HistoInt)
                     lifecycleStatsMergedHisto
                 )
             ),
             ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 4)
-                ( Hs.coerce @(Hs.Vector Monocle.Protob.Metric.Histo)
-                    @(HsProtobuf.NestedVec Monocle.Protob.Metric.Histo)
+                ( Hs.coerce @(Hs.Vector Monocle.Protob.Metric.HistoInt)
+                    @(HsProtobuf.NestedVec Monocle.Protob.Metric.HistoInt)
                     lifecycleStatsAbandonedHisto
                 )
             ),
@@ -4437,29 +4444,33 @@ instance HsProtobuf.Message LifecycleStats where
       )
   decodeMessage _ =
     (Hs.pure LifecycleStats)
-      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Protob.Metric.Histo))
-              @(_ (Hs.Vector Monocle.Protob.Metric.Histo))
+      <*> ( Hs.coerce
+              @(_ (HsProtobuf.NestedVec Monocle.Protob.Metric.HistoInt))
+              @(_ (Hs.Vector Monocle.Protob.Metric.HistoInt))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 1)
               )
           )
-      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Protob.Metric.Histo))
-              @(_ (Hs.Vector Monocle.Protob.Metric.Histo))
+      <*> ( Hs.coerce
+              @(_ (HsProtobuf.NestedVec Monocle.Protob.Metric.HistoInt))
+              @(_ (Hs.Vector Monocle.Protob.Metric.HistoInt))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 2)
               )
           )
-      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Protob.Metric.Histo))
-              @(_ (Hs.Vector Monocle.Protob.Metric.Histo))
+      <*> ( Hs.coerce
+              @(_ (HsProtobuf.NestedVec Monocle.Protob.Metric.HistoInt))
+              @(_ (Hs.Vector Monocle.Protob.Metric.HistoInt))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 3)
               )
           )
-      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Protob.Metric.Histo))
-              @(_ (Hs.Vector Monocle.Protob.Metric.Histo))
+      <*> ( Hs.coerce
+              @(_ (HsProtobuf.NestedVec Monocle.Protob.Metric.HistoInt))
+              @(_ (Hs.Vector Monocle.Protob.Metric.HistoInt))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 4)
@@ -4519,7 +4530,7 @@ instance HsProtobuf.Message LifecycleStats where
           ( HsProtobuf.Repeated
               ( HsProtobuf.Named
                   ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("monocle_metric" Hs.:| ["Histo"]))
+                      (HsProtobuf.Path ("monocle_metric" Hs.:| ["HistoInt"]))
                   )
               )
           )
@@ -4532,7 +4543,7 @@ instance HsProtobuf.Message LifecycleStats where
           ( HsProtobuf.Repeated
               ( HsProtobuf.Named
                   ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("monocle_metric" Hs.:| ["Histo"]))
+                      (HsProtobuf.Path ("monocle_metric" Hs.:| ["HistoInt"]))
                   )
               )
           )
@@ -4545,7 +4556,7 @@ instance HsProtobuf.Message LifecycleStats where
           ( HsProtobuf.Repeated
               ( HsProtobuf.Named
                   ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("monocle_metric" Hs.:| ["Histo"]))
+                      (HsProtobuf.Path ("monocle_metric" Hs.:| ["HistoInt"]))
                   )
               )
           )
@@ -4558,7 +4569,7 @@ instance HsProtobuf.Message LifecycleStats where
           ( HsProtobuf.Repeated
               ( HsProtobuf.Named
                   ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("monocle_metric" Hs.:| ["Histo"]))
+                      (HsProtobuf.Path ("monocle_metric" Hs.:| ["HistoInt"]))
                   )
               )
           )
