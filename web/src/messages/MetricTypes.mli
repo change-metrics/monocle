@@ -34,20 +34,30 @@ and get_request = {
   options : get_request_options;
 }
 
-type histo = {
+type histo_int = {
   date : string;
   count : int32;
 }
 
-type histo_stat = {
-  histo : histo list;
+type histo_float = {
+  date : string;
+  count : float;
+}
+
+type histo_int_stat = {
+  histo : histo_int list;
+}
+
+type histo_float_stat = {
+  histo : histo_float list;
 }
 
 type get_response =
   | Error of string
   | Float_value of float
   | Int_value of int32
-  | Histo_value of histo_stat
+  | Histo_int_value of histo_int_stat
+  | Histo_float_value of histo_float_stat
 
 
 (** {2 Default values} *)
@@ -92,18 +102,31 @@ val default_get_request :
   get_request
 (** [default_get_request ()] is the default value for type [get_request] *)
 
-val default_histo : 
+val default_histo_int : 
   ?date:string ->
   ?count:int32 ->
   unit ->
-  histo
-(** [default_histo ()] is the default value for type [histo] *)
+  histo_int
+(** [default_histo_int ()] is the default value for type [histo_int] *)
 
-val default_histo_stat : 
-  ?histo:histo list ->
+val default_histo_float : 
+  ?date:string ->
+  ?count:float ->
   unit ->
-  histo_stat
-(** [default_histo_stat ()] is the default value for type [histo_stat] *)
+  histo_float
+(** [default_histo_float ()] is the default value for type [histo_float] *)
+
+val default_histo_int_stat : 
+  ?histo:histo_int list ->
+  unit ->
+  histo_int_stat
+(** [default_histo_int_stat ()] is the default value for type [histo_int_stat] *)
+
+val default_histo_float_stat : 
+  ?histo:histo_float list ->
+  unit ->
+  histo_float_stat
+(** [default_histo_float_stat ()] is the default value for type [histo_float_stat] *)
 
 val default_get_response : unit -> get_response
 (** [default_get_response ()] is the default value for type [get_response] *)

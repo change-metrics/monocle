@@ -852,21 +852,21 @@ testGetActivityStats = withTenant doTest
               1
               2
               ( V.fromList
-                  [ MetricPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
-                    MetricPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 1},
-                    MetricPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
+                  [ MetricPB.HistoInt {histoIntDate = "2021-05-31 09:00", histoIntCount = 0},
+                    MetricPB.HistoInt {histoIntDate = "2021-05-31 10:00", histoIntCount = 1},
+                    MetricPB.HistoInt {histoIntDate = "2021-05-31 11:00", histoIntCount = 0}
                   ]
               )
               ( V.fromList
-                  [ MetricPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
-                    MetricPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 2},
-                    MetricPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
+                  [ MetricPB.HistoInt {histoIntDate = "2021-05-31 09:00", histoIntCount = 0},
+                    MetricPB.HistoInt {histoIntDate = "2021-05-31 10:00", histoIntCount = 2},
+                    MetricPB.HistoInt {histoIntDate = "2021-05-31 11:00", histoIntCount = 0}
                   ]
               )
               ( V.fromList
-                  [ MetricPB.Histo {histoDate = "2021-05-31 09:00", histoCount = 0},
-                    MetricPB.Histo {histoDate = "2021-05-31 10:00", histoCount = 1},
-                    MetricPB.Histo {histoDate = "2021-05-31 11:00", histoCount = 0}
+                  [ MetricPB.HistoInt {histoIntDate = "2021-05-31 09:00", histoIntCount = 0},
+                    MetricPB.HistoInt {histoIntDate = "2021-05-31 10:00", histoIntCount = 1},
+                    MetricPB.HistoInt {histoIntDate = "2021-05-31 11:00", histoIntCount = 0}
                   ]
               )
           )

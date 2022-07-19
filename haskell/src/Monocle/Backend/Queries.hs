@@ -6,7 +6,10 @@ import Data.Aeson (Value (Object), (.:), (.:?))
 import Data.Aeson qualified as Aeson
 import Data.Aeson.Types qualified as Aeson
 import Data.HashMap.Strict qualified as HM
+import Data.List qualified
 import Data.Map qualified as Map
+import Data.Time (UTCTime (UTCTime), addDays, addGregorianMonthsClip, addGregorianYearsClip, secondsToNominalDiffTime)
+import Data.Time.Clock (secondsToDiffTime)
 import Data.Vector qualified as V
 import Database.Bloodhound qualified as BH
 import Database.Bloodhound.Raw (TermsCompositeAggBucket)
@@ -639,11 +642,11 @@ getReposSummary = do
       let changeQF = withFlavor (QueryFlavor Author UpdatedAt)
 
       -- Count the events
-      createdChanges <- wordToCount <$> runMetric metricChangesCreatedCount
+      createdChanges <- wordToCount <$> runMetricNum metricChangesCreated
       updatedChanges <- withFilter (changeState EChangeOpen) (changeQF countDocs)
-      mergedChanges <- wordToCount <$> runMetric metricChangesMergedCount
+      mergedChanges <- wordToCount <$> runMetricNum metricChangesMerged
       openChanges <- openChangesCount
-      abandonedChanges <- wordToCount <$> runMetric metricChangesAbandonedCount
+      abandonedChanges <- wordToCount <$> runMetricNum metricChangesAbandoned
 
       pure $ RepoSummary {..}
 
@@ -839,73 +842,6 @@ getChangesTops limit = do
             termsCountTotalHits = total
           }
 
-data HistoType = COMMITS_HISTO | REVIEWS_AND_COMMENTS_HISTO
-
-getHisto :: QueryMonad m => HistoType -> m (V.Vector MetricPB.Histo)
-getHisto = \case
-  COMMITS_HISTO ->
-    withFilter
-      [ documentTypes $
-          fromList
-            [ EChangeCommitForcePushedEvent,
-              EChangeCommitPushedEvent
-            ]
-      ]
-      $ getHistoPB CreatedAt
-  REVIEWS_AND_COMMENTS_HISTO ->
-    withFilter
-      [ documentTypes $
-          fromList
-            [ EChangeReviewedEvent,
-              EChangeCommentedEvent
-            ]
-      ]
-      $ getHistoPB CreatedAt
-
-baseGetHisto :: QueryMonad m => RangeFlavor -> m (V.Vector HistoSimple)
-baseGetHisto rf = do
-  query <- getQuery
-  queryBH <- getQueryBH
-
-  let (minDate, maxDate) = Q.queryBounds query
-      duration = elapsedSeconds minDate maxDate
-      interval = from duration
-
-      bound =
-        Aeson.object
-          [ "min" .= dateInterval interval minDate,
-            "max" .= dateInterval interval maxDate
-          ]
-      date_histo =
-        Aeson.object
-          [ "field" .= rangeField rf,
-            "calendar_interval" .= into @Text interval,
-            "format" .= getFormat (from interval),
-            "min_doc_count" .= (0 :: Word),
-            "extended_bounds" .= bound
-          ]
-      agg =
-        Aeson.object
-          [ "agg1" .= Aeson.object ["date_histogram" .= date_histo]
-          ]
-      search =
-        Aeson.object
-          [ "aggregations" .= agg,
-            "size" .= (0 :: Word),
-            "query" .= fromMaybe (error "need query") queryBH
-          ]
-
-  hBuckets . parseAggregationResults "agg1" <$> doAggregation search
-
-getHistoPB :: QueryMonad m => RangeFlavor -> m (V.Vector MetricPB.Histo)
-getHistoPB rf = fmap toPBHisto <$> baseGetHisto rf
-  where
-    toPBHisto :: HistoSimple -> MetricPB.Histo
-    toPBHisto HistoBucket {..} =
-      let histoDate = hbDate
-          histoCount = hbCount
-       in MetricPB.Histo {..}
-
 searchBody :: QueryMonad m => QueryFlavor -> Value -> m Value
 searchBody qf agg = withFlavor qf $ do
   queryBH <- getQueryBH
@@ -956,49 +892,46 @@ withEvents ev = withFlavor (QueryFlavor Author OnCreatedAndCreated) . withFilter
 -- | changes review stats
 getReviewStats :: QueryMonad m => m SearchPB.ReviewStats
 getReviewStats = do
-  reviewStatsCommentHisto <- getHisto' EChangeCommentedEvent
-  reviewStatsReviewHisto <- getHisto' EChangeReviewedEvent
+  reviewStatsCommentHisto <- runMetricTrendIntPB metricComments
+  reviewStatsReviewHisto <- runMetricTrendIntPB metricReviews
 
   reviewStatsCommentCount <- Just <$> statCountC
   reviewStatsReviewCount <- Just <$> statCountR
 
-  reviewStatsCommentDelay <- runMetric metricFirstCommentMeanTime
-  reviewStatsReviewDelay <- runMetric metricFirstReviewMeanTime
+  reviewStatsCommentDelay <- runMetricNum metricFirstCommentMeanTime
+  reviewStatsReviewDelay <- runMetricNum metricFirstReviewMeanTime
 
   pure $ SearchPB.ReviewStats {..}
   where
     statCountR =
       SearchPB.ReviewCount
-        <$> runMetric metricReviewAuthorsCount
-        <*> runMetric metricReviewsCount
+        <$> runMetricNum metricReviewAuthors
+        <*> runMetricNum metricReviews
     statCountC =
       SearchPB.ReviewCount
-        <$> runMetric metricCommentAuthorsCount
-        <*> runMetric metricCommentsCount
-
-    qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
-    getHisto' docType = withDocType docType qf (getHistoPB CreatedAt)
+        <$> runMetricNum metricCommentAuthors
+        <*> runMetricNum metricComments
 
 -- | changes lifecycle stats
 getLifecycleStats :: QueryMonad m => m SearchPB.LifecycleStats
 getLifecycleStats = do
-  lifecycleStatsCreatedHisto <- getHisto' EChangeCreatedEvent
-  lifecycleStatsUpdatedHisto <- getHistos' [EChangeCommitPushedEvent, EChangeCommitForcePushedEvent]
-  lifecycleStatsMergedHisto <- getHisto' EChangeMergedEvent
-  lifecycleStatsAbandonedHisto <- getHisto' EChangeAbandonedEvent
+  lifecycleStatsCreatedHisto <- runMetricTrendIntPB metricChangesCreated
+  lifecycleStatsUpdatedHisto <- runMetricTrendIntPB metricChangeAuthors
+  lifecycleStatsMergedHisto <- runMetricTrendIntPB metricChangesMerged
+  lifecycleStatsAbandonedHisto <- runMetricTrendIntPB metricChangesAbandoned
 
-  merged <- wordToCount <$> runMetric metricChangesMergedCount
-  selfMerged <- runMetric metricChangesSelfMergedCount
-  abandoned <- wordToCount <$> runMetric metricChangesAbandonedCount
-  created <- wordToCount <$> runMetric metricChangesCreatedCount
-  changeCreatedAuthor <- runMetric metricChangeCreatedAuthorsCount
+  merged <- wordToCount <$> runMetricNum metricChangesMerged
+  selfMerged <- runMetricNum metricChangesSelfMerged
+  abandoned <- wordToCount <$> runMetricNum metricChangesAbandoned
+  created <- wordToCount <$> runMetricNum metricChangesCreated
+  changeCreatedAuthor <- runMetricNum metricChangeAuthors
 
-  lifecycleStatsTtmMean <- runMetric metricTimeToMerge
-  lifecycleStatsTtmVariability <- runMetric metricTimeToMergeVariance
-  lifecycleStatsUpdatesOfChanges <- runMetric metricChangeUpdatesCount
-  lifecycleStatsCommitsPerChange <- runMetric metricCommitsPerChange
+  lifecycleStatsTtmMean <- runMetricNum metricTimeToMerge
+  lifecycleStatsTtmVariability <- runMetricNum metricTimeToMergeVariance
+  lifecycleStatsUpdatesOfChanges <- runMetricNum metricChangeUpdates
+  lifecycleStatsCommitsPerChange <- runMetricNum metricCommitsPerChange
 
-  tests <- wordToCount <$> runMetric metricChangeWithTestsCount
+  tests <- wordToCount <$> runMetricNum metricChangeWithTests
 
   let lifecycleStatsMerged = countToWord merged
       lifecycleStatsSelfMerged = selfMerged
@@ -1010,9 +943,6 @@ getLifecycleStats = do
 
   pure $ SearchPB.LifecycleStats {..}
   where
-    qf = QueryFlavor Monocle.Search.Query.Author CreatedAt
-    getHisto' docType = withDocType docType qf (getHistoPB CreatedAt)
-    getHistos' docTypes = withDocTypes docTypes qf (getHistoPB CreatedAt)
     ratio :: Deci -> Count -> Count -> Deci
     ratio m x y
       | y == 0 = 0
@@ -1022,13 +952,13 @@ getLifecycleStats = do
 
 getActivityStats :: QueryMonad m => m SearchPB.ActivityStats
 getActivityStats = do
-  changeCreatedHisto <- runMetric metricChangeAuthorsCountHisto
-  changeCommentedHisto <- runMetric metricCommentAuthorsCountHisto
-  changeReviewedHisto <- runMetric metricReviewAuthorsCountHisto
+  changeCreatedHisto <- runMetricTrendIntPB metricChangeAuthors
+  changeCommentedHisto <- runMetricTrendIntPB metricCommentAuthors
+  changeReviewedHisto <- runMetricTrendIntPB metricReviewAuthors
 
-  changeAuthorsCount <- runMetric metricChangeCreatedAuthorsCount
-  commentAuthorsCount <- runMetric metricCommentAuthorsCount
-  reviewAuthorsCount <- runMetric metricReviewAuthorsCount
+  changeAuthorsCount <- runMetricNum metricChangeAuthors
+  commentAuthorsCount <- runMetricNum metricCommentAuthors
+  reviewAuthorsCount <- runMetricNum metricReviewAuthors
 
   let activityStatsChangeAuthors = changeAuthorsCount
       activityStatsCommentAuthors = commentAuthorsCount
@@ -1057,6 +987,20 @@ getSuggestions index = do
 
 -------------------------------------------------------------------------------
 -- The final metrics
+
+newtype Numeric a = Num {unNum :: a}
+
+instance Functor Numeric where
+  fmap f (Num n) = Num $ f n
+
+data Histo a = Histo
+  { hDate :: String,
+    hValue :: a
+  }
+
+instance Functor Histo where
+  fmap f (Histo d n) = Histo d $ f n
+
 data MetricInfo = MetricInfo
   { miMetricName :: Text,
     miName :: Text,
@@ -1066,11 +1010,30 @@ data MetricInfo = MetricInfo
 
 data Metric m a = Metric
   { metricInfo :: MetricInfo,
-    runMetric :: m a
+    runMetric :: m (Numeric a),
+    runMetricTrend :: m (V.Vector (Histo a))
   }
 
-instance Functor m => Functor (Metric m) where
-  fmap f x = Metric (metricInfo x) (f <$> runMetric x)
+instance (Functor m) => Functor (Metric m) where
+  fmap f Metric {..} = Metric metricInfo (fmap f <$> runMetric) ((fmap . fmap) f <$> runMetricTrend)
+
+runMetricNum :: QueryMonad m => Metric m a -> m a
+runMetricNum m = unNum <$> runMetric m
+
+toPBHistoInt :: Histo Word32 -> MetricPB.HistoInt
+toPBHistoInt (Histo {..}) =
+  let histoIntDate = from hDate
+      histoIntCount = hValue
+   in MetricPB.HistoInt {..}
+
+toPBHistoFloat :: Histo Float -> MetricPB.HistoFloat
+toPBHistoFloat (Histo {..}) =
+  let histoFloatDate = from hDate
+      histoFloatCount = hValue
+   in MetricPB.HistoFloat {..}
+
+runMetricTrendIntPB :: QueryMonad m => Metric m Word32 -> m (V.Vector MetricPB.HistoInt)
+runMetricTrendIntPB m = fmap toPBHistoInt <$> runMetricTrend m
 
 authorFlavorToDesc :: AuthorFlavor -> Text
 authorFlavorToDesc = \case
@@ -1088,358 +1051,107 @@ rangeFlavorToDesc = \case
     "Both, the event and change's creation date is matched in "
       <> "case of any date query filter."
 
-changeEventCount :: QueryMonad m => MetricInfo -> EDocType -> Metric m Word32
-changeEventCount mi dt =
-  Metric mi (countToWord <$> compute)
+monoHisto :: forall m a. QueryMonad m => m a -> m (V.Vector (Histo a))
+monoHisto metric = do
+  query <- getQuery
+  let (minDate, maxDate) = Q.queryBounds query
+      duration = elapsedSeconds minDate maxDate
+      interval = from @Pico @HistoInterval duration
+      sliceBounds = mkSliceBounds maxDate interval [sliceBound minDate interval]
+  traverse (runMetricOnSlice interval) $ fromList sliceBounds
   where
-    compute = withFilter [documentType dt] (eventQF countDocs)
-    eventQF = withFlavor (QueryFlavor OnAuthor CreatedAt)
+    sliceBound :: UTCTime -> HistoInterval -> (UTCTime, UTCTime)
+    sliceBound fromDate@(UTCTime days _) interval =
+      ( fromDate,
+        case interval of
+          Hour -> addUTCTime anHour fromDate
+          Day -> UTCTime (addDays 1 days) (secondsToDiffTime 0)
+          Week -> UTCTime (addDays 7 days) (secondsToDiffTime 0)
+          Month -> UTCTime (addGregorianMonthsClip 1 days) (secondsToDiffTime 0)
+          Year -> UTCTime (addGregorianYearsClip 1 days) (secondsToDiffTime 0)
+      )
+      where
+        anHour = secondsToNominalDiffTime 3600
+    mkSliceBounds :: UTCTime -> HistoInterval -> [(UTCTime, UTCTime)] -> [(UTCTime, UTCTime)]
+    mkSliceBounds maxDate interval acc =
+      case acc of
+        [] -> error "Impossible case"
+        xs | snd (Data.List.last xs) >= maxDate -> acc
+        xs ->
+          let newMin = snd (Data.List.last xs)
+              newAcc = acc <> [sliceBound newMin interval]
+           in mkSliceBounds maxDate interval newAcc
+    runMetricOnSlice :: HistoInterval -> (UTCTime, UTCTime) -> m (Histo a)
+    runMetricOnSlice interval bounds =
+      toHisto <$> withModified Q.dropDate (withFilter boundsBH metric)
+      where
+        toHisto :: a -> Histo a
+        toHisto = Histo (from $ dateInterval interval $ fst bounds)
+        boundsBH :: [BH.Query]
+        boundsBH =
+          let rq c = BH.QueryRangeQuery $ BH.mkRangeQuery (BH.FieldName "created_at") c
+           in [ rq $ BH.RangeDateGte (BH.GreaterThanEqD (fst bounds)),
+                rq $ BH.RangeDateLt (BH.LessThanD (snd bounds))
+              ]
 
-changeEventFlavorDesc :: Text
-changeEventFlavorDesc = authorFlavorToDesc OnAuthor <> " " <> rangeFlavorToDesc CreatedAt
-
--- | The count of changes created
-metricChangesCreatedCount :: QueryMonad m => Metric m Word32
-metricChangesCreatedCount = changeEventCount mi EChangeCreatedEvent
+countHisto :: forall m. QueryMonad m => RangeFlavor -> m (V.Vector (Histo Word32))
+countHisto rf = fmap toHisto <$> getCountHisto
   where
-    mi =
-      MetricInfo
-        "changes_created_count"
-        "Changes created count"
-        "The count of changes created"
-        ( Just $
-            "The metric is the count change created events."
-              <> changeEventFlavorDesc
-        )
+    toHisto :: HistoSimple -> Histo Word32
+    toHisto HistoBucket {..} =
+      let hDate = from hbDate
+          hValue = hbCount
+       in Histo {..}
+    getCountHisto :: m (V.Vector HistoSimple)
+    getCountHisto = do
+      query <- getQuery
+      queryBH <- getQueryBH
 
--- | The count of changes merged
-metricChangesMergedCount :: QueryMonad m => Metric m Word32
-metricChangesMergedCount = changeEventCount mi EChangeMergedEvent
-  where
-    mi =
-      MetricInfo
-        "changes_merged_count"
-        "Changes merged count"
-        "The count of changes merged"
-        ( Just $
-            "The metric is the count change merged events."
-              <> changeEventFlavorDesc
-        )
+      let (minDate, maxDate) = Q.queryBounds query
+          duration = elapsedSeconds minDate maxDate
+          interval = from duration
 
--- | The count of changes abandoned
-metricChangesAbandonedCount :: QueryMonad m => Metric m Word32
-metricChangesAbandonedCount = changeEventCount mi EChangeAbandonedEvent
-  where
-    mi =
-      MetricInfo
-        "changes_abandoned_count"
-        "Changes abandoned count"
-        "The count of changes abandoned"
-        ( Just $
-            "The metric is the count change abandoned events."
-              <> changeEventFlavorDesc
-        )
+          bound =
+            Aeson.object
+              [ "min" .= dateInterval interval minDate,
+                "max" .= dateInterval interval maxDate
+              ]
+          date_histo =
+            Aeson.object
+              [ "field" .= rangeField rf,
+                "calendar_interval" .= into @Text interval,
+                "format" .= getFormat (from interval),
+                "min_doc_count" .= (0 :: Word),
+                "extended_bounds" .= bound
+              ]
+          agg =
+            Aeson.object
+              [ "agg1" .= Aeson.object ["date_histogram" .= date_histo]
+              ]
+          search =
+            Aeson.object
+              [ "aggregations" .= agg,
+                "size" .= (0 :: Word),
+                "query" .= fromMaybe (error "need query") queryBH
+              ]
 
--- | The count of updates of changes
-metricChangeUpdatesCount :: QueryMonad m => Metric m Word32
-metricChangeUpdatesCount =
-  Metric
-    ( MetricInfo
-        "change_updates_count"
-        "Change updates count"
-        "The count of updates of changes"
-        ( Just $
-            "The metric is the count of commit push and force commit push events. "
-              <> authorFlavorToDesc Author
-              <> " "
-              <> rangeFlavorToDesc OnCreatedAt
-        )
-    )
-    (countToWord <$> compute)
-  where
-    compute =
-      withFilter
-        [documentTypes $ fromList [EChangeCommitPushedEvent, EChangeCommitForcePushedEvent]]
-        (withFlavor' countDocs)
-    withFlavor' = withFlavor (QueryFlavor Author OnCreatedAt)
+      hBuckets . parseAggregationResults "agg1" <$> doAggregation search
 
--- | The count of changes with tests related modifications
-metricChangeWithTestsCount :: QueryMonad m => Metric m Word32
-metricChangeWithTestsCount =
-  Metric
-    ( MetricInfo
-        "change_with_tests_count"
-        "Change with tests count"
-        "The count of changes with tests modifications"
-        ( Just $
-            "The metric is the count of changes with modification on files named based on the following regex: "
-              <> regexp
-              <> " "
-              <> authorFlavorToDesc Author
-              <> " "
-              <> rangeFlavorToDesc CreatedAt
-        )
-    )
-    (countToWord <$> compute)
-  where
-    compute =
-      withFilter [documentType EChangeDoc, testIncluded] (withFlavor' countDocs)
-    withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
-    regexp = ".*[Tt]est.*"
-    testIncluded =
-      BH.QueryRegexpQuery $
-        BH.RegexpQuery (BH.FieldName "changed_files.path") (BH.Regexp regexp) BH.AllRegexpFlags Nothing
-
--- | The count of changes self merged
-metricChangesSelfMergedCount :: QueryMonad m => Metric m Word32
-metricChangesSelfMergedCount =
-  Metric
-    ( MetricInfo
-        "changes_self_merged_count"
-        "Changes self merged count"
-        "The count of changes self merged"
-        ( Just $
-            "The metric is the count change merged events for which "
-              <> "the event's author and the change's author are the same. "
-              <> rangeFlavorToDesc CreatedAt
-        )
-    )
-    (countToWord <$> compute)
-  where
-    compute = withFilter selfMerged $ withFlavor' countDocs
-    selfMerged =
-      [ documentType EChangeMergedEvent,
-        BH.TermQuery (BH.Term "self_merged" "true") Nothing
-      ]
-    withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
-
--- | The count of change' reviews
-metricReviewsCount :: QueryMonad m => Metric m Word32
-metricReviewsCount =
-  Metric
-    ( MetricInfo
-        "reviews_count"
-        "Reviews count"
-        "The count of change' reviews"
-        ( Just $
-            "The metric is the count change' reviews performed by an author. "
-              <> authorFlavorToDesc Author
-              <> " "
-              <> rangeFlavorToDesc CreatedAt
-        )
-    )
-    (countToWord <$> compute)
-  where
-    compute = withFilter [documentType EChangeReviewedEvent] $ eventQF countDocs
-    eventQF = withFlavor $ QueryFlavor Author CreatedAt
-
--- | The count of change' comments
-metricCommentsCount :: QueryMonad m => Metric m Word32
-metricCommentsCount =
-  Metric
-    ( MetricInfo
-        "comments_count"
-        "Comments count"
-        "The count of change' comments"
-        ( Just $
-            "The metric is the count of change' comments performed by an author. "
-              <> authorFlavorToDesc Author
-              <> " "
-              <> rangeFlavorToDesc CreatedAt
-        )
-    )
-    (countToWord <$> compute)
-  where
-    compute = withFilter [documentType EChangeCommentedEvent] $ eventQF countDocs
-    eventQF = withFlavor $ QueryFlavor Author CreatedAt
-
--- | The count of change's review authors
-metricReviewAuthorsCount :: QueryMonad m => Metric m Word32
-metricReviewAuthorsCount =
-  Metric
-    ( MetricInfo
-        "review_authors_count"
-        "Review authors count"
-        "The count of change's review authors"
-        ( Just $
-            "The metric is the count of change' reviews aggregated by unique authors. "
-              <> authorFlavorToDesc Author
-              <> " "
-              <> rangeFlavorToDesc CreatedAt
-        )
-    )
-    (countToWord <$> compute)
-  where
-    compute = withFilter [documentType EChangeReviewedEvent] $ eventQF countAuthors
-    eventQF = withFlavor $ QueryFlavor Author CreatedAt
-
--- | The count of change's comment authors
-metricCommentAuthorsCount :: QueryMonad m => Metric m Word32
-metricCommentAuthorsCount =
-  Metric
-    ( MetricInfo
-        "comment_authors_count"
-        "Comment authors count"
-        "The count of change's comment authors"
-        ( Just $
-            "The metric is the count of change' comments aggregated by unique authors. "
-              <> authorFlavorToDesc Author
-              <> " "
-              <> rangeFlavorToDesc CreatedAt
-        )
-    )
-    (countToWord <$> compute)
-  where
-    compute = withFilter [documentType EChangeCommentedEvent] $ eventQF countAuthors
-    eventQF = withFlavor $ QueryFlavor Author CreatedAt
-
--- | The count of change's authors
-metricChangeCreatedAuthorsCount :: QueryMonad m => Metric m Word32
-metricChangeCreatedAuthorsCount =
-  Metric
-    ( MetricInfo
-        "change_authors_count"
-        "Change authors count"
-        "The count of change's authors"
-        ( Just $
-            "The metric is the count of change created events aggregated by unique authors. "
-              <> authorFlavorToDesc Author
-              <> " "
-              <> rangeFlavorToDesc CreatedAt
-        )
-    )
-    (countToWord <$> compute)
-  where
-    compute = withFilter [documentType EChangeCreatedEvent] $ eventQF countAuthors
-    eventQF = withFlavor $ QueryFlavor Author CreatedAt
-
--- | The average duration for an open change to be merged
-metricTimeToMerge :: QueryMonad m => Metric m Float
-metricTimeToMerge =
-  Metric
-    ( MetricInfo
-        "time_to_merge"
-        "Time to merge"
-        "The average duration for an open change to be merged"
-        ( Just $
-            "The metric is the average duration for changes "
-              <> "between their creation date and their merge date."
-              <> authorFlavorToDesc Author
-              <> " "
-              <> rangeFlavorToDesc CreatedAt
-        )
-    )
-    compute
-  where
-    compute =
-      double2Float
-        <$> withFilter (changeState EChangeMerged) (averageDuration qf)
-    qf = QueryFlavor Author CreatedAt
-
--- | The variance of the duration for an open change to be merged
-metricTimeToMergeVariance :: QueryMonad m => Metric m Float
-metricTimeToMergeVariance =
-  Metric
-    ( MetricInfo
-        "time_to_merge_variance"
-        "Time to merge variance"
-        "The variance of the duration for an open change to be merged"
-        ( Just $
-            "The metric is the variance of the duration for changes "
-              <> "between their creation date and their merge date."
-              <> authorFlavorToDesc Author
-              <> " "
-              <> rangeFlavorToDesc CreatedAt
-        )
-    )
-    compute
-  where
-    compute =
-      double2Float
-        <$> withFilter (changeState EChangeMerged) (medianDeviationDuration qf)
-    qf = QueryFlavor Author CreatedAt
-
--- | The average duration until a change gets a first review event
-metricFirstReviewMeanTime :: QueryMonad m => Metric m Word32
-metricFirstReviewMeanTime =
-  Metric
-    ( MetricInfo
-        "first_review_mean_time"
-        "1st review mean time"
-        "The average duration until a change gets a first review event"
-        ( Just $
-            "The metric is the average duration for changes to get their first review."
-              <> authorFlavorToDesc Author
-              <> " "
-              <> rangeFlavorToDesc CreatedAt
-        )
-    )
-    compute
-  where
-    compute =
-      firstEventAverageDuration
-        <$> withEvents [documentType EChangeReviewedEvent] (withFlavor' firstEventOnChanges)
-    withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
-
--- | The average delay until a change gets a comment event
-metricFirstCommentMeanTime :: QueryMonad m => Metric m Word32
-metricFirstCommentMeanTime =
-  Metric
-    ( MetricInfo
-        "first_comment_mean_time"
-        "1st comment mean time"
-        "The average delay until a change gets a comment event"
-        ( Just $
-            "The metric is the average duration for changes to get their first comment."
-              <> authorFlavorToDesc Author
-              <> " "
-              <> rangeFlavorToDesc CreatedAt
-        )
-    )
-    compute
-  where
-    compute =
-      firstEventAverageDuration
-        <$> withEvents [documentType EChangeCommentedEvent] (withFlavor' firstEventOnChanges)
-    withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
-
--- | The average commit count for per change
-metricCommitsPerChange :: QueryMonad m => Metric m Float
-metricCommitsPerChange =
-  Metric
-    ( MetricInfo
-        "commits_per_change"
-        "commits per change"
-        "The average commits count per merged change"
-        ( Just $
-            "The metric is the average of the number of commits a merged change is composed of."
-              <> authorFlavorToDesc Author
-              <> " "
-              <> rangeFlavorToDesc CreatedAt
-        )
-    )
-    compute
-  where
-    compute =
-      double2Float
-        <$> withFilter (changeState EChangeMerged) (changeMergedAvgCommits qf)
-    qf = QueryFlavor Author CreatedAt
-
-authorCountHisto :: forall m. QueryMonad m => EDocType -> m (V.Vector MetricPB.Histo)
+authorCountHisto :: forall m. QueryMonad m => EDocType -> m (V.Vector (Histo Word32))
 authorCountHisto changeEvent = withDocType changeEvent qf getAuthorHistoPB
   where
     qf = QueryFlavor Author CreatedAt
-    getAuthorHistoPB = fmap toHistoPB <$> getAuthorCountHisto
-    toHistoPB HistoBucket {..} =
-      let histoDate = hbDate
-          histoCount =
+    getAuthorHistoPB = fmap toHisto <$> getAuthorCountHisto
+    toHisto HistoBucket {..} =
+      let hDate = from hbDate
+          hValue =
             fromInteger
               . toInteger
               . length
               . haBuckets
               . fromMaybe (error "subbucket not found")
               $ hbSubBuckets
-       in MetricPB.Histo {..}
+       in Histo {..}
     getAuthorCountHisto :: m (V.Vector (HistoBucket HistoAuthors))
     getAuthorCountHisto = do
       query <- getQuery
@@ -1490,79 +1202,397 @@ authorCountHisto changeEvent = withDocType changeEvent qf getAuthorHistoPB
 
       hBuckets . parseAggregationResults "agg1" <$> doAggregation search
 
-metricChangeAuthorsCountHisto :: QueryMonad m => Metric m (V.Vector MetricPB.Histo)
-metricChangeAuthorsCountHisto =
+changeEventCount :: QueryMonad m => MetricInfo -> EDocType -> Metric m Word32
+changeEventCount mi dt =
+  Metric mi (Num . countToWord <$> compute) computeTrend
+  where
+    compute = withFilter [documentType dt] (withFlavor qf countDocs)
+    computeTrend = withDocType EChangeCreatedEvent qf $ countHisto CreatedAt
+    qf = QueryFlavor OnAuthor CreatedAt
+
+changeEventFlavorDesc :: Text
+changeEventFlavorDesc = authorFlavorToDesc OnAuthor <> " " <> rangeFlavorToDesc CreatedAt
+
+metricChangesCreated :: QueryMonad m => Metric m Word32
+metricChangesCreated = changeEventCount mi EChangeCreatedEvent
+  where
+    mi =
+      MetricInfo
+        "changes_created"
+        "Changes created count"
+        "The count of changes created"
+        ( Just $
+            "The metric is the count change created events."
+              <> changeEventFlavorDesc
+        )
+
+metricChangesMerged :: QueryMonad m => Metric m Word32
+metricChangesMerged = changeEventCount mi EChangeMergedEvent
+  where
+    mi =
+      MetricInfo
+        "changes_merged"
+        "Changes merged count"
+        "The count of changes merged"
+        ( Just $
+            "The metric is the count change merged events."
+              <> changeEventFlavorDesc
+        )
+
+metricChangesAbandoned :: QueryMonad m => Metric m Word32
+metricChangesAbandoned = changeEventCount mi EChangeAbandonedEvent
+  where
+    mi =
+      MetricInfo
+        "changes_abandoned"
+        "Changes abandoned count"
+        "The count of changes abandoned"
+        ( Just $
+            "The metric is the count change abandoned events."
+              <> changeEventFlavorDesc
+        )
+
+metricChangeUpdates :: QueryMonad m => Metric m Word32
+metricChangeUpdates = Metric mi compute computeTrend
+  where
+    mi =
+      MetricInfo
+        "change_updates"
+        "Change updates count"
+        "The count of updates of changes"
+        ( Just $
+            "The metric is the count of commit push and force commit push events. "
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc OnCreatedAt
+        )
+    compute =
+      Num . countToWord
+        <$> withFilter
+          [documentTypes $ fromList docs]
+          ( withFlavor qf countDocs
+          )
+    computeTrend = withDocTypes docs qf $ countHisto CreatedAt
+    qf = QueryFlavor Author OnCreatedAt
+    docs = [EChangeCommitPushedEvent, EChangeCommitForcePushedEvent]
+
+-- | The count of changes with tests related modifications
+metricChangeWithTests :: QueryMonad m => Metric m Word32
+metricChangeWithTests =
   Metric
     ( MetricInfo
-        "change_authors_count_histo"
-        "change authors count histogram"
-        "A date histogram of change' authors count"
+        "change_with_tests_count"
+        "Change with tests count"
+        "The count of changes with tests modifications"
         ( Just $
-            "The metric is a date histogram of the count of change' authors."
+            "The metric is the count of changes with modification on files named based on the following regex: "
+              <> regexp
               <> " "
               <> authorFlavorToDesc Author
               <> " "
               <> rangeFlavorToDesc CreatedAt
         )
     )
-    $ authorCountHisto EChangeCreatedEvent
+    (Num . countToWord <$> compute)
+    (pure $ fromList [])
+  where
+    compute =
+      withFilter [documentType EChangeDoc, testIncluded] (withFlavor' countDocs)
+    withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
+    regexp = ".*[Tt]est.*"
+    testIncluded =
+      BH.QueryRegexpQuery $
+        BH.RegexpQuery (BH.FieldName "changed_files.path") (BH.Regexp regexp) BH.AllRegexpFlags Nothing
 
-metricCommentAuthorsCountHisto :: QueryMonad m => Metric m (V.Vector MetricPB.Histo)
-metricCommentAuthorsCountHisto =
+-- | The count of changes self merged
+metricChangesSelfMerged :: QueryMonad m => Metric m Word32
+metricChangesSelfMerged =
   Metric
     ( MetricInfo
-        "comment_authors_count_histo"
-        "comment authors count histogram"
-        "A date histogram of change comment' authors count"
+        "changes_self_merged_count"
+        "Changes self merged count"
+        "The count of changes self merged"
         ( Just $
-            "The metric is a date histogram of the count of comment' authors on changes."
+            "The metric is the count change merged events for which "
+              <> "the event's author and the change's author are the same. "
+              <> rangeFlavorToDesc CreatedAt
+        )
+    )
+    (Num . countToWord <$> compute)
+    (pure $ fromList [])
+  where
+    compute = withFilter selfMerged $ withFlavor' countDocs
+    selfMerged =
+      [ documentType EChangeMergedEvent,
+        BH.TermQuery (BH.Term "self_merged" "true") Nothing
+      ]
+    withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
+
+metricReviews :: QueryMonad m => Metric m Word32
+metricReviews = Metric mi compute computeTrend
+  where
+    mi =
+      MetricInfo
+        "reviews"
+        "Reviews count"
+        "The count of change' reviews"
+        ( Just $
+            "The metric is the count change' code reviews. "
+              <> authorFlavorToDesc Author
               <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
+    compute =
+      Num . countToWord
+        <$> withFilter
+          [documentType EChangeReviewedEvent]
+          ( withFlavor qf countDocs
+          )
+    computeTrend = withDocType EChangeReviewedEvent qf $ countHisto CreatedAt
+    qf = QueryFlavor Author CreatedAt
+
+metricReviewsAndComments :: QueryMonad m => Metric m Word32
+metricReviewsAndComments = Metric mi compute computeTrend
+  where
+    mi =
+      MetricInfo
+        "reviews_and_comments"
+        "Reviews and comments count"
+        "The count of change' reviews + comments"
+        ( Just $
+            "The metric is the count change' code reviews + comments. "
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
+    compute =
+      Num . countToWord
+        <$> withFilter
+          [documentTypes $ fromList docs]
+          (withFlavor qf countDocs)
+    computeTrend = withDocTypes docs qf $ countHisto CreatedAt
+    qf = QueryFlavor Author CreatedAt
+    docs = [EChangeReviewedEvent, EChangeCommentedEvent]
+
+metricComments :: QueryMonad m => Metric m Word32
+metricComments = Metric mi compute computeTrend
+  where
+    mi =
+      MetricInfo
+        "comments"
+        "Comments count"
+        "The count of change' comments"
+        ( Just $
+            "The metric is the count of change' comments. "
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
+    compute =
+      Num . countToWord
+        <$> withFilter [documentType EChangeCommentedEvent] (withFlavor qf countDocs)
+    computeTrend = withDocType EChangeCommentedEvent qf $ countHisto CreatedAt
+    qf = QueryFlavor Author CreatedAt
+
+metricReviewAuthors :: QueryMonad m => Metric m Word32
+metricReviewAuthors = Metric mi compute computeTrend
+  where
+    mi =
+      MetricInfo
+        "review_authors"
+        "Review authors count"
+        "The count of change's review authors"
+        ( Just $
+            "The metric is the count of change' reviews aggregated by unique authors. "
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
+    compute =
+      Num . countToWord
+        <$> withFilter [documentType EChangeReviewedEvent] (withFlavor qf countAuthors)
+    computeTrend = authorCountHisto EChangeReviewedEvent
+    qf = QueryFlavor Author CreatedAt
+
+metricCommentAuthors :: QueryMonad m => Metric m Word32
+metricCommentAuthors = Metric mi compute computeTrend
+  where
+    mi =
+      MetricInfo
+        "comment_authors"
+        "Comment authors count"
+        "The count of change's comment authors"
+        ( Just $
+            "The metric is the count of change' comments aggregated by unique authors. "
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
+    compute =
+      Num . countToWord
+        <$> withFilter [documentType EChangeCommentedEvent] (withFlavor qf countAuthors)
+    computeTrend = authorCountHisto EChangeCommentedEvent
+    qf = QueryFlavor Author CreatedAt
+
+metricChangeAuthors :: QueryMonad m => Metric m Word32
+metricChangeAuthors = Metric mi compute computeTrend
+  where
+    mi =
+      MetricInfo
+        "change_authors"
+        "Change authors count"
+        "The count of change's authors"
+        ( Just $
+            "The metric is the count of change created events aggregated by unique authors. "
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
+    compute =
+      Num . countToWord
+        <$> withFilter [documentType EChangeCreatedEvent] (withFlavor qf countAuthors)
+    computeTrend = authorCountHisto EChangeCreatedEvent
+    qf = QueryFlavor Author CreatedAt
+
+-- | The average duration for an open change to be merged
+metricTimeToMerge :: QueryMonad m => Metric m Float
+metricTimeToMerge =
+  Metric
+    ( MetricInfo
+        "time_to_merge"
+        "Time to merge"
+        "The average duration for an open change to be merged"
+        ( Just $
+            "The metric is the average duration for changes "
+              <> "between their creation date and their merge date."
               <> authorFlavorToDesc Author
               <> " "
               <> rangeFlavorToDesc CreatedAt
         )
     )
-    $ authorCountHisto EChangeCommentedEvent
+    (Num <$> compute)
+    computeTrend
+  where
+    compute =
+      double2Float
+        <$> withFilter (changeState EChangeMerged) (averageDuration $ QueryFlavor Author CreatedAt)
+    computeTrend = monoHisto compute
 
-metricReviewAuthorsCountHisto :: QueryMonad m => Metric m (V.Vector MetricPB.Histo)
-metricReviewAuthorsCountHisto =
+-- | The variance of the duration for an open change to be merged
+metricTimeToMergeVariance :: QueryMonad m => Metric m Float
+metricTimeToMergeVariance =
   Metric
     ( MetricInfo
-        "review_authors_count_histo"
-        "review authors count histogram"
-        "A date histogram of change review' authors count"
+        "time_to_merge_variance"
+        "Time to merge variance"
+        "The variance of the duration for an open change to be merged"
         ( Just $
-            "The metric is a date histogram of the count of review' authors on changes."
-              <> " "
+            "The metric is the variance of the duration for changes "
+              <> "between their creation date and their merge date."
               <> authorFlavorToDesc Author
               <> " "
               <> rangeFlavorToDesc CreatedAt
         )
     )
-    $ authorCountHisto EChangeReviewedEvent
+    (Num <$> compute)
+    computeTrend
+  where
+    compute =
+      double2Float
+        <$> withFilter (changeState EChangeMerged) (medianDeviationDuration $ QueryFlavor Author CreatedAt)
+    computeTrend = monoHisto compute
 
-allMetricsJSON :: QueryMonad m => [Metric m Value]
-allMetricsJSON =
-  [ toJSON <$> metricChangesCreatedCount,
-    toJSON <$> metricChangesMergedCount,
-    toJSON <$> metricChangesAbandonedCount,
-    toJSON <$> metricChangesSelfMergedCount,
-    toJSON <$> metricChangeUpdatesCount,
-    toJSON <$> metricChangeWithTestsCount,
-    toJSON <$> metricReviewsCount,
-    toJSON <$> metricCommentsCount,
-    toJSON <$> metricReviewAuthorsCount,
-    toJSON <$> metricCommentAuthorsCount,
-    toJSON <$> metricChangeCreatedAuthorsCount,
-    toJSON <$> metricTimeToMerge,
-    toJSON <$> metricTimeToMergeVariance,
-    toJSON <$> metricFirstCommentMeanTime,
-    toJSON <$> metricFirstReviewMeanTime,
-    toJSON <$> metricCommitsPerChange,
-    toJSON <$> metricChangeAuthorsCountHisto,
-    toJSON <$> metricCommentAuthorsCountHisto,
-    toJSON <$> metricReviewAuthorsCountHisto
-  ]
+-- | The average duration until a change gets a first review event
+metricFirstReviewMeanTime :: QueryMonad m => Metric m Word32
+metricFirstReviewMeanTime =
+  Metric
+    ( MetricInfo
+        "first_review_mean_time"
+        "1st review mean time"
+        "The average duration until a change gets a first review event"
+        ( Just $
+            "The metric is the average duration for changes to get their first review."
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
+    )
+    (Num <$> compute)
+    computeTrend
+  where
+    compute =
+      firstEventAverageDuration
+        <$> withEvents [documentType EChangeReviewedEvent] (withFlavor' firstEventOnChanges)
+    withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
+    computeTrend = monoHisto compute
+
+-- | The average delay until a change gets a comment event
+metricFirstCommentMeanTime :: QueryMonad m => Metric m Word32
+metricFirstCommentMeanTime =
+  Metric
+    ( MetricInfo
+        "first_comment_mean_time"
+        "1st comment mean time"
+        "The average delay until a change gets a comment event"
+        ( Just $
+            "The metric is the average duration for changes to get their first comment."
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
+    )
+    (Num <$> compute)
+    computeTrend
+  where
+    compute =
+      firstEventAverageDuration
+        <$> withEvents [documentType EChangeCommentedEvent] (withFlavor' firstEventOnChanges)
+    withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
+    computeTrend = monoHisto compute
+
+-- | The average commit count for per change
+metricCommitsPerChange :: QueryMonad m => Metric m Float
+metricCommitsPerChange =
+  Metric
+    ( MetricInfo
+        "commits_per_change"
+        "commits per change"
+        "The average commits count per merged change"
+        ( Just $
+            "The metric is the average of the number of commits a merged change is composed of."
+              <> authorFlavorToDesc Author
+              <> " "
+              <> rangeFlavorToDesc CreatedAt
+        )
+    )
+    (Num <$> compute)
+    computeTrend
+  where
+    compute =
+      double2Float
+        <$> withFilter (changeState EChangeMerged) (changeMergedAvgCommits qf)
+    qf = QueryFlavor Author CreatedAt
+    computeTrend = monoHisto compute
 
 allMetrics :: [MetricInfo]
-allMetrics = map metricInfo (allMetricsJSON @QueryM)
+allMetrics =
+  map
+    metricInfo
+    [ toJSON <$> metricChangesCreated @QueryM,
+      toJSON <$> metricChangesMerged,
+      toJSON <$> metricChangesAbandoned,
+      toJSON <$> metricChangesSelfMerged,
+      toJSON <$> metricChangeUpdates,
+      toJSON <$> metricChangeWithTests,
+      toJSON <$> metricReviews,
+      toJSON <$> metricComments,
+      toJSON <$> metricReviewsAndComments,
+      toJSON <$> metricReviewAuthors,
+      toJSON <$> metricCommentAuthors,
+      toJSON <$> metricChangeAuthors,
+      toJSON <$> metricTimeToMerge,
+      toJSON <$> metricTimeToMergeVariance,
+      toJSON <$> metricFirstCommentMeanTime,
+      toJSON <$> metricFirstReviewMeanTime,
+      toJSON <$> metricCommitsPerChange
+    ]

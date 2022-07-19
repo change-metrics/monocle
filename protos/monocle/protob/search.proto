@@ -235,17 +235,17 @@ message ReviewStats {
   ReviewCount review_count = 2;
   uint32 comment_delay = 5;
   uint32 review_delay = 6;
-  repeated monocle_metric.Histo comment_histo = 10;
-  repeated monocle_metric.Histo review_histo = 11;
+  repeated monocle_metric.HistoInt comment_histo = 10;
+  repeated monocle_metric.HistoInt review_histo = 11;
 }
 
 message ActivityStats {
   uint32 change_authors = 1;
   uint32 comment_authors = 2;
   uint32 review_authors = 3;
-  repeated monocle_metric.Histo comments_histo = 10;
-  repeated monocle_metric.Histo reviews_histo = 11;
-  repeated monocle_metric.Histo changes_histo = 12;
+  repeated monocle_metric.HistoInt comments_histo = 10;
+  repeated monocle_metric.HistoInt reviews_histo = 11;
+  repeated monocle_metric.HistoInt changes_histo = 12;
 }
 
 message QueryResponse {
@@ -262,15 +262,15 @@ message QueryResponse {
     ChangeAndEvents change_events = 30;
     ChangesTops changes_tops = 31;
     float ratio = 40;
-    monocle_metric.HistoStat histo = 50;
+    monocle_metric.HistoIntStat histo = 50;
   }
 }
 
 message LifecycleStats {
-  repeated monocle_metric.Histo created_histo = 1;
-  repeated monocle_metric.Histo updated_histo = 2;
-  repeated monocle_metric.Histo merged_histo = 3;
-  repeated monocle_metric.Histo abandoned_histo = 4;
+  repeated monocle_metric.HistoInt created_histo = 1;
+  repeated monocle_metric.HistoInt updated_histo = 2;
+  repeated monocle_metric.HistoInt merged_histo = 3;
+  repeated monocle_metric.HistoInt abandoned_histo = 4;
 
   ReviewCount created = 5;
 
