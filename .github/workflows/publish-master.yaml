@@ -5,8 +5,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: "actions/checkout@v2.4.0"
-        with:
-          submodules: 'true'
       - name: Stop provided Docker
         run: sudo systemctl stop docker containerd
       - name: Remove provided Docker

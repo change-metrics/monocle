@@ -6,7 +6,7 @@ in  { Nix =
           (   mk.elastic-steps
             # [ mk.GithubActions.Step::{
                 , name = Some "Build the env"
-                , run = Some "nix-build --no-out-link --attr monocle-light.env"
+                , run = Some "nix build --no-link .#env"
                 }
               , mk.GithubActions.Step::{
                 , name = Some "Run Test"
@@ -14,11 +14,20 @@ in  { Nix =
                     ( let command =
                             "env MONOCLE_ELASTIC_URL=http://localhost:9200 monocle-ci-run"
 
-                      in  "cd haskell; nix-shell --pure --attr ci-shell ../nix/default.nix --command '${command}'"
+                      in  "nix develop .#ci --command '${command}'"
                     )
                 }
               ]
           )
+          [ mk.GithubActions.Step::{
+            , name = Some "Build the project"
+            , run = Some "nix build --no-link"
+            }
+          , mk.GithubActions.Step::{
+            , name = Some "Build the develop shell"
+            , run = Some "nix develop . --command 'true'"
+            }
+          ]
     , Web =
         mk.makeNPM
           [ mk.GithubActions.Step::{

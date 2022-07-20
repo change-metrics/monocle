@@ -4,10 +4,7 @@ let GithubActions =
         sha256:98ee16e6add21cc8ea7804cce55793b8793b14479f248d8f0bda0209d3600e18
 
 let checkout-step =
-      GithubActions.Step::{
-      , uses = Some "actions/checkout@v2.4.0"
-      , `with` = Some (toMap { submodules = "true" })
-      }
+      GithubActions.Step::{ uses = Some "actions/checkout@v2.4.0" }
 
 let init-docker-steps =
       [ GithubActions.Step::{
@@ -127,6 +124,7 @@ in  { GithubActions
     , makeNix =
         \(cache-name : Text) ->
         \(steps : List GithubActions.Step.Type) ->
+        \(build-steps : List GithubActions.Step.Type) ->
           let boot =
                 \(name : Text) ->
                   [ checkout-step
@@ -156,6 +154,11 @@ in  { GithubActions
                     , name = Some "api-tests"
                     , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
                     , steps = boot cache-name # steps
+                    }
+                  , build = GithubActions.Job::{
+                    , name = Some "build"
+                    , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
+                    , steps = boot cache-name # build-steps
                     }
                   }
               }

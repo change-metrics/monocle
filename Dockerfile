@@ -21,7 +21,7 @@ FROM quay.io/change-metrics/builder
 ARG MONOCLE_COMMIT
 
 # Build project
-COPY haskell/ /build
+COPY . /build
 RUN cabal v2-install -v1 exe:monocle
 
 # web build

@@ -1,24 +1,6 @@
-{ elasticsearch-port ? 19200, nixpkgsPath ? (fetchTarball {
-  url =
-    # Keep in sync with haskell/flake.nix
-    "https://github.com/NixOS/nixpkgs/archive/ed014c27f4d0ca772fb57d3b8985b772b0503bbd.tar.gz";
-  sha256 = "sha256-Jxyn3uXFr5LdZNNiippI/obtLXAVBM18uVfiKVP4j9Q=";
-}) }:
+{ elasticsearch-port ? 19200, nixpkgsPath, self }:
 let
-  # pin the upstream nixpkgs
   nixpkgsSrc = import nixpkgsPath;
-
-  gitignoreSrc = pkgs.fetchFromGitHub {
-    owner = "hercules-ci";
-    repo = "gitignore.nix";
-    # put the latest commit sha of gitignore Nix library here:
-    rev = "211907489e9f198594c0eb0ca9256a1949c9d412";
-    # use what nix suggests in the mismatch message here:
-    sha256 = "sha256-qHu3uZ/o9jBHiA3MEKHJ06k7w4heOhA+4HCSIvflRxo=";
-  };
-  inherit (import gitignoreSrc { inherit (pkgs) lib; }) gitignoreSource;
-
-  monocleHaskellSrc = gitignoreSource ../haskell/.;
 
   # update haskell dependencies
   compilerVersion = "922";
@@ -184,11 +166,11 @@ let
           });
 
           monocle =
-            (hpPrev.callCabal2nix "monocle" monocleHaskellSrc { }).overrideAttrs
+            (hpPrev.callCabal2nix "monocle" self { }).overrideAttrs
             (_: { MONOCLE_COMMIT = builtins.getEnv "MONOCLE_COMMIT"; });
 
           monocle-codegen =
-            hpPrev.callCabal2nix "monocle-codegen" monocleHaskellSrc { };
+            hpPrev.callCabal2nix "monocle-codegen" self { };
         };
       };
 
@@ -619,8 +601,9 @@ in rec {
     ${nixfmt ""}
   '';
 
-  # dontCheck because doctests are not working...
-  monocle = pkgs.haskell.lib.dontCheck hsPkgs.monocle;
+  monocle = hsPkgs.monocle;
+
+  monocle-exe = pkgs.haskell.lib.justStaticExecutables hsPkgs.monocle;
 
   services = pkgs.stdenv.mkDerivation {
     name = "monocle-services";

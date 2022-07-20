@@ -30,7 +30,7 @@ Below are the two recommended ways to deploy Monocle from source:
 These requirements are for a Fedora based system. Please adapt them to your own OS if needed.
 
 Please note that the GHC version available on your OS might not fit the Monocle build requirements. Please
-ensure the GHC version into [monocle.cabal](./haskell/monocle.cabal) (line: "tested-with:") is the same version
+ensure the GHC version into [monocle.cabal](./monocle.cabal) (line: "tested-with:") is the same version
 than the version available on your OS.
 
 Run the following commands **as non-root user**:
@@ -83,7 +83,6 @@ added in the `monocle.cabal` file.
 
 ```ShellSession
 export $(cat .secrets)
-cd haskell
 cabal repl monocle
 λ> import Monocle.Main
 λ> run $ defaultApiConfig 9879 "http://localhost:9200" "../etc/config.yaml"
@@ -107,7 +106,6 @@ Run this commands to start the Macroscope which is the new Monocle crawler syste
 
 ```ShellSession
 export $(cat .secrets)
-cd haskell
 cabal repl monocle
 λ> import Macroscope.Worker
 λ> import Macroscope.Main
@@ -119,21 +117,39 @@ cabal repl monocle
 
 This section describes how to start the Monocle services directly on your host using nix.
 
-If you have not installed nix-shell follow the instructions [here](https://nixos.org/), or from the [manual](https://nixos.org/manual/nix/stable/installation/installing-binary.html).
+If you have not installed nix follow the instructions [here](https://nixos.org/), or from the [manual](https://nixos.org/manual/nix/stable/installation/installing-binary.html).
 
-You can configure the project [cachix](https://cachix.org) binary cache with this command: `nix-shell -p cachix --command "cachix use change-metrics"`.
+You can configure the project [cachix](https://cachix.org) binary cache with this command: `nix shell nixpkgs#cachix --command cachix use change-metrics`.
 
+You can also use the cachix store directly, for example to run the monocle command:
+
+```ShellSession
+nix run . --option binary-caches "https://cache.nixos.org https://change-metrics.cachix.org" --option trusted-public-keys "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= change-metrics.cachix.org-1:dCe8jx9vptiF6DCdZ5y2QouvDsxgFRZnbHowhPnS4C0="
+```
+
+Get started by running the `nix develop` command at the root of the project:
+
+```ShellSession
+monocle $ nix develop
+[nix(monocle)]$ make
+```
+
+Build the project:
+
+```
+$(nix build . --print-out-paths)/bin/monocle --help
+```
 
 #### ElasticSearch
 
 ```ShellSession
-nix-shell --command elasticsearch-start
+nix develop --command elasticsearch-start
 ```
 
 #### Web
 
 ```ShellSession
-nix-shell --command monocle-web-start
+nix develop --command monocle-web-start
 firefox http://localhost:13000
 ```
 
@@ -142,7 +158,7 @@ If the command fails with `Error: package bs-parse not found or built`, you can 
 #### API
 
 ```ShellSession
-nix-shell --command monocle-repl
+nix develop --command monocle-repl
 λ> import Monocle.Main
 λ> run $ defaultApiConfig 8080 "http://localhost:19200" "../etc/config.yaml"
 ```
@@ -150,7 +166,7 @@ nix-shell --command monocle-repl
 #### Start crawlers process
 
 ```ShellSession
-nix-shell --command monocle-repl
+nix develop --command monocle-repl
 λ> import Macroscope.Worker
 λ> import Macroscope.Main
 λ> import Monocle.Client (withClient)
@@ -160,18 +176,39 @@ nix-shell --command monocle-repl
 #### Run ghcid
 
 ```ShellSession
-nix-shell --command monocle-ghcid
+nix develop --command monocle-ghcid
 ```
+
+#### Run hoogle
+
+```ShellSession
+nix develop --command hoogle server -p 8080 --local --haskell
+```
+
+#### Monitoring containers:xs
+
+```ShellSession
+podman load < $(nix build .#containerPrometheus)
+podman load < $(nix build .#containerGrafana)
+```
+
+Test the containers:
+
+```ShellSession
+podman run --network host -v prom-data:/var/lib/prometheus:Z -e API_TARGET=localhost:8080 --rm quay.io/change-metrics/monocle-prometheus:latest
+podman run -it --rm --network host quay.io/change-metrics/monocle-grafana:latest
+```
+
 
 ## Contributing a new driver
 
 There is no specific documentation to cover that topic yet but the source code of
-the [GitLab driver](haskell/src/Lentille/GitLab/MergeRequests.hs) might be a good
+the [GitLab driver](src/Lentille/GitLab/MergeRequests.hs) might be a good
 source of knowledge to hack on a new crawler.
 
 ## Running tests
 
-Tests rely on the Elasticsearch service so first you need to ensure the ElasticSearch is running on your system. To start the service use the script `contrib/start-elk.sh` or the related nix-shell command.
+Tests rely on the Elasticsearch service so first you need to ensure the ElasticSearch is running on your system. To start the service use the script `contrib/start-elk.sh` or the related nix develop command.
 
 ### On the Haskell code base
 
@@ -179,7 +216,6 @@ Tests can be executed using:
 
 ```ShellSession
 export MONOCLE_ELASTIC_URL=http://localhost:9200
-cd haskell
 cabal test
 ```
 
@@ -192,13 +228,13 @@ cabal test --test-option=-p --test-option='/Test get metrics/'
 Run linters with:
 
 ```ShellSession
-nix-shell --command monocle-fast-ci-run
+nix develop --command monocle-fast-ci-run
 ```
 
 When the linters fail, you can fix the issue automatically with:
 
 ```ShellSession
-nix-shell --command monocle-reformat-run
+nix develop --command monocle-reformat-run
 ```
 
 Doctest can be executed using:
