@@ -28,7 +28,8 @@ where
 
 import Control.Monad.Trans.Except (Except, runExcept, throwE)
 import Data.List (lookup)
-import Data.Time.Clock (secondsToNominalDiffTime)
+import Data.Time.Calendar (addDays, addGregorianMonthsClip, addGregorianYearsClip)
+import Data.Time.Clock (UTCTime (UTCTime), secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import Database.Bloodhound qualified as BH
 import Monocle.Config qualified as Config
@@ -234,21 +235,15 @@ instance Read RelativeTime where
   readPrec = ReadPrec.lift relTimeReader
 
 parseRelativeDateValue :: UTCTime -> Text -> Maybe UTCTime
-parseRelativeDateValue now txt = relTimeToUTCTime <$> readMaybe (from txt)
+parseRelativeDateValue now@(UTCTime days diffT) txt = relTimeToUTCTime <$> readMaybe (from txt)
   where
     relTimeToUTCTime :: RelativeTime -> UTCTime
-    relTimeToUTCTime (MkRelativeTime count range) =
-      let hour = 3600
-          day = hour * 24
-          diffsec =
-            (fromInteger . toInteger $ count) * case range of
-              Hour -> hour
-              Day -> day
-              Week -> day * 7
-              -- TODO Use calender aware computation
-              Month -> day * 31
-              Year -> day * 365
-       in subUTCTimeSecond now diffsec
+    relTimeToUTCTime (MkRelativeTime (from -> count) range) = case range of
+      Hour -> subUTCTimeSecond now (count * 3600)
+      Day -> UTCTime (addDays (count * (-1)) days) diffT
+      Week -> UTCTime (addDays (count * (-7)) days) diffT
+      Month -> UTCTime (addGregorianMonthsClip (count * (-1)) days) diffT
+      Year -> UTCTime (addGregorianYearsClip (count * (-1)) days) diffT
 
 parseNumber :: Text -> Either Text Double
 parseNumber txt = case readMaybe (from txt) of
