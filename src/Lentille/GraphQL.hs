@@ -38,10 +38,10 @@ type GraphResponse a = (PageInfo, Maybe RateLimit, [Text], a)
 -- Constants
 -------------------------------------------------------------------------------
 ghSchemaLocation :: FilePath
-ghSchemaLocation = "./github-schema/schema.docs.graphql"
+ghSchemaLocation = "./schemas/github/schema.docs.graphql"
 
 glSchemaLocation :: FilePath
-glSchemaLocation = "./gitlab-schema/schema.graphql"
+glSchemaLocation = "./schemas/gitlab/schema.graphql"
 
 ghDefaultURL :: Text
 ghDefaultURL = "https://api.github.com/graphql"

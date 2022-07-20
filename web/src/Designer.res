@@ -13,11 +13,11 @@ import './index.css'
 open Prelude
 
 module Fixture = {
-  @module external changeJson: Js.Dict.t<Js.Json.t> = "../../protos/monocle/change.json"
+  @module external changeJson: Js.Dict.t<Js.Json.t> = "../../schemas/monocle/change.json"
   let change: SearchTypes.change = SearchBs.decode_change(changeJson)
 
   @module
-  external searchFieldsJson: Js.Dict.t<Js.Json.t> = "../../protos/monocle/search_fields.json"
+  external searchFieldsJson: Js.Dict.t<Js.Json.t> = "../../schemas/monocle/search_fields.json"
   let fields: SearchTypes.fields_response = SearchBs.decode_fields_response(searchFieldsJson)
 }
 
