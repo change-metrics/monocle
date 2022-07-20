@@ -127,6 +127,7 @@ in  { GithubActions
     , makeNix =
         \(cache-name : Text) ->
         \(steps : List GithubActions.Step.Type) ->
+        \(build-steps : List GithubActions.Step.Type) ->
           let boot =
                 \(name : Text) ->
                   [ checkout-step
@@ -156,6 +157,11 @@ in  { GithubActions
                     , name = Some "api-tests"
                     , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
                     , steps = boot cache-name # steps
+                    }
+                  , build = GithubActions.Job::{
+                    , name = Some "build"
+                    , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
+                    , steps = boot cache-name # build-steps
                     }
                   }
               }

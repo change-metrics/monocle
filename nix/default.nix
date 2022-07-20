@@ -622,6 +622,8 @@ in rec {
   # dontCheck because doctests are not working...
   monocle = pkgs.haskell.lib.dontCheck hsPkgs.monocle;
 
+  monocle-exe = pkgs.haskell.lib.justStaticExecutables hsPkgs.monocle;
+
   services = pkgs.stdenv.mkDerivation {
     name = "monocle-services";
     buildInputs = base-req ++ services-req;

@@ -6,5 +6,12 @@
 
   outputs = { self, nixpkgs }:
     let legacy = import ../nix/default.nix { nixpkgsPath = nixpkgs; };
-    in { devShell."x86_64-linux" = legacy.shell; };
+    in {
+      devShell."x86_64-linux" = legacy.shell;
+      packages."x86_64-linux".default = legacy.monocle-exe;
+      apps."x86_64-linux".default = {
+        type = "app";
+        program = "${legacy.monocle-exe}/bin/monocle";
+      };
+    };
 }

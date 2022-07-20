@@ -19,6 +19,11 @@ in  { Nix =
                 }
               ]
           )
+          [ mk.GithubActions.Step::{
+            , name = Some "Build the project"
+            , run = Some "nix build --no-link ./haskell?submodules=1 --impure"
+            }
+          ]
     , Web =
         mk.makeNPM
           [ mk.GithubActions.Step::{
