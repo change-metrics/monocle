@@ -105,8 +105,8 @@ parse aliases code = do
       | hasLabel "operator" set = "Expected operator (`:`, `>`, ...)"
       | hasLabel "closing paren" set = "Expected closing paren `)`"
       | otherwise =
-        -- TODO: add missing <?> label in the parser
-        def
+          -- TODO: add missing <?> label in the parser
+          def
     mkErr :: Int -> Megaparsec.ParseErrorBundle [L.LocatedToken] Void -> ParseError
     mkErr len (Megaparsec.ParseErrorBundle (be :| _) _) =
       let (offset, message) = case be of

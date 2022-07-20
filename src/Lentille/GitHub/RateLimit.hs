@@ -70,18 +70,18 @@ retryCheck author = Handler $ \case
     checkResp :: (Show a, MonadLog m) => a -> Response LByteString -> m RetryResult
     checkResp err resp
       | isTimeoutError status body = do
-        mLog $ Log author $ LogRaw "Server side timeout error. Will retry with lower query depth ..."
-        pure DoRetry
+          mLog $ Log author $ LogRaw "Server side timeout error. Will retry with lower query depth ..."
+          pure DoRetry
       | isSecondaryRateLimitError status body = do
-        mLog $ Log author $ LogRaw "Secondary rate limit error. Will retry after 60 seconds ..."
-        mThreadDelay $ 60 * 1_000_000
-        pure DoRetry
+          mLog $ Log author $ LogRaw "Secondary rate limit error. Will retry after 60 seconds ..."
+          mThreadDelay $ 60 * 1_000_000
+          pure DoRetry
       | isRepoNotFound status body = do
-        mLog $ Log author $ LogRaw "Repository not found. Will not retry."
-        pure DontRetry
+          mLog $ Log author $ LogRaw "Repository not found. Will not retry."
+          pure DontRetry
       | otherwise = do
-        mLog $ Log author $ LogRaw $ "Unexpected error: " <> show err
-        pure DoRetry
+          mLog $ Log author $ LogRaw $ "Unexpected error: " <> show err
+          pure DoRetry
       where
         status = responseStatus resp
         body = decodeUtf8 $ responseBody resp

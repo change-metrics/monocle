@@ -10,8 +10,6 @@ module Monocle.Search.Query
     loadAliases,
     loadAliases',
     load,
-
-    -- *
     QueryFlavor (..),
     AuthorFlavor (..),
     RangeFlavor (..),
@@ -163,8 +161,8 @@ queryFieldToDocument name = do
 getFlavoredField :: QueryFlavor -> Field -> Maybe Field
 getFlavoredField QueryFlavor {..} field
   | field `elem` ["author", "group"] = Just $ case qfAuthor of
-    Author -> "author"
-    OnAuthor -> "on_author"
+      Author -> "author"
+      OnAuthor -> "on_author"
   | field `elem` ["from", "to"] = rangeField qfRange
   | otherwise = Nothing
 
