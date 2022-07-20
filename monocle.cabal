@@ -12,9 +12,9 @@ category:            Development
 build-type:          Simple
 extra-doc-files:     README.md
 tested-with:         GHC == 8.10.7 || == 9.2.2
-extra-source-files:  ./conf/Monocle/**/*.dhall,
-                     github-schema/schema.docs.graphql,
-                     gitlab-schema/schema.graphql,
+extra-source-files:  schemas/monocle/config/**/*.dhall,
+                     schemas/github/schema.docs.graphql,
+                     schemas/gitlab/schema.graphql,
                      test/data/*.yaml,
                      test/data/*.json
 
