@@ -58,7 +58,7 @@ app env = do
     mkAppM apM = runReaderT (unApp apM) env
 
 fallbackWebAppPath :: FilePath
-fallbackWebAppPath = "../web/build/"
+fallbackWebAppPath = "web/build/"
 
 mkStaticMiddleware :: Text -> Text -> FilePath -> IO (Wai.Application -> Wai.Application)
 mkStaticMiddleware publicUrl title webAppPath = do

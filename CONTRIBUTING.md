@@ -160,7 +160,7 @@ If the command fails with `Error: package bs-parse not found or built`, you can 
 ```ShellSession
 nix develop --command monocle-repl
 λ> import Monocle.Main
-λ> run $ defaultApiConfig 8080 "http://localhost:19200" "../etc/config.yaml"
+λ> run $ defaultApiConfig 8080 "http://localhost:19200" "etc/config.yaml"
 ```
 
 #### Start crawlers process
@@ -170,7 +170,7 @@ nix develop --command monocle-repl
 λ> import Macroscope.Worker
 λ> import Macroscope.Main
 λ> import Monocle.Client (withClient)
-λ> withClient "http://localhost:8080" Nothing $ \client -> runMacroscope 19001 "../etc/config.yaml" client
+λ> withClient "http://localhost:8080" Nothing $ \client -> runMacroscope 19001 "etc/config.yaml" client
 ```
 
 #### Run ghcid
@@ -255,7 +255,7 @@ ghcid --test 'Tests.main'
 Similarly the api can be automatically restarted:
 
 ```ShellSession
-ghcid --test 'Monocle.Main.run 8080 "http://localhost:19200" "../etc/config.yaml"'
+ghcid --test 'Monocle.Main.run 8080 "http://localhost:19200" "etc/config.yaml"'
 ```
 
 ### Update API (protobuf)
