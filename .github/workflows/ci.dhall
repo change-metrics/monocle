@@ -17,15 +17,18 @@ in  { Nix =
                       in  "nix develop .#ci --command ${command}"
                     )
                 }
+              , mk.GithubActions.Step::{
+                , name = Some "Build the develop shell"
+                , run = Some "nix develop . --command true"
+                }
               ]
           )
+    , NixBuild =
+        mk.makeNixTag
+          "change-metrics"
           [ mk.GithubActions.Step::{
             , name = Some "Build the project"
             , run = Some "nix build --no-link"
-            }
-          , mk.GithubActions.Step::{
-            , name = Some "Build the develop shell"
-            , run = Some "nix develop . --command true"
             }
           ]
     , Web =

@@ -38,6 +38,21 @@ let el-sysctl-step =
           ''
       }
 
+let boot =
+      \(name : Text) ->
+        [ checkout-step
+        , GithubActions.Step::{
+          , uses = Some "cachix/install-nix-action@v15"
+          , `with` = Some
+              (toMap { nix_path = "nixpkgs=channel:nixos-unstable" })
+          }
+        , GithubActions.Step::{
+          , uses = Some "cachix/cachix-action@v10"
+          , `with` = Some
+              (toMap { name, authToken = "\${{ secrets.CACHIX_AUTH_TOKEN }}" })
+          }
+        ]
+
 in  { GithubActions
     , elastic-steps =
       [ el-sysctl-step
@@ -124,44 +139,36 @@ in  { GithubActions
     , makeNix =
         \(cache-name : Text) ->
         \(steps : List GithubActions.Step.Type) ->
-        \(build-steps : List GithubActions.Step.Type) ->
-          let boot =
-                \(name : Text) ->
-                  [ checkout-step
-                  , GithubActions.Step::{
-                    , uses = Some "cachix/install-nix-action@v15"
-                    , `with` = Some
-                        (toMap { nix_path = "nixpkgs=channel:nixos-unstable" })
-                    }
-                  , GithubActions.Step::{
-                    , uses = Some "cachix/cachix-action@v10"
-                    , `with` = Some
-                        ( toMap
-                            { name
-                            , authToken = "\${{ secrets.CACHIX_AUTH_TOKEN }}"
-                            }
-                        )
-                    }
-                  ]
-
-          in  GithubActions.Workflow::{
-              , name = "Nix"
-              , on = GithubActions.On::{
-                , pull_request = Some GithubActions.PullRequest::{=}
+          GithubActions.Workflow::{
+          , name = "Nix"
+          , on = GithubActions.On::{
+            , pull_request = Some GithubActions.PullRequest::{=}
+            }
+          , jobs = toMap
+              { api-tests = GithubActions.Job::{
+                , name = Some "api-tests"
+                , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
+                , steps = boot cache-name # steps
                 }
-              , jobs = toMap
-                  { api-tests = GithubActions.Job::{
-                    , name = Some "api-tests"
-                    , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
-                    , steps = boot cache-name # steps
-                    }
-                  , build = GithubActions.Job::{
-                    , name = Some "build"
-                    , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
-                    , steps = boot cache-name # build-steps
-                    }
-                  }
               }
+          }
+    , makeNixTag =
+        \(cache-name : Text) ->
+        \(steps : List GithubActions.Step.Type) ->
+          GithubActions.Workflow::{
+          , name = "Publish Tag Nix Build"
+          , on = GithubActions.On::{
+            , push = Some GithubActions.Push::{ tags = Some [ "*" ] }
+            }
+          , jobs = toMap
+              { publish-tag-nix-build = GithubActions.Job::{
+                , name = Some "publish-tag-nix-build"
+                , `if` = Some "github.repository_owner == 'change-metrics'"
+                , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
+                , steps = boot cache-name # steps
+                }
+              }
+          }
     , makeNPM =
         \(steps : List GithubActions.Step.Type) ->
           let init =
@@ -232,7 +239,7 @@ in  { GithubActions
             , push = Some GithubActions.Push::{ tags = Some [ "*" ] }
             }
           , jobs = toMap
-              { publish-master-container = GithubActions.Job::{
+              { publish-tag-container = GithubActions.Job::{
                 , name = Some "publish-tag-container"
                 , `if` = Some "github.repository_owner == 'change-metrics'"
                 , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
