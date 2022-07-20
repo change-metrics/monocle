@@ -559,7 +559,7 @@ in rec {
     ${fast-ci-commands}
   '';
 
-  # A script to be used in ci with nix-shell
+  # The monocle-ci-run script for ci validation.
   ci-run = mkRun "ci" ci-commands;
 
   ci-shell = hsPkgs.shellFor {

@@ -14,7 +14,7 @@ in  { Nix =
                     ( let command =
                             "env MONOCLE_ELASTIC_URL=http://localhost:9200 monocle-ci-run"
 
-                      in  "nix develop .#ci --command '${command}'"
+                      in  "nix develop .#ci --command ${command}"
                     )
                 }
               ]
@@ -25,7 +25,7 @@ in  { Nix =
             }
           , mk.GithubActions.Step::{
             , name = Some "Build the develop shell"
-            , run = Some "nix develop . --command 'true'"
+            , run = Some "nix develop . --command true"
             }
           ]
     , Web =
