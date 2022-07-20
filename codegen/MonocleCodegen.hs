@@ -1,6 +1,6 @@
+{-# LANGUAGE ImportQualifiedPost #-}
 -- See https://www.schoolofhaskell.com/user/kseo/overloaded-string-literals
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
 -- To use relude we need to disable the default standard library using NoImplicitPrelude
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -8,14 +8,14 @@
 module Main (main) where
 
 import Data.List (lookup)
-import qualified Data.Text as Text
+import Data.Text qualified as Text
 import Language.ProtocolBuffers.Parser (parseProtoBufFile)
 -- http://hackage.haskell.org/package/language-protobuf-1.0.1/docs/Language-ProtocolBuffers-Types.html
-import qualified Language.ProtocolBuffers.Types as PB
+import Language.ProtocolBuffers.Types qualified as PB
 -- http://hackage.haskell.org/package/relude
 import Relude
 -- http://hackage.haskell.org/package/casing-0.1.4.1/docs/Text-Casing.html
-import qualified Text.Casing as Casing
+import Text.Casing qualified as Casing
 
 -- A convenient helper to manage generated file content
 fromProto ::
@@ -122,12 +122,12 @@ protoToReScript = fromProto headers mkService
     mkMethod moduleName (name, input, output, path)
       | "/crawler/" `Text.isInfixOf` path = []
       | otherwise =
-        [ "@module(\"axios\")",
-          "external " <> camel name <> "Raw: (string, 'data, option<axiosRequestConfig>) => axios<'b> = \"post\"",
-          "",
-          methodDef' <> "=>",
-          requestCall' <> " |> " <> promiseDecode
-        ]
+          [ "@module(\"axios\")",
+            "external " <> camel name <> "Raw: (string, 'data, option<axiosRequestConfig>) => axios<'b> = \"post\"",
+            "",
+            methodDef' <> "=>",
+            requestCall' <> " |> " <> promiseDecode
+          ]
       where
         methodOutput = "axios<" <> msgName moduleName output <> ">"
         requestEncode = "request->" <> moduleName <> "Bs.encode_" <> snake (attrName input)
