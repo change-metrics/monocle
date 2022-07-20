@@ -2,11 +2,11 @@
 /web/src/components/WebApi.res linguist-generated=true
 # Protobuf messages
 /web/src/messages/* linguist-generated=true
-/haskell/codegen/Monocle/Protob/*.hs linguist-generated=true
-/haskell/src/Monocle/Api/HTTP.hs linguist-generated=true
-/haskell/src/Monocle/Api/Client/Api.hs linguist-generated=true
+/codegen/Monocle/Protob/*.hs linguist-generated=true
+/src/Monocle/Api/HTTP.hs linguist-generated=true
+/src/Monocle/Api/Client/Api.hs linguist-generated=true
 # OpenAPI
 /doc/openapi.yaml linguist-generated=true
 # GraphQL
-/haskell/github-schema/schema.docs.graphql linguist-generated=true
-/haskell/gitlab-schema/schema.graphql linguist-generated=true
+/github-schema/schema.docs.graphql linguist-generated=true
+/gitlab-schema/schema.graphql linguist-generated=true

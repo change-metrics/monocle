@@ -27,6 +27,11 @@ flag ci
   default:     False
   manual:      True
 
+flag codegen
+  description: Build codegen utility
+  default:     False
+  manual:      True
+
 common common-options
   ghc-options:         -Wall
                        -Wcompat
@@ -275,3 +280,24 @@ test-suite monocle-test
   main-is:             Spec.hs
   build-depends:       monocle
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+
+executable monocle-codegen
+  main-is:             MonocleCodegen.hs
+  hs-source-dirs:      codegen
+  if !flag(codegen)
+    buildable:         False
+  ghc-options:         -Wall
+                       -Wcompat
+                       -Widentities
+                       -Wincomplete-uni-patterns
+                       -Wincomplete-record-updates
+                       -Wredundant-constraints
+                       -fhide-source-paths
+                       -Wmissing-export-lists
+                       -Wpartial-fields
+                       -Wunused-packages
+  build-depends:       base                  < 5
+                     , casing                ^>= 0.1
+                     , relude                ^>= 1.0
+                     , language-protobuf     ^>= 1.0
+  default-language:    Haskell2010

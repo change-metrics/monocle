@@ -165,12 +165,8 @@ let
             };
           });
 
-          monocle =
-            (hpPrev.callCabal2nix "monocle" self { }).overrideAttrs
+          monocle = (hpPrev.callCabal2nix "monocle" self { }).overrideAttrs
             (_: { MONOCLE_COMMIT = builtins.getEnv "MONOCLE_COMMIT"; });
-
-          monocle-codegen =
-            hpPrev.callCabal2nix "monocle-codegen" self { };
         };
       };
 
@@ -187,9 +183,13 @@ let
     config.allowUnfree = true;
   };
 
-  # manually adds build dependencies for benchmark that are not managed by cabal2nix
-  addCriterion = drv:
-    pkgs.haskell.lib.addBuildDepends drv ([ pkgs.myHaskellPackages.criterion ]);
+  # manually adds build dependencies for benchmark and codegen that are not managed by cabal2nix
+  addExtraDeps = drv:
+    pkgs.haskell.lib.addBuildDepends drv ([
+      pkgs.myHaskellPackages.criterion
+      pkgs.myHaskellPackages.casing
+      pkgs.myHaskellPackages.language-protobuf
+    ]);
 
   # local devel env
   monocle-port = 8080;
@@ -559,11 +559,11 @@ in rec {
     buildInputs = [ pkgs.cabal-install ci-run ];
   };
 
-  hlint = args: "${pkgs.hlint}/bin/hlint -XQuasiQuotes ${args} haskell/src/";
+  hlint = args: "${pkgs.hlint}/bin/hlint -XQuasiQuotes ${args} src/";
   ormolu = mode: ''
     ${pkgs.ormolu}/bin/ormolu                                 \
       -o -XPatternSynonyms -o -XTypeApplications -o -XImportQualifiedPost --mode ${mode} \
-      $(find haskell/src/ -name "*.hs")
+      $(find src/ -name "*.hs")
   '';
   nixfmt = mode: "${pkgs.nixfmt}/bin/nixfmt ./nix/default.nix";
 
@@ -602,11 +602,7 @@ in rec {
     buildInputs = base-req ++ services-req;
   };
   shell = hsPkgs.shellFor {
-    packages = p: [
-      (addCriterion p.monocle)
-      p.monocle-codegen
-      p.pretty-simple
-    ];
+    packages = p: [ (addExtraDeps p.monocle) p.pretty-simple ];
 
     buildInputs = with pkgs.myHaskellPackages;
       [ pkgs.hlint pkgs.ghcid pkgs.haskell-language-server doctest_0_20_0 ]

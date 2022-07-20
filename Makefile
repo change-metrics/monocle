@@ -24,15 +24,15 @@ doc/architecture.png: doc/architecture.plantuml
 
 codegen-stubs:
 	mkdir -p srcgen/
-	(cd codegen; cabal run monocle-codegen ../protos/$(BASEDIR)/http.proto ../src/Monocle/Client/Api.hs ../src/Monocle/Servant/HTTP.hs ../srcgen/WebApi.res)
+	(cabal -fcodegen run monocle-codegen ./protos/$(BASEDIR)/http.proto ./src/Monocle/Client/Api.hs ./src/Monocle/Servant/HTTP.hs ./srcgen/WebApi.res)
 	ormolu -i ./src/Monocle/Client/Api.hs ./src/Monocle/Servant/HTTP.hs
 	./web/node_modules/.bin/bsc -format ./srcgen/WebApi.res > ./web/src/components/WebApi.res
 	rm -Rf srcgen/
 
 codegen-haskell:
 	sh -c 'for pb in $(MESSAGES) $(CRAWLER); do compile-proto-file --includeDir /usr/include --includeDir protos/ --includeDir ${PROTOBUF_SRC} --proto $${pb} --out codegen/; done'
-	find codegen/ -type f -name "*.hs" -exec sed -i {} -e '1i{-# LANGUAGE NoGeneralisedNewtypeDeriving #-}' \;
-	find codegen/ -type f -name "*.hs" -exec ormolu -i {} \;
+	find codegen/Monocle -type f -name "*.hs" -exec sed -i {} -e '1i{-# LANGUAGE NoGeneralisedNewtypeDeriving #-}' \;
+	find codegen/Monocle -type f -name "*.hs" -exec ormolu -i {} \;
 
 codegen-javascript:
 	rm -f web/src/messages/*
