@@ -26,7 +26,7 @@ jobs:
       - name: Build the env
         run: "nix build --no-link .#env"
       - name: Run Test
-        run: "nix develop .#ci --command 'env MONOCLE_ELASTIC_URL=http://localhost:9200 monocle-ci-run'"
+        run: "nix develop .#ci --command env MONOCLE_ELASTIC_URL=http://localhost:9200 monocle-ci-run"
   build:
     name: build
     runs-on: ubuntu-latest
@@ -41,6 +41,8 @@ jobs:
           name: change-metrics
       - name: Build the project
         run: nix build --no-link
+      - name: Build the develop shell
+        run: nix develop . --command true
 name: Nix
 on:
   pull_request: {}
