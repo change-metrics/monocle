@@ -174,11 +174,11 @@ runCrawlers' startDelay loopDelay watchDelay isReloaded groups = do
     pauseGroup x
       | x > loopDelay = pure () -- The pause completed
       | otherwise = do
-        let step = min loopDelay 1_000_000
-        -- Pause for one second
-        mThreadDelay step
-        -- Then continue
-        unlessStopped $ pauseGroup (x + step)
+          let step = min loopDelay 1_000_000
+          -- Pause for one second
+          mThreadDelay step
+          -- Then continue
+          unlessStopped $ pauseGroup (x + step)
 
     watch groupAsyncs = do
       -- Check if the config changed

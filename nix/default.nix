@@ -457,7 +457,7 @@ in rec {
 
   hs-req = [
     pkgs.cabal-install
-    pkgs.ormolu
+    hsPkgs.ormolu
     hsPkgs.proto3-suite
     pkgs.zlib
     hsPkgs.weeder
@@ -561,7 +561,7 @@ in rec {
 
   hlint = args: "${pkgs.hlint}/bin/hlint -XQuasiQuotes ${args} src/";
   ormolu = mode: ''
-    ${pkgs.ormolu}/bin/ormolu                                 \
+    ${hsPkgs.ormolu}/bin/ormolu                                 \
       -o -XPatternSynonyms -o -XTypeApplications -o -XImportQualifiedPost --mode ${mode} \
       $(find src/ -name "*.hs")
   '';
