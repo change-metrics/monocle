@@ -413,19 +413,14 @@ in rec {
   monocleReplStart = pkgs.writeScriptBin "monocle-repl" ''
     #!/bin/sh
     set -ex
-    if [ -f .secrets ]; then
-      export $(cat .secrets)
-      cd haskell
-    else
-      export $(cat ../.secrets)
-    fi
+    export $(cat .secrets)
     cabal repl --build-depends pretty-simple monocle
   '';
 
   monocleGhcid = pkgs.writeScriptBin "monocle-ghcid" ''
     #!/bin/sh
     set -x
-    cd haskell 2> /dev/null; ${pkgs.ghcid}/bin/ghcid -c "cabal repl monocle" $*
+    ${pkgs.ghcid}/bin/ghcid -c "cabal repl monocle" $*
   '';
 
   monocleWebStart = pkgs.writeScriptBin "monocle-web-start" ''
@@ -538,8 +533,6 @@ in rec {
     '';
 
   ci-commands = ''
-    cd haskell;
-
     echo "[+] Building the project"
     cabal build --enable-tests --flags=ci -O0
 
@@ -555,7 +548,6 @@ in rec {
     # cabal check
     # cabal install --installdir=/tmp --overwrite-policy=always'}}
 
-    cd ..;
     ${fast-ci-commands}
   '';
 

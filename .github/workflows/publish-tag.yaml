@@ -1,5 +1,5 @@
 jobs:
-  publish-master-container:
+  publish-tag-container:
     if: "github.repository_owner == 'change-metrics'"
     name: publish-tag-container
     runs-on: ubuntu-latest
