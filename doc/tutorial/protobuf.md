@@ -22,7 +22,7 @@ $ TMPDIR=/tmp/ podman build -f Dockerfile-codegen -t changemetrics/monocle_codeg
 
 # Create the Info message
 
-In a file named `./protos/monocle/info.proto` you add this content:
+In a file named `./schemas/monocle/info.proto` you add this content:
 
 ```protobuf
 syntax = "proto3";
@@ -43,7 +43,7 @@ Then you generate python bindings with this command:
 
 ```ShellSession
 $ podman run -it -v $(pwd):/data:z --rm changemetrics/monocle_codegen \
-    protoc -I=./protos/ --python_out=./monocle --mypy_out=./monocle \
+    protoc -I=./schemas/ --python_out=./monocle --mypy_out=./monocle \
       monocle/info.proto
 ```
 
@@ -62,7 +62,7 @@ Then you generate javascript bindings with this command:
 
 ```ShellSession
 $ podman run -it -v $(pwd):/data:z --rm changemetrics/monocle_codegen \
-    ocaml-protoc -bs -ml_out web/src/messages protos/monocle/info.proto
+    ocaml-protoc -bs -ml_out web/src/messages schemas/monocle/info.proto
 ```
 
 ... and  you can use the message using a javascript REPL:
@@ -128,7 +128,7 @@ message InfoResponse {
 }
 ```
 
-Then add the new service to the `http.proto` file in the `protos/monocle` folder:
+Then add the new service to the `http.proto` file in the `schemas/monocle` folder:
 
 ```protobuf
 import "monocle/task_data.proto";
@@ -148,7 +148,7 @@ service Info {
 
 ```ShellSession
 $ podman run -it -v $(pwd):/data:z --rm changemetrics/monocle_codegen \
-    protoc -I=./protos/ -I/usr/src/ \
+    protoc -I=./schemas/ -I/usr/src/ \
         --openapi_out=./doc/ \
         monocle/http.proto
 ```
@@ -160,6 +160,6 @@ $ podman run -it -v $(pwd):/data:z --rm changemetrics/monocle_codegen \
 We would like to avoid doing the above manually, thus Monocle provide a codegen utility
 to automate this process in three steps:
 
-- 1. Write protobuf definitions in the `protos/` folder, (and add newly created files to the Makefile `MESSAGES` list)
+- 1. Write protobuf definitions in the `schemas/` folder, (and add newly created files to the Makefile `MESSAGES` list)
 - 2. Generate the code by running `make codegen-with-container`
 - 3. Implement the API, e.g. open the `web/src/components/WebApi.res` module to use it.

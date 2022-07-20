@@ -611,5 +611,5 @@ for service in prometheus grafana; do systemctl --user start monocle-$service; d
 
 4. Check metrics with grafana dashboard at http://localhost:19030/ (login with 'admin:secret')
 
-[monocle-protobuf]: ./protos/monocle
+[monocle-protobuf]: ./schemas/monocle
 [monocle-openapi]: ./doc/openapi.yaml

@@ -10,7 +10,7 @@
 -- License     : AGPL-3
 --
 -- The module contains defintion of data types according to the
--- Monocle dhall schemas found in the conf/Monocle directory. It also
+-- Monocle dhall schemas found in the schemas/monocle/config directory. It also
 -- provides some functions to handle configuration data.
 module Monocle.Config
   ( -- * Data types imported from dhall
@@ -94,11 +94,11 @@ import System.Directory (getModificationTime)
 -- | Generate Haskell Type from Dhall Type
 -- See: https://hackage.haskell.org/package/dhall-1.38.0/docs/Dhall-TH.html
 Dhall.TH.makeHaskellTypes
-  ( let providerPath name = "./conf/Monocle/Provider/" <> name <> "/Type.dhall"
-        authProviderPath name = "./conf/Monocle/AuthProvider/" <> name <> "/Type.dhall"
+  ( let providerPath name = "./schemas/monocle/config/Provider/" <> name <> "/Type.dhall"
+        authProviderPath name = "./schemas/monocle/config/AuthProvider/" <> name <> "/Type.dhall"
         provider name = Dhall.TH.SingleConstructor name name $ providerPath name
         authProvider name = Dhall.TH.SingleConstructor name name $ authProviderPath name
-        mainPath name = "./conf/Monocle/" <> name <> "/Type.dhall"
+        mainPath name = "./schemas/monocle/config/" <> name <> "/Type.dhall"
         main name = Dhall.TH.SingleConstructor name name $ mainPath name
      in [ main "Project",
           main "Ident",
@@ -117,10 +117,10 @@ Dhall.TH.makeHaskellTypes
           authProvider "GithubAuth",
           Dhall.TH.MultipleConstructors
             "Provider"
-            "./conf/Monocle/Crawler/Provider.dhall",
+            "./schemas/monocle/config/Crawler/Provider.dhall",
           Dhall.TH.MultipleConstructors
             "AuthProvider"
-            "./conf/Monocle/Auth/Provider.dhall",
+            "./schemas/monocle/config/Auth/Provider.dhall",
           -- To support backward compatible schema, we replace Index and Crawler schemas
           Dhall.TH.SingleConstructor "Index" "Index" $ mainPath "Workspace"
         ]
@@ -128,7 +128,7 @@ Dhall.TH.makeHaskellTypes
 
 -- | Embed the expected configuration schema
 configurationSchema :: Dhall.Core.Expr Dhall.Src.Src Void
-configurationSchema = $(Dhall.TH.staticDhallExpression "./conf/Monocle/Config/Type.dhall")
+configurationSchema = $(Dhall.TH.staticDhallExpression "./schemas/monocle/config/Config/Type.dhall")
 
 deriving instance Eq OIDC
 
