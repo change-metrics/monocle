@@ -1,0 +1,4 @@
+package proto3-suite
+  flags: -swagger
+
+packages: . ./codegen

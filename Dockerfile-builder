@@ -28,5 +28,5 @@ RUN dnf update -y && dnf install -y git ghc cabal-install openssl-devel zlib-dev
 RUN cabal v2-update
 
 # Install project dependencies
-COPY haskell/cabal.project haskell/monocle.cabal /build/
+COPY cabal.project monocle.cabal /build/
 RUN cabal v2-build -v1 --dependencies-only lib:monocle

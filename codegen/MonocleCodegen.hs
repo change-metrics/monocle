@@ -1,5 +1,6 @@
 -- See https://www.schoolofhaskell.com/user/kseo/overloaded-string-literals
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
 -- To use relude we need to disable the default standard library using NoImplicitPrelude
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -121,12 +122,12 @@ protoToReScript = fromProto headers mkService
     mkMethod moduleName (name, input, output, path)
       | "/crawler/" `Text.isInfixOf` path = []
       | otherwise =
-          [ "@module(\"axios\")",
-            "external " <> camel name <> "Raw: (string, 'data, option<axiosRequestConfig>) => axios<'b> = \"post\"",
-            "",
-            methodDef' <> "=>",
-            requestCall' <> " |> " <> promiseDecode
-          ]
+        [ "@module(\"axios\")",
+          "external " <> camel name <> "Raw: (string, 'data, option<axiosRequestConfig>) => axios<'b> = \"post\"",
+          "",
+          methodDef' <> "=>",
+          requestCall' <> " |> " <> promiseDecode
+        ]
       where
         methodOutput = "axios<" <> msgName moduleName output <> ">"
         requestEncode = "request->" <> moduleName <> "Bs.encode_" <> snake (attrName input)
@@ -136,7 +137,7 @@ protoToReScript = fromProto headers mkService
         methodDef' = "let " <> camel name <> " = (" <> methodInput' <> "): " <> methodOutput
         methodInput' = "request: " <> msgName moduleName input <> ", " <> "token: option<string>"
         tokenDef = "token->Belt.Option.flatMap(jwt => {headers: {\"Authorization\": \"Bearer \" ++ jwt}}->Some),"
-        requestCall' = camel name <> "Raw(serverUrl ++ \"" <> path <> "\"," <>  requestEncode <> "," <> tokenDef <> ")"
+        requestCall' = camel name <> "Raw(serverUrl ++ \"" <> path <> "\"," <> requestEncode <> "," <> tokenDef <> ")"
 
 -- | Create haskell servant module from a protobuf defnition
 protoToServant :: PB.ProtoBuf -> String

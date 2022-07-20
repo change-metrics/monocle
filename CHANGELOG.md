@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - [web] Keep User-Agent to the URI after an OIDC login to Monocle.
+- [nix] The project is now available as an installable flake. The file structure has been updated. Development environment is provided by `nix develop` instead of `nix-shell`.
 
 ### Removed
 ### Fixed
@@ -31,7 +32,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- [web] Web APP title not set properly. 
+- [web] Web APP title not set properly.
 
 ## [1.5.0] - 2022-03-31
 

@@ -1,1 +1,0 @@
-nix/default.nix
