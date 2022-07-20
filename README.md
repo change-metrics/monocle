@@ -46,7 +46,6 @@ Note that you can also [deploy from source code](CONTRIBUTING.md#deploy-from-sou
 ```Shell
 git clone https://github.com/change-metrics/monocle.git
 cd monocle
-git submodule update --init --recursive
 # Init a .secrets file with a default API key for the crawler process
 echo CRAWLERS_API_KEY=$(uuidgen) > .secrets
 ```
@@ -116,11 +115,11 @@ The Monocle configuration is splitted between a configuration file and various e
 variables.
 
 [Environment variables](#environment-variables) configure system settings and secrets. Any changes require
-a restart of the Monocle API. 
+a restart of the Monocle API.
 
 [The configuration file](#configuration-file) contains non sensitive data and could be exposed in a Git repository.
 A CI/CD flow could be enabled on top of the Git repository to allow Monocle' users to
-propose configuration changes. The Monocle API automatically reload the configuration when it changes.  
+propose configuration changes. The Monocle API automatically reload the configuration when it changes.
 
 ### Environment variables
 

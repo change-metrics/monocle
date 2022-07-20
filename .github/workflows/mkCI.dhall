@@ -4,10 +4,7 @@ let GithubActions =
         sha256:98ee16e6add21cc8ea7804cce55793b8793b14479f248d8f0bda0209d3600e18
 
 let checkout-step =
-      GithubActions.Step::{
-      , uses = Some "actions/checkout@v2.4.0"
-      , `with` = Some (toMap { submodules = "true" })
-      }
+      GithubActions.Step::{ uses = Some "actions/checkout@v2.4.0" }
 
 let init-docker-steps =
       [ GithubActions.Step::{

@@ -5,7 +5,11 @@
   };
 
   outputs = { self, nixpkgs }:
-    let legacy = import ../nix/default.nix { nixpkgsPath = nixpkgs; };
+    let
+      legacy = import ../nix/default.nix {
+        nixpkgsPath = nixpkgs;
+        self = self;
+      };
     in {
       devShell."x86_64-linux" = legacy.shell;
       packages."x86_64-linux".default = legacy.monocle-exe;

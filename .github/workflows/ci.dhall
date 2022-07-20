@@ -21,7 +21,11 @@ in  { Nix =
           )
           [ mk.GithubActions.Step::{
             , name = Some "Build the project"
-            , run = Some "nix build --no-link ./haskell?submodules=1 --impure"
+            , run = Some "nix build --no-link ./haskell"
+            }
+          , mk.GithubActions.Step::{
+            , name = Some "Build the develop shell"
+            , run = Some "nix develop --impure ./haskell --command 'true'"
             }
           ]
     , Web =
