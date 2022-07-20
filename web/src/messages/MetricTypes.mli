@@ -20,7 +20,7 @@ type list_response = {
 }
 
 type trend = {
-  interval : int32;
+  interval : string;
 }
 
 type get_request_options =
@@ -84,7 +84,7 @@ val default_list_response :
 (** [default_list_response ()] is the default value for type [list_response] *)
 
 val default_trend : 
-  ?interval:int32 ->
+  ?interval:string ->
   unit ->
   trend
 (** [default_trend ()] is the default value for type [trend] *)

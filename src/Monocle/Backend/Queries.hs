@@ -728,48 +728,26 @@ getAuthorsPeersStrength limit = withFlavor qf $ do
             peer
             (fromInteger $ toInteger (trCount tr))
 
-data HistoInterval = Hour | Day | Week | Month | Year deriving (Eq, Show)
-
 -- | Convert a duration to an interval that spans over maximum 24 buckets (31 for days)
-instance From Pico HistoInterval where
-  from sec
-    | sec / day <= 1 = Hour
-    | sec / month <= 1 = Day
-    | sec / month <= 6 = Week
-    | sec / year <= 2 = Month
-    | otherwise = Year
-    where
-      year = month * 12
-      month = day * 31
-      day = 24 * 3600
-
 newtype TimeFormat = TimeFormat {getFormat :: Text}
 
-instance From HistoInterval TimeFormat where
+instance From Q.TimeRange TimeFormat where
   from hi = TimeFormat $ case hi of
-    Hour -> "yyyy-MM-dd HH:mm"
-    Day -> "yyyy-MM-dd"
-    Week -> "yyyy-MM-dd"
-    Month -> "yyyy-MM"
-    Year -> "yyyy"
+    Q.Hour -> "yyyy-MM-dd HH:mm"
+    Q.Day -> "yyyy-MM-dd"
+    Q.Week -> "yyyy-MM-dd"
+    Q.Month -> "yyyy-MM"
+    Q.Year -> "yyyy"
 
-instance From HistoInterval Text where
-  from = \case
-    Hour -> "hour"
-    Day -> "day"
-    Week -> "week"
-    Month -> "month"
-    Year -> "year"
-
-dateInterval :: HistoInterval -> UTCTime -> Text
+dateInterval :: Q.TimeRange -> UTCTime -> Text
 dateInterval hi = formatTime' formatStr
   where
     formatStr = case hi of
-      Hour -> "%F %R"
-      Day -> "%F"
-      Week -> "%F"
-      Month -> "%Y-%m"
-      Year -> "%Y"
+      Q.Hour -> "%F %R"
+      Q.Day -> "%F"
+      Q.Week -> "%F"
+      Q.Month -> "%Y-%m"
+      Q.Year -> "%Y"
 
 getNewContributors :: QueryMonad m => m [TermResult]
 getNewContributors = do
@@ -1011,11 +989,15 @@ data MetricInfo = MetricInfo
 data Metric m a = Metric
   { metricInfo :: MetricInfo,
     runMetric :: m (Numeric a),
-    runMetricTrend :: m (V.Vector (Histo a))
+    runMetricTrend :: Maybe Q.TimeRange -> m (V.Vector (Histo a))
   }
 
 instance (Functor m) => Functor (Metric m) where
-  fmap f Metric {..} = Metric metricInfo (fmap f <$> runMetric) ((fmap . fmap) f <$> runMetricTrend)
+  fmap f Metric {..} =
+    Metric
+      metricInfo
+      (fmap f <$> runMetric)
+      (const $ (fmap . fmap) f <$> runMetricTrend Nothing)
 
 runMetricNum :: QueryMonad m => Metric m a -> m a
 runMetricNum m = unNum <$> runMetric m
@@ -1033,7 +1015,7 @@ toPBHistoFloat (Histo {..}) =
    in MetricPB.HistoFloat {..}
 
 runMetricTrendIntPB :: QueryMonad m => Metric m Word32 -> m (V.Vector MetricPB.HistoInt)
-runMetricTrendIntPB m = fmap toPBHistoInt <$> runMetricTrend m
+runMetricTrendIntPB m = fmap toPBHistoInt <$> runMetricTrend m Nothing
 
 authorFlavorToDesc :: AuthorFlavor -> Text
 authorFlavorToDesc = \case
@@ -1051,28 +1033,33 @@ rangeFlavorToDesc = \case
     "Both, the event and change's creation date is matched in "
       <> "case of any date query filter."
 
-monoHisto :: forall m a. QueryMonad m => m a -> m (V.Vector (Histo a))
-monoHisto metric = do
+queryToHistoBounds :: QueryMonad m => Maybe Q.TimeRange -> m (UTCTime, UTCTime, Q.TimeRange)
+queryToHistoBounds intervalM = do
   query <- getQuery
   let (minDate, maxDate) = Q.queryBounds query
-      duration = elapsedSeconds minDate maxDate
-      interval = from @Pico @HistoInterval duration
-      sliceBounds = mkSliceBounds maxDate interval [sliceBound minDate interval]
+      autoInterval = from @Pico @Q.TimeRange $ elapsedSeconds minDate maxDate
+      interval = fromMaybe autoInterval intervalM
+  pure (minDate, maxDate, interval)
+
+monoHisto :: forall m a. QueryMonad m => Maybe Q.TimeRange -> m a -> m (V.Vector (Histo a))
+monoHisto intervalM metric = do
+  (minDate, maxDate, interval) <- queryToHistoBounds intervalM
+  let sliceBounds = mkSliceBounds maxDate interval [sliceBound minDate interval]
   traverse (runMetricOnSlice interval) $ fromList sliceBounds
   where
-    sliceBound :: UTCTime -> HistoInterval -> (UTCTime, UTCTime)
+    sliceBound :: UTCTime -> Q.TimeRange -> (UTCTime, UTCTime)
     sliceBound fromDate@(UTCTime days _) interval =
       ( fromDate,
         case interval of
-          Hour -> addUTCTime anHour fromDate
-          Day -> UTCTime (addDays 1 days) (secondsToDiffTime 0)
-          Week -> UTCTime (addDays 7 days) (secondsToDiffTime 0)
-          Month -> UTCTime (addGregorianMonthsClip 1 days) (secondsToDiffTime 0)
-          Year -> UTCTime (addGregorianYearsClip 1 days) (secondsToDiffTime 0)
+          Q.Hour -> addUTCTime anHour fromDate
+          Q.Day -> UTCTime (addDays 1 days) (secondsToDiffTime 0)
+          Q.Week -> UTCTime (addDays 7 days) (secondsToDiffTime 0)
+          Q.Month -> UTCTime (addGregorianMonthsClip 1 days) (secondsToDiffTime 0)
+          Q.Year -> UTCTime (addGregorianYearsClip 1 days) (secondsToDiffTime 0)
       )
       where
         anHour = secondsToNominalDiffTime 3600
-    mkSliceBounds :: UTCTime -> HistoInterval -> [(UTCTime, UTCTime)] -> [(UTCTime, UTCTime)]
+    mkSliceBounds :: UTCTime -> Q.TimeRange -> [(UTCTime, UTCTime)] -> [(UTCTime, UTCTime)]
     mkSliceBounds maxDate interval acc =
       case acc of
         [] -> error "Impossible case"
@@ -1081,7 +1068,7 @@ monoHisto metric = do
           let newMin = snd (Data.List.last xs)
               newAcc = acc <> [sliceBound newMin interval]
            in mkSliceBounds maxDate interval newAcc
-    runMetricOnSlice :: HistoInterval -> (UTCTime, UTCTime) -> m (Histo a)
+    runMetricOnSlice :: Q.TimeRange -> (UTCTime, UTCTime) -> m (Histo a)
     runMetricOnSlice interval bounds =
       toHisto <$> withModified Q.dropDate (withFilter boundsBH metric)
       where
@@ -1094,8 +1081,8 @@ monoHisto metric = do
                 rq $ BH.RangeDateLt (BH.LessThanD (snd bounds))
               ]
 
-countHisto :: forall m. QueryMonad m => RangeFlavor -> m (V.Vector (Histo Word32))
-countHisto rf = fmap toHisto <$> getCountHisto
+countHisto :: forall m. QueryMonad m => RangeFlavor -> Maybe Q.TimeRange -> m (V.Vector (Histo Word32))
+countHisto rf intervalM = fmap toHisto <$> getCountHisto
   where
     toHisto :: HistoSimple -> Histo Word32
     toHisto HistoBucket {..} =
@@ -1104,14 +1091,10 @@ countHisto rf = fmap toHisto <$> getCountHisto
        in Histo {..}
     getCountHisto :: m (V.Vector HistoSimple)
     getCountHisto = do
-      query <- getQuery
       queryBH <- getQueryBH
+      (minDate, maxDate, interval) <- queryToHistoBounds intervalM
 
-      let (minDate, maxDate) = Q.queryBounds query
-          duration = elapsedSeconds minDate maxDate
-          interval = from duration
-
-          bound =
+      let bound =
             Aeson.object
               [ "min" .= dateInterval interval minDate,
                 "max" .= dateInterval interval maxDate
@@ -1137,8 +1120,8 @@ countHisto rf = fmap toHisto <$> getCountHisto
 
       hBuckets . parseAggregationResults "agg1" <$> doAggregation search
 
-authorCountHisto :: forall m. QueryMonad m => EDocType -> m (V.Vector (Histo Word32))
-authorCountHisto changeEvent = withDocType changeEvent qf getAuthorHistoPB
+authorCountHisto :: forall m. QueryMonad m => EDocType -> Maybe Q.TimeRange -> m (V.Vector (Histo Word32))
+authorCountHisto changeEvent intervalM = withDocType changeEvent qf getAuthorHistoPB
   where
     qf = QueryFlavor Author CreatedAt
     getAuthorHistoPB = fmap toHisto <$> getAuthorCountHisto
@@ -1154,14 +1137,10 @@ authorCountHisto changeEvent = withDocType changeEvent qf getAuthorHistoPB
        in Histo {..}
     getAuthorCountHisto :: m (V.Vector (HistoBucket HistoAuthors))
     getAuthorCountHisto = do
-      query <- getQuery
       queryBH <- getQueryBH
+      (minDate, maxDate, interval) <- queryToHistoBounds intervalM
 
-      let (minDate, maxDate) = Q.queryBounds query
-          duration = elapsedSeconds minDate maxDate
-          interval = from duration
-
-          bound =
+      let bound =
             Aeson.object
               [ "min" .= dateInterval interval minDate,
                 "max" .= dateInterval interval maxDate
@@ -1207,7 +1186,7 @@ changeEventCount mi dt =
   Metric mi (Num . countToWord <$> compute) computeTrend
   where
     compute = withFilter [documentType dt] (withFlavor qf countDocs)
-    computeTrend = withDocType EChangeCreatedEvent qf $ countHisto CreatedAt
+    computeTrend interval = withDocType EChangeCreatedEvent qf $ countHisto CreatedAt interval
     qf = QueryFlavor OnAuthor CreatedAt
 
 changeEventFlavorDesc :: Text
@@ -1272,7 +1251,7 @@ metricChangeUpdates = Metric mi compute computeTrend
           [documentTypes $ fromList docs]
           ( withFlavor qf countDocs
           )
-    computeTrend = withDocTypes docs qf $ countHisto CreatedAt
+    computeTrend interval = withDocTypes docs qf $ countHisto CreatedAt interval
     qf = QueryFlavor Author OnCreatedAt
     docs = [EChangeCommitPushedEvent, EChangeCommitForcePushedEvent]
 
@@ -1293,16 +1272,18 @@ metricChangeWithTests =
               <> rangeFlavorToDesc CreatedAt
         )
     )
-    (Num . countToWord <$> compute)
-    (pure $ fromList [])
+    (Num <$> compute)
+    computeTrend
   where
     compute =
-      withFilter [documentType EChangeDoc, testIncluded] (withFlavor' countDocs)
+      countToWord
+        <$> withFilter [documentType EChangeDoc, testIncluded] (withFlavor' countDocs)
     withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
     regexp = ".*[Tt]est.*"
     testIncluded =
       BH.QueryRegexpQuery $
         BH.RegexpQuery (BH.FieldName "changed_files.path") (BH.Regexp regexp) BH.AllRegexpFlags Nothing
+    computeTrend = flip monoHisto compute
 
 -- | The count of changes self merged
 metricChangesSelfMerged :: QueryMonad m => Metric m Word32
@@ -1318,15 +1299,16 @@ metricChangesSelfMerged =
               <> rangeFlavorToDesc CreatedAt
         )
     )
-    (Num . countToWord <$> compute)
-    (pure $ fromList [])
+    (Num <$> compute)
+    computeTrend
   where
-    compute = withFilter selfMerged $ withFlavor' countDocs
+    compute = countToWord <$> withFilter selfMerged (withFlavor' countDocs)
     selfMerged =
       [ documentType EChangeMergedEvent,
         BH.TermQuery (BH.Term "self_merged" "true") Nothing
       ]
     withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
+    computeTrend = flip monoHisto compute
 
 metricReviews :: QueryMonad m => Metric m Word32
 metricReviews = Metric mi compute computeTrend
@@ -1348,7 +1330,7 @@ metricReviews = Metric mi compute computeTrend
           [documentType EChangeReviewedEvent]
           ( withFlavor qf countDocs
           )
-    computeTrend = withDocType EChangeReviewedEvent qf $ countHisto CreatedAt
+    computeTrend interval = withDocType EChangeReviewedEvent qf $ countHisto CreatedAt interval
     qf = QueryFlavor Author CreatedAt
 
 metricReviewsAndComments :: QueryMonad m => Metric m Word32
@@ -1370,7 +1352,7 @@ metricReviewsAndComments = Metric mi compute computeTrend
         <$> withFilter
           [documentTypes $ fromList docs]
           (withFlavor qf countDocs)
-    computeTrend = withDocTypes docs qf $ countHisto CreatedAt
+    computeTrend interval = withDocTypes docs qf $ countHisto CreatedAt interval
     qf = QueryFlavor Author CreatedAt
     docs = [EChangeReviewedEvent, EChangeCommentedEvent]
 
@@ -1391,7 +1373,7 @@ metricComments = Metric mi compute computeTrend
     compute =
       Num . countToWord
         <$> withFilter [documentType EChangeCommentedEvent] (withFlavor qf countDocs)
-    computeTrend = withDocType EChangeCommentedEvent qf $ countHisto CreatedAt
+    computeTrend interval = withDocType EChangeCommentedEvent qf $ countHisto CreatedAt interval
     qf = QueryFlavor Author CreatedAt
 
 metricReviewAuthors :: QueryMonad m => Metric m Word32
@@ -1476,7 +1458,7 @@ metricTimeToMerge =
     compute =
       double2Float
         <$> withFilter (changeState EChangeMerged) (averageDuration $ QueryFlavor Author CreatedAt)
-    computeTrend = monoHisto compute
+    computeTrend = flip monoHisto compute
 
 -- | The variance of the duration for an open change to be merged
 metricTimeToMergeVariance :: QueryMonad m => Metric m Float
@@ -1500,7 +1482,7 @@ metricTimeToMergeVariance =
     compute =
       double2Float
         <$> withFilter (changeState EChangeMerged) (medianDeviationDuration $ QueryFlavor Author CreatedAt)
-    computeTrend = monoHisto compute
+    computeTrend = flip monoHisto compute
 
 -- | The average duration until a change gets a first review event
 metricFirstReviewMeanTime :: QueryMonad m => Metric m Word32
@@ -1524,7 +1506,7 @@ metricFirstReviewMeanTime =
       firstEventAverageDuration
         <$> withEvents [documentType EChangeReviewedEvent] (withFlavor' firstEventOnChanges)
     withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
-    computeTrend = monoHisto compute
+    computeTrend = flip monoHisto compute
 
 -- | The average delay until a change gets a comment event
 metricFirstCommentMeanTime :: QueryMonad m => Metric m Word32
@@ -1548,7 +1530,7 @@ metricFirstCommentMeanTime =
       firstEventAverageDuration
         <$> withEvents [documentType EChangeCommentedEvent] (withFlavor' firstEventOnChanges)
     withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
-    computeTrend = monoHisto compute
+    computeTrend = flip monoHisto compute
 
 -- | The average commit count for per change
 metricCommitsPerChange :: QueryMonad m => Metric m Float
@@ -1572,7 +1554,7 @@ metricCommitsPerChange =
       double2Float
         <$> withFilter (changeState EChangeMerged) (changeMergedAvgCommits qf)
     qf = QueryFlavor Author CreatedAt
-    computeTrend = monoHisto compute
+    computeTrend = flip monoHisto compute
 
 allMetrics :: [MetricInfo]
 allMetrics =

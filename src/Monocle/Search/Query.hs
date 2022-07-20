@@ -19,6 +19,7 @@ module Monocle.Search.Query
     dropField,
     blankQuery,
     yearAgo,
+    TimeRange (..),
 
     -- * helper
     parseDateValue,
@@ -183,15 +184,37 @@ subUTCTimeSecond :: UTCTime -> Integer -> UTCTime
 subUTCTimeSecond date sec =
   addUTCTime (secondsToNominalDiffTime (fromInteger sec * (-1))) date
 
-data TimeRange = Hour | Day | Week
+data TimeRange = Hour | Day | Week | Month | Year
   deriving (Show)
 
+instance From Pico TimeRange where
+  from sec
+    | sec / day <= 1 = Hour
+    | sec / month <= 1 = Day
+    | sec / month <= 6 = Week
+    | sec / year <= 2 = Month
+    | otherwise = Year
+    where
+      year = month * 12
+      month = day * 31
+      day = 24 * 3600
+
+instance From TimeRange Text where
+  from = \case
+    Hour -> "hour"
+    Day -> "day"
+    Week -> "week"
+    Month -> "month"
+    Year -> "year"
+
 timeRangeReader :: ReadP.ReadP TimeRange
-timeRangeReader = (hourR <|> dayR <|> weekR) <* ReadP.optional (ReadP.char 's')
+timeRangeReader = (hourR <|> dayR <|> weekR <|> monthR <|> yearR) <* ReadP.optional (ReadP.char 's')
   where
     hourR = Hour <$ ReadP.string "hour"
     dayR = Day <$ ReadP.string "day"
     weekR = Week <$ ReadP.string "week"
+    monthR = Month <$ ReadP.string "month"
+    yearR = Year <$ ReadP.string "year"
 
 instance Read TimeRange where
   readPrec = ReadPrec.lift timeRangeReader
@@ -222,6 +245,9 @@ parseRelativeDateValue now txt = relTimeToUTCTime <$> readMaybe (from txt)
               Hour -> hour
               Day -> day
               Week -> day * 7
+              -- TODO Use calender aware computation
+              Month -> day * 31
+              Year -> day * 365
        in subUTCTimeSecond now diffsec
 
 parseNumber :: Text -> Either Text Double

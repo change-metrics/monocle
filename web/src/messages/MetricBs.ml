@@ -31,11 +31,11 @@ let default_list_response_mutable () : list_response_mutable = {
 }
 
 type trend_mutable = {
-  mutable interval : int32;
+  mutable interval : string;
 }
 
 let default_trend_mutable () : trend_mutable = {
-  interval = 0l;
+  interval = "";
 }
 
 type get_request_mutable = {
@@ -165,7 +165,7 @@ let rec decode_trend json =
     match Array.unsafe_get keys i with
     | "interval" -> 
       let json = Js.Dict.unsafeGet json "interval" in
-      v.interval <- Pbrt_bs.int32 json "trend" "interval"
+      v.interval <- Pbrt_bs.string json "trend" "interval"
     
     | _ -> () (*Unknown fields are ignored*)
   done;
@@ -361,7 +361,7 @@ let rec encode_list_response (v:MetricTypes.list_response) =
 
 let rec encode_trend (v:MetricTypes.trend) = 
   let json = Js.Dict.empty () in
-  Js.Dict.set json "interval" (Js.Json.number (Int32.to_float v.MetricTypes.interval));
+  Js.Dict.set json "interval" (Js.Json.string v.MetricTypes.interval);
   json
 
 let rec encode_get_request_options (v:MetricTypes.get_request_options) = 

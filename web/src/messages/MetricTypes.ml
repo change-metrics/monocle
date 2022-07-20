@@ -17,7 +17,7 @@ type list_response = {
 }
 
 type trend = {
-  interval : int32;
+  interval : string;
 }
 
 type get_request_options =
@@ -81,7 +81,7 @@ let rec default_list_response
 }
 
 let rec default_trend 
-  ?interval:((interval:int32) = 0l)
+  ?interval:((interval:string) = "")
   () : trend  = {
   interval;
 }
