@@ -762,8 +762,13 @@ metricGet auth request = checkAuth auth response
       where
         runM = runQueryM tenant (Q.ensureMinBound query)
         runMetric m = case getRequestOptions of
-          Just (MetricPB.GetRequestOptionsTrend _) -> toTrendResult <$> runM (Q.runMetricTrend m)
+          Just (MetricPB.GetRequestOptionsTrend (MetricPB.Trend interval)) ->
+            toTrendResult <$> runM (Q.runMetricTrend m $ Just $ fromPBTrendInterval $ from interval)
           _ -> toNumResult <$> runM (Q.runMetric m)
+        fromPBTrendInterval :: Text -> Q.TimeRange
+        fromPBTrendInterval interval = case readMaybe (from interval) of
+          Just timeRange -> timeRange
+          Nothing -> error "Unable to parse trend interval"
 
 -- | gen a 302 redirect helper
 redirects :: ByteString -> AppM ()

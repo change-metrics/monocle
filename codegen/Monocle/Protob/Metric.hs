@@ -280,7 +280,7 @@ instance HsJSONPB.ToJSON ListResponse where
 instance HsJSONPB.FromJSON ListResponse where
   parseJSON = HsJSONPB.parseJSONPB
 
-newtype Trend = Trend {trendInterval :: Hs.Word32}
+newtype Trend = Trend {trendInterval :: Hs.Text}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named Trend where
@@ -306,7 +306,7 @@ instance HsProtobuf.Message Trend where
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 1)
-          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Prim HsProtobuf.String)
           (HsProtobuf.Single "interval")
           []
           ""

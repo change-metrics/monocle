@@ -19,6 +19,7 @@ module Monocle.Search.Query
     dropField,
     blankQuery,
     yearAgo,
+    TimeRange (..),
 
     -- * helper
     parseDateValue,
@@ -27,7 +28,8 @@ where
 
 import Control.Monad.Trans.Except (Except, runExcept, throwE)
 import Data.List (lookup)
-import Data.Time.Clock (secondsToNominalDiffTime)
+import Data.Time.Calendar (addDays, addGregorianMonthsClip, addGregorianYearsClip)
+import Data.Time.Clock (UTCTime (UTCTime), secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import Database.Bloodhound qualified as BH
 import Monocle.Config qualified as Config
@@ -183,15 +185,37 @@ subUTCTimeSecond :: UTCTime -> Integer -> UTCTime
 subUTCTimeSecond date sec =
   addUTCTime (secondsToNominalDiffTime (fromInteger sec * (-1))) date
 
-data TimeRange = Hour | Day | Week
+data TimeRange = Hour | Day | Week | Month | Year
   deriving (Show)
 
+instance From Pico TimeRange where
+  from sec
+    | sec / day <= 1 = Hour
+    | sec / month <= 1 = Day
+    | sec / month <= 6 = Week
+    | sec / year <= 2 = Month
+    | otherwise = Year
+    where
+      year = month * 12
+      month = day * 31
+      day = 24 * 3600
+
+instance From TimeRange Text where
+  from = \case
+    Hour -> "hour"
+    Day -> "day"
+    Week -> "week"
+    Month -> "month"
+    Year -> "year"
+
 timeRangeReader :: ReadP.ReadP TimeRange
-timeRangeReader = (hourR <|> dayR <|> weekR) <* ReadP.optional (ReadP.char 's')
+timeRangeReader = (hourR <|> dayR <|> weekR <|> monthR <|> yearR) <* ReadP.optional (ReadP.char 's')
   where
     hourR = Hour <$ ReadP.string "hour"
     dayR = Day <$ ReadP.string "day"
     weekR = Week <$ ReadP.string "week"
+    monthR = Month <$ ReadP.string "month"
+    yearR = Year <$ ReadP.string "year"
 
 instance Read TimeRange where
   readPrec = ReadPrec.lift timeRangeReader
@@ -211,18 +235,15 @@ instance Read RelativeTime where
   readPrec = ReadPrec.lift relTimeReader
 
 parseRelativeDateValue :: UTCTime -> Text -> Maybe UTCTime
-parseRelativeDateValue now txt = relTimeToUTCTime <$> readMaybe (from txt)
+parseRelativeDateValue now@(UTCTime days diffT) txt = relTimeToUTCTime <$> readMaybe (from txt)
   where
     relTimeToUTCTime :: RelativeTime -> UTCTime
-    relTimeToUTCTime (MkRelativeTime count range) =
-      let hour = 3600
-          day = hour * 24
-          diffsec =
-            (fromInteger . toInteger $ count) * case range of
-              Hour -> hour
-              Day -> day
-              Week -> day * 7
-       in subUTCTimeSecond now diffsec
+    relTimeToUTCTime (MkRelativeTime (from -> count) range) = case range of
+      Hour -> subUTCTimeSecond now (count * 3600)
+      Day -> UTCTime (addDays (count * (-1)) days) diffT
+      Week -> UTCTime (addDays (count * (-7)) days) diffT
+      Month -> UTCTime (addGregorianMonthsClip (count * (-1)) days) diffT
+      Year -> UTCTime (addGregorianYearsClip (count * (-1)) days) diffT
 
 parseNumber :: Text -> Either Text Double
 parseNumber txt = case readMaybe (from txt) of

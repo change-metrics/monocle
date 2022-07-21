@@ -1,7 +1,7 @@
 build
 dist
 *.py[oc]
-monocle.egg-info
+dist-newstyle
 /data
 etc
 .venv

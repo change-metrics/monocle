@@ -778,8 +778,7 @@ components:
         monocle_metric_Trend:
             properties:
                 interval:
-                    type: integer
-                    format: uint32
+                    type: string
         monocle_search_ActivityStats:
             properties:
                 change_authors:
