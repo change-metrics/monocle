@@ -59,7 +59,7 @@ in  { GithubActions
       , GithubActions.Step::{
         , name = Some "Runs Elasticsearch"
         , uses = Some "elastic/elastic-github-actions/elasticsearch@master"
-        , `with` = Some (toMap { stack-version = "7.10.1" })
+        , `with` = Some (toMap { stack-version = "7.17.5" })
         }
       , GithubActions.Step::{
         , name = Some "Display indexes"

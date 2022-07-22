@@ -220,12 +220,12 @@ in rec {
   arch = pkgs.lib.elemAt info 0;
   plat = pkgs.lib.elemAt info 1;
   elasticsearch = pkgsNonFree.elasticsearch7.overrideAttrs (old: rec {
-    version = "7.10.1";
+    version = "7.17.5";
     name = "elasticsearch-${version}";
     src = pkgs.fetchurl {
       url =
         "https://artifacts.elastic.co/downloads/elasticsearch/${name}-${plat}-${arch}.tar.gz";
-      sha256 = "1r62afmpmwyxifr4kjlannj44zbh67gdcch5czh4fllv459ajf7f";
+      sha256 = "ocz3CJFf+diThmocrgSnhWW/fjuRLLyCxwUKl3Cm7WA=";
     };
   });
   elasticsearch-home = "/var/lib/elasticsearch";
