@@ -175,7 +175,7 @@ in  { GithubActions
                 [ checkout-step
                 , GithubActions.Step::{
                   , uses = Some "actions/setup-node@v2"
-                  , `with` = Some (toMap { node-version = "16" })
+                  , `with` = Some (toMap { node-version = "16.15" })
                   }
                 ]
 
