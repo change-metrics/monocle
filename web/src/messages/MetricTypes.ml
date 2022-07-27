@@ -49,6 +49,16 @@ type histo_float_stat = {
   histo : histo_float list;
 }
 
+type term_count_int = {
+  term : string;
+  count : int32;
+}
+
+type terms_count_int = {
+  termcount : term_count_int list;
+  total_hits : int32;
+}
+
 type get_response =
   | Error of string
   | Float_value of float
@@ -128,6 +138,22 @@ let rec default_histo_float_stat
   ?histo:((histo:histo_float list) = [])
   () : histo_float_stat  = {
   histo;
+}
+
+let rec default_term_count_int 
+  ?term:((term:string) = "")
+  ?count:((count:int32) = 0l)
+  () : term_count_int  = {
+  term;
+  count;
+}
+
+let rec default_terms_count_int 
+  ?termcount:((termcount:term_count_int list) = [])
+  ?total_hits:((total_hits:int32) = 0l)
+  () : terms_count_int  = {
+  termcount;
+  total_hits;
 }
 
 let rec default_get_response () : get_response = Error ("")

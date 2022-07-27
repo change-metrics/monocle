@@ -103,18 +103,8 @@ checkAuth auth action = do
 -- curl -XPOST -d '{"void": ""}' -H "Content-type: application/json" -H 'Authorization: Bearer <token>' http://localhost:8080/auth/whoami
 authWhoAmi :: AuthResult AuthenticatedUser -> AuthPB.WhoAmiRequest -> AppM AuthPB.WhoAmiResponse
 authWhoAmi (Authenticated au) _request =
-  pure
-    $ AuthPB.WhoAmiResponse
-      . Just
-      . AuthPB.WhoAmiResponseResultUid
-    $ show au
-authWhoAmi _auth _request =
-  pure
-    $ AuthPB.WhoAmiResponse
-      . Just
-      . AuthPB.WhoAmiResponseResultError
-      . Enumerated
-    $ Right AuthPB.WhoAmiErrorUnAuthorized
+  pure $ AuthPB.WhoAmiResponse . Just . AuthPB.WhoAmiResponseResultUid $ show au
+authWhoAmi _auth _request = pure $ AuthPB.WhoAmiResponse . Just . AuthPB.WhoAmiResponseResultError . Enumerated $ Right AuthPB.WhoAmiErrorUnAuthorized
 
 -- curl -XPOST -d '{"token": "admin-token"}' -H "Content-type: application/json" http://localhost:8080/auth/get
 authGetMagicJwt :: AuthResult AuthenticatedUser -> AuthPB.GetMagicJwtRequest -> AppM AuthPB.GetMagicJwtResponse
@@ -632,9 +622,9 @@ searchQuery auth request = checkAuth auth response
   handleTopAuthorsQ limit cb = do
     results <- cb limit
     pure
-      $ SearchPB.QueryResponse
-        . Just
-      $ SearchPB.QueryResponseResultTopAuthors
+      . SearchPB.QueryResponse
+      . Just
+      . SearchPB.QueryResponseResultTopAuthors
       $ toTermsCount (V.fromList $ toTTResult <$> Q.tsrTR results) (toInt $ Q.tsrTH results)
    where
     toInt c = fromInteger $ toInteger c
@@ -646,15 +636,15 @@ searchQuery auth request = checkAuth auth response
       (from psrPeer)
       psrStrength
 
-  toTermsCount :: V.Vector SearchPB.TermCount -> Word32 -> SearchPB.TermsCount
+  toTermsCount :: V.Vector MetricPB.TermCountInt -> Word32 -> MetricPB.TermsCountInt
   toTermsCount tcV total =
-    let termsCountTermcount = tcV
-        termsCountTotalHits = total
-     in SearchPB.TermsCount {..}
+    let termsCountIntTermcount = tcV
+        termsCountIntTotalHits = total
+     in MetricPB.TermsCountInt {..}
 
-  toTTResult :: Q.TermResult -> SearchPB.TermCount
+  toTTResult :: Q.TermResult -> MetricPB.TermCountInt
   toTTResult Q.TermResult {..} =
-    SearchPB.TermCount
+    MetricPB.TermCountInt
       (from trTerm)
       (fromInteger $ toInteger trCount)
 

@@ -180,12 +180,12 @@ module ChangesTopPies = {
       },
       limit: 10->Int32.of_int,
     }
-    let getEntry = (e: SearchTypes.term_count): PieWithLegend.entry => {
+    let getEntry = (e: MetricTypes.term_count_int): PieWithLegend.entry => {
       doc_count: e.count->Int32.to_int,
       key: e.term,
     }
     let adapt = (
-      elms: SearchTypes.terms_count,
+      elms: MetricTypes.terms_count_int,
       kf: PieWithLegend.entry => bool,
     ): PieWithLegend.t => {
       items: elms.termcount->Belt.List.map(getEntry)->Belt.List.keep(kf)->Belt.List.toArray,

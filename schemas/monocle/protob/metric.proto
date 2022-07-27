@@ -53,6 +53,16 @@ message HistoFloatStat {
   repeated HistoFloat histo = 1;
 }
 
+message TermCountInt {
+  string term = 1;
+  uint32 count = 2;
+}
+
+message TermsCountInt {
+  repeated TermCountInt termcount = 1;
+  uint32 total_hits = 2;
+}
+
 message GetResponse {
   oneof result {
     string error = 1;

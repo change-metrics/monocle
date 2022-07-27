@@ -234,16 +234,6 @@ type repos_summary = {
   reposum : repo_summary list;
 }
 
-type term_count = {
-  term : string;
-  count : int32;
-}
-
-type terms_count = {
-  termcount : term_count list;
-  total_hits : int32;
-}
-
 type author_peer = {
   author : string;
   peer : string;
@@ -273,18 +263,18 @@ type lifecycle_stats = {
 }
 
 type changes_tops = {
-  authors : terms_count option;
-  repos : terms_count option;
-  approvals : terms_count option;
+  authors : MetricTypes.terms_count_int option;
+  repos : MetricTypes.terms_count_int option;
+  approvals : MetricTypes.terms_count_int option;
 }
 
 type query_response =
   | Error of query_error
   | Changes of changes
   | Repos_summary of repos_summary
-  | Top_authors of terms_count
+  | Top_authors of MetricTypes.terms_count_int
   | Authors_peers of authors_peers
-  | New_authors of terms_count
+  | New_authors of MetricTypes.terms_count_int
   | Review_stats of review_stats
   | Lifecycle_stats of lifecycle_stats
   | Activity_stats of activity_stats
@@ -553,20 +543,6 @@ val default_repos_summary :
   repos_summary
 (** [default_repos_summary ()] is the default value for type [repos_summary] *)
 
-val default_term_count : 
-  ?term:string ->
-  ?count:int32 ->
-  unit ->
-  term_count
-(** [default_term_count ()] is the default value for type [term_count] *)
-
-val default_terms_count : 
-  ?termcount:term_count list ->
-  ?total_hits:int32 ->
-  unit ->
-  terms_count
-(** [default_terms_count ()] is the default value for type [terms_count] *)
-
 val default_author_peer : 
   ?author:string ->
   ?peer:string ->
@@ -602,9 +578,9 @@ val default_lifecycle_stats :
 (** [default_lifecycle_stats ()] is the default value for type [lifecycle_stats] *)
 
 val default_changes_tops : 
-  ?authors:terms_count option ->
-  ?repos:terms_count option ->
-  ?approvals:terms_count option ->
+  ?authors:MetricTypes.terms_count_int option ->
+  ?repos:MetricTypes.terms_count_int option ->
+  ?approvals:MetricTypes.terms_count_int option ->
   unit ->
   changes_tops
 (** [default_changes_tops ()] is the default value for type [changes_tops] *)

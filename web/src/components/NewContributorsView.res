@@ -28,7 +28,7 @@ let make = (~store: Store.t) => {
     | _ => None
     }
   let link = ActivePeopleView.TopTermsTable.AuthorLink
-  let childrenBuilder = (data: Web.SearchTypes.terms_count) =>
+  let childrenBuilder = (data: MetricTypes.terms_count_int) =>
     <ActivePeopleView.TopTermsTable store items={data.termcount} columnNames link />
   <QueryRenderCard
     request tokenM trigger title tooltip_content icon limitSelector match childrenBuilder

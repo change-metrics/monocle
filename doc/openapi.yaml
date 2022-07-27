@@ -778,6 +778,22 @@ components:
                     type: string
                 metric:
                     type: string
+        monocle_metric_TermCountInt:
+            properties:
+                term:
+                    type: string
+                count:
+                    type: integer
+                    format: uint32
+        monocle_metric_TermsCountInt:
+            properties:
+                termcount:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_metric_TermCountInt'
+                total_hits:
+                    type: integer
+                    format: uint32
         monocle_metric_Trend:
             properties:
                 interval:
@@ -956,11 +972,11 @@ components:
         monocle_search_ChangesTops:
             properties:
                 authors:
-                    $ref: '#/components/schemas/monocle_search_TermsCount'
+                    $ref: '#/components/schemas/monocle_metric_TermsCountInt'
                 repos:
-                    $ref: '#/components/schemas/monocle_search_TermsCount'
+                    $ref: '#/components/schemas/monocle_metric_TermsCountInt'
                 approvals:
-                    $ref: '#/components/schemas/monocle_search_TermsCount'
+                    $ref: '#/components/schemas/monocle_metric_TermsCountInt'
         monocle_search_CheckRequest:
             properties:
                 index:
@@ -1119,11 +1135,11 @@ components:
                 repos_summary:
                     $ref: '#/components/schemas/monocle_search_ReposSummary'
                 top_authors:
-                    $ref: '#/components/schemas/monocle_search_TermsCount'
+                    $ref: '#/components/schemas/monocle_metric_TermsCountInt'
                 authors_peers:
                     $ref: '#/components/schemas/monocle_search_AuthorsPeers'
                 new_authors:
-                    $ref: '#/components/schemas/monocle_search_TermsCount'
+                    $ref: '#/components/schemas/monocle_metric_TermsCountInt'
                 review_stats:
                     $ref: '#/components/schemas/monocle_search_ReviewStats'
                 lifecycle_stats:
@@ -1256,19 +1272,3 @@ components:
                     format: int32
                 prefix:
                     type: string
-        monocle_search_TermCount:
-            properties:
-                term:
-                    type: string
-                count:
-                    type: integer
-                    format: uint32
-        monocle_search_TermsCount:
-            properties:
-                termcount:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/monocle_search_TermCount'
-                total_hits:
-                    type: integer
-                    format: uint32

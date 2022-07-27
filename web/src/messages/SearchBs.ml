@@ -378,26 +378,6 @@ let default_repos_summary_mutable () : repos_summary_mutable = {
   reposum = [];
 }
 
-type term_count_mutable = {
-  mutable term : string;
-  mutable count : int32;
-}
-
-let default_term_count_mutable () : term_count_mutable = {
-  term = "";
-  count = 0l;
-}
-
-type terms_count_mutable = {
-  mutable termcount : SearchTypes.term_count list;
-  mutable total_hits : int32;
-}
-
-let default_terms_count_mutable () : terms_count_mutable = {
-  termcount = [];
-  total_hits = 0l;
-}
-
 type author_peer_mutable = {
   mutable author : string;
   mutable peer : string;
@@ -455,9 +435,9 @@ let default_lifecycle_stats_mutable () : lifecycle_stats_mutable = {
 }
 
 type changes_tops_mutable = {
-  mutable authors : SearchTypes.terms_count option;
-  mutable repos : SearchTypes.terms_count option;
-  mutable approvals : SearchTypes.terms_count option;
+  mutable authors : MetricTypes.terms_count_int option;
+  mutable repos : MetricTypes.terms_count_int option;
+  mutable approvals : MetricTypes.terms_count_int option;
 }
 
 let default_changes_tops_mutable () : changes_tops_mutable = {
@@ -1473,52 +1453,6 @@ let rec decode_repos_summary json =
     SearchTypes.reposum = v.reposum;
   } : SearchTypes.repos_summary)
 
-let rec decode_term_count json =
-  let v = default_term_count_mutable () in
-  let keys = Js.Dict.keys json in
-  let last_key_index = Array.length keys - 1 in
-  for i = 0 to last_key_index do
-    match Array.unsafe_get keys i with
-    | "term" -> 
-      let json = Js.Dict.unsafeGet json "term" in
-      v.term <- Pbrt_bs.string json "term_count" "term"
-    | "count" -> 
-      let json = Js.Dict.unsafeGet json "count" in
-      v.count <- Pbrt_bs.int32 json "term_count" "count"
-    
-    | _ -> () (*Unknown fields are ignored*)
-  done;
-  ({
-    SearchTypes.term = v.term;
-    SearchTypes.count = v.count;
-  } : SearchTypes.term_count)
-
-let rec decode_terms_count json =
-  let v = default_terms_count_mutable () in
-  let keys = Js.Dict.keys json in
-  let last_key_index = Array.length keys - 1 in
-  for i = 0 to last_key_index do
-    match Array.unsafe_get keys i with
-    | "termcount" -> begin
-      let a = 
-        let a = Js.Dict.unsafeGet json "termcount" in 
-        Pbrt_bs.array_ a "terms_count" "termcount"
-      in
-      v.termcount <- Array.map (fun json -> 
-        (decode_term_count (Pbrt_bs.object_ json "terms_count" "termcount"))
-      ) a |> Array.to_list;
-    end
-    | "total_hits" -> 
-      let json = Js.Dict.unsafeGet json "total_hits" in
-      v.total_hits <- Pbrt_bs.int32 json "terms_count" "total_hits"
-    
-    | _ -> () (*Unknown fields are ignored*)
-  done;
-  ({
-    SearchTypes.termcount = v.termcount;
-    SearchTypes.total_hits = v.total_hits;
-  } : SearchTypes.terms_count)
-
 let rec decode_author_peer json =
   let v = default_author_peer_mutable () in
   let keys = Js.Dict.keys json in
@@ -1669,13 +1603,13 @@ let rec decode_changes_tops json =
     match Array.unsafe_get keys i with
     | "authors" -> 
       let json = Js.Dict.unsafeGet json "authors" in
-      v.authors <- Some ((decode_terms_count (Pbrt_bs.object_ json "changes_tops" "authors")))
+      v.authors <- Some ((MetricBs.decode_terms_count_int (Pbrt_bs.object_ json "changes_tops" "authors")))
     | "repos" -> 
       let json = Js.Dict.unsafeGet json "repos" in
-      v.repos <- Some ((decode_terms_count (Pbrt_bs.object_ json "changes_tops" "repos")))
+      v.repos <- Some ((MetricBs.decode_terms_count_int (Pbrt_bs.object_ json "changes_tops" "repos")))
     | "approvals" -> 
       let json = Js.Dict.unsafeGet json "approvals" in
-      v.approvals <- Some ((decode_terms_count (Pbrt_bs.object_ json "changes_tops" "approvals")))
+      v.approvals <- Some ((MetricBs.decode_terms_count_int (Pbrt_bs.object_ json "changes_tops" "approvals")))
     
     | _ -> () (*Unknown fields are ignored*)
   done;
@@ -1702,13 +1636,13 @@ let rec decode_query_response json =
         (SearchTypes.Repos_summary ((decode_repos_summary (Pbrt_bs.object_ json "query_response" "Repos_summary"))) : SearchTypes.query_response)
       | "top_authors" -> 
         let json = Js.Dict.unsafeGet json "top_authors" in
-        (SearchTypes.Top_authors ((decode_terms_count (Pbrt_bs.object_ json "query_response" "Top_authors"))) : SearchTypes.query_response)
+        (SearchTypes.Top_authors ((MetricBs.decode_terms_count_int (Pbrt_bs.object_ json "query_response" "Top_authors"))) : SearchTypes.query_response)
       | "authors_peers" -> 
         let json = Js.Dict.unsafeGet json "authors_peers" in
         (SearchTypes.Authors_peers ((decode_authors_peers (Pbrt_bs.object_ json "query_response" "Authors_peers"))) : SearchTypes.query_response)
       | "new_authors" -> 
         let json = Js.Dict.unsafeGet json "new_authors" in
-        (SearchTypes.New_authors ((decode_terms_count (Pbrt_bs.object_ json "query_response" "New_authors"))) : SearchTypes.query_response)
+        (SearchTypes.New_authors ((MetricBs.decode_terms_count_int (Pbrt_bs.object_ json "query_response" "New_authors"))) : SearchTypes.query_response)
       | "review_stats" -> 
         let json = Js.Dict.unsafeGet json "review_stats" in
         (SearchTypes.Review_stats ((decode_review_stats (Pbrt_bs.object_ json "query_response" "Review_stats"))) : SearchTypes.query_response)
@@ -2247,28 +2181,6 @@ let rec encode_repos_summary (v:SearchTypes.repos_summary) =
   end;
   json
 
-let rec encode_term_count (v:SearchTypes.term_count) = 
-  let json = Js.Dict.empty () in
-  Js.Dict.set json "term" (Js.Json.string v.SearchTypes.term);
-  Js.Dict.set json "count" (Js.Json.number (Int32.to_float v.SearchTypes.count));
-  json
-
-let rec encode_terms_count (v:SearchTypes.terms_count) = 
-  let json = Js.Dict.empty () in
-  begin (* termcount field *)
-    let (termcount':Js.Json.t) =
-      v.SearchTypes.termcount
-      |> Array.of_list
-      |> Array.map (fun v ->
-        v |> encode_term_count |> Js.Json.object_
-      )
-      |> Js.Json.array
-    in
-    Js.Dict.set json "termcount" termcount';
-  end;
-  Js.Dict.set json "total_hits" (Js.Json.number (Int32.to_float v.SearchTypes.total_hits));
-  json
-
 let rec encode_author_peer (v:SearchTypes.author_peer) = 
   let json = Js.Dict.empty () in
   Js.Dict.set json "author" (Js.Json.string v.SearchTypes.author);
@@ -2363,7 +2275,7 @@ let rec encode_changes_tops (v:SearchTypes.changes_tops) =
   | None -> ()
   | Some v ->
     begin (* authors field *)
-      let json' = encode_terms_count v in
+      let json' = MetricBs.encode_terms_count_int v in
       Js.Dict.set json "authors" (Js.Json.object_ json');
     end;
   end;
@@ -2371,7 +2283,7 @@ let rec encode_changes_tops (v:SearchTypes.changes_tops) =
   | None -> ()
   | Some v ->
     begin (* repos field *)
-      let json' = encode_terms_count v in
+      let json' = MetricBs.encode_terms_count_int v in
       Js.Dict.set json "repos" (Js.Json.object_ json');
     end;
   end;
@@ -2379,7 +2291,7 @@ let rec encode_changes_tops (v:SearchTypes.changes_tops) =
   | None -> ()
   | Some v ->
     begin (* approvals field *)
-      let json' = encode_terms_count v in
+      let json' = MetricBs.encode_terms_count_int v in
       Js.Dict.set json "approvals" (Js.Json.object_ json');
     end;
   end;
@@ -2405,7 +2317,7 @@ let rec encode_query_response (v:SearchTypes.query_response) =
     end;
   | SearchTypes.Top_authors v ->
     begin (* topAuthors field *)
-      let json' = encode_terms_count v in
+      let json' = MetricBs.encode_terms_count_int v in
       Js.Dict.set json "top_authors" (Js.Json.object_ json');
     end;
   | SearchTypes.Authors_peers v ->
@@ -2415,7 +2327,7 @@ let rec encode_query_response (v:SearchTypes.query_response) =
     end;
   | SearchTypes.New_authors v ->
     begin (* newAuthors field *)
-      let json' = encode_terms_count v in
+      let json' = MetricBs.encode_terms_count_int v in
       Js.Dict.set json "new_authors" (Js.Json.object_ json');
     end;
   | SearchTypes.Review_stats v ->

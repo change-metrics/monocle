@@ -810,6 +810,174 @@ instance HsJSONPB.ToJSON HistoFloatStat where
 instance HsJSONPB.FromJSON HistoFloatStat where
   parseJSON = HsJSONPB.parseJSONPB
 
+data TermCountInt = TermCountInt
+  { termCountIntTerm :: Hs.Text
+  , termCountIntCount :: Hs.Word32
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named TermCountInt where
+  nameOf _ = (Hs.fromString "TermCountInt")
+
+instance HsProtobuf.HasDefault TermCountInt
+
+instance HsProtobuf.Message TermCountInt where
+  encodeMessage
+    _
+    TermCountInt
+      { termCountIntTerm = termCountIntTerm
+      , termCountIntCount = termCountIntCount
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                termCountIntTerm
+            )
+          , ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                termCountIntCount
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure TermCountInt)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "term")
+          []
+          ""
+      )
+    , ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "count")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB TermCountInt where
+  toJSONPB (TermCountInt f1 f2) =
+    (HsJSONPB.object ["term" .= f1, "count" .= f2])
+  toEncodingPB (TermCountInt f1 f2) =
+    (HsJSONPB.pairs ["term" .= f1, "count" .= f2])
+
+instance HsJSONPB.FromJSONPB TermCountInt where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "TermCountInt"
+        ( \obj ->
+            (Hs.pure TermCountInt) <*> obj .: "term" <*> obj .: "count"
+        )
+    )
+
+instance HsJSONPB.ToJSON TermCountInt where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON TermCountInt where
+  parseJSON = HsJSONPB.parseJSONPB
+
+data TermsCountInt = TermsCountInt
+  { termsCountIntTermcount ::
+      Hs.Vector Monocle.Protob.Metric.TermCountInt
+  , termsCountIntTotalHits :: Hs.Word32
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named TermsCountInt where
+  nameOf _ = (Hs.fromString "TermsCountInt")
+
+instance HsProtobuf.HasDefault TermsCountInt
+
+instance HsProtobuf.Message TermsCountInt where
+  encodeMessage
+    _
+    TermsCountInt
+      { termsCountIntTermcount = termsCountIntTermcount
+      , termsCountIntTotalHits = termsCountIntTotalHits
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                ( Hs.coerce @(Hs.Vector Monocle.Protob.Metric.TermCountInt)
+                    @(HsProtobuf.NestedVec Monocle.Protob.Metric.TermCountInt)
+                    termsCountIntTermcount
+                )
+            )
+          , ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                termsCountIntTotalHits
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure TermsCountInt)
+      <*> ( Hs.coerce
+              @(_ (HsProtobuf.NestedVec Monocle.Protob.Metric.TermCountInt))
+              @(_ (Hs.Vector Monocle.Protob.Metric.TermCountInt))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
+          )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 2)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          ( HsProtobuf.Repeated
+              (HsProtobuf.Named (HsProtobuf.Single "TermCountInt"))
+          )
+          (HsProtobuf.Single "termcount")
+          []
+          ""
+      )
+    , ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobuf.Prim HsProtobuf.UInt32)
+          (HsProtobuf.Single "total_hits")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB TermsCountInt where
+  toJSONPB (TermsCountInt f1 f2) =
+    (HsJSONPB.object ["termcount" .= f1, "total_hits" .= f2])
+  toEncodingPB (TermsCountInt f1 f2) =
+    (HsJSONPB.pairs ["termcount" .= f1, "total_hits" .= f2])
+
+instance HsJSONPB.FromJSONPB TermsCountInt where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "TermsCountInt"
+        ( \obj ->
+            (Hs.pure TermsCountInt)
+              <*> obj .: "termcount"
+              <*> obj .: "total_hits"
+        )
+    )
+
+instance HsJSONPB.ToJSON TermsCountInt where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON TermsCountInt where
+  parseJSON = HsJSONPB.parseJSONPB
+
 newtype GetResponse = GetResponse
   { getResponseResult ::
       Hs.Maybe GetResponseResult

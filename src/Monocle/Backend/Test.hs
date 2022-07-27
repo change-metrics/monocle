@@ -911,45 +911,45 @@ testGetChangesTops = withTenant doTest
         ( SearchPB.ChangesTops
             { changesTopsAuthors =
                 Just
-                  ( SearchPB.TermsCount
-                      { termsCountTermcount =
+                  ( MetricPB.TermsCountInt
+                      { termsCountIntTermcount =
                           V.fromList
-                            [ SearchPB.TermCount
-                                { termCountTerm = "eve"
-                                , termCountCount = 4
+                            [ MetricPB.TermCountInt
+                                { termCountIntTerm = "eve"
+                                , termCountIntCount = 4
                                 }
                             ]
-                      , termsCountTotalHits = 4
+                      , termsCountIntTotalHits = 4
                       }
                   )
             , changesTopsRepos =
                 Just
-                  ( SearchPB.TermsCount
-                      { termsCountTermcount =
+                  ( MetricPB.TermsCountInt
+                      { termsCountIntTermcount =
                           V.fromList
-                            [ SearchPB.TermCount
-                                { termCountTerm = "openstack/neutron"
-                                , termCountCount = 2
+                            [ MetricPB.TermCountInt
+                                { termCountIntTerm = "openstack/neutron"
+                                , termCountIntCount = 2
                                 }
-                            , SearchPB.TermCount
-                                { termCountTerm = "openstack/nova"
-                                , termCountCount = 2
+                            , MetricPB.TermCountInt
+                                { termCountIntTerm = "openstack/nova"
+                                , termCountIntCount = 2
                                 }
                             ]
-                      , termsCountTotalHits = 4
+                      , termsCountIntTotalHits = 4
                       }
                   )
             , changesTopsApprovals =
                 Just
-                  ( SearchPB.TermsCount
-                      { termsCountTermcount =
+                  ( MetricPB.TermsCountInt
+                      { termsCountIntTermcount =
                           V.fromList
-                            [ SearchPB.TermCount
-                                { termCountTerm = "OK"
-                                , termCountCount = 4
+                            [ MetricPB.TermCountInt
+                                { termCountIntTerm = "OK"
+                                , termCountIntCount = 4
                                 }
                             ]
-                      , termsCountTotalHits = 4
+                      , termsCountIntTotalHits = 4
                       }
                   )
             }

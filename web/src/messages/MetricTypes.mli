@@ -52,6 +52,16 @@ type histo_float_stat = {
   histo : histo_float list;
 }
 
+type term_count_int = {
+  term : string;
+  count : int32;
+}
+
+type terms_count_int = {
+  termcount : term_count_int list;
+  total_hits : int32;
+}
+
 type get_response =
   | Error of string
   | Float_value of float
@@ -127,6 +137,20 @@ val default_histo_float_stat :
   unit ->
   histo_float_stat
 (** [default_histo_float_stat ()] is the default value for type [histo_float_stat] *)
+
+val default_term_count_int : 
+  ?term:string ->
+  ?count:int32 ->
+  unit ->
+  term_count_int
+(** [default_term_count_int ()] is the default value for type [term_count_int] *)
+
+val default_terms_count_int : 
+  ?termcount:term_count_int list ->
+  ?total_hits:int32 ->
+  unit ->
+  terms_count_int
+(** [default_terms_count_int ()] is the default value for type [terms_count_int] *)
 
 val default_get_response : unit -> get_response
 (** [default_get_response ()] is the default value for type [get_response] *)

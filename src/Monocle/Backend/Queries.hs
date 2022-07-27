@@ -813,15 +813,15 @@ getChangesTops limit = do
   pure result
  where
   toPBTermCount TermResult {..} =
-    SearchPB.TermCount
+    MetricPB.TermCountInt
       (from trTerm)
       (toInt trCount)
   toInt c = fromInteger $ toInteger c
   toTermsCount total tsc =
     Just $
-      SearchPB.TermsCount
-        { termsCountTermcount = V.fromList $ toPBTermCount <$> tsc
-        , termsCountTotalHits = total
+      MetricPB.TermsCountInt
+        { termsCountIntTermcount = V.fromList $ toPBTermCount <$> tsc
+        , termsCountIntTotalHits = total
         }
 
 searchBody :: QueryMonad m => QueryFlavor -> Value -> m Value
