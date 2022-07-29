@@ -718,6 +718,8 @@ components:
                     type: string
                 trend:
                     $ref: '#/components/schemas/monocle_metric_Trend'
+                top:
+                    $ref: '#/components/schemas/monocle_metric_Top'
         monocle_metric_GetResponse:
             properties:
                 error:
@@ -732,6 +734,10 @@ components:
                     $ref: '#/components/schemas/monocle_metric_HistoIntStat'
                 histo_float_value:
                     $ref: '#/components/schemas/monocle_metric_HistoFloatStat'
+                top_int_value:
+                    $ref: '#/components/schemas/monocle_metric_TermsCountInt'
+                top_float_value:
+                    $ref: '#/components/schemas/monocle_metric_TermsCountFloat'
         monocle_metric_HistoFloat:
             properties:
                 date:
@@ -778,11 +784,27 @@ components:
                     type: string
                 metric:
                     type: string
+        monocle_metric_TermCountFloat:
+            properties:
+                term:
+                    type: string
+                count:
+                    type: number
+                    format: float
         monocle_metric_TermCountInt:
             properties:
                 term:
                     type: string
                 count:
+                    type: integer
+                    format: uint32
+        monocle_metric_TermsCountFloat:
+            properties:
+                termcount:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_metric_TermCountFloat'
+                total_hits:
                     type: integer
                     format: uint32
         monocle_metric_TermsCountInt:
@@ -792,6 +814,11 @@ components:
                     items:
                         $ref: '#/components/schemas/monocle_metric_TermCountInt'
                 total_hits:
+                    type: integer
+                    format: uint32
+        monocle_metric_Top:
+            properties:
+                limit:
                     type: integer
                     format: uint32
         monocle_metric_Trend:

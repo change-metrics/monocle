@@ -20,8 +20,13 @@ type trend = {
   interval : string;
 }
 
+type top = {
+  limit : int32;
+}
+
 type get_request_options =
   | Trend of trend
+  | Top of top
 
 and get_request = {
   index : string;
@@ -59,12 +64,24 @@ type terms_count_int = {
   total_hits : int32;
 }
 
+type term_count_float = {
+  term : string;
+  count : float;
+}
+
+type terms_count_float = {
+  termcount : term_count_float list;
+  total_hits : int32;
+}
+
 type get_response =
   | Error of string
   | Float_value of float
   | Int_value of int32
   | Histo_int_value of histo_int_stat
   | Histo_float_value of histo_float_stat
+  | Top_int_value of terms_count_int
+  | Top_float_value of terms_count_float
 
 let rec default_metric_info 
   ?name:((name:string) = "")
@@ -94,6 +111,12 @@ let rec default_trend
   ?interval:((interval:string) = "")
   () : trend  = {
   interval;
+}
+
+let rec default_top 
+  ?limit:((limit:int32) = 0l)
+  () : top  = {
+  limit;
 }
 
 let rec default_get_request_options () : get_request_options = Trend (default_trend ())
@@ -152,6 +175,22 @@ let rec default_terms_count_int
   ?termcount:((termcount:term_count_int list) = [])
   ?total_hits:((total_hits:int32) = 0l)
   () : terms_count_int  = {
+  termcount;
+  total_hits;
+}
+
+let rec default_term_count_float 
+  ?term:((term:string) = "")
+  ?count:((count:float) = 0.)
+  () : term_count_float  = {
+  term;
+  count;
+}
+
+let rec default_terms_count_float 
+  ?termcount:((termcount:term_count_float list) = [])
+  ?total_hits:((total_hits:int32) = 0l)
+  () : terms_count_float  = {
   termcount;
   total_hits;
 }

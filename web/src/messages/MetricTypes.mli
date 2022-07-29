@@ -23,8 +23,13 @@ type trend = {
   interval : string;
 }
 
+type top = {
+  limit : int32;
+}
+
 type get_request_options =
   | Trend of trend
+  | Top of top
 
 and get_request = {
   index : string;
@@ -62,12 +67,24 @@ type terms_count_int = {
   total_hits : int32;
 }
 
+type term_count_float = {
+  term : string;
+  count : float;
+}
+
+type terms_count_float = {
+  termcount : term_count_float list;
+  total_hits : int32;
+}
+
 type get_response =
   | Error of string
   | Float_value of float
   | Int_value of int32
   | Histo_int_value of histo_int_stat
   | Histo_float_value of histo_float_stat
+  | Top_int_value of terms_count_int
+  | Top_float_value of terms_count_float
 
 
 (** {2 Default values} *)
@@ -98,6 +115,12 @@ val default_trend :
   unit ->
   trend
 (** [default_trend ()] is the default value for type [trend] *)
+
+val default_top : 
+  ?limit:int32 ->
+  unit ->
+  top
+(** [default_top ()] is the default value for type [top] *)
 
 val default_get_request_options : unit -> get_request_options
 (** [default_get_request_options ()] is the default value for type [get_request_options] *)
@@ -151,6 +174,20 @@ val default_terms_count_int :
   unit ->
   terms_count_int
 (** [default_terms_count_int ()] is the default value for type [terms_count_int] *)
+
+val default_term_count_float : 
+  ?term:string ->
+  ?count:float ->
+  unit ->
+  term_count_float
+(** [default_term_count_float ()] is the default value for type [term_count_float] *)
+
+val default_terms_count_float : 
+  ?termcount:term_count_float list ->
+  ?total_hits:int32 ->
+  unit ->
+  terms_count_float
+(** [default_terms_count_float ()] is the default value for type [terms_count_float] *)
 
 val default_get_response : unit -> get_response
 (** [default_get_response ()] is the default value for type [get_response] *)

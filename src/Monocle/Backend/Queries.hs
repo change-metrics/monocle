@@ -983,6 +983,22 @@ data Histo a = Histo
 instance Functor Histo where
   fmap f (Histo d n) = Histo d $ f n
 
+data TermCount a = TermCount
+  { tcTerm :: Text
+  , tcCount :: a
+  }
+
+instance Functor TermCount where
+  fmap f (TermCount {..}) = TermCount tcTerm (f tcCount)
+
+data TermsCount a = TermsCount
+  { tscData :: V.Vector (TermCount a)
+  , tscTotalHits :: Word32
+  }
+
+instance Functor TermsCount where
+  fmap f (TermsCount {..}) = TermsCount (fmap f <$> tscData) tscTotalHits
+
 data MetricInfo = MetricInfo
   { miMetricName :: Text
   , miName :: Text
@@ -994,6 +1010,7 @@ data Metric m a = Metric
   { metricInfo :: MetricInfo
   , runMetric :: m (Numeric a)
   , runMetricTrend :: Maybe Q.TimeRange -> m (V.Vector (Histo a))
+  , runMetricTop :: m (Maybe (TermsCount a))
   }
 
 instance (Functor m) => Functor (Metric m) where
@@ -1002,6 +1019,7 @@ instance (Functor m) => Functor (Metric m) where
       metricInfo
       (fmap f <$> runMetric)
       (const $ (fmap . fmap) f <$> runMetricTrend Nothing)
+      ((fmap . fmap) f <$> runMetricTop)
 
 runMetricNum :: QueryMonad m => Metric m a -> m a
 runMetricNum m = unNum <$> runMetric m
@@ -1017,6 +1035,28 @@ toPBHistoFloat (Histo {..}) =
   let histoFloatDate = from hDate
       histoFloatCount = hValue
    in MetricPB.HistoFloat {..}
+
+toPBTermsCountInt :: TermsCount Word32 -> MetricPB.TermsCountInt
+toPBTermsCountInt (TermsCount {..}) =
+  let termsCountIntTermcount = fmap toPBTermCountInt tscData
+      termsCountIntTotalHits = tscTotalHits
+   in MetricPB.TermsCountInt {..}
+ where
+  toPBTermCountInt TermCount {..} =
+    let termCountIntCount = tcCount
+        termCountIntTerm = from tcTerm
+     in MetricPB.TermCountInt {..}
+
+toPBTermsCountFloat :: TermsCount Float -> MetricPB.TermsCountFloat
+toPBTermsCountFloat (TermsCount {..}) =
+  let termsCountFloatTermcount = fmap toPBTermCountFloat tscData
+      termsCountFloatTotalHits = tscTotalHits
+   in MetricPB.TermsCountFloat {..}
+ where
+  toPBTermCountFloat TermCount {..} =
+    let termCountFloatCount = tcCount
+        termCountFloatTerm = from tcTerm
+     in MetricPB.TermCountFloat {..}
 
 runMetricTrendIntPB :: QueryMonad m => Metric m Word32 -> m (V.Vector MetricPB.HistoInt)
 runMetricTrendIntPB m = fmap toPBHistoInt <$> runMetricTrend m Nothing
@@ -1187,7 +1227,7 @@ authorCountHisto changeEvent intervalM = withDocType changeEvent qf getAuthorHis
 
 changeEventCount :: QueryMonad m => MetricInfo -> EDocType -> Metric m Word32
 changeEventCount mi dt =
-  Metric mi (Num . countToWord <$> compute) computeTrend
+  Metric mi (Num . countToWord <$> compute) computeTrend (pure Nothing)
  where
   compute = withFilter [documentType dt] (withFlavor qf countDocs)
   computeTrend interval = withDocType EChangeCreatedEvent qf $ countHisto CreatedAt interval
@@ -1236,7 +1276,7 @@ metricChangesAbandoned = changeEventCount mi EChangeAbandonedEvent
       )
 
 metricChangeUpdates :: QueryMonad m => Metric m Word32
-metricChangeUpdates = Metric mi compute computeTrend
+metricChangeUpdates = Metric mi compute computeTrend (pure Nothing)
  where
   mi =
     MetricInfo
@@ -1249,12 +1289,7 @@ metricChangeUpdates = Metric mi compute computeTrend
             <> " "
             <> rangeFlavorToDesc OnCreatedAt
       )
-  compute =
-    Num . countToWord
-      <$> withFilter
-        [documentTypes $ fromList docs]
-        ( withFlavor qf countDocs
-        )
+  compute = Num . countToWord <$> withFilter [documentTypes $ fromList docs] (withFlavor qf countDocs)
   computeTrend interval = withDocTypes docs qf $ countHisto CreatedAt interval
   qf = QueryFlavor Author OnCreatedAt
   docs = [EChangeCommitPushedEvent, EChangeCommitForcePushedEvent]
@@ -1278,6 +1313,7 @@ metricChangeWithTests =
     )
     (Num <$> compute)
     computeTrend
+    (pure Nothing)
  where
   compute =
     countToWord
@@ -1305,6 +1341,7 @@ metricChangesSelfMerged =
     )
     (Num <$> compute)
     computeTrend
+    (pure Nothing)
  where
   compute = countToWord <$> withFilter selfMerged (withFlavor' countDocs)
   selfMerged =
@@ -1315,7 +1352,7 @@ metricChangesSelfMerged =
   computeTrend = flip monoHisto compute
 
 metricReviews :: QueryMonad m => Metric m Word32
-metricReviews = Metric mi compute computeTrend
+metricReviews = Metric mi compute computeTrend (pure Nothing)
  where
   mi =
     MetricInfo
@@ -1338,7 +1375,7 @@ metricReviews = Metric mi compute computeTrend
   qf = QueryFlavor Author CreatedAt
 
 metricReviewsAndComments :: QueryMonad m => Metric m Word32
-metricReviewsAndComments = Metric mi compute computeTrend
+metricReviewsAndComments = Metric mi compute computeTrend (pure Nothing)
  where
   mi =
     MetricInfo
@@ -1361,7 +1398,7 @@ metricReviewsAndComments = Metric mi compute computeTrend
   docs = [EChangeReviewedEvent, EChangeCommentedEvent]
 
 metricComments :: QueryMonad m => Metric m Word32
-metricComments = Metric mi compute computeTrend
+metricComments = Metric mi compute computeTrend (pure Nothing)
  where
   mi =
     MetricInfo
@@ -1381,7 +1418,7 @@ metricComments = Metric mi compute computeTrend
   qf = QueryFlavor Author CreatedAt
 
 metricReviewAuthors :: QueryMonad m => Metric m Word32
-metricReviewAuthors = Metric mi compute computeTrend
+metricReviewAuthors = Metric mi compute computeTrend (pure Nothing)
  where
   mi =
     MetricInfo
@@ -1401,7 +1438,7 @@ metricReviewAuthors = Metric mi compute computeTrend
   qf = QueryFlavor Author CreatedAt
 
 metricCommentAuthors :: QueryMonad m => Metric m Word32
-metricCommentAuthors = Metric mi compute computeTrend
+metricCommentAuthors = Metric mi compute computeTrend (pure Nothing)
  where
   mi =
     MetricInfo
@@ -1421,7 +1458,7 @@ metricCommentAuthors = Metric mi compute computeTrend
   qf = QueryFlavor Author CreatedAt
 
 metricChangeAuthors :: QueryMonad m => Metric m Word32
-metricChangeAuthors = Metric mi compute computeTrend
+metricChangeAuthors = Metric mi compute computeTrend (pure Nothing)
  where
   mi =
     MetricInfo
@@ -1458,6 +1495,7 @@ metricTimeToMerge =
     )
     (Num <$> compute)
     computeTrend
+    (pure Nothing)
  where
   compute =
     double2Float
@@ -1482,6 +1520,7 @@ metricTimeToMergeVariance =
     )
     (Num <$> compute)
     computeTrend
+    (pure Nothing)
  where
   compute =
     double2Float
@@ -1505,6 +1544,7 @@ metricFirstReviewMeanTime =
     )
     (Num <$> compute)
     computeTrend
+    (pure Nothing)
  where
   compute =
     firstEventAverageDuration
@@ -1529,6 +1569,7 @@ metricFirstCommentMeanTime =
     )
     (Num <$> compute)
     computeTrend
+    (pure Nothing)
  where
   compute =
     firstEventAverageDuration
@@ -1553,6 +1594,7 @@ metricCommitsPerChange =
     )
     (Num <$> compute)
     computeTrend
+    (pure Nothing)
  where
   compute =
     double2Float
