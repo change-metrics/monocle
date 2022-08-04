@@ -208,8 +208,8 @@ let
   mkHome = name: ''
     mkdir -p ${name} 2> /dev/null || {
       echo "${name}: creating"
-      /bin/sudo mkdir -m 0700 ${name}
-      /bin/sudo chown $(id -u) ${name}
+      mkdir -m 0700 ${name}
+      chown $(id -u) ${name}
     }
     cd ${name}
   '';
@@ -228,7 +228,7 @@ in rec {
       sha256 = "ocz3CJFf+diThmocrgSnhWW/fjuRLLyCxwUKl3Cm7WA=";
     };
   });
-  elasticsearch-home = "/var/lib/elasticsearch";
+  elasticsearch-home = "~/.local/share/monocle/elasticsearch-home";
   elasticsearchConf = pkgs.writeTextFile {
     name = "elasticsearch.yml";
     text = ''
@@ -247,11 +247,12 @@ in rec {
 
     ${mkHome elasticsearch-home}
     export ES_HOME=${elasticsearch-home}
-    mkdir -p $ES_HOME/logs $ES_HOME/data
+    mkdir -p $ES_HOME/logs $ES_HOME/data $ES_HOME/modules $ES_HOME/plugins
     ${pkgs.rsync}/bin/rsync -a ${elasticsearch}/config/ $ES_HOME/config/
-    ln -sf ${elasticsearch}/modules/ $ES_HOME/
+    ${pkgs.rsync}/bin/rsync -a ${elasticsearch}/modules/ $ES_HOME/modules/
     find $ES_HOME -type f | xargs chmod 0600
     find $ES_HOME -type d | xargs chmod 0700
+    find $ES_HOME/modules -type f | xargs chmod 0700
     cat ${elasticsearchConf} > $ES_HOME/config/elasticsearch.yml
     exec ${elasticsearch}/bin/elasticsearch
   '';
