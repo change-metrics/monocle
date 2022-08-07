@@ -1010,7 +1010,7 @@ data Metric m a = Metric
   { metricInfo :: MetricInfo
   , runMetric :: m (Numeric a)
   , runMetricTrend :: Maybe Q.TimeRange -> m (V.Vector (Histo a))
-  , runMetricTop :: m (Maybe (TermsCount a))
+  , runMetricTop :: Word32 -> m (Maybe (TermsCount a))
   }
 
 instance (Functor m) => Functor (Metric m) where
@@ -1019,7 +1019,7 @@ instance (Functor m) => Functor (Metric m) where
       metricInfo
       (fmap f <$> runMetric)
       (const $ (fmap . fmap) f <$> runMetricTrend Nothing)
-      ((fmap . fmap) f <$> runMetricTop)
+      (const $ (fmap . fmap) f <$> runMetricTop 0)
 
 runMetricNum :: QueryMonad m => Metric m a -> m a
 runMetricNum m = unNum <$> runMetric m
@@ -1225,9 +1225,12 @@ authorCountHisto changeEvent intervalM = withDocType changeEvent qf getAuthorHis
 
     hBuckets . parseAggregationResults "agg1" <$> doAggregation search
 
+topNotSupported :: QueryMonad m => Word32 -> m (Maybe (TermsCount a))
+topNotSupported = const $ pure Nothing
+
 changeEventCount :: QueryMonad m => MetricInfo -> EDocType -> Metric m Word32
 changeEventCount mi dt =
-  Metric mi (Num . countToWord <$> compute) computeTrend (pure Nothing)
+  Metric mi (Num . countToWord <$> compute) computeTrend topNotSupported
  where
   compute = withFilter [documentType dt] (withFlavor qf countDocs)
   computeTrend interval = withDocType EChangeCreatedEvent qf $ countHisto CreatedAt interval
@@ -1276,7 +1279,7 @@ metricChangesAbandoned = changeEventCount mi EChangeAbandonedEvent
       )
 
 metricChangeUpdates :: QueryMonad m => Metric m Word32
-metricChangeUpdates = Metric mi compute computeTrend (pure Nothing)
+metricChangeUpdates = Metric mi compute computeTrend topNotSupported
  where
   mi =
     MetricInfo
@@ -1289,7 +1292,12 @@ metricChangeUpdates = Metric mi compute computeTrend (pure Nothing)
             <> " "
             <> rangeFlavorToDesc OnCreatedAt
       )
-  compute = Num . countToWord <$> withFilter [documentTypes $ fromList docs] (withFlavor qf countDocs)
+  compute =
+    Num . countToWord
+      <$> withFilter
+        [documentTypes $ fromList docs]
+        ( withFlavor qf countDocs
+        )
   computeTrend interval = withDocTypes docs qf $ countHisto CreatedAt interval
   qf = QueryFlavor Author OnCreatedAt
   docs = [EChangeCommitPushedEvent, EChangeCommitForcePushedEvent]
@@ -1313,7 +1321,7 @@ metricChangeWithTests =
     )
     (Num <$> compute)
     computeTrend
-    (pure Nothing)
+    topNotSupported
  where
   compute =
     countToWord
@@ -1341,7 +1349,7 @@ metricChangesSelfMerged =
     )
     (Num <$> compute)
     computeTrend
-    (pure Nothing)
+    topNotSupported
  where
   compute = countToWord <$> withFilter selfMerged (withFlavor' countDocs)
   selfMerged =
@@ -1352,7 +1360,7 @@ metricChangesSelfMerged =
   computeTrend = flip monoHisto compute
 
 metricReviews :: QueryMonad m => Metric m Word32
-metricReviews = Metric mi compute computeTrend (pure Nothing)
+metricReviews = Metric mi compute computeTrend topNotSupported
  where
   mi =
     MetricInfo
@@ -1375,7 +1383,7 @@ metricReviews = Metric mi compute computeTrend (pure Nothing)
   qf = QueryFlavor Author CreatedAt
 
 metricReviewsAndComments :: QueryMonad m => Metric m Word32
-metricReviewsAndComments = Metric mi compute computeTrend (pure Nothing)
+metricReviewsAndComments = Metric mi compute computeTrend topNotSupported
  where
   mi =
     MetricInfo
@@ -1398,7 +1406,7 @@ metricReviewsAndComments = Metric mi compute computeTrend (pure Nothing)
   docs = [EChangeReviewedEvent, EChangeCommentedEvent]
 
 metricComments :: QueryMonad m => Metric m Word32
-metricComments = Metric mi compute computeTrend (pure Nothing)
+metricComments = Metric mi compute computeTrend topNotSupported
  where
   mi =
     MetricInfo
@@ -1418,7 +1426,7 @@ metricComments = Metric mi compute computeTrend (pure Nothing)
   qf = QueryFlavor Author CreatedAt
 
 metricReviewAuthors :: QueryMonad m => Metric m Word32
-metricReviewAuthors = Metric mi compute computeTrend (pure Nothing)
+metricReviewAuthors = Metric mi compute computeTrend topNotSupported
  where
   mi =
     MetricInfo
@@ -1438,7 +1446,7 @@ metricReviewAuthors = Metric mi compute computeTrend (pure Nothing)
   qf = QueryFlavor Author CreatedAt
 
 metricCommentAuthors :: QueryMonad m => Metric m Word32
-metricCommentAuthors = Metric mi compute computeTrend (pure Nothing)
+metricCommentAuthors = Metric mi compute computeTrend topNotSupported
  where
   mi =
     MetricInfo
@@ -1458,7 +1466,7 @@ metricCommentAuthors = Metric mi compute computeTrend (pure Nothing)
   qf = QueryFlavor Author CreatedAt
 
 metricChangeAuthors :: QueryMonad m => Metric m Word32
-metricChangeAuthors = Metric mi compute computeTrend (pure Nothing)
+metricChangeAuthors = Metric mi compute computeTrend topNotSupported
  where
   mi =
     MetricInfo
@@ -1495,7 +1503,7 @@ metricTimeToMerge =
     )
     (Num <$> compute)
     computeTrend
-    (pure Nothing)
+    topNotSupported
  where
   compute =
     double2Float
@@ -1520,7 +1528,7 @@ metricTimeToMergeVariance =
     )
     (Num <$> compute)
     computeTrend
-    (pure Nothing)
+    topNotSupported
  where
   compute =
     double2Float
@@ -1544,7 +1552,7 @@ metricFirstReviewMeanTime =
     )
     (Num <$> compute)
     computeTrend
-    (pure Nothing)
+    topNotSupported
  where
   compute =
     firstEventAverageDuration
@@ -1569,7 +1577,7 @@ metricFirstCommentMeanTime =
     )
     (Num <$> compute)
     computeTrend
-    (pure Nothing)
+    topNotSupported
  where
   compute =
     firstEventAverageDuration
@@ -1594,7 +1602,7 @@ metricCommitsPerChange =
     )
     (Num <$> compute)
     computeTrend
-    (pure Nothing)
+    topNotSupported
  where
   compute =
     double2Float
