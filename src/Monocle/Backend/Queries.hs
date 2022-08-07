@@ -654,15 +654,14 @@ getReposSummary = do
 
     pure $ RepoSummary {..}
 
+getChangeEventsTop :: QueryMonad m => Word32 -> NonEmpty EDocType -> Text -> QueryFlavor -> m TermsResultWTH
+getChangeEventsTop limit docs qfield qf =
+  withFlavor qf $ getDocTypeTopCountByField docs qfield (Just limit)
+
 getMostActiveAuthorByChangeMerged :: QueryMonad m => Word32 -> m TermsResultWTH
 getMostActiveAuthorByChangeMerged limit =
   withFlavor (QueryFlavor OnAuthor CreatedAt) $
     getDocTypeTopCountByField (EChangeMergedEvent :| []) "on_author.muid" (Just limit)
-
-getMostActiveAuthorByChangeReviewed :: QueryMonad m => Word32 -> m TermsResultWTH
-getMostActiveAuthorByChangeReviewed limit =
-  withFlavor (QueryFlavor Author CreatedAt) $
-    getDocTypeTopCountByField (EChangeReviewedEvent :| []) "author.muid" (Just limit)
 
 getMostActiveAuthorByChangeCommented :: QueryMonad m => Word32 -> m TermsResultWTH
 getMostActiveAuthorByChangeCommented limit =
@@ -1419,7 +1418,7 @@ metricComments = Metric mi compute computeTrend topNotSupported
   qf = QueryFlavor Author CreatedAt
 
 metricReviewAuthors :: QueryMonad m => Metric m Word32
-metricReviewAuthors = Metric mi compute computeTrend topNotSupported
+metricReviewAuthors = Metric mi compute computeTrend computeTop
  where
   mi =
     MetricInfo
@@ -1434,9 +1433,13 @@ metricReviewAuthors = Metric mi compute computeTrend topNotSupported
       )
   compute =
     Num . countToWord
-      <$> withFilter [documentType EChangeReviewedEvent] (withFlavor qf countAuthors)
-  computeTrend = authorCountHisto EChangeReviewedEvent
+      <$> withFilter [documentType ev] (withFlavor qf countAuthors)
+  computeTrend = authorCountHisto ev
+  computeTop limit =
+    Just . toTermsCountWord32
+      <$> getChangeEventsTop limit (ev :| []) "author.muid" qf
   qf = QueryFlavor Author CreatedAt
+  ev = EChangeReviewedEvent
 
 metricCommentAuthors :: QueryMonad m => Metric m Word32
 metricCommentAuthors = Metric mi compute computeTrend topNotSupported

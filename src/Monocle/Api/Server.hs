@@ -567,15 +567,11 @@ searchQuery auth request = checkAuth auth response
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_COMMENTED ->
             handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeCommented
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_REVIEWED ->
-            handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeReviewed
-          SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_CREATED -> do
-            top <- fromJust <$> Q.runMetricTop Q.metricChangeAuthors queryRequestLimit
-            pure
-              . SearchPB.QueryResponse
-              . Just
-              . SearchPB.QueryResponseResultTopAuthors
-              $ Q.toTermsCountPBInt top
-          -- handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeCreated
+            termsCountWord32ToResult . fromJust
+              <$> Q.runMetricTop Q.metricReviewAuthors queryRequestLimit
+          SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_CREATED ->
+            termsCountWord32ToResult . fromJust
+              <$> Q.runMetricTop Q.metricChangeAuthors queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_MERGED ->
             handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeMerged
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_REVIEWED_AUTHORS ->
@@ -607,18 +603,14 @@ searchQuery auth request = checkAuth auth response
               SearchPB.QueryResponseResultRatio ratio
           SearchPB.QueryRequest_QueryTypeQUERY_HISTO_COMMITS -> do
             histo <- Q.runMetricTrendIntPB Q.metricChangeUpdates
-            pure
-              . SearchPB.QueryResponse
-              . Just
-              . SearchPB.QueryResponseResultHisto
-              $ MetricPB.HistoIntStat histo
+            pure . SearchPB.QueryResponse . Just $
+              SearchPB.QueryResponseResultHisto $
+                MetricPB.HistoIntStat histo
           SearchPB.QueryRequest_QueryTypeQUERY_HISTO_REVIEWS_AND_COMMENTS -> do
             histo <- Q.runMetricTrendIntPB Q.metricReviewsAndComments
-            pure
-              . SearchPB.QueryResponse
-              . Just
-              . SearchPB.QueryResponseResultHisto
-              $ MetricPB.HistoIntStat histo
+            pure . SearchPB.QueryResponse . Just $
+              SearchPB.QueryResponseResultHisto $
+                MetricPB.HistoIntStat histo
       Left err -> pure . handleError $ err
 
   handleError :: ParseError -> SearchPB.QueryResponse
@@ -629,6 +621,13 @@ searchQuery auth request = checkAuth auth response
       $ SearchPB.QueryError
         (from msg)
         (fromInteger . toInteger $ offset)
+
+  termsCountWord32ToResult :: Q.TermsCount Word32 -> SearchPB.QueryResponse
+  termsCountWord32ToResult =
+    SearchPB.QueryResponse
+      . Just
+      . SearchPB.QueryResponseResultTopAuthors
+      . Q.toTermsCountPBInt
 
   handleTopAuthorsQ :: Word32 -> (Word32 -> QueryM Q.TermsResultWTH) -> QueryM SearchPB.QueryResponse
   handleTopAuthorsQ limit cb = do

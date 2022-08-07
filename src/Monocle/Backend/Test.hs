@@ -743,13 +743,15 @@ testTopAuthors = withTenant doTest
         "Check getMostActiveAuthorByChangeMerged count"
         [Q.TermResult {trTerm = "eve", trCount = 2}]
         (Q.tsrTR results')
-      results'' <- Q.getMostActiveAuthorByChangeReviewed 10
+      results'' <- fromJust <$> Q.runMetricTop Q.metricReviewAuthors 10
       assertEqual'
         "Check getMostActiveAuthorByChangeReviewed count"
-        [ Q.TermResult {trTerm = "alice", trCount = 2}
-        , Q.TermResult {trTerm = "bob", trCount = 2}
-        ]
-        (Q.tsrTR results'')
+        ( V.fromList
+            [ Q.TermCount {tcTerm = "alice", tcCount = 2}
+            , Q.TermCount {tcTerm = "bob", tcCount = 2}
+            ]
+        )
+        (Q.tscData results'')
       results''' <- Q.getMostActiveAuthorByChangeCommented 10
       assertEqual'
         "Check getMostActiveAuthorByChangeCommented count"
