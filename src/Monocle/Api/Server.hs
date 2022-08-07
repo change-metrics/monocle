@@ -8,6 +8,7 @@ import Data.Aeson.KeyMap qualified as AKM (lookup)
 import Data.ByteString.Lazy qualified as LBS
 import Data.List (lookup)
 import Data.Map qualified as Map
+import Data.Maybe (fromJust)
 import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Monocle.Api.Jwt (
@@ -36,6 +37,7 @@ import Monocle.Protob.Crawler qualified as CrawlerPB
 import Monocle.Protob.Login qualified as LoginPB
 import Monocle.Protob.Metric (GetRequest (getRequestMetric))
 import Monocle.Protob.Metric qualified as MetricPB
+import Monocle.Protob.Search (QueryRequest (queryRequestLimit))
 import Monocle.Protob.Search qualified as SearchPB
 import Monocle.Search.Parser qualified as P
 import Monocle.Search.Query qualified as Q
@@ -566,8 +568,14 @@ searchQuery auth request = checkAuth auth response
             handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeCommented
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_REVIEWED ->
             handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeReviewed
-          SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_CREATED ->
-            handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeCreated
+          SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_CREATED -> do
+            top <- fromJust <$> Q.runMetricTop Q.metricChangeAuthors queryRequestLimit
+            pure
+              . SearchPB.QueryResponse
+              . Just
+              . SearchPB.QueryResponseResultTopAuthors
+              $ Q.toTermsCountPBInt top
+          -- handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeCreated
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_MERGED ->
             handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeMerged
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_REVIEWED_AUTHORS ->
@@ -599,14 +607,18 @@ searchQuery auth request = checkAuth auth response
               SearchPB.QueryResponseResultRatio ratio
           SearchPB.QueryRequest_QueryTypeQUERY_HISTO_COMMITS -> do
             histo <- Q.runMetricTrendIntPB Q.metricChangeUpdates
-            pure . SearchPB.QueryResponse . Just $
-              SearchPB.QueryResponseResultHisto $
-                MetricPB.HistoIntStat histo
+            pure
+              . SearchPB.QueryResponse
+              . Just
+              . SearchPB.QueryResponseResultHisto
+              $ MetricPB.HistoIntStat histo
           SearchPB.QueryRequest_QueryTypeQUERY_HISTO_REVIEWS_AND_COMMENTS -> do
             histo <- Q.runMetricTrendIntPB Q.metricReviewsAndComments
-            pure . SearchPB.QueryResponse . Just $
-              SearchPB.QueryResponseResultHisto $
-                MetricPB.HistoIntStat histo
+            pure
+              . SearchPB.QueryResponse
+              . Just
+              . SearchPB.QueryResponseResultHisto
+              $ MetricPB.HistoIntStat histo
       Left err -> pure . handleError $ err
 
   handleError :: ParseError -> SearchPB.QueryResponse

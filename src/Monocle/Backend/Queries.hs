@@ -654,12 +654,6 @@ getReposSummary = do
 
     pure $ RepoSummary {..}
 
--- | get authors tops
-getMostActiveAuthorByChangeCreated :: QueryMonad m => Word32 -> m TermsResultWTH
-getMostActiveAuthorByChangeCreated limit =
-  withFlavor (QueryFlavor Author CreatedAt) $
-    getDocTypeTopCountByField (EChangeCreatedEvent :| []) "author.muid" (Just limit)
-
 getMostActiveAuthorByChangeMerged :: QueryMonad m => Word32 -> m TermsResultWTH
 getMostActiveAuthorByChangeMerged limit =
   withFlavor (QueryFlavor OnAuthor CreatedAt) $
@@ -791,9 +785,6 @@ getChangesTop limit attr =
       -- get a total count that is accurate
       (Just limit)
 
-getChangesTopAuthors :: QueryMonad m => Word32 -> m TermsResultWTH
-getChangesTopAuthors limit = getChangesTop limit "author.muid"
-
 getChangesTopRepos :: QueryMonad m => Word32 -> m TermsResultWTH
 getChangesTopRepos limit = getChangesTop limit "repository_fullname"
 
@@ -802,11 +793,11 @@ getChangesTopApprovals limit = getChangesTop limit "approval"
 
 getChangesTops :: QueryMonad m => Word32 -> m SearchPB.ChangesTops
 getChangesTops limit = do
-  authors <- getChangesTopAuthors limit
+  authors <- runMetricTop metricChangeAuthors limit
   repos <- getChangesTopRepos limit
   approvals <- getChangesTopApprovals limit
   let result =
-        let changesTopsAuthors = toTermsCount (toInt $ tsrTH authors) (tsrTR authors)
+        let changesTopsAuthors = toTermsCountPBInt <$> authors
             changesTopsRepos = toTermsCount (toInt $ tsrTH repos) (tsrTR repos)
             changesTopsApprovals = toTermsCount (toInt $ tsrTH approvals) (tsrTR approvals)
          in SearchPB.ChangesTops {..}
@@ -987,6 +978,7 @@ data TermCount a = TermCount
   { tcTerm :: Text
   , tcCount :: a
   }
+  deriving (Show, Eq)
 
 instance Functor TermCount where
   fmap f (TermCount {..}) = TermCount tcTerm (f tcCount)
@@ -995,6 +987,7 @@ data TermsCount a = TermsCount
   { tscData :: V.Vector (TermCount a)
   , tscTotalHits :: Word32
   }
+  deriving (Show, Eq)
 
 instance Functor TermsCount where
   fmap f (TermsCount {..}) = TermsCount (fmap f <$> tscData) tscTotalHits
@@ -1465,8 +1458,29 @@ metricCommentAuthors = Metric mi compute computeTrend topNotSupported
   computeTrend = authorCountHisto EChangeCommentedEvent
   qf = QueryFlavor Author CreatedAt
 
+toTermsCountWord32 :: TermsResultWTH -> TermsCount Word32
+toTermsCountWord32 TermsResultWTH {..} =
+  TermsCount
+    ( fromList $ fmap toTermCountWord32 tsrTR
+    )
+    (fromInteger . toInteger $ tsrTH)
+ where
+  toTermCountWord32 TermResult {..} = TermCount trTerm (fromInteger . toInteger $ trCount)
+
+toTermsCountPBInt :: TermsCount Word32 -> MetricPB.TermsCountInt
+toTermsCountPBInt TermsCount {..} =
+  MetricPB.TermsCountInt
+    { termsCountIntTermcount = toTermCountPB <$> tscData
+    , termsCountIntTotalHits = tscTotalHits
+    }
+ where
+  toTermCountPB TermCount {..} =
+    MetricPB.TermCountInt
+      (from tcTerm)
+      (fromInteger . toInteger $ tcCount)
+
 metricChangeAuthors :: QueryMonad m => Metric m Word32
-metricChangeAuthors = Metric mi compute computeTrend topNotSupported
+metricChangeAuthors = Metric mi compute computeTrend computeTop
  where
   mi =
     MetricInfo
@@ -1483,6 +1497,7 @@ metricChangeAuthors = Metric mi compute computeTrend topNotSupported
     Num . countToWord
       <$> withFilter [documentType EChangeCreatedEvent] (withFlavor qf countAuthors)
   computeTrend = authorCountHisto EChangeCreatedEvent
+  computeTop limit = Just . toTermsCountWord32 <$> getChangesTop limit "author.muid"
   qf = QueryFlavor Author CreatedAt
 
 -- | The average duration for an open change to be merged

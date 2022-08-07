@@ -4,6 +4,7 @@ module Monocle.Backend.Test where
 import Control.Exception (bracket_)
 import Control.Monad.Random.Lazy
 import Data.List (partition)
+import Data.Maybe (fromJust)
 import Data.Text qualified as Text
 import Data.Time.Clock (secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
@@ -732,11 +733,11 @@ testTopAuthors = withTenant doTest
 
     -- Check for expected metrics
     withQuery defaultQuery $ do
-      results <- Q.getMostActiveAuthorByChangeCreated 10
+      results <- fromJust <$> Q.runMetricTop Q.metricChangeAuthors 10
       assertEqual'
-        "Check getMostActiveAuthorByChangeCreated count"
-        [Q.TermResult {trTerm = "eve", trCount = 4}]
-        (Q.tsrTR results)
+        "Check metricChangeAuthors Top"
+        (V.fromList [Q.TermCount {tcTerm = "eve", tcCount = 4}])
+        (Q.tscData results)
       results' <- Q.getMostActiveAuthorByChangeMerged 10
       assertEqual'
         "Check getMostActiveAuthorByChangeMerged count"
