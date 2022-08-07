@@ -574,7 +574,8 @@ searchQuery auth request = checkAuth auth response
             termsCountWord32ToResult . fromJust
               <$> Q.runMetricTop Q.metricChangeAuthors queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_MERGED ->
-            handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeMerged
+            termsCountWord32ToResult . fromJust
+              <$> Q.runMetricTop Q.metricChangeMergedAuthors queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_REVIEWED_AUTHORS ->
             handleTopAuthorsQ queryRequestLimit Q.getMostReviewedAuthor
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS ->
