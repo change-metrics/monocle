@@ -565,7 +565,8 @@ searchQuery auth request = checkAuth auth response
             SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultActivityStats
               <$> Q.getActivityStats
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_COMMENTED ->
-            handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeCommented
+            termsCountWord32ToResult . fromJust
+              <$> Q.runMetricTop Q.metricCommentAuthors queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_REVIEWED ->
             termsCountWord32ToResult . fromJust
               <$> Q.runMetricTop Q.metricReviewAuthors queryRequestLimit
