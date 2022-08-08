@@ -5,12 +5,15 @@
   inputs = {
     nixpkgs.url =
       "github:NixOS/nixpkgs/ed014c27f4d0ca772fb57d3b8985b772b0503bbd";
+    hspkgs.url =
+      "github:podenv/hspkgs/c97192fe75d7f9df9fae97b0840cf0ed777e23ce";
   };
 
-  outputs = { self, nixpkgs }:
+  outputs = { self, nixpkgs, hspkgs }:
     let
       legacy = import ./nix/default.nix {
         nixpkgsPath = nixpkgs;
+        hspkgs = hspkgs.pkgs;
         self = self;
       };
     in {
