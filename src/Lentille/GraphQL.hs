@@ -189,7 +189,7 @@ streamFetch client@GraphClient {..} lc mkArgs StreamFetchOptParams {..} transfor
     log :: MonadLog m => Text -> m ()
     log = mLog . Log Macroscope . LogGraphQL lc
 
-    holdOnIfNeeded :: (MonadTime m, MonadLog m) => Maybe RateLimit -> m ()
+    holdOnIfNeeded :: MonadLog m => Maybe RateLimit -> m ()
     holdOnIfNeeded = mapM_ toDelay
       where
         toDelay :: (MonadLog m) => RateLimit -> m ()
