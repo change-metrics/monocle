@@ -103,18 +103,18 @@ checkAuth auth action = do
 -- curl -XPOST -d '{"void": ""}' -H "Content-type: application/json" -H 'Authorization: Bearer <token>' http://localhost:8080/auth/whoami
 authWhoAmi :: AuthResult AuthenticatedUser -> AuthPB.WhoAmiRequest -> AppM AuthPB.WhoAmiResponse
 authWhoAmi (Authenticated au) _request =
-  pure $
-    AuthPB.WhoAmiResponse
+  pure
+    $ AuthPB.WhoAmiResponse
       . Just
       . AuthPB.WhoAmiResponseResultUid
-      $ show au
+    $ show au
 authWhoAmi _auth _request =
-  pure $
-    AuthPB.WhoAmiResponse
+  pure
+    $ AuthPB.WhoAmiResponse
       . Just
       . AuthPB.WhoAmiResponseResultError
       . Enumerated
-      $ Right AuthPB.WhoAmiErrorUnAuthorized
+    $ Right AuthPB.WhoAmiErrorUnAuthorized
 
 -- curl -XPOST -d '{"token": "admin-token"}' -H "Content-type: application/json" http://localhost:8080/auth/get
 authGetMagicJwt :: AuthResult AuthenticatedUser -> AuthPB.GetMagicJwtRequest -> AppM AuthPB.GetMagicJwtResponse
@@ -542,19 +542,22 @@ searchQuery auth request = checkAuth auth response
 
           case queryType of
             SearchPB.QueryRequest_QueryTypeQUERY_CHANGE ->
-              SearchPB.QueryResponse . Just
+              SearchPB.QueryResponse
+                . Just
                 . SearchPB.QueryResponseResultChanges
                 . SearchPB.Changes
                 . V.fromList
                 . map from
                 <$> Q.changes queryRequestOrder queryRequestLimit
             SearchPB.QueryRequest_QueryTypeQUERY_CHANGE_AND_EVENTS ->
-              SearchPB.QueryResponse . Just
+              SearchPB.QueryResponse
+                . Just
                 . SearchPB.QueryResponseResultChangeEvents
                 . toChangeEventsResult
                 <$> Q.changeEvents queryRequestChangeId queryRequestLimit
             SearchPB.QueryRequest_QueryTypeQUERY_REPOS_SUMMARY ->
-              SearchPB.QueryResponse . Just
+              SearchPB.QueryResponse
+                . Just
                 . SearchPB.QueryResponseResultReposSummary
                 . SearchPB.ReposSummary
                 . V.fromList
@@ -582,7 +585,8 @@ searchQuery auth request = checkAuth auth response
             SearchPB.QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS ->
               handleTopAuthorsQ queryRequestLimit Q.getMostCommentedAuthor
             SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS ->
-              SearchPB.QueryResponse . Just
+              SearchPB.QueryResponse
+                . Just
                 . SearchPB.QueryResponseResultAuthorsPeers
                 . SearchPB.AuthorsPeers
                 . V.fromList
@@ -595,7 +599,8 @@ searchQuery auth request = checkAuth auth response
                   SearchPB.QueryResponseResultNewAuthors $
                     toTermsCount (V.fromList $ toTTResult <$> results) 0
             SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_TOPS ->
-              SearchPB.QueryResponse . Just
+              SearchPB.QueryResponse
+                . Just
                 . SearchPB.QueryResponseResultChangesTops
                 <$> Q.getChangesTops queryRequestLimit
             SearchPB.QueryRequest_QueryTypeQUERY_RATIO_COMMITS_VS_REVIEWS -> do
@@ -605,16 +610,19 @@ searchQuery auth request = checkAuth auth response
             SearchPB.QueryRequest_QueryTypeQUERY_HISTO_COMMITS -> do
               histo <- Q.runMetricTrendIntPB Q.metricChangeUpdates
               pure . SearchPB.QueryResponse . Just $
-                SearchPB.QueryResponseResultHisto $ MetricPB.HistoIntStat histo
+                SearchPB.QueryResponseResultHisto $
+                  MetricPB.HistoIntStat histo
             SearchPB.QueryRequest_QueryTypeQUERY_HISTO_REVIEWS_AND_COMMENTS -> do
               histo <- Q.runMetricTrendIntPB Q.metricReviewsAndComments
               pure . SearchPB.QueryResponse . Just $
-                SearchPB.QueryResponseResultHisto $ MetricPB.HistoIntStat histo
+                SearchPB.QueryResponseResultHisto $
+                  MetricPB.HistoIntStat histo
         Left err -> pure . handleError $ err
 
     handleError :: ParseError -> SearchPB.QueryResponse
     handleError (ParseError msg offset) =
-      SearchPB.QueryResponse . Just
+      SearchPB.QueryResponse
+        . Just
         . SearchPB.QueryResponseResultError
         $ SearchPB.QueryError
           (from msg)
@@ -623,11 +631,11 @@ searchQuery auth request = checkAuth auth response
     handleTopAuthorsQ :: Word32 -> (Word32 -> QueryM Q.TermsResultWTH) -> QueryM SearchPB.QueryResponse
     handleTopAuthorsQ limit cb = do
       results <- cb limit
-      pure $
-        SearchPB.QueryResponse
+      pure
+        $ SearchPB.QueryResponse
           . Just
-          $ SearchPB.QueryResponseResultTopAuthors $
-            toTermsCount (V.fromList $ toTTResult <$> Q.tsrTR results) (toInt $ Q.tsrTH results)
+        $ SearchPB.QueryResponseResultTopAuthors
+        $ toTermsCount (V.fromList $ toTTResult <$> Q.tsrTR results) (toInt $ Q.tsrTH results)
       where
         toInt c = fromInteger $ toInteger c
 

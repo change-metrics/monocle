@@ -91,7 +91,9 @@ instance ToMarkup LoginInUser where
     H.body $ do
       H.script
         ( H.toHtml
-            ( "localStorage.setItem('api-key','" <> liJWT <> "');"
+            ( "localStorage.setItem('api-key','"
+                <> liJWT
+                <> "');"
                 <> "window.location='"
                 <> liRedirectURI
                 <> "';"

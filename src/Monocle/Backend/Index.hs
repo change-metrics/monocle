@@ -278,7 +278,8 @@ upgradeConfigV1 = do
             setLastUpdated
               (from ecmCrawlerName)
               lastUpdatedAt
-              $ Project . from $ ecmCrawlerTypeValue
+              $ Project . from
+              $ ecmCrawlerTypeValue
 
 upgradeConfigV2 :: QueryM ()
 upgradeConfigV2 = do
@@ -485,7 +486,8 @@ bulkStream s = do
   (count :> _) <- S.sum . S.mapM callBulk . S.mapped S.toList . S.chunksOf 500 $ s
   when (count > 0) $
     -- TODO: check for refresh errors ?
-    void $ BH.refreshIndex =<< getIndexName
+    void $
+      BH.refreshIndex =<< getIndexName
   pure count
   where
     callBulk :: [BH.BulkOperation] -> QueryM Int

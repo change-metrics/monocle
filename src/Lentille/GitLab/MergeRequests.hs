@@ -228,7 +228,8 @@ transformResponse host getIdentIdCB result =
                   else Nothing
               changeState = toState state
               changeOptionalDuration =
-                ( ChangeOptionalDurationDuration . from
+                ( ChangeOptionalDurationDuration
+                    . from
                     . diffTimeSec
                       ( timeToUTCTime Nothing createdAt
                       )
@@ -245,7 +246,8 @@ transformResponse host getIdentIdCB result =
               changeOptionalSelfMerged =
                 ( ChangeOptionalSelfMergedSelfMerged
                     <$> ( (==)
-                            <$> (getAuthorUsername <$> author) <*> (getMergerUsername <$> mergeUser)
+                            <$> (getAuthorUsername <$> author)
+                            <*> (getMergerUsername <$> mergeUser)
                         )
                 )
            in Change {..}

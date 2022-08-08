@@ -236,7 +236,9 @@ getClientBZ url token = do
   clients <- gets clientsBugzilla
   (client, newClients) <-
     mapMutate clients (url, token) . pure $
-      getBugzillaSession url $ Just $ getApikey (unSecret token)
+      getBugzillaSession url $
+        Just $
+          getApikey (unSecret token)
   modify $ \s -> s {clientsBugzilla = newClients}
   pure (url, client)
 

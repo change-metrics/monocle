@@ -157,5 +157,6 @@ constantRetry msg handler baseAction = retry policy (const handler) action
     policy = Retry.constantDelay delay <> Retry.limitRetries retryLimit
     action num = do
       when (num > 0) $
-        mLog . Log Macroscope . LogRaw $ counterT num retryLimit <> " failed: " <> msg
+        mLog . Log Macroscope . LogRaw $
+          counterT num retryLimit <> " failed: " <> msg
       baseAction num

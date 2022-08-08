@@ -462,10 +462,8 @@ in rec {
   fast-ci-run = mkRun "fast-ci" fast-ci-commands;
 
   reformat-run = mkRun "reformat" ''
-    # This needs apply-refact, but it doesn't build in our package set and that would requires pulling an extra ghc.
-    # Let's try again next time we bump nixpkgs.
-    # echo "[+] Apply hlint suggestions"
-    # ${hlint ''--refactor --refactor-options="-i"''}
+    echo "[+] Apply hlint suggestions"
+    find src/ -name "*hs" -exec ${hspkgs.hlint}/bin/hlint -XQuasiQuotes --refactor --refactor-options="-i" {} \;
 
     echo "[+] Reformat with ormolu"
     ${ormolu "inplace"}
@@ -487,6 +485,7 @@ in rec {
 
     buildInputs = [
       hspkgs.hlint
+      hspkgs.apply-refact
       hspkgs.ghcid
       hspkgs.haskell-language-server
       hsPkgs.doctest
