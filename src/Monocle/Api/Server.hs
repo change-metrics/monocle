@@ -728,29 +728,29 @@ instance TrendPB Word32 where
       $ Q.toPBHistoInt <$> v
 
 class Num a => TopPB a where
-  toTopResult :: Maybe (Q.TermsCount a) -> MetricPB.GetResponse
-
-toTopResultNotSupported :: MetricPB.GetResponse
-toTopResultNotSupported =
-  MetricPB.GetResponse
-    . Just
-    $ MetricPB.GetResponseResultError "This metric does not support Top option"
+  toTopResult :: Q.TermsCount a -> MetricPB.GetResponse
 
 instance TopPB Word32 where
-  toTopResult (Just v) =
+  toTopResult v =
     MetricPB.GetResponse
       . Just
       . MetricPB.GetResponseResultTopIntValue
       $ Q.toPBTermsCountInt v
-  toTopResult Nothing = toTopResultNotSupported
 
 instance TopPB Float where
-  toTopResult (Just v) =
+  toTopResult v =
     MetricPB.GetResponse
       . Just
       . MetricPB.GetResponseResultTopFloatValue
       $ Q.toPBTermsCountFloat v
-  toTopResult Nothing = toTopResultNotSupported
+
+toTopResultOrFail :: TopPB a => Maybe (Q.TermsCount a) -> MetricPB.GetResponse
+toTopResultOrFail = \case
+  Just tc -> toTopResult tc
+  Nothing ->
+    MetricPB.GetResponse
+      . Just
+      $ MetricPB.GetResponseResultError "This metric does not support Top option"
 
 metricGet :: AuthResult AuthenticatedUser -> MetricPB.GetRequest -> AppM MetricPB.GetResponse
 metricGet auth request = checkAuth auth response
@@ -800,7 +800,7 @@ metricGet auth request = checkAuth auth response
     runMetric m = case getRequestOptions of
       Just (MetricPB.GetRequestOptionsTrend (MetricPB.Trend interval)) ->
         toTrendResult <$> runM (Q.runMetricTrend m $ Just $ fromPBTrendInterval $ from interval)
-      Just (MetricPB.GetRequestOptionsTop (MetricPB.Top limit)) -> toTopResult <$> runM (Q.runMetricTop m limit)
+      Just (MetricPB.GetRequestOptionsTop (MetricPB.Top limit)) -> toTopResultOrFail <$> runM (Q.runMetricTop m limit)
       _ -> toNumResult <$> runM (Q.runMetric m)
     fromPBTrendInterval :: Text -> Q.TimeRange
     fromPBTrendInterval interval = case readMaybe (from interval) of
