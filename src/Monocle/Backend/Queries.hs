@@ -369,7 +369,10 @@ instance BucketName NoSubBucket where
 instance (FromJSON a, BucketName a) => FromJSON (HistoBucket a) where
   parseJSON (Object v) = do
     HistoBucket
-      <$> v .: "key" <*> v .: "key_as_string" <*> v .: "doc_count" <*> parseSubBucket
+      <$> v .: "key"
+      <*> v .: "key_as_string"
+      <*> v .: "doc_count"
+      <*> parseSubBucket
     where
       subKeyName = bucketName (Proxy @a)
       parseSubBucket

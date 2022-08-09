@@ -1,6 +1,64 @@
 {
   "nodes": {
+    "hspkgs": {
+      "inputs": {
+        "nixGL": "nixGL",
+        "nixpkgs": "nixpkgs"
+      },
+      "locked": {
+        "lastModified": 1660059949,
+        "narHash": "sha256-Fa3L/MQLZFbvd9z8TsqBwAPTGqHjQkntEbXHNdvQ760=",
+        "owner": "podenv",
+        "repo": "hspkgs",
+        "rev": "24d2028871584f71313ac06e23ef143db61aea34",
+        "type": "github"
+      },
+      "original": {
+        "owner": "podenv",
+        "repo": "hspkgs",
+        "rev": "24d2028871584f71313ac06e23ef143db61aea34",
+        "type": "github"
+      }
+    },
+    "nixGL": {
+      "inputs": {
+        "nixpkgs": [
+          "hspkgs",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1656321324,
+        "narHash": "sha256-Sz0uWspqvshGFbT+XmRVVayuW514rNNLLvrre8jBLLU=",
+        "owner": "guibou",
+        "repo": "nixGL",
+        "rev": "047a34b2f087e2e3f93d43df8e67ada40bf70e5c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "guibou",
+        "repo": "nixGL",
+        "rev": "047a34b2f087e2e3f93d43df8e67ada40bf70e5c",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
+      "locked": {
+        "lastModified": 1659891956,
+        "narHash": "sha256-ymyDKkXQs5Z9+ezMutHmnDqztYmDTFZEsFuaPeBzkMI=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "00d73d5385b63e868bd11282fb775f6fe4921fb5",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "00d73d5385b63e868bd11282fb775f6fe4921fb5",
+        "type": "github"
+      }
+    },
+    "nixpkgs_2": {
       "locked": {
         "lastModified": 1652483617,
         "narHash": "sha256-Jxyn3uXFr5LdZNNiippI/obtLXAVBM18uVfiKVP4j9Q=",
@@ -18,7 +76,8 @@
     },
     "root": {
       "inputs": {
-        "nixpkgs": "nixpkgs"
+        "hspkgs": "hspkgs",
+        "nixpkgs": "nixpkgs_2"
       }
     }
   },

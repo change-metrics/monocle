@@ -63,13 +63,13 @@ usage =
     usageApiEnv =
       (,,,,,,,)
         <$> envConf
-          <*> envElastic
-          <*> envApiPort
-          <*> envPublicUrl
-          <*> envTitle
-          <*> envWebAppPath
-          <*> envJwkKey
-          <*> envAdminToken
+        <*> envElastic
+        <*> envApiPort
+        <*> envPublicUrl
+        <*> envTitle
+        <*> envWebAppPath
+        <*> envJwkKey
+        <*> envAdminToken
 
     -- The Crawler entrypoint (no CLI argument).
     usageCrawler = pure $ do

@@ -1,194 +1,66 @@
-{ elasticsearch-port ? 19200, nixpkgsPath, self }:
+{ elasticsearch-port ? 19200, nixpkgsPath, hspkgs, self }:
 let
   nixpkgsSrc = import nixpkgsPath;
-
-  # update haskell dependencies
-  compilerVersion = "922";
-  compiler = "ghc" + compilerVersion;
 
   mk-morpheus-lib = hpPrev: name:
     let
       morpheus-graphql-src = pkgs.fetchFromGitHub {
         owner = "morpheusgraphql";
         repo = "morpheus-graphql";
-        # Fix for bytestring-0.11, proposed in https://github.com/morpheusgraphql/morpheus-graphql/pull/723
         rev = "df3a4b0d11b53de3ddf3b43966e0242877541e50";
         sha256 = "sha256-rrDWIYmY9J9iPI/lSuflyyxapAXyuHbLP86awH33mzo=";
       };
     in (hpPrev.callCabal2nix "morpheus-graphql-${name}"
       "${morpheus-graphql-src}/morpheus-graphql-${name}" { });
 
-  mk-servant-lib = hpPrev: name:
-    let
-      # Use direct source because nixpkgs somehow can't fetch
-      servant-src = builtins.fetchGit {
-        url = "https://github.com/haskell-servant/servant";
-        ref = "master";
-        rev = "c19ed0fb925fbe62365adcaf286c00c497adf8fb";
-      };
-    in (hpPrev.callCabal2nix "sevant${name}" "${servant-src}/servant${name}"
-      { });
+  # Add monocle and patch broken dependency to the haskell package set
+  haskellExtend = hpFinal: hpPrev: {
+    monocle = (hpPrev.callCabal2nix "monocle" self { }).overrideAttrs
+      (_: { MONOCLE_COMMIT = builtins.getEnv "MONOCLE_COMMIT"; });
 
-  overlays = [
-    (final: prev: {
-      myHaskellPackages = prev.haskell.packages.${compiler}.override {
-        overrides = hpFinal: hpPrev: {
-          # For proto3-suite:
-          range-set-list = pkgs.haskell.lib.dontCheck
-            (pkgs.haskell.lib.overrideCabal hpPrev.range-set-list {
-              broken = false;
-            });
-          data-diverse = pkgs.haskell.lib.dontCheck
-            (pkgs.haskell.lib.overrideCabal hpPrev.data-diverse {
-              broken = false;
-            });
-          # Test suite hang
-          servant-auth-server = pkgs.haskell.lib.dontCheck
-            (pkgs.haskell.lib.overrideCabal hpPrev.servant-auth-server {
-              broken = false;
-            });
-          # HEAD is needed for bytestring-0.11 and ghc-9.2 base
-          proto3-suite = let
-            src = builtins.fetchGit {
-              url = "https://github.com/awakesecurity/proto3-suite";
-              ref = "master";
-              rev = "5456b633ba7283ff11adcd457744b54ebdd28a37";
-            };
-            base = pkgs.haskell.lib.dontCheck
-              (hpPrev.callCabal2nix "proto3-suite" src { });
-          in pkgs.haskell.lib.disableCabalFlag base "swagger";
+    # data-diverse is presently marked as broken because the test don't pass.
+    data-diverse = pkgs.haskell.lib.dontCheck
+      (pkgs.haskell.lib.overrideCabal hpPrev.data-diverse { broken = false; });
 
-          # HEAD is needed for bytestring-0.11
-          proto3-wire = let
-            src = builtins.fetchGit {
-              url = "https://github.com/awakesecurity/proto3-wire";
-              ref = "master";
-              rev = "a5ed1a3bff0816cc247a1058232f3ed8a6f1e873";
-            };
-          in pkgs.haskell.lib.dontCheck
-          (hpPrev.callCabal2nix "proto3-wire" src { });
+    # proto3-wire test needs bytestring-0.11, though even with the patch the test does not pass.
+    proto3-wire = pkgs.haskell.lib.dontCheck hpPrev.proto3-wire;
 
-          oidc-client = pkgs.haskell.lib.overrideCabal hpPrev.oidc-client {
-            version = "0.6.1.0";
-            sha256 = "sha256-PtzYvIs6gXO40JHMElNH/i+kxMSZephJMkkJTGCzEkI=";
-          };
+    # proto3-suite doesn't work with old swagger, so we disable the flag
+    # and the test doesn't pass in nix.
+    proto3-suite = pkgs.haskell.lib.dontCheck
+      (pkgs.haskell.lib.disableCabalFlag hpPrev.proto3-suite "swagger");
 
-          jose-jwt = (pkgs.haskell.lib.overrideCabal hpPrev.jose-jwt {
-            broken = false;
-          });
+    # criterion test sometime hangs
+    criterion = pkgs.haskell.lib.dontCheck hpPrev.criterion;
 
-          # Hackage version does not build without a bump
-          text-time = (pkgs.haskell.lib.overrideCabal hpPrev.text-time {
-            broken = false;
-            src = builtins.fetchGit {
-              url = "https://github.com/klangner/text-time.git";
-              ref = "master";
-              rev = "1ff65c2c8845e3fdd99900054f0596818a95c316";
-            };
-          });
+    # upgrade to bloodhound 0.20 needs some work
+    bloodhound = pkgs.haskell.lib.overrideCabal hpPrev.bloodhound {
+      version = "0.19.1.0";
+      sha256 = "sha256-QEN1wOLLUEsDKAbgz8ex0wfK/duNytvRYclwkBj/1G0=";
+    };
 
-          # ghc-9.2 fix proposed in https://github.com/byteverse/json-syntax/pull/11
-          # and https://github.com/byteverse/json-syntax/pull/13
-          json-syntax = let
-            src = builtins.fetchGit {
-              url = "https://github.com/TristanCacqueray/json-syntax";
-              ref = "ghc-9.2-integration";
-              rev = "f54325b2c601b962cfb078c2295b09a0780d7313";
-            };
-          in (pkgs.haskell.lib.dontCheck
-            (hpPrev.callCabal2nix "bytebuild" src { }));
-
-          # ghc-9.2 fix proposed in: https://github.com/byteverse/bytesmith/pull/22
-          bytesmith = let
-            src = builtins.fetchGit {
-              url = "https://github.com/teto/bytesmith";
-              ref = "ghc92";
-              rev = "dfdf6922e118932ba7d671e05a5b65998349cee8";
-            };
-          in (hpPrev.callCabal2nix "bytesmith" src { });
-
-          weeder = let
-            src = builtins.fetchGit {
-              url = "https://github.com/ocharles/weeder";
-              ref = "master";
-              rev = "c58ed2a8c66dcf0b469f8343efb6b6f61c7c40f3";
-            };
-          in (hpPrev.callCabal2nix "weeder" src { });
-
-          # Master version for ghc-9.2
-          bytebuild = let
-            src = builtins.fetchGit {
-              url = "https://github.com/byteverse/bytebuild";
-              ref = "master";
-              rev = "dde5a9b07d03f5a9c33eba6d63ca0140ab6f406e";
-            };
-          in (pkgs.haskell.lib.dontCheck
-            (hpPrev.callCabal2nix "bytebuild" src { }));
-
-          # ghc-9.2 fix proposed: https://github.com/andrewthad/scientific-notation/pull/4
-          scientific-notation = let
-            src = builtins.fetchGit {
-              url = "https://github.com/andrewthad/scientific-notation";
-              ref = "master";
-              rev = "0076fe9ed83e70ce068962fbd1b49d475af7a7f2";
-            };
-          in (pkgs.haskell.lib.dontCheck
-            (hpPrev.callCabal2nix "scientific-notation" src { }));
-
-          # nixpkgs somehow doesn't fetch, use direct src
-          servant = mk-servant-lib hpPrev "";
-          servant-foreign = mk-servant-lib hpPrev "-foreign";
-          servant-server = mk-servant-lib hpPrev "-server";
-
-          # nixpkgs version are broken, use direct src
-          morpheus-graphql-tests = mk-morpheus-lib hpPrev "tests";
-          morpheus-graphql-core = mk-morpheus-lib hpPrev "core";
-          morpheus-graphql-code-gen = mk-morpheus-lib hpPrev "code-gen";
-          morpheus-graphql-client = mk-morpheus-lib hpPrev "client";
-
-          gerrit = let
-            src = builtins.fetchGit {
-              url =
-                "https://softwarefactory-project.io/r/software-factory/gerrit-haskell";
-              ref = "refs/changes/41/24541/1";
-              rev = "c0c337bccb35e7d94e6125ab034cfcc9efe68476";
-            };
-          in pkgs.haskell.lib.dontCheck (hpPrev.callCabal2nix "gerrit" src { });
-
-          # Relude needs head for ghc-9.2
-          relude = (pkgs.haskell.lib.overrideCabal hpPrev.relude {
-            broken = false;
-            src = builtins.fetchGit {
-              url = "https://github.com/kowainik/relude";
-              ref = "main";
-              rev = "fcb32257a37e34a48f70ddd55424394de4bb025c";
-            };
-          });
-
-          monocle = (hpPrev.callCabal2nix "monocle" self { }).overrideAttrs
-            (_: { MONOCLE_COMMIT = builtins.getEnv "MONOCLE_COMMIT"; });
-        };
-      };
-
-    })
-  ];
+    # upgrade to latest morpheus needs some work
+    morpheus-graphql-tests = mk-morpheus-lib hpPrev "tests";
+    morpheus-graphql-core = mk-morpheus-lib hpPrev "core";
+    morpheus-graphql-code-gen = mk-morpheus-lib hpPrev "code-gen";
+    morpheus-graphql-client = mk-morpheus-lib hpPrev "client";
+  };
 
   # create the main package set without options
-  pkgs = nixpkgsSrc {
-    inherit overlays;
-    system = "x86_64-linux";
-  };
+  pkgs = nixpkgsSrc { system = "x86_64-linux"; };
   pkgsNonFree = nixpkgsSrc {
     system = "x86_64-linux";
     config.allowUnfree = true;
   };
+  # final haskell set, see: https://github.com/NixOS/nixpkgs/issues/25887
+  hsPkgs = hspkgs.hspkgs.extend haskellExtend;
 
   # manually adds build dependencies for benchmark and codegen that are not managed by cabal2nix
   addExtraDeps = drv:
     pkgs.haskell.lib.addBuildDepends drv ([
-      pkgs.myHaskellPackages.criterion
-      pkgs.myHaskellPackages.casing
-      pkgs.myHaskellPackages.language-protobuf
+      hsPkgs.criterion
+      hsPkgs.casing
+      hsPkgs.language-protobuf
     ]);
 
   # local devel env
@@ -421,7 +293,7 @@ in rec {
   monocleGhcid = pkgs.writeScriptBin "monocle-ghcid" ''
     #!/bin/sh
     set -x
-    ${pkgs.ghcid}/bin/ghcid -c "cabal repl monocle" $*
+    ${hspkgs.ghcid}/bin/ghcid -c "cabal repl monocle" $*
   '';
 
   monocleWebStart = pkgs.writeScriptBin "monocle-web-start" ''
@@ -449,19 +321,17 @@ in rec {
   ];
 
   # define the base requirements
-  base-req = [ pkgs.bashInteractive pkgs.coreutils pkgs.gnumake ];
-  codegen-req = [ pkgs.protobuf pkgs.ocamlPackages.ocaml-protoc pkgs.glibc ]
-    ++ base-req;
-
-  # haskell dependencies for codegen
-  hsPkgs = pkgs.myHaskellPackages;
+  base-req = [ pkgs.bashInteractive hspkgs.coreutils pkgs.gnumake ];
+  codegen-req = [ pkgs.protobuf pkgs.ocamlPackages.ocaml-protoc ] ++ base-req;
 
   hs-req = [
-    pkgs.cabal-install
-    hsPkgs.ormolu
+    # Here we pull the executable from the global pkgs, not the haskell packages
+    hspkgs.cabal-install
+    hspkgs.ormolu
+    # Here we pull the proto3-suite executable from the haskell packages, not the global pkgs
     hsPkgs.proto3-suite
-    pkgs.zlib
-    hsPkgs.weeder
+    hspkgs.zlib
+    hspkgs.weeder
   ];
 
   # define javascript requirements
@@ -541,7 +411,7 @@ in rec {
     cabal test --enable-tests --flags=ci -O0 --test-show-details=direct
 
     echo "[+] Running doctests"
-    export PATH=${hsPkgs.doctest_0_20_0}/bin:$PATH
+    export PATH=${hsPkgs.doctest}/bin:$PATH
     cabal repl --with-ghc=doctest --ghc-options=-Wno-unused-packages
 
     # cabal haddock
@@ -557,12 +427,12 @@ in rec {
 
   ci-shell = hsPkgs.shellFor {
     packages = p: [ p.monocle ];
-    buildInputs = [ pkgs.cabal-install ci-run ];
+    buildInputs = [ hspkgs.cabal-install ci-run ];
   };
 
-  hlint = args: "${pkgs.hlint}/bin/hlint -XQuasiQuotes ${args} src/";
+  hlint = args: "${hspkgs.hlint}/bin/hlint -XQuasiQuotes ${args} src/";
   ormolu = mode: ''
-    ${hsPkgs.ormolu}/bin/ormolu                                 \
+    ${hspkgs.ormolu}/bin/ormolu                                 \
       -o -XPatternSynonyms -o -XTypeApplications -o -XImportQualifiedPost --mode ${mode} \
       $(find src/ -name "*.hs")
   '';
@@ -582,10 +452,8 @@ in rec {
   fast-ci-run = mkRun "fast-ci" fast-ci-commands;
 
   reformat-run = mkRun "reformat" ''
-    # This needs apply-refact, but it doesn't build in our package set and that would requires pulling an extra ghc.
-    # Let's try again next time we bump nixpkgs.
-    # echo "[+] Apply hlint suggestions"
-    # ${hlint ''--refactor --refactor-options="-i"''}
+    echo "[+] Apply hlint suggestions"
+    find src/ -name "*hs" -exec ${hspkgs.hlint}/bin/hlint -XQuasiQuotes --refactor --refactor-options="-i" {} \;
 
     echo "[+] Reformat with ormolu"
     ${ormolu "inplace"}
@@ -605,9 +473,13 @@ in rec {
   shell = hsPkgs.shellFor {
     packages = p: [ (addExtraDeps p.monocle) p.pretty-simple ];
 
-    buildInputs = with pkgs.myHaskellPackages;
-      [ pkgs.hlint pkgs.ghcid pkgs.haskell-language-server doctest_0_20_0 ]
-      ++ all-req ++ services-req ++ [ ci-run fast-ci-run reformat-run ];
+    buildInputs = [
+      hspkgs.hlint
+      hspkgs.apply-refact
+      hspkgs.ghcid
+      hspkgs.haskell-language-server
+      hsPkgs.doctest
+    ] ++ all-req ++ services-req ++ [ ci-run fast-ci-run reformat-run ];
 
     withHoogle = false;
 
