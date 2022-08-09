@@ -143,6 +143,7 @@ in  { GithubActions
           , name = "Nix"
           , on = GithubActions.On::{
             , pull_request = Some GithubActions.PullRequest::{=}
+            , push = Some GithubActions.Push::{ branches = Some [ "master" ] }
             }
           , jobs = toMap
               { api-tests = GithubActions.Job::{

@@ -32,3 +32,6 @@ jobs:
 name: Nix
 on:
   pull_request: {}
+  push:
+    branches:
+      - master
