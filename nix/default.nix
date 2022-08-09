@@ -44,16 +44,6 @@ let
     morpheus-graphql-core = mk-morpheus-lib hpPrev "core";
     morpheus-graphql-code-gen = mk-morpheus-lib hpPrev "code-gen";
     morpheus-graphql-client = mk-morpheus-lib hpPrev "client";
-
-    # gerrit needs a fix for bytestring>0.11
-    gerrit = let
-      src = builtins.fetchGit {
-        url =
-          "https://softwarefactory-project.io/r/software-factory/gerrit-haskell";
-        ref = "refs/changes/41/24541/1";
-        rev = "c0c337bccb35e7d94e6125ab034cfcc9efe68476";
-      };
-    in pkgs.haskell.lib.dontCheck (hpPrev.callCabal2nix "gerrit" src { });
   };
 
   # create the main package set without options
