@@ -443,12 +443,14 @@ toEChangeEvent ChangePB.ChangeEvent {..} =
       echangeeventApproval = case changeEventType of
         Just (ChangePB.ChangeEventTypeChangeReviewed (ChangePB.ChangeReviewedEvent approval)) -> Just $ toList approval
         _anyOtherApprovals -> Nothing,
-      echangeeventTasksData = Nothing
+      echangeeventTasksData = Nothing,
+      echangeeventDuration = toDuration <$> changeEventOptionalDuration
     }
   where
     author = toAuthor changeEventAuthor
     onAuthor = toAuthor changeEventOnAuthor
     eType = getEventType changeEventType
+    toDuration (ChangePB.ChangeEventOptionalDurationDuration v) = fromInteger $ toInteger v
 
 getEventType :: Maybe ChangePB.ChangeEventType -> EDocType
 getEventType eventTypeM = case eventTypeM of

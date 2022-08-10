@@ -1196,6 +1196,7 @@ emptyEvent = EChangeEvent {..}
     echangeeventApproval = Nothing
     echangeeventTasksData = Nothing
     echangeeventLabels = mempty
+    echangeeventDuration = Nothing
 
 showEvents :: [ScenarioEvent] -> Text
 showEvents xs = Text.intercalate ", " $ sort (map go xs)

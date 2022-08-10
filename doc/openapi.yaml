@@ -476,6 +476,9 @@ components:
                     type: array
                     items:
                         type: string
+                duration:
+                    type: integer
+                    format: int32
         monocle_change_ChangeMergedEvent:
             properties: {}
         monocle_change_ChangeReviewedEvent:

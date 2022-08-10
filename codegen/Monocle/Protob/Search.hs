@@ -14,31 +14,31 @@
 module Monocle.Protob.Search where
 
 import Control.Applicative ((<$>), (<*>), (<|>))
-import qualified Control.Applicative as Hs
-import qualified Control.DeepSeq as Hs
-import qualified Control.Monad as Hs
-import qualified Data.ByteString as Hs
-import qualified Data.Coerce as Hs
-import qualified Data.Int as Hs (Int16, Int32, Int64)
-import qualified Data.List.NonEmpty as Hs (NonEmpty (..))
-import qualified Data.Map as Hs (Map, mapKeysMonotonic)
-import qualified Data.Proxy as Proxy
-import qualified Data.String as Hs (fromString)
-import qualified Data.Text.Lazy as Hs (Text)
-import qualified Data.Vector as Hs (Vector)
-import qualified Data.Word as Hs (Word16, Word32, Word64)
-import qualified GHC.Enum as Hs
-import qualified GHC.Generics as Hs
-import qualified Google.Protobuf.Timestamp
-import qualified Monocle.Protob.Metric
-import qualified Proto3.Suite.Class as HsProtobuf
-import qualified Proto3.Suite.DotProto as HsProtobuf
+import Control.Applicative qualified as Hs
+import Control.DeepSeq qualified as Hs
+import Control.Monad qualified as Hs
+import Data.ByteString qualified as Hs
+import Data.Coerce qualified as Hs
+import Data.Int qualified as Hs (Int16, Int32, Int64)
+import Data.List.NonEmpty qualified as Hs (NonEmpty (..))
+import Data.Map qualified as Hs (Map, mapKeysMonotonic)
+import Data.Proxy qualified as Proxy
+import Data.String qualified as Hs (fromString)
+import Data.Text.Lazy qualified as Hs (Text)
+import Data.Vector qualified as Hs (Vector)
+import Data.Word qualified as Hs (Word16, Word32, Word64)
+import GHC.Enum qualified as Hs
+import GHC.Generics qualified as Hs
+import Google.Protobuf.Timestamp qualified
+import Monocle.Protob.Metric qualified
+import Proto3.Suite.Class qualified as HsProtobuf
+import Proto3.Suite.DotProto qualified as HsProtobuf
 import Proto3.Suite.JSONPB ((.:), (.=))
-import qualified Proto3.Suite.JSONPB as HsJSONPB
-import qualified Proto3.Suite.Types as HsProtobuf
-import qualified Proto3.Wire as HsProtobuf
-import qualified Unsafe.Coerce as Hs
-import qualified Prelude as Hs
+import Proto3.Suite.JSONPB qualified as HsJSONPB
+import Proto3.Suite.Types qualified as HsProtobuf
+import Proto3.Wire qualified as HsProtobuf
+import Unsafe.Coerce qualified as Hs
+import Prelude qualified as Hs
 
 data TaskData = TaskData
   { taskDataUpdatedAt ::
@@ -286,7 +286,9 @@ instance HsJSONPB.FromJSONPB TaskData where
     ( HsJSONPB.withObject
         "TaskData"
         ( \obj ->
-            (Hs.pure TaskData) <*> obj .: "updated_at" <*> obj .: "change_url"
+            (Hs.pure TaskData)
+              <*> obj .: "updated_at"
+              <*> obj .: "change_url"
               <*> obj .: "ttype"
               <*> obj .: "tid"
               <*> obj .: "url"
@@ -597,7 +599,8 @@ instance HsJSONPB.FromJSONPB SuggestionsResponse where
     ( HsJSONPB.withObject
         "SuggestionsResponse"
         ( \obj ->
-            (Hs.pure SuggestionsResponse) <*> obj .: "task_types"
+            (Hs.pure SuggestionsResponse)
+              <*> obj .: "task_types"
               <*> obj .: "authors"
               <*> obj .: "approvals"
               <*> obj .: "priorities"
@@ -761,7 +764,9 @@ instance HsJSONPB.FromJSONPB Field where
     ( HsJSONPB.withObject
         "Field"
         ( \obj ->
-            (Hs.pure Field) <*> obj .: "name" <*> obj .: "description"
+            (Hs.pure Field)
+              <*> obj .: "name"
+              <*> obj .: "description"
               <*> obj .: "type"
         )
     )
@@ -1064,7 +1069,9 @@ instance HsJSONPB.FromJSONPB CheckRequest where
     ( HsJSONPB.withObject
         "CheckRequest"
         ( \obj ->
-            (Hs.pure CheckRequest) <*> obj .: "index" <*> obj .: "username"
+            (Hs.pure CheckRequest)
+              <*> obj .: "index"
+              <*> obj .: "username"
               <*> obj .: "query"
         )
     )
@@ -1298,7 +1305,9 @@ instance HsJSONPB.FromJSONPB Author where
     ( HsJSONPB.withObject
         "Author"
         ( \obj ->
-            (Hs.pure Author) <*> obj .: "muid" <*> obj .: "aliases"
+            (Hs.pure Author)
+              <*> obj .: "muid"
+              <*> obj .: "aliases"
               <*> obj .: "groups"
         )
     )
@@ -1755,7 +1764,9 @@ instance HsJSONPB.FromJSONPB QueryRequest where
     ( HsJSONPB.withObject
         "QueryRequest"
         ( \obj ->
-            (Hs.pure QueryRequest) <*> obj .: "index" <*> obj .: "username"
+            (Hs.pure QueryRequest)
+              <*> obj .: "index"
+              <*> obj .: "username"
               <*> obj .: "query"
               <*> obj .: "query_type"
               <*> obj .: "order"
@@ -2015,7 +2026,9 @@ instance HsJSONPB.FromJSONPB File where
     ( HsJSONPB.withObject
         "File"
         ( \obj ->
-            (Hs.pure File) <*> obj .: "additions" <*> obj .: "deletions"
+            (Hs.pure File)
+              <*> obj .: "additions"
+              <*> obj .: "deletions"
               <*> obj .: "path"
         )
     )
@@ -2242,7 +2255,9 @@ instance HsJSONPB.FromJSONPB Commit where
     ( HsJSONPB.withObject
         "Commit"
         ( \obj ->
-            (Hs.pure Commit) <*> obj .: "sha" <*> obj .: "title"
+            (Hs.pure Commit)
+              <*> obj .: "sha"
+              <*> obj .: "title"
               <*> obj .: "author"
               <*> obj .: "authored_at"
               <*> obj .: "committer"
@@ -2930,7 +2945,9 @@ instance HsJSONPB.FromJSONPB Change where
     ( HsJSONPB.withObject
         "Change"
         ( \obj ->
-            (Hs.pure Change) <*> obj .: "change_id" <*> obj .: "author"
+            (Hs.pure Change)
+              <*> obj .: "change_id"
+              <*> obj .: "author"
               <*> obj .: "title"
               <*> obj .: "url"
               <*> obj .: "repository_fullname"
@@ -3310,7 +3327,9 @@ instance HsJSONPB.FromJSONPB ChangeEvent where
     ( HsJSONPB.withObject
         "ChangeEvent"
         ( \obj ->
-            (Hs.pure ChangeEvent) <*> obj .: "id" <*> obj .: "type"
+            (Hs.pure ChangeEvent)
+              <*> obj .: "id"
+              <*> obj .: "type"
               <*> obj .: "change_id"
               <*> obj .: "created_at"
               <*> obj .: "on_created_at"
@@ -3490,7 +3509,8 @@ instance HsJSONPB.FromJSONPB ReviewCount where
     ( HsJSONPB.withObject
         "ReviewCount"
         ( \obj ->
-            (Hs.pure ReviewCount) <*> obj .: "authors_count"
+            (Hs.pure ReviewCount)
+              <*> obj .: "authors_count"
               <*> obj .: "events_count"
         )
     )
@@ -3700,7 +3720,8 @@ instance HsJSONPB.FromJSONPB ReviewStats where
     ( HsJSONPB.withObject
         "ReviewStats"
         ( \obj ->
-            (Hs.pure ReviewStats) <*> obj .: "comment_count"
+            (Hs.pure ReviewStats)
+              <*> obj .: "comment_count"
               <*> obj .: "review_count"
               <*> obj .: "comment_delay"
               <*> obj .: "review_delay"
@@ -3911,7 +3932,8 @@ instance HsJSONPB.FromJSONPB ActivityStats where
     ( HsJSONPB.withObject
         "ActivityStats"
         ( \obj ->
-            (Hs.pure ActivityStats) <*> obj .: "change_authors"
+            (Hs.pure ActivityStats)
+              <*> obj .: "change_authors"
               <*> obj .: "comment_authors"
               <*> obj .: "review_authors"
               <*> obj .: "comments_histo"
@@ -4737,7 +4759,8 @@ instance HsJSONPB.FromJSONPB LifecycleStats where
     ( HsJSONPB.withObject
         "LifecycleStats"
         ( \obj ->
-            (Hs.pure LifecycleStats) <*> obj .: "created_histo"
+            (Hs.pure LifecycleStats)
+              <*> obj .: "created_histo"
               <*> obj .: "updated_histo"
               <*> obj .: "merged_histo"
               <*> obj .: "abandoned_histo"
@@ -4913,7 +4936,8 @@ instance HsJSONPB.FromJSONPB RepoSummary where
     ( HsJSONPB.withObject
         "RepoSummary"
         ( \obj ->
-            (Hs.pure RepoSummary) <*> obj .: "fullname"
+            (Hs.pure RepoSummary)
+              <*> obj .: "fullname"
               <*> obj .: "created_changes"
               <*> obj .: "abandoned_changes"
               <*> obj .: "merged_changes"
@@ -5149,7 +5173,8 @@ instance HsJSONPB.FromJSONPB TermsCount where
     ( HsJSONPB.withObject
         "TermsCount"
         ( \obj ->
-            (Hs.pure TermsCount) <*> obj .: "termcount"
+            (Hs.pure TermsCount)
+              <*> obj .: "termcount"
               <*> obj .: "total_hits"
         )
     )
@@ -5247,7 +5272,9 @@ instance HsJSONPB.FromJSONPB AuthorPeer where
     ( HsJSONPB.withObject
         "AuthorPeer"
         ( \obj ->
-            (Hs.pure AuthorPeer) <*> obj .: "author" <*> obj .: "peer"
+            (Hs.pure AuthorPeer)
+              <*> obj .: "author"
+              <*> obj .: "peer"
               <*> obj .: "strength"
         )
     )
@@ -5442,7 +5469,9 @@ instance HsJSONPB.FromJSONPB ChangesTops where
     ( HsJSONPB.withObject
         "ChangesTops"
         ( \obj ->
-            (Hs.pure ChangesTops) <*> obj .: "authors" <*> obj .: "repos"
+            (Hs.pure ChangesTops)
+              <*> obj .: "authors"
+              <*> obj .: "repos"
               <*> obj .: "approvals"
         )
     )
