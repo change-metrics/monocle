@@ -220,7 +220,7 @@ createIndex indexName mapping = do
     indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0) BH.defaultIndexMappingsLimits
 
 configVersion :: ConfigVersion
-configVersion = ConfigVersion 3
+configVersion = ConfigVersion 4
 
 configIndex :: BH.IndexName
 configIndex = BH.IndexName "monocle.config"
@@ -315,11 +315,41 @@ upgradeConfigV3 = do
     mkEventBulkUpdate indexName ev =
       BulkUpdate indexName (getEventDocId ev) $ toJSON ev
 
+-- | Fix duration computation that was computed in the reverse order giving negative durations
+upgradeConfigV4 :: QueryM Int
+upgradeConfigV4 = do
+  indexName <- getIndexName
+  logMessage $ "Applying migration to schema V4 on workspace " <> show indexName
+  count <-
+    withQuery changeQuery $
+      scanChanges
+        & ( Streaming.map updateChange
+              >>> Streaming.map (mkChangeBulkUpdate indexName)
+              >>> bulkStream
+          )
+  logMessage $ "Migration to schema V4 affected " <> show count <> " documents"
+  pure count
+  where
+    scanChanges :: Stream (Of EChange) QueryM ()
+    scanChanges = Q.scanSearchHit
+    changeQuery =
+      mkQuery
+        [ Q.documentType EChangeDoc,
+          BH.TermQuery (BH.Term "state" $ from EChangeMerged) Nothing,
+          BH.QueryRangeQuery (BH.mkRangeQuery (BH.FieldName "duration") (BH.RangeDoubleLte $ BH.LessThanEq 0))
+        ]
+    updateChange :: EChange -> EChange
+    updateChange change = change {echangeDuration = abs <$> echangeDuration change}
+    mkChangeBulkUpdate :: BH.IndexName -> EChange -> BulkOperation
+    mkChangeBulkUpdate indexName change =
+      BulkUpdate indexName (getChangeDocId change) $ toJSON change
+
 upgrades :: [(ConfigVersion, QueryM ())]
 upgrades =
   [ (ConfigVersion 1, upgradeConfigV1),
     (ConfigVersion 2, upgradeConfigV2),
-    (ConfigVersion 3, void upgradeConfigV3)
+    (ConfigVersion 3, void upgradeConfigV3),
+    (ConfigVersion 4, void upgradeConfigV4)
   ]
 
 newtype ConfigVersion = ConfigVersion Integer deriving (Eq, Show, Ord)
