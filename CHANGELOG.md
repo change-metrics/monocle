@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [master]
 ### Added
+
+- [api] Add support for the 'ttm' field in the query language. The field allows to filter on merged changes of a specific duration (in seconds).
+
 ### Changed
 
 - [web] Keep User-Agent to the URI after an OIDC login to Monocle.
@@ -14,6 +17,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - [api] The self-merged count on the Activity page was incorrect and it is now properly calculated.
+- [crawler] Gerrit and Gitlab crawler compute negative duration for merged changes.
 
 ## [1.6.0] - 2022-06-20
 
