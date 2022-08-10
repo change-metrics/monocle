@@ -298,6 +298,6 @@ executable monocle-codegen
                        -Wunused-packages
   build-depends:       base                  < 5
                      , casing                ^>= 0.1
-                     , relude                ^>= 1.0
+                     , relude                >= 1.0
                      , language-protobuf     ^>= 1.0
   default-language:    Haskell2010
