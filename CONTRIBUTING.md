@@ -121,12 +121,6 @@ If you have not installed nix follow the instructions [here](https://nixos.org/)
 
 You can configure the project [cachix](https://cachix.org) binary cache with this command: `nix shell nixpkgs#cachix --command cachix use change-metrics`.
 
-You can also use the cachix store directly, for example to run the monocle command:
-
-```ShellSession
-nix run . --option binary-caches "https://cache.nixos.org https://change-metrics.cachix.org" --option trusted-public-keys "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= change-metrics.cachix.org-1:dCe8jx9vptiF6DCdZ5y2QouvDsxgFRZnbHowhPnS4C0="
-```
-
 Get started by running the `nix develop` command at the root of the project:
 
 ```ShellSession
