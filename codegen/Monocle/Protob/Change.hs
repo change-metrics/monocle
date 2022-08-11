@@ -1891,7 +1891,9 @@ data ChangeEvent = ChangeEvent
     changeEventChangedFiles ::
       Hs.Vector Monocle.Protob.Change.ChangedFilePath,
     changeEventType :: Hs.Maybe ChangeEventType,
-    changeEventLabels :: Hs.Vector Hs.Text
+    changeEventLabels :: Hs.Vector Hs.Text,
+    changeEventOptionalDuration ::
+      Hs.Maybe ChangeEventOptionalDuration
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -1919,7 +1921,8 @@ instance HsProtobuf.Message ChangeEvent where
         changeEventOnCreatedAt = changeEventOnCreatedAt,
         changeEventChangedFiles = changeEventChangedFiles,
         changeEventType = changeEventType,
-        changeEventLabels = changeEventLabels
+        changeEventLabels = changeEventLabels,
+        changeEventOptionalDuration = changeEventOptionalDuration
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -2063,7 +2066,16 @@ instance HsProtobuf.Message ChangeEvent where
                 ( Hs.coerce @(Hs.Vector Hs.Text) @(HsProtobuf.UnpackedVec Hs.Text)
                     changeEventLabels
                 )
-            )
+            ),
+            case changeEventOptionalDuration of
+              Hs.Nothing -> Hs.mempty
+              Hs.Just x ->
+                case x of
+                  ChangeEventOptionalDurationDuration y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 23)
+                        (HsProtobuf.ForceEmit y)
+                    )
           ]
       )
   decodeMessage _ =
@@ -2209,6 +2221,14 @@ instance HsProtobuf.Message ChangeEvent where
                   (HsProtobuf.FieldNumber 22)
               )
           )
+      <*> ( HsProtobuf.oneof
+              Hs.Nothing
+              [ ( (HsProtobuf.FieldNumber 23),
+                  (Hs.pure (Hs.Just Hs.. ChangeEventOptionalDurationDuration))
+                    <*> HsProtobuf.decodeMessageField
+                )
+              ]
+          )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 1)
@@ -2350,6 +2370,7 @@ instance HsJSONPB.ToJSONPB ChangeEvent where
         f14
         f15_or_f16_or_f17_or_f18_or_f19_or_f20_or_f21
         f22
+        f23
       ) =
       ( HsJSONPB.object
           [ "id" .= f1,
@@ -2389,7 +2410,22 @@ instance HsJSONPB.ToJSONPB ChangeEvent where
                       then ("type" .= (HsJSONPB.objectOrNull [encodeType] options)) options
                       else encodeType options
             ),
-            "labels" .= f22
+            "labels" .= f22,
+            ( let encodeOptional_duration =
+                    ( case f23 of
+                        Hs.Just (ChangeEventOptionalDurationDuration f23) ->
+                          (HsJSONPB.pair "duration" f23)
+                        Hs.Nothing -> Hs.mempty
+                    )
+               in \options ->
+                    if HsJSONPB.optEmitNamedOneof options
+                      then
+                        ( "optional_duration"
+                            .= (HsJSONPB.objectOrNull [encodeOptional_duration] options)
+                        )
+                          options
+                      else encodeOptional_duration options
+            )
           ]
       )
   toEncodingPB
@@ -2410,6 +2446,7 @@ instance HsJSONPB.ToJSONPB ChangeEvent where
         f14
         f15_or_f16_or_f17_or_f18_or_f19_or_f20_or_f21
         f22
+        f23
       ) =
       ( HsJSONPB.pairs
           [ "id" .= f1,
@@ -2449,7 +2486,22 @@ instance HsJSONPB.ToJSONPB ChangeEvent where
                       then ("type" .= (HsJSONPB.pairsOrNull [encodeType] options)) options
                       else encodeType options
             ),
-            "labels" .= f22
+            "labels" .= f22,
+            ( let encodeOptional_duration =
+                    ( case f23 of
+                        Hs.Just (ChangeEventOptionalDurationDuration f23) ->
+                          (HsJSONPB.pair "duration" f23)
+                        Hs.Nothing -> Hs.mempty
+                    )
+               in \options ->
+                    if HsJSONPB.optEmitNamedOneof options
+                      then
+                        ( "optional_duration"
+                            .= (HsJSONPB.pairsOrNull [encodeOptional_duration] options)
+                        )
+                          options
+                      else encodeOptional_duration options
+            )
           ]
       )
 
@@ -2495,6 +2547,17 @@ instance HsJSONPB.FromJSONPB ChangeEvent where
                           <|> (parseType obj)
                   )
               <*> obj .: "labels"
+              <*> ( let parseOptional_duration parseObj =
+                          Hs.msum
+                            [ Hs.Just Hs.. ChangeEventOptionalDurationDuration
+                                <$> (HsJSONPB.parseField parseObj "duration"),
+                              Hs.pure Hs.Nothing
+                            ]
+                     in ( (obj .: "optional_duration")
+                            Hs.>>= (HsJSONPB.withObject "optional_duration" parseOptional_duration)
+                        )
+                          <|> (parseOptional_duration obj)
+                  )
         )
     )
 
@@ -2517,3 +2580,9 @@ data ChangeEventType
 
 instance HsProtobuf.Named ChangeEventType where
   nameOf _ = (Hs.fromString "ChangeEventType")
+
+data ChangeEventOptionalDuration = ChangeEventOptionalDurationDuration Hs.Int32
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named ChangeEventOptionalDuration where
+  nameOf _ = (Hs.fromString "ChangeEventOptionalDuration")

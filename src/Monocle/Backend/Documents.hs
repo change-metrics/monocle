@@ -463,7 +463,8 @@ data EChangeEvent = EChangeEvent
     echangeeventOnCreatedAt :: UTCTime,
     echangeeventCreatedAt :: UTCTime,
     echangeeventApproval :: Maybe [LText],
-    echangeeventTasksData :: Maybe [ETaskData]
+    echangeeventTasksData :: Maybe [ETaskData],
+    echangeeventDuration :: Maybe Int
   }
   deriving (Show, Eq, Generic)
 

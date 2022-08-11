@@ -147,6 +147,7 @@ fields =
     ("group", (fieldText, flavoredField, "Group name")),
     ("branch", (fieldRegex, "target_branch", "Change branch name")),
     ("approval", (fieldText, "approval", "Change approval name")),
+    ("ttm", (fieldNumber, "duration", "Change duration (Time To Merge) in second(s)")),
     ("tag", (fieldText, "labels", "Change tag name")),
     ("task.priority", (fieldText, "tasks_data.priority", "Task priority")),
     ("task.severity", (fieldText, "tasks_data.severity", "Task severity")),

@@ -33,6 +33,7 @@ module Lentille
     ghostIdent,
     sanitizeID,
     isChangeTooOld,
+    swapDuration,
 
     -- * Re-export
     module Monocle.Class,
@@ -49,6 +50,8 @@ import Monocle.Prelude
 import Monocle.Protob.Change
   ( Change (changeUpdatedAt),
     ChangeEvent,
+    ChangeEventOptionalDuration (ChangeEventOptionalDurationDuration),
+    ChangeOptionalDuration (ChangeOptionalDurationDuration),
     Change_ChangeState (Change_ChangeStateClosed, Change_ChangeStateMerged),
     Ident (..),
   )
@@ -203,3 +206,6 @@ isChangeTooOld date (change, _) =
   case changeUpdatedAt change of
     Just changeDate -> T.toUTCTime changeDate < date
     _ -> True
+
+swapDuration :: ChangeOptionalDuration -> ChangeEventOptionalDuration
+swapDuration (ChangeOptionalDurationDuration v) = ChangeEventOptionalDurationDuration v

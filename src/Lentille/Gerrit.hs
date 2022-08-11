@@ -249,6 +249,7 @@ streamChange' env identCB serverUrl query prefixM = go 0
               changeEventChangedFiles = ChangePB.ChangedFilePath . ChangePB.changedFilePath <$> changeChangedFiles
               changeEventLabels = changeLabels
               changeEventType = Just eType
+              changeEventOptionalDuration = swapDuration <$> changeOptionalDuration
            in ChangePB.ChangeEvent {..}
         toChangeCreatedEvent =
           baseEvent (ChangePB.ChangeEventTypeChangeCreated ChangePB.ChangeCreatedEvent) $ "CCE" <> changeId
@@ -339,9 +340,9 @@ streamChange' env identCB serverUrl query prefixM = go 0
             MERGED -> Just $ ChangePB.ChangeOptionalClosedAtClosedAt $ maybe (toTimestamp updated) toTimestamp submitted
             _ -> Nothing
           changeState = toState status
-          changeOptionalDuration =
-            ChangePB.ChangeOptionalDurationDuration . from . diffTimeSec (unGerritTime created)
-              <$> (unGerritTime <$> submitted)
+          changeOptionalDuration = case submitted of
+            Just merged_ts -> Just . ChangePB.ChangeOptionalDurationDuration . from $ diffTimeSec (unGerritTime merged_ts) (unGerritTime created)
+            Nothing -> Nothing
           changeMergeable = case mergeable of
             Just False -> "CONFLICT"
             _ -> "MERGEABLE"

@@ -367,6 +367,28 @@ testUpgradeConfigV3 = do
     (Just evt3') <- I.getChangeEventById $ I.getEventDocId evt3
     assertEqual' "Expect not self_merged attr in event" (echangeeventSelfMerged evt3') Nothing
 
+testUpgradeConfigV4 :: Assertion
+testUpgradeConfigV4 = do
+  -- Index a change with negative duration, run upgradeConfigV4, and check for absolute value
+  withTenant $ do
+    let change1 =
+          emptyChange
+            { echangeId = "change1",
+              echangeState = from EChangeMerged,
+              echangeDuration = Just (-3600)
+            }
+        change2 =
+          emptyChange
+            { echangeId = "change2",
+              echangeState = from EChangeMerged,
+              echangeDuration = Just 7200
+            }
+    I.indexChanges [change1, change2]
+    count <- I.upgradeConfigV4
+    assertEqual' "Expect document count updated" 1 count
+    (Just change1') <- I.getChangeById $ I.getChangeDocId change1
+    assertEqual' "Expect abs duration value" (echangeDuration change1') (abs <$> echangeDuration change1)
+
 testUpgradeConfigV1 :: Assertion
 testUpgradeConfigV1 = do
   -- Index docs, run upgradeConfigV1, and check project crawler MD state
@@ -1196,6 +1218,7 @@ emptyEvent = EChangeEvent {..}
     echangeeventApproval = Nothing
     echangeeventTasksData = Nothing
     echangeeventLabels = mempty
+    echangeeventDuration = Nothing
 
 showEvents :: [ScenarioEvent] -> Text
 showEvents xs = Text.intercalate ", " $ sort (map go xs)
