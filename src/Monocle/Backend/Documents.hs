@@ -345,6 +345,7 @@ instance From EChange SearchPB.Change where
         changeCommitsCount = echangeCommitCount change
         changeMergedAt = Just . from =<< echangeMergedAt change
         changeMergedByM = Just . SearchPB.ChangeMergedByMMergedBy . authorMuid =<< echangeMergedBy change
+        changeTtm = SearchPB.ChangeTtmDuration . fromInteger . toInteger <$> echangeDuration change
      in SearchPB.Change {..}
 
 instance From ChangePB.Change EChange where

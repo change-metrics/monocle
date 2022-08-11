@@ -913,6 +913,9 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_search_TaskData'
+                duration:
+                    type: integer
+                    format: uint32
         monocle_search_ChangeAndEvents:
             properties:
                 change:

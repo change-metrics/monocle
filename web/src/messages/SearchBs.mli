@@ -63,6 +63,9 @@ val encode_commit : SearchTypes.commit -> Js.Json.t Js.Dict.t
 val encode_change_merged_by_m : SearchTypes.change_merged_by_m -> Js.Json.t Js.Dict.t
 (** [encode_change_merged_by_m v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_change_ttm : SearchTypes.change_ttm -> Js.Json.t Js.Dict.t
+(** [encode_change_ttm v dict] encodes [v] int the given JSON [dict] *)
+
 val encode_change : SearchTypes.change -> Js.Json.t Js.Dict.t
 (** [encode_change v dict] encodes [v] int the given JSON [dict] *)
 
@@ -176,6 +179,9 @@ val decode_commit : Js.Json.t Js.Dict.t -> SearchTypes.commit
 
 val decode_change_merged_by_m : Js.Json.t Js.Dict.t -> SearchTypes.change_merged_by_m
 (** [decode_change_merged_by_m decoder] decodes a [change_merged_by_m] value from [decoder] *)
+
+val decode_change_ttm : Js.Json.t Js.Dict.t -> SearchTypes.change_ttm
+(** [decode_change_ttm decoder] decodes a [change_ttm] value from [decoder] *)
 
 val decode_change : Js.Json.t Js.Dict.t -> SearchTypes.change
 (** [decode_change decoder] decodes a [change] value from [decoder] *)

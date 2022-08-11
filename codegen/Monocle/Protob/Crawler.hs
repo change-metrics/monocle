@@ -14,32 +14,32 @@
 module Monocle.Protob.Crawler where
 
 import Control.Applicative ((<$>), (<*>), (<|>))
-import qualified Control.Applicative as Hs
-import qualified Control.DeepSeq as Hs
-import qualified Control.Monad as Hs
-import qualified Data.ByteString as Hs
-import qualified Data.Coerce as Hs
-import qualified Data.Int as Hs (Int16, Int32, Int64)
-import qualified Data.List.NonEmpty as Hs (NonEmpty (..))
-import qualified Data.Map as Hs (Map, mapKeysMonotonic)
-import qualified Data.Proxy as Proxy
-import qualified Data.String as Hs (fromString)
-import qualified Data.Text.Lazy as Hs (Text)
-import qualified Data.Vector as Hs (Vector)
-import qualified Data.Word as Hs (Word16, Word32, Word64)
-import qualified GHC.Enum as Hs
-import qualified GHC.Generics as Hs
-import qualified Google.Protobuf.Timestamp
-import qualified Monocle.Protob.Change
-import qualified Monocle.Protob.Search
-import qualified Proto3.Suite.Class as HsProtobuf
-import qualified Proto3.Suite.DotProto as HsProtobuf
+import Control.Applicative qualified as Hs
+import Control.DeepSeq qualified as Hs
+import Control.Monad qualified as Hs
+import Data.ByteString qualified as Hs
+import Data.Coerce qualified as Hs
+import Data.Int qualified as Hs (Int16, Int32, Int64)
+import Data.List.NonEmpty qualified as Hs (NonEmpty (..))
+import Data.Map qualified as Hs (Map, mapKeysMonotonic)
+import Data.Proxy qualified as Proxy
+import Data.String qualified as Hs (fromString)
+import Data.Text.Lazy qualified as Hs (Text)
+import Data.Vector qualified as Hs (Vector)
+import Data.Word qualified as Hs (Word16, Word32, Word64)
+import GHC.Enum qualified as Hs
+import GHC.Generics qualified as Hs
+import Google.Protobuf.Timestamp qualified
+import Monocle.Protob.Change qualified
+import Monocle.Protob.Search qualified
+import Proto3.Suite.Class qualified as HsProtobuf
+import Proto3.Suite.DotProto qualified as HsProtobuf
 import Proto3.Suite.JSONPB ((.:), (.=))
-import qualified Proto3.Suite.JSONPB as HsJSONPB
-import qualified Proto3.Suite.Types as HsProtobuf
-import qualified Proto3.Wire as HsProtobuf
-import qualified Unsafe.Coerce as Hs
-import qualified Prelude as Hs
+import Proto3.Suite.JSONPB qualified as HsJSONPB
+import Proto3.Suite.Types qualified as HsProtobuf
+import Proto3.Wire qualified as HsProtobuf
+import Unsafe.Coerce qualified as Hs
+import Prelude qualified as Hs
 
 newtype Entity = Entity {entityEntity :: Hs.Maybe EntityEntity}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
@@ -418,7 +418,9 @@ instance HsJSONPB.FromJSONPB AddDocRequest where
     ( HsJSONPB.withObject
         "AddDocRequest"
         ( \obj ->
-            (Hs.pure AddDocRequest) <*> obj .: "index" <*> obj .: "crawler"
+            (Hs.pure AddDocRequest)
+              <*> obj .: "index"
+              <*> obj .: "crawler"
               <*> obj .: "apikey"
               <*> obj .: "entity"
               <*> obj .: "changes"
@@ -754,7 +756,9 @@ instance HsJSONPB.FromJSONPB CommitRequest where
     ( HsJSONPB.withObject
         "CommitRequest"
         ( \obj ->
-            (Hs.pure CommitRequest) <*> obj .: "index" <*> obj .: "crawler"
+            (Hs.pure CommitRequest)
+              <*> obj .: "index"
+              <*> obj .: "crawler"
               <*> obj .: "apikey"
               <*> obj .: "entity"
               <*> obj .: "timestamp"
@@ -1077,7 +1081,9 @@ instance HsJSONPB.FromJSONPB CommitInfoRequest where
     ( HsJSONPB.withObject
         "CommitInfoRequest"
         ( \obj ->
-            (Hs.pure CommitInfoRequest) <*> obj .: "index" <*> obj .: "crawler"
+            (Hs.pure CommitInfoRequest)
+              <*> obj .: "index"
+              <*> obj .: "crawler"
               <*> obj .: "entity"
               <*> obj .: "offset"
         )
@@ -1360,7 +1366,8 @@ instance HsJSONPB.FromJSONPB CommitInfoResponse_OldestEntity where
     ( HsJSONPB.withObject
         "CommitInfoResponse_OldestEntity"
         ( \obj ->
-            (Hs.pure CommitInfoResponse_OldestEntity) <*> obj .: "entity"
+            (Hs.pure CommitInfoResponse_OldestEntity)
+              <*> obj .: "entity"
               <*> obj .: "last_commit_at"
         )
     )
