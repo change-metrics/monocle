@@ -139,6 +139,9 @@ type commit = {
 type change_merged_by_m =
   | Merged_by of string
 
+and change_ttm =
+  | Duration of int32
+
 and change = {
   change_id : string;
   author : string;
@@ -165,6 +168,7 @@ and change = {
   commits : commit list;
   commits_count : int32;
   task_data : task_data list;
+  ttm : change_ttm;
 }
 
 type changes = {
@@ -466,6 +470,8 @@ let rec default_commit
 
 let rec default_change_merged_by_m () : change_merged_by_m = Merged_by ("")
 
+and default_change_ttm () : change_ttm = Duration (0l)
+
 and default_change 
   ?change_id:((change_id:string) = "")
   ?author:((author:string) = "")
@@ -492,6 +498,7 @@ and default_change
   ?commits:((commits:commit list) = [])
   ?commits_count:((commits_count:int32) = 0l)
   ?task_data:((task_data:task_data list) = [])
+  ?ttm:((ttm:change_ttm) = Duration (0l))
   () : change  = {
   change_id;
   author;
@@ -518,6 +525,7 @@ and default_change
   commits;
   commits_count;
   task_data;
+  ttm;
 }
 
 let rec default_changes 

@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [master]
 ### Added
+
+- [api] Expose the duration field of the change object. Duration is the time to merge delay in seconds.
+
 ### Changed
 
 - [web] Keep User-Agent to the URI after an OIDC login to Monocle.

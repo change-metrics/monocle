@@ -14,29 +14,29 @@
 module Monocle.Protob.Config where
 
 import Control.Applicative ((<$>), (<*>), (<|>))
-import qualified Control.Applicative as Hs
-import qualified Control.DeepSeq as Hs
-import qualified Control.Monad as Hs
-import qualified Data.ByteString as Hs
-import qualified Data.Coerce as Hs
-import qualified Data.Int as Hs (Int16, Int32, Int64)
-import qualified Data.List.NonEmpty as Hs (NonEmpty (..))
-import qualified Data.Map as Hs (Map, mapKeysMonotonic)
-import qualified Data.Proxy as Proxy
-import qualified Data.String as Hs (fromString)
-import qualified Data.Text.Lazy as Hs (Text)
-import qualified Data.Vector as Hs (Vector)
-import qualified Data.Word as Hs (Word16, Word32, Word64)
-import qualified GHC.Enum as Hs
-import qualified GHC.Generics as Hs
-import qualified Proto3.Suite.Class as HsProtobuf
-import qualified Proto3.Suite.DotProto as HsProtobuf
+import Control.Applicative qualified as Hs
+import Control.DeepSeq qualified as Hs
+import Control.Monad qualified as Hs
+import Data.ByteString qualified as Hs
+import Data.Coerce qualified as Hs
+import Data.Int qualified as Hs (Int16, Int32, Int64)
+import Data.List.NonEmpty qualified as Hs (NonEmpty (..))
+import Data.Map qualified as Hs (Map, mapKeysMonotonic)
+import Data.Proxy qualified as Proxy
+import Data.String qualified as Hs (fromString)
+import Data.Text.Lazy qualified as Hs (Text)
+import Data.Vector qualified as Hs (Vector)
+import Data.Word qualified as Hs (Word16, Word32, Word64)
+import GHC.Enum qualified as Hs
+import GHC.Generics qualified as Hs
+import Proto3.Suite.Class qualified as HsProtobuf
+import Proto3.Suite.DotProto qualified as HsProtobuf
 import Proto3.Suite.JSONPB ((.:), (.=))
-import qualified Proto3.Suite.JSONPB as HsJSONPB
-import qualified Proto3.Suite.Types as HsProtobuf
-import qualified Proto3.Wire as HsProtobuf
-import qualified Unsafe.Coerce as Hs
-import qualified Prelude as Hs
+import Proto3.Suite.JSONPB qualified as HsJSONPB
+import Proto3.Suite.Types qualified as HsProtobuf
+import Proto3.Wire qualified as HsProtobuf
+import Unsafe.Coerce qualified as Hs
+import Prelude qualified as Hs
 
 data ProjectDefinition = ProjectDefinition
   { projectDefinitionName ::
@@ -153,7 +153,8 @@ instance HsJSONPB.FromJSONPB ProjectDefinition where
     ( HsJSONPB.withObject
         "ProjectDefinition"
         ( \obj ->
-            (Hs.pure ProjectDefinition) <*> obj .: "name"
+            (Hs.pure ProjectDefinition)
+              <*> obj .: "name"
               <*> obj .: "repository_regex"
               <*> obj .: "branch_regex"
               <*> obj .: "file_regex"
@@ -612,7 +613,9 @@ instance HsJSONPB.FromJSONPB About where
     ( HsJSONPB.withObject
         "About"
         ( \obj ->
-            (Hs.pure About) <*> obj .: "version" <*> obj .: "links"
+            (Hs.pure About)
+              <*> obj .: "version"
+              <*> obj .: "links"
               <*> ( let parseAuth parseObj =
                           Hs.msum
                             [ Hs.Just Hs.. AboutAuthAuthConfig
@@ -717,7 +720,9 @@ instance HsJSONPB.FromJSONPB About_AboutLink where
     ( HsJSONPB.withObject
         "About_AboutLink"
         ( \obj ->
-            (Hs.pure About_AboutLink) <*> obj .: "name" <*> obj .: "url"
+            (Hs.pure About_AboutLink)
+              <*> obj .: "name"
+              <*> obj .: "url"
               <*> obj .: "category"
         )
     )
@@ -819,7 +824,8 @@ instance HsJSONPB.FromJSONPB About_AuthConfig where
     ( HsJSONPB.withObject
         "About_AuthConfig"
         ( \obj ->
-            (Hs.pure About_AuthConfig) <*> obj .: "force_login"
+            (Hs.pure About_AuthConfig)
+              <*> obj .: "force_login"
               <*> obj .: "issuer"
               <*> obj .: "provider_name"
         )
@@ -1228,7 +1234,8 @@ instance HsJSONPB.FromJSONPB GetGroupMembersRequest where
     ( HsJSONPB.withObject
         "GetGroupMembersRequest"
         ( \obj ->
-            (Hs.pure GetGroupMembersRequest) <*> obj .: "index"
+            (Hs.pure GetGroupMembersRequest)
+              <*> obj .: "index"
               <*> obj .: "group"
         )
     )
