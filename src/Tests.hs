@@ -453,6 +453,12 @@ monocleSearchLanguage =
             "{\"term\":{\"labels\":{\"value\":\"bug\"}}}"
         ),
       testCase
+        "Query ttm field"
+        ( queryMatch
+            "ttm>3600"
+            "{\"range\":{\"duration\":{\"boost\":1,\"gt\":3600}}}"
+        ),
+      testCase
         "Query project"
         ( queryMatch
             "project:zuul"
