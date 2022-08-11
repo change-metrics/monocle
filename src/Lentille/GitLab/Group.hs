@@ -46,8 +46,8 @@ streamGroupProjects ::
   LentilleStream m Project
 streamGroupProjects client mkLC fullPath =
   streamFetch client (mkLC $ Organization fullPath) mkArgs defaultStreamFetchOptParams transformResponse
-  where
-    mkArgs _ = GetGroupProjectsArgs (ID fullPath)
+ where
+  mkArgs _ = GetGroupProjectsArgs (ID fullPath)
 
 transformResponse :: GetGroupProjects -> (PageInfo, Maybe RateLimit, [Text], [Project])
 transformResponse result =
@@ -61,16 +61,16 @@ transformResponse result =
                 )
             )
         ) ->
-        ( PageInfo hasNextPage endCursor Nothing,
-          Nothing,
-          [],
-          getFullPath <$> cleanMaybeMNodes nodes
+        ( PageInfo hasNextPage endCursor Nothing
+        , Nothing
+        , []
+        , getFullPath <$> cleanMaybeMNodes nodes
         )
     _anyOtherResponse ->
-      ( PageInfo False Nothing Nothing,
-        Nothing,
-        ["Unknown GetGroupProjects response: " <> show result],
-        []
+      ( PageInfo False Nothing Nothing
+      , Nothing
+      , ["Unknown GetGroupProjects response: " <> show result]
+      , []
       )
-  where
-    getFullPath GroupProjectsNodesProject {..} = Project . from $ unpackID fullPath
+ where
+  getFullPath GroupProjectsNodesProject {..} = Project . from $ unpackID fullPath

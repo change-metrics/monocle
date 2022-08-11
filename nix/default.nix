@@ -327,7 +327,7 @@ in rec {
   hs-req = [
     # Here we pull the executable from the global pkgs, not the haskell packages
     hspkgs.cabal-install
-    hspkgs.ormolu
+    hspkgs.fourmolu
     # Here we pull the proto3-suite executable from the haskell packages, not the global pkgs
     hsPkgs.proto3-suite
     hspkgs.zlib
@@ -431,19 +431,16 @@ in rec {
   };
 
   hlint = args: "${hspkgs.hlint}/bin/hlint -XQuasiQuotes ${args} src/";
-  ormolu = mode: ''
-    ${hspkgs.ormolu}/bin/ormolu                                 \
-      -o -XPatternSynonyms -o -XTypeApplications -o -XImportQualifiedPost --mode ${mode} \
-      $(find src/ -name "*.hs")
-  '';
+  fourmolu = mode: "${hspkgs.fourmolu}/bin/fourmolu --mode ${mode} src/";
+
   nixfmt = mode: "${pkgs.nixfmt}/bin/nixfmt ./nix/default.nix";
 
   fast-ci-commands = ''
     echo "[+] Running hlint"
     ${hlint ""}
 
-    echo "[+] Checking ormolu syntax"
-    ${ormolu "check"}
+    echo "[+] Checking fourmolu syntax"
+    ${fourmolu "check"}
 
     echo "[+] Checking nixfmt syntax"
     ${nixfmt "--check"}
@@ -455,8 +452,8 @@ in rec {
     echo "[+] Apply hlint suggestions"
     find src/ -name "*hs" -exec ${hspkgs.hlint}/bin/hlint -XQuasiQuotes --refactor --refactor-options="-i" {} \;
 
-    echo "[+] Reformat with ormolu"
-    ${ormolu "inplace"}
+    echo "[+] Reformat with fourmolu"
+    ${fourmolu "inplace"}
 
     echo "[+] Reformat with nixfmt"
     ${nixfmt ""}

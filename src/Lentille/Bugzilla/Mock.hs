@@ -21,17 +21,17 @@ bugzillaMockApplication req respond = do
     "/rest/bug" -> BS.readFile (base <> "rhbzsearch.json")
     x -> error $ "Unknown path: " <> show x
   respond $ Wai.responseLBS status200 mempty (from respData)
-  where
-    base = "./test/data/"
+ where
+  base = "./test/data/"
 
 -- | Lowlevel wai application server
 bugzillaMockServerThread :: QSem.QSem -> Warp.Port -> Socket -> IO ()
 bugzillaMockServerThread sem port skt = do
   Warp.runSettingsSocket settings skt bugzillaMockApplication
-  where
-    settings =
-      Warp.setPort port $
-        Warp.setBeforeMainLoop (QSem.signalQSem sem) Warp.defaultSettings
+ where
+  settings =
+    Warp.setPort port $
+      Warp.setBeforeMainLoop (QSem.signalQSem sem) Warp.defaultSettings
 
 -- | Create a WARP server and return its URL
 bugzillaMockServer :: IO Text

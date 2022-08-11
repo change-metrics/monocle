@@ -12,72 +12,71 @@
 -- The module contains defintion of data types according to the
 -- Monocle dhall schemas found in the schemas/monocle/config directory. It also
 -- provides some functions to handle configuration data.
-module Monocle.Config
-  ( -- * Data types imported from dhall
-    Config (..),
-    Index (..),
-    Project (..),
-    Ident (..),
-    SearchAlias (..),
-    Crawler (..),
-    Provider (..),
-    Gitlab (..),
-    Gerrit (..),
-    Github (..),
-    Bugzilla (..),
-    GithubApplication (..),
-    Link (..),
-    OIDCProviderConfig (..),
-    Auth (..),
-    AuthProvider (..),
-    OIDC (..),
-    GithubAuth (..),
+module Monocle.Config (
+  -- * Data types imported from dhall
+  Config (..),
+  Index (..),
+  Project (..),
+  Ident (..),
+  SearchAlias (..),
+  Crawler (..),
+  Provider (..),
+  Gitlab (..),
+  Gerrit (..),
+  Github (..),
+  Bugzilla (..),
+  GithubApplication (..),
+  Link (..),
+  OIDCProviderConfig (..),
+  Auth (..),
+  AuthProvider (..),
+  OIDC (..),
+  GithubAuth (..),
 
-    -- * Data types to host the config status
-    WorkspaceStatus,
-    ConfigStatus (..),
-    Status (..),
+  -- * Data types to host the config status
+  WorkspaceStatus,
+  ConfigStatus (..),
+  Status (..),
 
-    -- * Functions related to config loading
-    loadConfig,
-    loadConfigWithoutEnv,
-    reloadConfig,
-    mkWorkspaceStatus,
-    setWorkspaceStatus,
+  -- * Functions related to config loading
+  loadConfig,
+  loadConfigWithoutEnv,
+  reloadConfig,
+  mkWorkspaceStatus,
+  setWorkspaceStatus,
 
-    -- * The Config Monad
-    MonadConfig (..),
-    getSecret,
+  -- * The Config Monad
+  MonadConfig (..),
+  getSecret,
 
-    -- * Functions to handle a Config
-    getWorkspaces,
-    getAuthProvider,
+  -- * Functions to handle a Config
+  getWorkspaces,
+  getAuthProvider,
 
-    -- * Functions to handle an Index
-    getWorkspaceName,
-    lookupTenant,
-    lookupProject,
-    lookupCrawler,
-    lookupIdent,
-    lookupGroupMembers,
-    getTenantGroups,
-    getTenantProjectsNames,
-    getSearchAliases,
-    getIdentByAlias,
+  -- * Functions to handle an Index
+  getWorkspaceName,
+  lookupTenant,
+  lookupProject,
+  lookupCrawler,
+  lookupIdent,
+  lookupGroupMembers,
+  getTenantGroups,
+  getTenantProjectsNames,
+  getSearchAliases,
+  getIdentByAlias,
 
-    -- * Functions to handle a Crawler
-    getPrefix,
-    getCrawlerName,
-    getCrawlerProject,
-    getCrawlerOrganization,
-    getCrawlerTaskData,
+  -- * Functions to handle a Crawler
+  getPrefix,
+  getCrawlerName,
+  getCrawlerProject,
+  getCrawlerOrganization,
+  getCrawlerTaskData,
 
-    -- * Some utility functions
-    mkTenant,
-    getIdentByAliasFromIdents,
-    links,
-  )
-where
+  -- * Some utility functions
+  mkTenant,
+  getIdentByAliasFromIdents,
+  links,
+) where
 
 import Data.ByteString qualified as BS
 import Data.Either.Validation (Validation (Failure, Success))
@@ -100,28 +99,28 @@ Dhall.TH.makeHaskellTypes
         authProvider name = Dhall.TH.SingleConstructor name name $ authProviderPath name
         mainPath name = "./schemas/monocle/config/" <> name <> "/Type.dhall"
         main name = Dhall.TH.SingleConstructor name name $ mainPath name
-     in [ main "Project",
-          main "Ident",
-          main "SearchAlias",
-          main "Crawler",
-          main "Auth",
-          main "Config",
-          main "About",
-          main "Link",
-          provider "Gerrit",
-          provider "Gitlab",
-          provider "Github",
-          provider "GithubApplication",
-          provider "Bugzilla",
-          authProvider "OIDC",
-          authProvider "GithubAuth",
-          Dhall.TH.MultipleConstructors
+     in [ main "Project"
+        , main "Ident"
+        , main "SearchAlias"
+        , main "Crawler"
+        , main "Auth"
+        , main "Config"
+        , main "About"
+        , main "Link"
+        , provider "Gerrit"
+        , provider "Gitlab"
+        , provider "Github"
+        , provider "GithubApplication"
+        , provider "Bugzilla"
+        , authProvider "OIDC"
+        , authProvider "GithubAuth"
+        , Dhall.TH.MultipleConstructors
             "Provider"
-            "./schemas/monocle/config/Crawler/Provider.dhall",
-          Dhall.TH.MultipleConstructors
+            "./schemas/monocle/config/Crawler/Provider.dhall"
+        , Dhall.TH.MultipleConstructors
             "AuthProvider"
-            "./schemas/monocle/config/Auth/Provider.dhall",
-          -- To support backward compatible schema, we replace Index and Crawler schemas
+            "./schemas/monocle/config/Auth/Provider.dhall"
+        , -- To support backward compatible schema, we replace Index and Crawler schemas
           Dhall.TH.SingleConstructor "Index" "Index" $ mainPath "Workspace"
         ]
   )
@@ -209,9 +208,9 @@ loadConfigWithoutEnv configPath = do
   pure $ case Dhall.extract Dhall.auto expr of
     Success config' -> config'
     Failure err -> error $ "Invalid configuration: " <> show err
-  where
-    configType = Dhall.Core.pretty configurationSchema
-    loadOpt = Dhall.defaultOptions $ Just configType
+ where
+  configType = Dhall.Core.pretty configurationSchema
+  loadOpt = Dhall.defaultOptions $ Just configType
 
 -- | Load the YAML config file and resolv environment variables
 loadConfig :: MonadIO m => FilePath -> m Config
@@ -219,14 +218,14 @@ loadConfig configPath = do
   config <- loadConfigWithoutEnv configPath
   configWorkspaces <- traverse resolveEnv $ workspaces config
   pure $ config {workspaces = configWorkspaces}
-  where
-    crawlersApiKeyLens :: Lens' Index Text
-    crawlersApiKeyLens =
-      lens
-        (fromMaybe "CRAWLERS_API_KEY" . crawlers_api_key)
-        (\index newKey -> index {crawlers_api_key = Just newKey})
-    resolveEnv :: MonadIO m => Index -> m Index
-    resolveEnv = liftIO . mapMOf crawlersApiKeyLens getEnv'
+ where
+  crawlersApiKeyLens :: Lens' Index Text
+  crawlersApiKeyLens =
+    lens
+      (fromMaybe "CRAWLERS_API_KEY" . crawlers_api_key)
+      (\index newKey -> index {crawlers_api_key = Just newKey})
+  resolveEnv :: MonadIO m => Index -> m Index
+  resolveEnv = liftIO . mapMOf crawlersApiKeyLens getEnv'
 
 -- | A Type to express if a 'Workspace' needs refresh
 data Status = NeedRefresh | Ready
@@ -237,19 +236,19 @@ type WorkspaceStatus = Map WorkspaceName Status
 
 -- | The 'ConfigStatus' wraps the loaded Monocle config
 data ConfigStatus = ConfigStatus
-  { -- | Is the config has been reloaded from disk
-    csReloaded :: Bool,
-    -- | The 'Config'
-    csConfig :: Config,
-    -- | The refresh status of a Workspace
-    csWorkspaceStatus :: MVar WorkspaceStatus
+  { csReloaded :: Bool
+  -- ^ Is the config has been reloaded from disk
+  , csConfig :: Config
+  -- ^ The 'Config'
+  , csWorkspaceStatus :: MVar WorkspaceStatus
+  -- ^ The refresh status of a Workspace
   }
 
 -- | Return a 'WorkspaceStatus' with all workspace 'Status' set on 'NeedRefresh'
 mkWorkspaceStatus :: Config -> WorkspaceStatus
 mkWorkspaceStatus config = fromList $ mkStatus <$> getWorkspaces config
-  where
-    mkStatus ws = (getWorkspaceName ws, NeedRefresh)
+ where
+  mkStatus ws = (getWorkspaceName ws, NeedRefresh)
 
 -- | Set all workspaces 'Status' on a given 'Status'
 setWorkspaceStatus :: Status -> MVar WorkspaceStatus -> IO ()
@@ -267,17 +266,17 @@ reloadConfig fp = do
   tsRef <- newMVar (configTS, config)
   wsRef <- newMVar $ mkWorkspaceStatus config
   pure (modifyMVar tsRef (reload wsRef))
-  where
-    reload wsRef mvar@(prevConfigTS, prevConfig) = do
-      configTS <- getModificationTime fp
-      if configTS > prevConfigTS
-        then do
-          -- TODO: use log reload event
-          putTextLn $ from fp <> ": reloading config"
-          config <- loadConfig fp
-          modifyMVar_ wsRef (const . pure $ mkWorkspaceStatus config)
-          pure ((configTS, config), ConfigStatus True config wsRef)
-        else pure (mvar, ConfigStatus False prevConfig wsRef)
+ where
+  reload wsRef mvar@(prevConfigTS, prevConfig) = do
+    configTS <- getModificationTime fp
+    if configTS > prevConfigTS
+      then do
+        -- TODO: use log reload event
+        putTextLn $ from fp <> ": reloading config"
+        config <- loadConfig fp
+        modifyMVar_ wsRef (const . pure $ mkWorkspaceStatus config)
+        pure ((configTS, config), ConfigStatus True config wsRef)
+      else pure (mvar, ConfigStatus False prevConfig wsRef)
 
 -- | Return a 'Secret' based on environment variable
 getSecret ::
@@ -290,8 +289,8 @@ getSecret ::
 getSecret def keyM =
   Secret . from . fromMaybe (error $ "Missing environment: " <> env)
     <$> lookupEnv (from env)
-  where
-    env = fromMaybe def keyM
+ where
+  env = fromMaybe def keyM
 
 class MonadConfig m where
   -- | Return a 'Secret' based on environment variable
@@ -305,13 +304,13 @@ instance MonadConfig IO where
   mReloadConfig = reloadConfig
 
 data OIDCProviderConfig = OIDCProviderConfig
-  { opIssuerURL :: Text,
-    opClientID :: Text,
-    opClientSecret :: Text,
-    opAppPublicURL :: Text,
-    opUserClaim :: Maybe Text,
-    opEnforceAuth :: Bool,
-    opName :: Text
+  { opIssuerURL :: Text
+  , opClientID :: Text
+  , opClientSecret :: Text
+  , opAppPublicURL :: Text
+  , opUserClaim :: Maybe Text
+  , opEnforceAuth :: Bool
+  , opName :: Text
   }
 
 -- End - Configuration loading system
@@ -333,23 +332,23 @@ getAuthProvider publicUrl Config {auth} = case auth of
           opClientSecretM <- fmap from <$> lookupEnv (secretEnv oidc_provider_name)
           case opClientSecretM of
             Just opClientSecret | not (T.null opClientSecret) -> mkProvider
-              where
-                mkProvider =
-                  let opIssuerURL = ensureTrailingSlash oidc_issuer_url
-                      opClientID = oidc_client_id
-                      opUserClaim = oidc_user_claim
-                      opName = oidc_provider_name
-                      opEnforceAuth = Just True == enforce_auth
-                   in pure . Just $ OIDCProviderConfig {..}
+             where
+              mkProvider =
+                let opIssuerURL = ensureTrailingSlash oidc_issuer_url
+                    opClientID = oidc_client_id
+                    opUserClaim = oidc_user_claim
+                    opName = oidc_provider_name
+                    opEnforceAuth = Just True == enforce_auth
+                 in pure . Just $ OIDCProviderConfig {..}
             _ -> pure Nothing
       GithubAuthProvider _ -> error "Github Auth provider not yet supported"
       _ -> pure Nothing
   Nothing -> pure Nothing
-  where
-    opAppPublicURL = ensureTrailingSlash publicUrl
-    ensureTrailingSlash iss = T.dropWhileEnd (== '/') iss <> "/"
-    providerNameToEnvFragment = T.replace " " "_" . T.toUpper
-    secretEnv pname = "MONOCLE_OIDC_" <> from (providerNameToEnvFragment pname) <> "_CLIENT_SECRET"
+ where
+  opAppPublicURL = ensureTrailingSlash publicUrl
+  ensureTrailingSlash iss = T.dropWhileEnd (== '/') iss <> "/"
+  providerNameToEnvFragment = T.replace " " "_" . T.toUpper
+  secretEnv pname = "MONOCLE_OIDC_" <> from (providerNameToEnvFragment pname) <> "_CLIENT_SECRET"
 
 -- End - Functions to handle a Config
 
@@ -363,65 +362,65 @@ getWorkspaceName Index {..} = name
 -- | Find an 'Index' by name
 lookupTenant :: [Index] -> Text -> Maybe Index
 lookupTenant xs tenantName = find isTenant xs
-  where
-    isTenant Index {..} = name == tenantName
+ where
+  isTenant Index {..} = name == tenantName
 
 -- | Find a 'Project' in an 'Index'
 lookupProject :: Index -> Text -> Maybe Project
 lookupProject index projectName = find isProject (fromMaybe [] (projects index))
-  where
-    isProject :: Project -> Bool
-    isProject Project {..} = name == projectName
+ where
+  isProject :: Project -> Bool
+  isProject Project {..} = name == projectName
 
 -- | Find a 'Crawler' in an 'Index'
 lookupCrawler :: Index -> Text -> Maybe Crawler
 lookupCrawler index crawlerName = find isProject (crawlers index)
-  where
-    isProject Crawler {..} = name == crawlerName
+ where
+  isProject Crawler {..} = name == crawlerName
 
 -- | Find an 'Ident' in an 'Index'
 lookupIdent :: Index -> Text -> Maybe Ident
 lookupIdent Index {..} userName = find isUser (fromMaybe [] idents)
-  where
-    isUser Ident {..} = ident == userName
+ where
+  isUser Ident {..} = ident == userName
 
 -- | Find groups members of a group in an 'Index'
 lookupGroupMembers :: Index -> Text -> Maybe (NonEmpty Text)
 lookupGroupMembers Index {..} groupName = case foldr go [] (fromMaybe [] idents) of
   [] -> Nothing
   (x : xs) -> Just (x :| xs)
-  where
-    -- For each ident, check if it is a member of groupName.
-    -- If it is, then add the ident name to the list
-    go :: Ident -> [Text] -> [Text]
-    go Ident {..} acc = case groups of
-      Just xs
-        | groupName `elem` xs -> ident : acc
-        | otherwise -> acc
-      Nothing -> acc
+ where
+  -- For each ident, check if it is a member of groupName.
+  -- If it is, then add the ident name to the list
+  go :: Ident -> [Text] -> [Text]
+  go Ident {..} acc = case groups of
+    Just xs
+      | groupName `elem` xs -> ident : acc
+      | otherwise -> acc
+    Nothing -> acc
 
 -- | Get the list of group and members
 getTenantGroups :: Index -> [(Text, [Text])]
 getTenantGroups index = Map.toList $ foldr go mempty (fromMaybe [] (idents index))
-  where
-    go :: Ident -> Map Text [Text] -> Map Text [Text]
-    go Ident {..} acc = foldr (addUser ident) acc (fromMaybe [] groups)
-    addUser :: Text -> Text -> Map Text [Text] -> Map Text [Text]
-    addUser name groupName acc =
-      let users' = fromMaybe [] (Map.lookup groupName acc)
-       in Map.insert groupName (users' <> [name]) acc
+ where
+  go :: Ident -> Map Text [Text] -> Map Text [Text]
+  go Ident {..} acc = foldr (addUser ident) acc (fromMaybe [] groups)
+  addUser :: Text -> Text -> Map Text [Text] -> Map Text [Text]
+  addUser name groupName acc =
+    let users' = fromMaybe [] (Map.lookup groupName acc)
+     in Map.insert groupName (users' <> [name]) acc
 
 -- | Get the list of projects
 getTenantProjectsNames :: Index -> [Text]
 getTenantProjectsNames index = maybe [] (map getName) (projects index)
-  where
-    getName Project {..} = name
+ where
+  getName Project {..} = name
 
 -- | Find search aliases in an 'Index'
 getSearchAliases :: Index -> [(Text, Text)]
 getSearchAliases index = maybe [] (fmap toTuple) (search_aliases index)
-  where
-    toTuple SearchAlias {..} = (name, alias)
+ where
+  toTuple SearchAlias {..} = (name, alias)
 
 -- | Get the Ident name for a Given alias
 getIdentByAlias :: Index -> Text -> Maybe Text
@@ -480,12 +479,12 @@ getCrawlerTaskData Crawler {..} = case provider of
 mkTenant :: Text -> Index
 mkTenant name =
   Index
-    { name,
-      crawlers = [],
-      crawlers_api_key = Nothing,
-      projects = Nothing,
-      idents = Nothing,
-      search_aliases = Nothing
+    { name
+    , crawlers = []
+    , crawlers_api_key = Nothing
+    , projects = Nothing
+    , idents = Nothing
+    , search_aliases = Nothing
     }
 
 -- | Get 'Ident' ident from a list of 'Ident'
@@ -493,8 +492,8 @@ getIdentByAliasFromIdents :: Text -> [Ident] -> Maybe Text
 getIdentByAliasFromIdents alias idents' = case find isMatched idents' of
   Nothing -> Nothing
   Just Ident {..} -> Just ident
-  where
-    isMatched :: Ident -> Bool
-    isMatched Ident {..} = alias `elem` aliases
+ where
+  isMatched :: Ident -> Bool
+  isMatched Ident {..} = alias `elem` aliases
 
 -- End - Some utility functions

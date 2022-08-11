@@ -11,10 +11,10 @@ import Relude
 
 version :: String
 version = concat [showVersion P.version, " ", commit]
-  where
-    commit = case fromEnv of
-      Just v -> v
-      Nothing -> $(gitHash) <> dirty
-    fromEnv :: Maybe String
-    fromEnv = $$(envQ "MONOCLE_COMMIT")
-    dirty = if $(gitDirty) then "-dirty" else ""
+ where
+  commit = case fromEnv of
+    Just v -> v
+    Nothing -> $(gitHash) <> dirty
+  fromEnv :: Maybe String
+  fromEnv = $$(envQ "MONOCLE_COMMIT")
+  dirty = if $(gitDirty) then "-dirty" else ""

@@ -50,8 +50,8 @@ data AuthorMapping = AuthorMapping deriving (Eq, Show)
 instance ToJSON AuthorMapping where
   toJSON AuthorMapping =
     object
-      [ "uid" .= object ["type" .= ("keyword" :: Text)],
-        "muid" .= object ["type" .= ("keyword" :: Text)]
+      [ "uid" .= object ["type" .= ("keyword" :: Text)]
+      , "muid" .= object ["type" .= ("keyword" :: Text)]
       ]
 
 instance ToJSON AuthorIndexMapping where
@@ -70,8 +70,8 @@ data DateIndexMapping = DateIndexMapping deriving (Eq, Show)
 instance ToJSON DateIndexMapping where
   toJSON DateIndexMapping =
     object
-      [ "type" .= ("date" :: Text),
-        "format" .= ("date_time_no_millis" :: Text)
+      [ "type" .= ("date" :: Text)
+      , "format" .= ("date_time_no_millis" :: Text)
       ]
 
 data TextAndKWMapping = TextAndKWMapping deriving (Eq, Show)
@@ -79,13 +79,13 @@ data TextAndKWMapping = TextAndKWMapping deriving (Eq, Show)
 instance ToJSON TextAndKWMapping where
   toJSON TextAndKWMapping =
     object
-      [ "type" .= ("text" :: Text),
-        "fields"
+      [ "type" .= ("text" :: Text)
+      , "fields"
           .= object
             [ "keyword"
                 .= object
-                  [ "type" .= ("keyword" :: Text),
-                    "ignore_above" .= (8191 :: Int)
+                  [ "type" .= ("keyword" :: Text)
+                  , "ignore_above" .= (8191 :: Int)
                   ]
             ]
       ]
@@ -110,97 +110,97 @@ instance ToJSON ChangesIndexMapping where
     object
       [ "properties"
           .= object
-            ( [ "id" .= KWMapping,
-                "type" .= KWMapping,
-                "number" .= KWMapping,
-                "change_id" .= KWMapping,
-                "title" .= TextAndKWMapping,
-                "text" .= TextAndKWMapping,
-                "url" .= KWMapping,
-                "commit_count" .= IntegerMapping,
-                "additions" .= IntegerMapping,
-                "deletions" .= IntegerMapping,
-                "change_files_count" .= IntegerMapping,
-                "changed_files"
+            ( [ "id" .= KWMapping
+              , "type" .= KWMapping
+              , "number" .= KWMapping
+              , "change_id" .= KWMapping
+              , "title" .= TextAndKWMapping
+              , "text" .= TextAndKWMapping
+              , "url" .= KWMapping
+              , "commit_count" .= IntegerMapping
+              , "additions" .= IntegerMapping
+              , "deletions" .= IntegerMapping
+              , "change_files_count" .= IntegerMapping
+              , "changed_files"
                   .= object
                     [ "properties"
                         .= object
-                          [ "additions" .= IntegerMapping,
-                            "deletions" .= IntegerMapping,
-                            "path" .= KWMapping
+                          [ "additions" .= IntegerMapping
+                          , "deletions" .= IntegerMapping
+                          , "path" .= KWMapping
                           ]
-                    ],
-                "commits"
+                    ]
+              , "commits"
                   .= object
                     [ "properties"
                         .= object
-                          [ "sha" .= KWMapping,
-                            "author" .= AuthorIndexMapping,
-                            "committer" .= AuthorIndexMapping,
-                            "authored_at" .= DateIndexMapping,
-                            "committed_at" .= DateIndexMapping,
-                            "additions" .= IntegerMapping,
-                            "deletions" .= IntegerMapping,
-                            "title" .= object ["type" .= ("text" :: Text)]
+                          [ "sha" .= KWMapping
+                          , "author" .= AuthorIndexMapping
+                          , "committer" .= AuthorIndexMapping
+                          , "authored_at" .= DateIndexMapping
+                          , "committed_at" .= DateIndexMapping
+                          , "additions" .= IntegerMapping
+                          , "deletions" .= IntegerMapping
+                          , "title" .= object ["type" .= ("text" :: Text)]
                           ]
-                    ],
-                "repository_prefix" .= KWMapping,
-                "repository_fullname" .= KWMapping,
-                "repository_shortname" .= KWMapping,
-                "author" .= AuthorIndexMapping,
-                "on_author" .= AuthorIndexMapping,
-                "committer" .= AuthorIndexMapping,
-                "merged_by" .= AuthorIndexMapping,
-                "branch" .= KWMapping,
-                "target_branch" .= KWMapping,
-                "created_at" .= DateIndexMapping,
-                "on_created_at" .= DateIndexMapping,
-                "merged_at" .= DateIndexMapping,
-                "updated_at" .= DateIndexMapping,
-                "closed_at" .= DateIndexMapping,
-                "state" .= KWMapping,
-                "duration" .= IntegerMapping,
-                "mergeable" .= KWMapping,
-                "labels" .= KWMapping,
-                "assignees"
+                    ]
+              , "repository_prefix" .= KWMapping
+              , "repository_fullname" .= KWMapping
+              , "repository_shortname" .= KWMapping
+              , "author" .= AuthorIndexMapping
+              , "on_author" .= AuthorIndexMapping
+              , "committer" .= AuthorIndexMapping
+              , "merged_by" .= AuthorIndexMapping
+              , "branch" .= KWMapping
+              , "target_branch" .= KWMapping
+              , "created_at" .= DateIndexMapping
+              , "on_created_at" .= DateIndexMapping
+              , "merged_at" .= DateIndexMapping
+              , "updated_at" .= DateIndexMapping
+              , "closed_at" .= DateIndexMapping
+              , "state" .= KWMapping
+              , "duration" .= IntegerMapping
+              , "mergeable" .= KWMapping
+              , "labels" .= KWMapping
+              , "assignees"
                   .= object
-                    [ "type" .= ("nested" :: Text),
-                      "properties" .= AuthorMapping
-                    ],
-                "approval" .= KWMapping,
-                "draft" .= BoolMapping,
-                "self_merged" .= BoolMapping,
-                "crawler_metadata"
+                    [ "type" .= ("nested" :: Text)
+                    , "properties" .= AuthorMapping
+                    ]
+              , "approval" .= KWMapping
+              , "draft" .= BoolMapping
+              , "self_merged" .= BoolMapping
+              , "crawler_metadata"
                   .= object
                     [ "properties"
                         .= object
-                          [ "crawler_name" .= KWMapping,
-                            "crawler_type" .= KWMapping,
-                            "crawler_type_value" .= KWMapping,
-                            "last_commit_at" .= DateIndexMapping,
-                            "last_post_at" .= DateIndexMapping,
-                            "total_docs_posted" .= IntegerMapping,
-                            "total_changes_updated" .= IntegerMapping,
-                            "total_change_events_updated" .= IntegerMapping,
-                            "total_orphans_updated" .= IntegerMapping
+                          [ "crawler_name" .= KWMapping
+                          , "crawler_type" .= KWMapping
+                          , "crawler_type_value" .= KWMapping
+                          , "last_commit_at" .= DateIndexMapping
+                          , "last_post_at" .= DateIndexMapping
+                          , "total_docs_posted" .= IntegerMapping
+                          , "total_changes_updated" .= IntegerMapping
+                          , "total_change_events_updated" .= IntegerMapping
+                          , "total_orphans_updated" .= IntegerMapping
                           ]
-                    ],
-                "tasks_data"
+                    ]
+              , "tasks_data"
                   .= object
                     [ "properties"
                         .= object
-                          [ "tid" .= KWMapping,
-                            "ttype" .= KWMapping,
-                            "crawler_name" .= KWMapping,
-                            "updated_at" .= DateIndexMapping,
-                            "change_url" .= KWMapping,
-                            "severity" .= KWMapping,
-                            "priority" .= KWMapping,
-                            "score" .= IntegerMapping,
-                            "url" .= KWMapping,
-                            "prefix" .= KWMapping,
-                            "title" .= TextAndKWMapping,
-                            "_adopted" .= BoolMapping
+                          [ "tid" .= KWMapping
+                          , "ttype" .= KWMapping
+                          , "crawler_name" .= KWMapping
+                          , "updated_at" .= DateIndexMapping
+                          , "change_url" .= KWMapping
+                          , "severity" .= KWMapping
+                          , "priority" .= KWMapping
+                          , "score" .= IntegerMapping
+                          , "url" .= KWMapping
+                          , "prefix" .= KWMapping
+                          , "title" .= TextAndKWMapping
+                          , "_adopted" .= BoolMapping
                           ]
                     ]
               ]
@@ -216,8 +216,8 @@ createIndex indexName mapping = do
   -- print respPM
   True <- BH.indexExists indexName
   pure ()
-  where
-    indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0) BH.defaultIndexMappingsLimits
+ where
+  indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0) BH.defaultIndexMappingsLimits
 
 configVersion :: ConfigVersion
 configVersion = ConfigVersion 4
@@ -244,42 +244,42 @@ upgradeConfigV1 = do
   let ghCrawlerMDToReset = filter (isCrawlerLastCommitAtIsDefault ws) $ concat ghCrawlerMD
   -- Update the last_commit_at from the age of the most recent update
   traverse_ setLastUpdatedDate ghCrawlerMDToReset
-  where
-    getGHCrawlerNames :: Config.Index -> [Text]
-    getGHCrawlerNames ws =
-      let isGHProvider crawler = case Config.provider crawler of
-            Config.GithubProvider _ -> True
-            _otherwise -> False
-       in Config.getCrawlerName
-            <$> filter isGHProvider (Config.crawlers ws)
-    getProjectCrawlerMDByName :: Text -> QueryM [ECrawlerMetadata]
-    getProjectCrawlerMDByName crawlerName = do
-      let entity = CrawlerPB.EntityEntityProjectName ""
-          search = BH.mkSearch (Just $ crawlerMDQuery entity crawlerName) Nothing
-      index <- getIndexName
-      resp <- fmap BH.hitSource <$> simpleSearch index search
-      pure $ catMaybes resp
-    isCrawlerLastCommitAtIsDefault :: Config.Index -> ECrawlerMetadata -> Bool
-    isCrawlerLastCommitAtIsDefault
-      ws
-      ( ECrawlerMetadata
-          ECrawlerMetadataObject {ecmCrawlerName, ecmLastCommitAt}
-        ) =
-        case Config.lookupCrawler ws (from ecmCrawlerName) of
-          Nothing -> False
-          Just crawler -> getWorkerUpdatedSince crawler == ecmLastCommitAt
-    setLastUpdatedDate :: ECrawlerMetadata -> QueryM ()
-    setLastUpdatedDate
-      (ECrawlerMetadata ECrawlerMetadataObject {ecmCrawlerName, ecmCrawlerTypeValue}) = do
-        lastUpdatedDateM <- getLastUpdatedDate $ from ecmCrawlerTypeValue
-        case lastUpdatedDateM of
-          Nothing -> pure ()
-          Just lastUpdatedAt ->
-            setLastUpdated
-              (from ecmCrawlerName)
-              lastUpdatedAt
-              $ Project . from
-              $ ecmCrawlerTypeValue
+ where
+  getGHCrawlerNames :: Config.Index -> [Text]
+  getGHCrawlerNames ws =
+    let isGHProvider crawler = case Config.provider crawler of
+          Config.GithubProvider _ -> True
+          _otherwise -> False
+     in Config.getCrawlerName
+          <$> filter isGHProvider (Config.crawlers ws)
+  getProjectCrawlerMDByName :: Text -> QueryM [ECrawlerMetadata]
+  getProjectCrawlerMDByName crawlerName = do
+    let entity = CrawlerPB.EntityEntityProjectName ""
+        search = BH.mkSearch (Just $ crawlerMDQuery entity crawlerName) Nothing
+    index <- getIndexName
+    resp <- fmap BH.hitSource <$> simpleSearch index search
+    pure $ catMaybes resp
+  isCrawlerLastCommitAtIsDefault :: Config.Index -> ECrawlerMetadata -> Bool
+  isCrawlerLastCommitAtIsDefault
+    ws
+    ( ECrawlerMetadata
+        ECrawlerMetadataObject {ecmCrawlerName, ecmLastCommitAt}
+      ) =
+      case Config.lookupCrawler ws (from ecmCrawlerName) of
+        Nothing -> False
+        Just crawler -> getWorkerUpdatedSince crawler == ecmLastCommitAt
+  setLastUpdatedDate :: ECrawlerMetadata -> QueryM ()
+  setLastUpdatedDate
+    (ECrawlerMetadata ECrawlerMetadataObject {ecmCrawlerName, ecmCrawlerTypeValue}) = do
+      lastUpdatedDateM <- getLastUpdatedDate $ from ecmCrawlerTypeValue
+      case lastUpdatedDateM of
+        Nothing -> pure ()
+        Just lastUpdatedAt ->
+          setLastUpdated
+            (from ecmCrawlerName)
+            lastUpdatedAt
+            $ Project . from
+            $ ecmCrawlerTypeValue
 
 upgradeConfigV2 :: QueryM ()
 upgradeConfigV2 = do
@@ -303,17 +303,17 @@ upgradeConfigV3 = do
           )
   logMessage $ "Migration to schema V3 affected " <> show count <> " documents"
   pure count
-  where
-    scanEvents :: Stream (Of EChangeEvent) QueryM ()
-    scanEvents = Q.scanSearchHit
-    eventQuery = mkQuery [Q.documentType EChangeMergedEvent]
-    updateEvent :: EChangeEvent -> Maybe EChangeEvent
-    updateEvent se@EChangeEvent {..}
-      | echangeeventAuthor == Just echangeeventOnAuthor = Just $ se {echangeeventSelfMerged = Just True}
-      | otherwise = Nothing
-    mkEventBulkUpdate :: BH.IndexName -> EChangeEvent -> BulkOperation
-    mkEventBulkUpdate indexName ev =
-      BulkUpdate indexName (getEventDocId ev) $ toJSON ev
+ where
+  scanEvents :: Stream (Of EChangeEvent) QueryM ()
+  scanEvents = Q.scanSearchHit
+  eventQuery = mkQuery [Q.documentType EChangeMergedEvent]
+  updateEvent :: EChangeEvent -> Maybe EChangeEvent
+  updateEvent se@EChangeEvent {..}
+    | echangeeventAuthor == Just echangeeventOnAuthor = Just $ se {echangeeventSelfMerged = Just True}
+    | otherwise = Nothing
+  mkEventBulkUpdate :: BH.IndexName -> EChangeEvent -> BulkOperation
+  mkEventBulkUpdate indexName ev =
+    BulkUpdate indexName (getEventDocId ev) $ toJSON ev
 
 -- | Fix duration computation that was computed in the reverse order giving negative durations
 upgradeConfigV4 :: QueryM Int
@@ -329,27 +329,27 @@ upgradeConfigV4 = do
           )
   logMessage $ "Migration to schema V4 affected " <> show count <> " documents"
   pure count
-  where
-    scanChanges :: Stream (Of EChange) QueryM ()
-    scanChanges = Q.scanSearchHit
-    changeQuery =
-      mkQuery
-        [ Q.documentType EChangeDoc,
-          BH.TermQuery (BH.Term "state" $ from EChangeMerged) Nothing,
-          BH.QueryRangeQuery (BH.mkRangeQuery (BH.FieldName "duration") (BH.RangeDoubleLte $ BH.LessThanEq 0))
-        ]
-    updateChange :: EChange -> EChange
-    updateChange change = change {echangeDuration = abs <$> echangeDuration change}
-    mkChangeBulkUpdate :: BH.IndexName -> EChange -> BulkOperation
-    mkChangeBulkUpdate indexName change =
-      BulkUpdate indexName (getChangeDocId change) $ toJSON change
+ where
+  scanChanges :: Stream (Of EChange) QueryM ()
+  scanChanges = Q.scanSearchHit
+  changeQuery =
+    mkQuery
+      [ Q.documentType EChangeDoc
+      , BH.TermQuery (BH.Term "state" $ from EChangeMerged) Nothing
+      , BH.QueryRangeQuery (BH.mkRangeQuery (BH.FieldName "duration") (BH.RangeDoubleLte $ BH.LessThanEq 0))
+      ]
+  updateChange :: EChange -> EChange
+  updateChange change = change {echangeDuration = abs <$> echangeDuration change}
+  mkChangeBulkUpdate :: BH.IndexName -> EChange -> BulkOperation
+  mkChangeBulkUpdate indexName change =
+    BulkUpdate indexName (getChangeDocId change) $ toJSON change
 
 upgrades :: [(ConfigVersion, QueryM ())]
 upgrades =
-  [ (ConfigVersion 1, upgradeConfigV1),
-    (ConfigVersion 2, upgradeConfigV2),
-    (ConfigVersion 3, void upgradeConfigV3),
-    (ConfigVersion 4, void upgradeConfigV4)
+  [ (ConfigVersion 1, upgradeConfigV1)
+  , (ConfigVersion 2, upgradeConfigV2)
+  , (ConfigVersion 3, void upgradeConfigV3)
+  , (ConfigVersion 4, void upgradeConfigV4)
   ]
 
 newtype ConfigVersion = ConfigVersion Integer deriving (Eq, Show, Ord)
@@ -400,11 +400,11 @@ ensureConfigIndex = do
   let newConfig = setVersion configVersion currentConfig
   void $ BH.indexDocument configIndex BH.defaultIndexDocumentSettings newConfig configDoc
   logMessage $ "Ensure schema version to " <> show configVersion
-  where
-    -- traverseWorkspace replace the QueryEnv tenant attribute from QueryConfig to QueryWorkspace
-    traverseWorkspace action conf = do
-      traverse_ (\ws -> local (setTenant ws) action) (Config.getWorkspaces conf)
-    setTenant ws e = e {tenant = QueryWorkspace ws}
+ where
+  -- traverseWorkspace replace the QueryEnv tenant attribute from QueryConfig to QueryWorkspace
+  traverseWorkspace action conf = do
+    traverse_ (\ws -> local (setTenant ws) action) (Config.getWorkspaces conf)
+  setTenant ws e = e {tenant = QueryWorkspace ws}
 
 ensureIndexSetup :: QueryM ()
 ensureIndexSetup = do
@@ -441,8 +441,8 @@ removeIndex = do
 toAuthor :: Maybe ChangePB.Ident -> Monocle.Backend.Documents.Author
 toAuthor (Just ChangePB.Ident {..}) =
   Monocle.Backend.Documents.Author
-    { authorMuid = identMuid,
-      authorUid = identUid
+    { authorMuid = identMuid
+    , authorUid = identUid
     }
 toAuthor Nothing =
   Monocle.Backend.Documents.Author
@@ -452,35 +452,35 @@ toAuthor Nothing =
 toEChangeEvent :: ChangePB.ChangeEvent -> EChangeEvent
 toEChangeEvent ChangePB.ChangeEvent {..} =
   EChangeEvent
-    { echangeeventId = changeEventId,
-      echangeeventNumber = fromIntegral changeEventNumber,
-      echangeeventType = eType,
-      echangeeventChangeId = changeEventChangeId,
-      echangeeventUrl = changeEventUrl,
-      echangeeventChangedFiles = SimpleFile . ChangePB.changedFilePathPath <$> toList changeEventChangedFiles,
-      echangeeventRepositoryPrefix = changeEventRepositoryPrefix,
-      echangeeventRepositoryFullname = changeEventRepositoryFullname,
-      echangeeventRepositoryShortname = changeEventRepositoryShortname,
-      echangeeventAuthor = Just author,
-      echangeeventOnAuthor = onAuthor,
-      echangeeventSelfMerged = case eType of
+    { echangeeventId = changeEventId
+    , echangeeventNumber = fromIntegral changeEventNumber
+    , echangeeventType = eType
+    , echangeeventChangeId = changeEventChangeId
+    , echangeeventUrl = changeEventUrl
+    , echangeeventChangedFiles = SimpleFile . ChangePB.changedFilePathPath <$> toList changeEventChangedFiles
+    , echangeeventRepositoryPrefix = changeEventRepositoryPrefix
+    , echangeeventRepositoryFullname = changeEventRepositoryFullname
+    , echangeeventRepositoryShortname = changeEventRepositoryShortname
+    , echangeeventAuthor = Just author
+    , echangeeventOnAuthor = onAuthor
+    , echangeeventSelfMerged = case eType of
         EChangeMergedEvent -> Just $ onAuthor == author
-        _ -> Nothing,
-      echangeeventBranch = changeEventBranch,
-      echangeeventLabels = Just . toList $ changeEventLabels,
-      echangeeventCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventCreatedAt field is mandatory") changeEventCreatedAt,
-      echangeeventOnCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventOnCreatedAt field is mandatory") changeEventOnCreatedAt,
-      echangeeventApproval = case changeEventType of
+        _ -> Nothing
+    , echangeeventBranch = changeEventBranch
+    , echangeeventLabels = Just . toList $ changeEventLabels
+    , echangeeventCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventCreatedAt field is mandatory") changeEventCreatedAt
+    , echangeeventOnCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventOnCreatedAt field is mandatory") changeEventOnCreatedAt
+    , echangeeventApproval = case changeEventType of
         Just (ChangePB.ChangeEventTypeChangeReviewed (ChangePB.ChangeReviewedEvent approval)) -> Just $ toList approval
-        _anyOtherApprovals -> Nothing,
-      echangeeventTasksData = Nothing,
-      echangeeventDuration = toDuration <$> changeEventOptionalDuration
+        _anyOtherApprovals -> Nothing
+    , echangeeventTasksData = Nothing
+    , echangeeventDuration = toDuration <$> changeEventOptionalDuration
     }
-  where
-    author = toAuthor changeEventAuthor
-    onAuthor = toAuthor changeEventOnAuthor
-    eType = getEventType changeEventType
-    toDuration (ChangePB.ChangeEventOptionalDurationDuration v) = fromInteger $ toInteger v
+ where
+  author = toAuthor changeEventAuthor
+  onAuthor = toAuthor changeEventOnAuthor
+  eType = getEventType changeEventType
+  toDuration (ChangePB.ChangeEventOptionalDurationDuration v) = fromInteger $ toInteger v
 
 getEventType :: Maybe ChangePB.ChangeEventType -> EDocType
 getEventType eventTypeM = case eventTypeM of
@@ -509,8 +509,8 @@ toETaskData crawlerName SearchPB.TaskData {..} =
       -- We might get a maybe Timestamp - do not fail if Nothing
       tdUpdatedAt = toMonocleTime $ maybe defaultDate T.toUTCTime taskDataUpdatedAt
    in ETaskData {..}
-  where
-    defaultDate = [utctime|1960-01-01 00:00:00|]
+ where
+  defaultDate = [utctime|1960-01-01 00:00:00|]
 
 -- | Apply a stream of bulk operation by chunk
 bulkStream :: Stream (Of BH.BulkOperation) QueryM () -> QueryM Int
@@ -521,13 +521,13 @@ bulkStream s = do
     void $
       BH.refreshIndex =<< getIndexName
   pure count
-  where
-    callBulk :: [BH.BulkOperation] -> QueryM Int
-    callBulk ops = do
-      let vector = V.fromList ops
-      _ <- BH.bulk vector
-      -- TODO: check for error
-      pure $ V.length vector
+ where
+  callBulk :: [BH.BulkOperation] -> QueryM Int
+  callBulk ops = do
+    let vector = V.fromList ops
+    _ <- BH.bulk vector
+    -- TODO: check for error
+    pure $ V.length vector
 
 runAddDocsBulkOPs ::
   -- | The helper function to create the bulk operation
@@ -545,21 +545,21 @@ runAddDocsBulkOPs bulkOp docs = do
 
 indexDocs :: [(Value, BH.DocId)] -> QueryM ()
 indexDocs = runAddDocsBulkOPs toBulkIndex
-  where
-    -- BulkIndex operation: Create the document, replacing it if it already exists.
-    toBulkIndex index (doc, docId) = BH.BulkIndex index docId doc
+ where
+  -- BulkIndex operation: Create the document, replacing it if it already exists.
+  toBulkIndex index (doc, docId) = BH.BulkIndex index docId doc
 
 updateDocs :: [(Value, BH.DocId)] -> QueryM ()
 updateDocs = runAddDocsBulkOPs toBulkUpdate
-  where
-    -- BulkUpdate operation: Update the document, merging the new value with the existing one.
-    toBulkUpdate index (doc, docId) = BH.BulkUpdate index docId doc
+ where
+  -- BulkUpdate operation: Update the document, merging the new value with the existing one.
+  toBulkUpdate index (doc, docId) = BH.BulkUpdate index docId doc
 
 upsertDocs :: [(Value, BH.DocId)] -> QueryM ()
 upsertDocs = runAddDocsBulkOPs toBulkUpsert
-  where
-    -- BulkUpsert operation: Update the document if it already exists, otherwise insert it.
-    toBulkUpsert index (doc, docId) = BH.BulkUpsert index docId (BH.UpsertDoc doc) []
+ where
+  -- BulkUpsert operation: Update the document if it already exists, otherwise insert it.
+  toBulkUpsert index (doc, docId) = BH.BulkUpsert index docId (BH.UpsertDoc doc) []
 
 -- | Generate a Text suitable for ElasticSearch Document ID from Text
 getDocID :: Text -> Text
@@ -578,17 +578,17 @@ getChangeDocId change = BH.DocId . from $ echangeId change
 
 indexChanges :: [EChange] -> QueryM ()
 indexChanges changes = indexDocs $ fmap (toDoc . ensureType) changes
-  where
-    toDoc change = (toJSON change, getChangeDocId change)
-    ensureType change = change {echangeType = EChangeDoc}
+ where
+  toDoc change = (toJSON change, getChangeDocId change)
+  ensureType change = change {echangeType = EChangeDoc}
 
 getEventDocId :: EChangeEvent -> BH.DocId
 getEventDocId event = BH.DocId . from $ echangeeventId event
 
 indexEvents :: [EChangeEvent] -> QueryM ()
 indexEvents events = indexDocs (fmap toDoc events)
-  where
-    toDoc ev = (toJSON ev, getEventDocId ev)
+ where
+  toDoc ev = (toJSON ev, getEventDocId ev)
 
 statusCheck :: (Int -> c) -> HTTP.Response body -> c
 statusCheck prd = prd . NHTS.statusCode . HTTP.responseStatus
@@ -611,9 +611,9 @@ getDocumentById' index docId = do
       case parsed of
         Right cm -> pure . getHit $ BH.foundResult cm
         Left _ -> error "Unable to get parse result"
-  where
-    getHit (Just (BH.EsResultFound _ cm)) = Just cm
-    getHit Nothing = Nothing
+ where
+  getHit (Just (BH.EsResultFound _ cm)) = Just cm
+  getHit Nothing = Nothing
 
 getDocumentById :: FromJSON a => BH.DocId -> QueryM (Maybe a)
 getDocumentById docId = do
@@ -631,9 +631,9 @@ getCrawlerMetadataDocId crawlerName crawlerType crawlerTypeValue =
   BH.DocId . Text.replace "/" "@" $
     Text.intercalate
       "-"
-      [ crawlerName,
-        crawlerType,
-        crawlerTypeValue
+      [ crawlerName
+      , crawlerType
+      , crawlerTypeValue
       ]
 
 getChangesByURL ::
@@ -641,30 +641,30 @@ getChangesByURL ::
   [Text] ->
   BH.Query
 getChangesByURL urls = query
-  where
-    query =
-      mkAnd
-        [ BH.TermQuery (BH.Term "type" $ from EChangeDoc) Nothing,
-          BH.TermsQuery "url" $ fromList urls
-        ]
+ where
+  query =
+    mkAnd
+      [ BH.TermQuery (BH.Term "type" $ from EChangeDoc) Nothing
+      , BH.TermsQuery "url" $ fromList urls
+      ]
 
 getChangesEventsByURL ::
   -- | List of URLs
   [Text] ->
   BH.Query
 getChangesEventsByURL urls = query
-  where
-    query =
-      mkAnd
-        [ BH.TermsQuery "type" $ fromList eventTypesAsText,
-          BH.TermsQuery "url" $ fromList urls
-        ]
+ where
+  query =
+    mkAnd
+      [ BH.TermsQuery "type" $ fromList eventTypesAsText
+      , BH.TermsQuery "url" $ fromList urls
+      ]
 
 type HashTable k v = H.BasicHashTable k v
 
 data TaskDataDoc = TaskDataDoc
-  { tddId :: LText,
-    tddTd :: [ETaskData]
+  { tddId :: LText
+  , tddTd :: [ETaskData]
   }
   deriving (Show)
 
@@ -675,59 +675,59 @@ getOrphanTaskDataByChangeURL urls = do
   index <- getIndexName
   results <- scanSearch index
   pure $ catMaybes $ BH.hitSource <$> results
-  where
-    scanSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> m [BH.Hit EChangeOrphanTD]
-    scanSearch index = BH.scanSearch index search
-    search = BH.mkSearch (Just query) Nothing
-    query =
-      mkAnd
-        [ mkNot [BH.QueryExistsQuery $ BH.FieldName "tasks_data._adopted"],
-          mkAnd
-            [ BH.TermQuery (BH.Term "type" $ from EOrphanTaskData) Nothing,
-              BH.TermsQuery "tasks_data.change_url" $ fromList urls
-            ]
-        ]
+ where
+  scanSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> m [BH.Hit EChangeOrphanTD]
+  scanSearch index = BH.scanSearch index search
+  search = BH.mkSearch (Just query) Nothing
+  query =
+    mkAnd
+      [ mkNot [BH.QueryExistsQuery $ BH.FieldName "tasks_data._adopted"]
+      , mkAnd
+          [ BH.TermQuery (BH.Term "type" $ from EOrphanTaskData) Nothing
+          , BH.TermsQuery "tasks_data.change_url" $ fromList urls
+          ]
+      ]
 
 getOrphanTaskDataAndDeclareAdoption :: [Text] -> QueryM [EChangeOrphanTD]
 getOrphanTaskDataAndDeclareAdoption urls = do
   oTDs <- getOrphanTaskDataByChangeURL urls
   void $ updateDocs $ toAdoptedDoc <$> oTDs
   pure oTDs
-  where
-    toAdoptedDoc :: EChangeOrphanTD -> (Value, BH.DocId)
-    toAdoptedDoc (EChangeOrphanTD id' _ _) =
-      ( toJSON $ EChangeOrphanTDAdopted id' EOrphanTaskData $ ETaskDataAdopted "",
-        BH.DocId id'
-      )
+ where
+  toAdoptedDoc :: EChangeOrphanTD -> (Value, BH.DocId)
+  toAdoptedDoc (EChangeOrphanTD id' _ _) =
+    ( toJSON $ EChangeOrphanTDAdopted id' EOrphanTaskData $ ETaskDataAdopted ""
+    , BH.DocId id'
+    )
 
 updateChangesAndEventsFromOrphanTaskData :: [EChange] -> [EChangeEvent] -> QueryM ()
 updateChangesAndEventsFromOrphanTaskData changes events = do
   let mapping = uMapping Map.empty getFlatMapping
   adoptedTDs <- getOrphanTaskDataAndDeclareAdoption $ from <$> Map.keys mapping
   updateDocs $ taskDataDocToBHDoc <$> getTaskDatas adoptedTDs (Map.assocs mapping)
-  where
-    -- For each change and event extract (changeUrl, object ID)
-    getFlatMapping :: [(LText, LText)]
-    getFlatMapping =
-      ((\c -> (echangeUrl c, echangeId c)) <$> changes)
-        <> ((\c -> (echangeeventUrl c, echangeeventId c)) <$> events)
-    -- Create a Map where each key (changeUrl) maps a list of object ID
-    uMapping :: Map LText [LText] -> [(LText, LText)] -> Map LText [LText]
-    uMapping cM fm = case fm of
-      [] -> cM
-      (x : xs) -> let nM = Map.alter (updateE $ snd x) (fst x) cM in uMapping nM xs
-      where
-        updateE nE cEs = Just $ maybe [nE] (<> [nE]) cEs
-    -- Gather TasksData from matching adopted TD object and create [TaskDataDoc]
-    -- for Changes and Events
-    getTaskDatas :: [EChangeOrphanTD] -> [(LText, [LText])] -> [TaskDataDoc]
-    getTaskDatas adopted = concatMap getTDs
-      where
-        getTDs :: (LText, [LText]) -> [TaskDataDoc]
-        getTDs (url, ids) =
-          let mTDs = echangeorphantdTasksData <$> filterByUrl url adopted
-           in flip TaskDataDoc mTDs <$> ids
-        filterByUrl url = filter (\td -> tdChangeUrl (echangeorphantdTasksData td) == from url)
+ where
+  -- For each change and event extract (changeUrl, object ID)
+  getFlatMapping :: [(LText, LText)]
+  getFlatMapping =
+    ((\c -> (echangeUrl c, echangeId c)) <$> changes)
+      <> ((\c -> (echangeeventUrl c, echangeeventId c)) <$> events)
+  -- Create a Map where each key (changeUrl) maps a list of object ID
+  uMapping :: Map LText [LText] -> [(LText, LText)] -> Map LText [LText]
+  uMapping cM fm = case fm of
+    [] -> cM
+    (x : xs) -> let nM = Map.alter (updateE $ snd x) (fst x) cM in uMapping nM xs
+   where
+    updateE nE cEs = Just $ maybe [nE] (<> [nE]) cEs
+  -- Gather TasksData from matching adopted TD object and create [TaskDataDoc]
+  -- for Changes and Events
+  getTaskDatas :: [EChangeOrphanTD] -> [(LText, [LText])] -> [TaskDataDoc]
+  getTaskDatas adopted = concatMap getTDs
+   where
+    getTDs :: (LText, [LText]) -> [TaskDataDoc]
+    getTDs (url, ids) =
+      let mTDs = echangeorphantdTasksData <$> filterByUrl url adopted
+       in flip TaskDataDoc mTDs <$> ids
+    filterByUrl url = filter (\td -> tdChangeUrl (echangeorphantdTasksData td) == from url)
 
 taskDataDocToBHDoc :: TaskDataDoc -> (Value, BH.DocId)
 taskDataDocToBHDoc TaskDataDoc {..} =
@@ -740,8 +740,8 @@ orphanTaskDataDocToBHDoc TaskDataDoc {..} =
           EChangeOrphanTD
             (from tddId)
             EOrphanTaskData
-            td,
-        BH.DocId $ from tddId
+            td
+      , BH.DocId $ from tddId
       )
 
 taskDataAdd :: Text -> [SearchPB.TaskData] -> QueryM ()
@@ -766,59 +766,59 @@ taskDataAdd crawlerName tds = do
   -- Let's push the data
   updateDocs (taskDataDocToBHDoc <$> taskDataDocs <> taskDataDocs')
   upsertDocs (orphanTaskDataDocToBHDoc <$> orphanTaskDataDocs)
-  where
-    initHT :: [EChange] -> IO (HashTable LText TaskDataDoc)
-    initHT changes = H.fromList $ getMCsTuple <$> changes
-      where
-        getMCsTuple EChange {echangeUrl, echangeId, echangeTasksData} =
-          (echangeUrl, TaskDataDoc echangeId (fromMaybe [] echangeTasksData))
+ where
+  initHT :: [EChange] -> IO (HashTable LText TaskDataDoc)
+  initHT changes = H.fromList $ getMCsTuple <$> changes
+   where
+    getMCsTuple EChange {echangeUrl, echangeId, echangeTasksData} =
+      (echangeUrl, TaskDataDoc echangeId (fromMaybe [] echangeTasksData))
 
-    updateChangesWithTD ::
-      -- The local cache in form of HashMap
-      HashTable LText TaskDataDoc ->
-      -- IO action with the list of orphan Task Data
-      IO [TaskDataOrphanDoc]
-    updateChangesWithTD ht = catMaybes <$> traverse handleTD (toETaskData crawlerName <$> tds)
-      where
-        handleTD ::
-          -- The input Task Data we want to append or update
-          ETaskData ->
-          -- IO Action with maybe an orphan task data if a matching change does not exists
-          IO (Maybe TaskDataOrphanDoc)
-        handleTD td = H.mutate ht (from $ tdChangeUrl td) $ \case
-          -- Cannot find a change matching this TD -> this TD will be orphan
-          Nothing -> (Nothing, Just $ TaskDataDoc {tddId = from $ getTDId td, tddTd = [td]})
-          -- Found a change matching this TD -> update existing TDs with new TD
-          Just taskDataDoc -> (Just $ updateTDD taskDataDoc td, Nothing)
-          where
-            getTDId ETaskData {..} = let rawId = tdUrl <> tdChangeUrl in getDocID rawId
+  updateChangesWithTD ::
+    -- The local cache in form of HashMap
+    HashTable LText TaskDataDoc ->
+    -- IO action with the list of orphan Task Data
+    IO [TaskDataOrphanDoc]
+  updateChangesWithTD ht = catMaybes <$> traverse handleTD (toETaskData crawlerName <$> tds)
+   where
+    handleTD ::
+      -- The input Task Data we want to append or update
+      ETaskData ->
+      -- IO Action with maybe an orphan task data if a matching change does not exists
+      IO (Maybe TaskDataOrphanDoc)
+    handleTD td = H.mutate ht (from $ tdChangeUrl td) $ \case
+      -- Cannot find a change matching this TD -> this TD will be orphan
+      Nothing -> (Nothing, Just $ TaskDataDoc {tddId = from $ getTDId td, tddTd = [td]})
+      -- Found a change matching this TD -> update existing TDs with new TD
+      Just taskDataDoc -> (Just $ updateTDD taskDataDoc td, Nothing)
+     where
+      getTDId ETaskData {..} = let rawId = tdUrl <> tdChangeUrl in getDocID rawId
 
-        updateTDD ::
-          -- The value of the HashMap we are working on
-          TaskDataDoc ->
-          -- The input Task Data we want to append or update
-          ETaskData ->
-          TaskDataDoc
-        updateTDD taskDataDoc td = do
-          let changeTDs = tddTd taskDataDoc
-              -- The td has been updated so we remove any previous instance
-              isOldTD td' = tdUrl td' == tdUrl td
-              -- And we cons the new td.
-              currentTDs = td : filter (not . isOldTD) changeTDs
-           in taskDataDoc {tddTd = currentTDs}
+    updateTDD ::
+      -- The value of the HashMap we are working on
+      TaskDataDoc ->
+      -- The input Task Data we want to append or update
+      ETaskData ->
+      TaskDataDoc
+    updateTDD taskDataDoc td = do
+      let changeTDs = tddTd taskDataDoc
+          -- The td has been updated so we remove any previous instance
+          isOldTD td' = tdUrl td' == tdUrl td
+          -- And we cons the new td.
+          currentTDs = td : filter (not . isOldTD) changeTDs
+       in taskDataDoc {tddTd = currentTDs}
 
-    getTDforEventFromHT ::
-      -- The local cache in form of HashMap
-      HashTable LText TaskDataDoc ->
-      -- The ChangeEvent to look for
-      EChangeEvent ->
-      -- IO Action returning maybe a TaskData
-      IO (Maybe TaskDataDoc)
-    getTDforEventFromHT ht changeEvent = do
-      mcM <- H.lookup ht $ echangeeventUrl changeEvent
-      pure $ case mcM of
-        Nothing -> Nothing
-        Just mc -> Just $ TaskDataDoc {tddId = echangeeventId changeEvent, tddTd = tddTd mc}
+  getTDforEventFromHT ::
+    -- The local cache in form of HashMap
+    HashTable LText TaskDataDoc ->
+    -- The ChangeEvent to look for
+    EChangeEvent ->
+    -- IO Action returning maybe a TaskData
+    IO (Maybe TaskDataDoc)
+  getTDforEventFromHT ht changeEvent = do
+    mcM <- H.lookup ht $ echangeeventUrl changeEvent
+    pure $ case mcM of
+      Nothing -> Nothing
+      Just mc -> Just $ TaskDataDoc {tddId = echangeeventId changeEvent, tddTd = tddTd mc}
 
 type EntityType = CrawlerPB.EntityEntity
 
@@ -834,8 +834,8 @@ getWorkerUpdatedSince Config.Crawler {..} =
 crawlerMDQuery :: EntityType -> Text -> BH.Query
 crawlerMDQuery entity crawlerName =
   mkAnd
-    [ BH.TermQuery (BH.Term "crawler_metadata.crawler_name" crawlerName) Nothing,
-      BH.TermQuery (BH.Term "crawler_metadata.crawler_type" (getCrawlerTypeAsText entity)) Nothing
+    [ BH.TermQuery (BH.Term "crawler_metadata.crawler_name" crawlerName) Nothing
+    , BH.TermQuery (BH.Term "crawler_metadata.crawler_type" (getCrawlerTypeAsText entity)) Nothing
     ]
 
 getLastUpdated :: Config.Crawler -> EntityType -> Word32 -> QueryM (Maybe (Text, UTCTime))
@@ -848,18 +848,18 @@ getLastUpdated crawler entity offset = do
       if length xs == from size
         then pure . Just $ getRespFromMetadata (last xs)
         else pure Nothing
-  where
-    size = offset + 1
-    search =
-      (BH.mkSearch (Just $ crawlerMDQuery entity crawlerName) Nothing)
-        { BH.size = BH.Size $ from size,
-          BH.sortBody = Just [BH.DefaultSortSpec bhSort]
-        }
+ where
+  size = offset + 1
+  search =
+    (BH.mkSearch (Just $ crawlerMDQuery entity crawlerName) Nothing)
+      { BH.size = BH.Size $ from size
+      , BH.sortBody = Just [BH.DefaultSortSpec bhSort]
+      }
 
-    bhSort = BH.DefaultSort (BH.FieldName "crawler_metadata.last_commit_at") BH.Ascending Nothing Nothing Nothing Nothing
-    getRespFromMetadata (ECrawlerMetadata ECrawlerMetadataObject {..}) =
-      (from ecmCrawlerTypeValue, ecmLastCommitAt)
-    crawlerName = getWorkerName crawler
+  bhSort = BH.DefaultSort (BH.FieldName "crawler_metadata.last_commit_at") BH.Ascending Nothing Nothing Nothing Nothing
+  getRespFromMetadata (ECrawlerMetadata ECrawlerMetadataObject {..}) =
+    (from ecmCrawlerTypeValue, ecmLastCommitAt)
+  crawlerName = getWorkerName crawler
 
 -- | The following entityRequest are a bit bizarre, this is because we are re-using
 -- the entity info response defined in protobuf. When requesting the last updated, we provide
@@ -882,27 +882,27 @@ ensureCrawlerMetadata crawlerName getDate entity = do
   unless exists $ do
     lastUpdatedDate <- getDate
     withRefresh $ BH.indexDocument index BH.defaultIndexDocumentSettings (cm lastUpdatedDate) getId
-  where
-    cm lastUpdatedDate =
-      ECrawlerMetadata
-        { ecmCrawlerMetadata =
-            ECrawlerMetadataObject
-              (from crawlerName)
-              (from entity)
-              (from $ getEntityName entity)
-              lastUpdatedDate
-        }
-    getId = getCrawlerMetadataDocId crawlerName (from entity) (getEntityName entity)
+ where
+  cm lastUpdatedDate =
+    ECrawlerMetadata
+      { ecmCrawlerMetadata =
+          ECrawlerMetadataObject
+            (from crawlerName)
+            (from entity)
+            (from $ getEntityName entity)
+            lastUpdatedDate
+      }
+  getId = getCrawlerMetadataDocId crawlerName (from entity) (getEntityName entity)
 
 getMostRecentUpdatedChange :: QueryMonad m => Text -> m [EChange]
 getMostRecentUpdatedChange fullname = do
   withFilter [mkTerm "repository_fullname" fullname] $ Q.changes (Just order) 1
-  where
-    order =
-      SearchPB.Order
-        { orderField = "updated_at",
-          orderDirection = PT.Enumerated $ Right SearchPB.Order_DirectionDESC
-        }
+ where
+  order =
+    SearchPB.Order
+      { orderField = "updated_at"
+      , orderDirection = PT.Enumerated $ Right SearchPB.Order_DirectionDESC
+      }
 
 -- | Maybe return the most recent updatedAt date for a repository full name
 getLastUpdatedDate :: QueryMonad m => Text -> m (Maybe UTCTime)
@@ -916,29 +916,29 @@ setLastUpdated :: Text -> UTCTime -> Entity -> QueryM ()
 setLastUpdated crawlerName lastUpdatedDate entity = do
   index <- getIndexName
   withRefresh $ BH.updateDocument index BH.defaultIndexDocumentSettings cm getId
-  where
-    getId = getCrawlerMetadataDocId crawlerName (from entity) (getEntityName entity)
-    cm =
-      ECrawlerMetadata
-        { ecmCrawlerMetadata =
-            ECrawlerMetadataObject
-              (from crawlerName)
-              (from entity)
-              (from $ getEntityName entity)
-              lastUpdatedDate
-        }
+ where
+  getId = getCrawlerMetadataDocId crawlerName (from entity) (getEntityName entity)
+  cm =
+    ECrawlerMetadata
+      { ecmCrawlerMetadata =
+          ECrawlerMetadataObject
+            (from crawlerName)
+            (from entity)
+            (from $ getEntityName entity)
+            lastUpdatedDate
+      }
 
 initCrawlerEntities :: [Entity] -> Config.Crawler -> QueryM ()
 initCrawlerEntities entities worker = traverse_ run entities
-  where
-    run :: Entity -> QueryM ()
-    run entity = do
-      let updated_since =
-            fromMaybe defaultUpdatedSince <$> case entity of
-              Project name -> getLastUpdatedDate $ fromMaybe "" (Config.getPrefix worker) <> name
-              _ -> pure Nothing
-      ensureCrawlerMetadata (getWorkerName worker) updated_since entity
-    defaultUpdatedSince = getWorkerUpdatedSince worker
+ where
+  run :: Entity -> QueryM ()
+  run entity = do
+    let updated_since =
+          fromMaybe defaultUpdatedSince <$> case entity of
+            Project name -> getLastUpdatedDate $ fromMaybe "" (Config.getPrefix worker) <> name
+            _ -> pure Nothing
+    ensureCrawlerMetadata (getWorkerName worker) updated_since entity
+  defaultUpdatedSince = getWorkerUpdatedSince worker
 
 getProjectEntityFromCrawler :: Config.Crawler -> [Entity]
 getProjectEntityFromCrawler worker = Project <$> Config.getCrawlerProject worker
@@ -981,10 +981,10 @@ populateAuthorCache = do
     & ( Streaming.map (mkECachedAuthorBulkInsert indexName)
           >>> bulkStream
       )
-  where
-    mkECachedAuthorBulkInsert :: BH.IndexName -> Text -> BulkOperation
-    mkECachedAuthorBulkInsert indexName muid =
-      BulkIndex indexName (getBHDocID muid) $ toCachedAuthorValue muid
+ where
+  mkECachedAuthorBulkInsert :: BH.IndexName -> Text -> BulkOperation
+  mkECachedAuthorBulkInsert indexName muid =
+    BulkIndex indexName (getBHDocID muid) $ toCachedAuthorValue muid
 
 -- | This function extacts authors from events and adds them to the author cache
 addCachedAuthors :: [EChangeEvent] -> QueryM ()
@@ -994,9 +994,9 @@ addCachedAuthors events = do
       bulkOps = mkECachedAuthorBulkUpsert indexName <$> muids
   void $ BH.bulk $ fromList bulkOps
   void $ BH.refreshIndex indexName
-  where
-    mkECachedAuthorBulkUpsert indexName muid =
-      BulkUpsert indexName (getBHDocID muid) (BH.UpsertDoc $ toCachedAuthorValue muid) []
+ where
+  mkECachedAuthorBulkUpsert indexName muid =
+    BulkUpsert indexName (getBHDocID muid) (BH.UpsertDoc $ toCachedAuthorValue muid) []
 
 -- | This function returns the author cache contents
 getAuthorCache :: QueryM [CachedAuthor]
@@ -1011,14 +1011,14 @@ searchAuthorCache matchQuery = do
   indexName <- getIndexName
   ret <- runSearch indexName
   pure $ mapMaybe trans ret
-  where
-    runSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> m [BH.Hit CachedAuthor]
-    runSearch index = BH.scanSearch index search
-    search = BH.mkSearch (Just query) Nothing
-    query =
-      BH.QueryMatchQuery . BH.mkMatchQuery (BH.FieldName "cached_author_muid") $
-        BH.QueryString matchQuery
-    trans :: BH.Hit CachedAuthor -> Maybe Text
-    trans BH.Hit {..} = case hitSource of
-      Just CachedAuthor {..} -> Just . from $ caCachedAuthorMuid
-      _ -> Nothing
+ where
+  runSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> m [BH.Hit CachedAuthor]
+  runSearch index = BH.scanSearch index search
+  search = BH.mkSearch (Just query) Nothing
+  query =
+    BH.QueryMatchQuery . BH.mkMatchQuery (BH.FieldName "cached_author_muid") $
+      BH.QueryString matchQuery
+  trans :: BH.Hit CachedAuthor -> Maybe Text
+  trans BH.Hit {..} = case hitSource of
+    Just CachedAuthor {..} -> Just . from $ caCachedAuthorMuid
+    _ -> Nothing

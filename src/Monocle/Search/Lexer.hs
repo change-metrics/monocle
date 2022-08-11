@@ -44,17 +44,17 @@ data LocatedToken = LocatedToken {start :: Int, token :: Token, end :: Int}
 tokenParser :: Parser Token
 tokenParser =
   Combinators.choice
-    [ And <$ keywords ["and", "AND"],
-      Or <$ keywords ["or", "OR"],
-      Not <$ keywords ["not", "NOT"],
-      Equal <$ op ":",
-      Greater <$ op ">",
-      GreaterEqual <$ op ">=",
-      Lower <$ op "<",
-      LowerEqual <$ op "<=",
-      OpenParenthesis <$ keyword "(",
-      CloseParenthesis <$ keyword ")",
-      Literal <$> literal
+    [ And <$ keywords ["and", "AND"]
+    , Or <$ keywords ["or", "OR"]
+    , Not <$ keywords ["not", "NOT"]
+    , Equal <$ op ":"
+    , Greater <$ op ">"
+    , GreaterEqual <$ op ">="
+    , Lower <$ op "<"
+    , LowerEqual <$ op "<="
+    , OpenParenthesis <$ keyword "("
+    , CloseParenthesis <$ keyword ")"
+    , Literal <$> literal
     ]
 
 locatedTokenParser :: Parser LocatedToken
@@ -63,15 +63,15 @@ locatedTokenParser = LocatedToken <$> Megaparsec.getOffset <*> tokenParser <*> M
 -- | 'literal' parses a literal field or value
 literal :: Parser Text
 literal = Combinators.choice [direct, quoted] <* Megaparsec.Char.space
-  where
-    direct = Megaparsec.takeWhile1P Nothing isValueChar
-    quoted = "\"" *> Megaparsec.takeWhile1P Nothing isText <* "\""
-    isValueChar c =
-      ('\x23' <= c && c <= '\x27')
-        || ('\x2A' <= c && c <= '\x39')
-        || c == '\x3B'
-        || ('\x3F' <= c && c <= '\x10FFFF')
-    isText c = ('\x20' <= c && c <= '\x21') || ('\x23' <= c && c <= '\x10FFFF')
+ where
+  direct = Megaparsec.takeWhile1P Nothing isValueChar
+  quoted = "\"" *> Megaparsec.takeWhile1P Nothing isText <* "\""
+  isValueChar c =
+    ('\x23' <= c && c <= '\x27')
+      || ('\x2A' <= c && c <= '\x39')
+      || c == '\x3B'
+      || ('\x3F' <= c && c <= '\x10FFFF')
+  isText c = ('\x20' <= c && c <= '\x21') || ('\x23' <= c && c <= '\x10FFFF')
 
 -- | 'keywords' parses one of the keywords
 keywords :: [Text] -> Parser Text
@@ -94,15 +94,15 @@ lex :: Text -> Either ParseError [LocatedToken]
 lex code = case Megaparsec.parse tokensParser "<input>" code of
   Left err -> Left (mkErr err)
   Right tokens -> Right tokens
-  where
-    formatExpected :: Set.Set (Megaparsec.ErrorItem (Megaparsec.Token Text)) -> Text
-    formatExpected set
-      | Set.member (Megaparsec.Tokens ('"' :| "")) set = "Expected field value (spaces are not allowed after operator)"
-      | Set.member (Megaparsec.Tokens (':' :| "")) set = "Expected field operator: `:`, `>`, ..."
-      | otherwise = "Invalid token"
-    mkErr :: Megaparsec.ParseErrorBundle Text Void -> ParseError
-    mkErr (Megaparsec.ParseErrorBundle (be :| _) _) =
-      let (offset, msg) = case be of
-            Megaparsec.TrivialError x _ xs -> (x, formatExpected xs)
-            Megaparsec.FancyError x _ -> (x, "Invalid token")
-       in ParseError msg offset
+ where
+  formatExpected :: Set.Set (Megaparsec.ErrorItem (Megaparsec.Token Text)) -> Text
+  formatExpected set
+    | Set.member (Megaparsec.Tokens ('"' :| "")) set = "Expected field value (spaces are not allowed after operator)"
+    | Set.member (Megaparsec.Tokens (':' :| "")) set = "Expected field operator: `:`, `>`, ..."
+    | otherwise = "Invalid token"
+  mkErr :: Megaparsec.ParseErrorBundle Text Void -> ParseError
+  mkErr (Megaparsec.ParseErrorBundle (be :| _) _) =
+    let (offset, msg) = case be of
+          Megaparsec.TrivialError x _ xs -> (x, formatExpected xs)
+          Megaparsec.FancyError x _ -> (x, "Invalid token")
+     in ParseError msg offset

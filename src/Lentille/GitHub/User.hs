@@ -16,11 +16,11 @@ newtype DateTime = DateTime Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 newtype URI = URI Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 
 data IdentInfo = IdentInfo
-  { iiAvatarUrl :: Text,
-    iiName :: Maybe Text,
-    iiCompany :: Maybe Text,
-    iiLocation :: Maybe Text,
-    iiOrganizations :: [Text]
+  { iiAvatarUrl :: Text
+  , iiName :: Maybe Text
+  , iiCompany :: Maybe Text
+  , iiLocation :: Maybe Text
+  , iiOrganizations :: [Text]
   }
   deriving (Show)
 
@@ -76,5 +76,5 @@ getUser lc client login =
       transformResponse
         <$> doRequest client lc mkArgs (Just $ retryCheck Macroscope) Nothing Nothing
     pure info
-  where
-    mkArgs _ _ = GetUserArgs login
+ where
+  mkArgs _ _ = GetUserArgs login

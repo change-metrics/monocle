@@ -91,15 +91,15 @@ streamLinkedIssue ::
   Stream (Of TaskData) m ()
 streamLinkedIssue client mkLC time repo =
   streamFetch client lc mkArgs optParams transformResponse
-  where
-    lc = mkLC $ TaskDataEntity repo
-    mkArgs _ =
-      GetLinkedIssuesArgs
-        ( from $ "repo:" <> from repo <> " updated:>=" <> toSimpleDate time <> " linked:pr"
-        )
-    optParams = defaultStreamFetchOptParams {fpGetRatelimit = Just $ getRateLimit lc}
-    toSimpleDate :: UTCTime -> String
-    toSimpleDate = formatTime defaultTimeLocale "%F"
+ where
+  lc = mkLC $ TaskDataEntity repo
+  mkArgs _ =
+    GetLinkedIssuesArgs
+      ( from $ "repo:" <> from repo <> " updated:>=" <> toSimpleDate time <> " linked:pr"
+      )
+  optParams = defaultStreamFetchOptParams {fpGetRatelimit = Just $ getRateLimit lc}
+  toSimpleDate :: UTCTime -> String
+  toSimpleDate = formatTime defaultTimeLocale "%F"
 
 pattern IssueLabels :: [Maybe SearchNodesLabelsNodesLabel] -> SearchNodesSearchResultItem
 pattern IssueLabels nodesLabel <- SearchNodesIssue _ _ _ _ _ _ (Just (SearchNodesLabelsLabelConnection (Just nodesLabel))) _
@@ -118,87 +118,87 @@ transformResponse searchResult =
             rateLimit = case parseDateValue $ from resetAtText of
               Just resetAt -> RateLimit {..}
               Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAtText
-         in ( PageInfo hasNextPage' endCursor' (Just issueCount'),
-              Just rateLimit,
-              lefts newTaskDataE,
-              rights newTaskDataE
+         in ( PageInfo hasNextPage' endCursor' (Just issueCount')
+            , Just rateLimit
+            , lefts newTaskDataE
+            , rights newTaskDataE
             )
     respOther -> error ("Invalid response: " <> show respOther)
-  where
-    mkTaskData :: Maybe SearchNodesSearchResultItem -> [Either Text TaskData]
-    mkTaskData issueM = case issueM of
-      Just issue ->
-        -- (fmap . join . fmap $ toTaskData issue) (getTDChangeUrls issue)
-        let tdChangeUrlsE :: [Either Text Text]
-            tdChangeUrlsE = getTDChangeUrls issue
-            newTaskDataEE :: [Either Text (Either Text TaskData)]
-            newTaskDataEE = (fmap . fmap $ toTaskData issue) tdChangeUrlsE
-            newTaskDataE = fmap join newTaskDataEE
-         in newTaskDataE
-      Nothing -> []
-    toTaskData :: SearchNodesSearchResultItem -> Text -> Either Text TaskData
-    toTaskData issue curl =
-      TaskData
-        <$> (Just <$> getUpdatedAt issue)
-        <*> pure (from curl)
-        <*> (V.fromList <$> getLabelsE)
-        <*> pure (from $ getNumber issue)
-        <*> pure (from $ getIssueURL issue)
-        <*> pure (from $ title issue)
-        <*> pure "low"
-        <*> pure "low"
-        <*> pure 0
-        <*> pure "gh#"
-      where
-        getLabelsE :: Either Text [LText]
-        getLabelsE = case partitionEithers (getLabels issue) of
-          ([], labels') -> Right (fmap from labels')
-          (errors, _) -> Left (unwords errors)
-        getIssueURL :: SearchNodesSearchResultItem -> Text
-        getIssueURL (SearchNodesIssue _ _ _ _ (URI changeURL) _ _ _) = changeURL
-        getNumber :: SearchNodesSearchResultItem -> Text
-        getNumber (SearchNodesIssue _ _ _ _ _ number _ _) = show number
-    getUpdatedAt :: SearchNodesSearchResultItem -> Either Text Timestamp
-    getUpdatedAt (SearchNodesIssue _ _ _ (DateTime updatedAt') _ _ _ _) =
-      case Timestamp.fromRFC3339 $ from updatedAt' of
-        Just ts -> Right ts
-        Nothing -> Left $ "Unable to decode updatedAt format" <> show updatedAt'
-    getLabels :: SearchNodesSearchResultItem -> [Either Text Text]
-    getLabels issue =
-      case issue of
-        IssueLabels nodesLabel -> fmap getLabelFromNode nodesLabel
-        respOther -> [Left ("Invalid response: " <> show respOther)]
-    getLabelFromNode :: Maybe SearchNodesLabelsNodesLabel -> Either Text Text
-    getLabelFromNode nodeLabelM = case nodeLabelM of
-      Just
-        (SearchNodesLabelsNodesLabel label) -> Right label
-      Nothing -> Left "Missing Label in SearchNodesLabelsNodesLabel"
-    getTDChangeUrls :: SearchNodesSearchResultItem -> [Either Text Text]
-    getTDChangeUrls issue =
-      case issue of
-        SearchNodesIssue
-          _
-          _
-          _
-          _
-          _
-          _
-          _
-          ( SearchNodesTimelineItemsIssueTimelineItemsConnection
-              (Just urls)
-            ) -> Right <$> mapMaybe extractUrl urls
-        respOther -> [Left ("Invalid response: " <> show respOther)]
-    extractUrl :: Maybe SearchNodesTimelineItemsNodesIssueTimelineItems -> Maybe Text
-    extractUrl item = case item of
-      Just
-        ( SearchNodesTimelineItemsNodesConnectedEvent
-            "ConnectedEvent"
-            (SearchNodesTimelineItemsNodesSubjectPullRequest _ (Just (URI url')))
-          ) -> Just url'
-      Just
-        ( SearchNodesTimelineItemsNodesCrossReferencedEvent
-            "CrossReferencedEvent"
-            (SearchNodesTimelineItemsNodesSourcePullRequest _ (Just (URI url')))
-          ) -> Just url'
-      -- We are requesting Issue with connected PR we cannot get Nothing
-      _ -> Nothing
+ where
+  mkTaskData :: Maybe SearchNodesSearchResultItem -> [Either Text TaskData]
+  mkTaskData issueM = case issueM of
+    Just issue ->
+      -- (fmap . join . fmap $ toTaskData issue) (getTDChangeUrls issue)
+      let tdChangeUrlsE :: [Either Text Text]
+          tdChangeUrlsE = getTDChangeUrls issue
+          newTaskDataEE :: [Either Text (Either Text TaskData)]
+          newTaskDataEE = (fmap . fmap $ toTaskData issue) tdChangeUrlsE
+          newTaskDataE = fmap join newTaskDataEE
+       in newTaskDataE
+    Nothing -> []
+  toTaskData :: SearchNodesSearchResultItem -> Text -> Either Text TaskData
+  toTaskData issue curl =
+    TaskData
+      <$> (Just <$> getUpdatedAt issue)
+      <*> pure (from curl)
+      <*> (V.fromList <$> getLabelsE)
+      <*> pure (from $ getNumber issue)
+      <*> pure (from $ getIssueURL issue)
+      <*> pure (from $ title issue)
+      <*> pure "low"
+      <*> pure "low"
+      <*> pure 0
+      <*> pure "gh#"
+   where
+    getLabelsE :: Either Text [LText]
+    getLabelsE = case partitionEithers (getLabels issue) of
+      ([], labels') -> Right (fmap from labels')
+      (errors, _) -> Left (unwords errors)
+    getIssueURL :: SearchNodesSearchResultItem -> Text
+    getIssueURL (SearchNodesIssue _ _ _ _ (URI changeURL) _ _ _) = changeURL
+    getNumber :: SearchNodesSearchResultItem -> Text
+    getNumber (SearchNodesIssue _ _ _ _ _ number _ _) = show number
+  getUpdatedAt :: SearchNodesSearchResultItem -> Either Text Timestamp
+  getUpdatedAt (SearchNodesIssue _ _ _ (DateTime updatedAt') _ _ _ _) =
+    case Timestamp.fromRFC3339 $ from updatedAt' of
+      Just ts -> Right ts
+      Nothing -> Left $ "Unable to decode updatedAt format" <> show updatedAt'
+  getLabels :: SearchNodesSearchResultItem -> [Either Text Text]
+  getLabels issue =
+    case issue of
+      IssueLabels nodesLabel -> fmap getLabelFromNode nodesLabel
+      respOther -> [Left ("Invalid response: " <> show respOther)]
+  getLabelFromNode :: Maybe SearchNodesLabelsNodesLabel -> Either Text Text
+  getLabelFromNode nodeLabelM = case nodeLabelM of
+    Just
+      (SearchNodesLabelsNodesLabel label) -> Right label
+    Nothing -> Left "Missing Label in SearchNodesLabelsNodesLabel"
+  getTDChangeUrls :: SearchNodesSearchResultItem -> [Either Text Text]
+  getTDChangeUrls issue =
+    case issue of
+      SearchNodesIssue
+        _
+        _
+        _
+        _
+        _
+        _
+        _
+        ( SearchNodesTimelineItemsIssueTimelineItemsConnection
+            (Just urls)
+          ) -> Right <$> mapMaybe extractUrl urls
+      respOther -> [Left ("Invalid response: " <> show respOther)]
+  extractUrl :: Maybe SearchNodesTimelineItemsNodesIssueTimelineItems -> Maybe Text
+  extractUrl item = case item of
+    Just
+      ( SearchNodesTimelineItemsNodesConnectedEvent
+          "ConnectedEvent"
+          (SearchNodesTimelineItemsNodesSubjectPullRequest _ (Just (URI url')))
+        ) -> Just url'
+    Just
+      ( SearchNodesTimelineItemsNodesCrossReferencedEvent
+          "CrossReferencedEvent"
+          (SearchNodesTimelineItemsNodesSourcePullRequest _ (Just (URI url')))
+        ) -> Just url'
+    -- We are requesting Issue with connected PR we cannot get Nothing
+    _ -> Nothing

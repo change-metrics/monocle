@@ -1,44 +1,43 @@
 -- | A shared library between lentilles and macroscope
-module Lentille
-  ( -- * The lentille context
-    LentilleM (..),
-    CrawlerEnv (..),
-    LentilleStream,
-    LentilleMonad,
-    MonadLog (..),
-    runLentilleM,
-    stopLentille,
-    unlessStopped,
+module Lentille (
+  -- * The lentille context
+  LentilleM (..),
+  CrawlerEnv (..),
+  LentilleStream,
+  LentilleMonad,
+  MonadLog (..),
+  runLentilleM,
+  stopLentille,
+  unlessStopped,
 
-    -- * Lentille Errors
-    MonadGraphQLE,
-    LentilleError (..),
-    RequestLog (..),
+  -- * Lentille Errors
+  MonadGraphQLE,
+  LentilleError (..),
+  RequestLog (..),
 
-    -- * Log context
-    LogEvent (..),
-    LogAuthor (..),
-    Log (..),
-    LogCrawlerContext (..),
-    logEvent,
-    logRaw,
+  -- * Log context
+  LogEvent (..),
+  LogAuthor (..),
+  Log (..),
+  LogCrawlerContext (..),
+  logEvent,
+  logRaw,
 
-    -- * Facilities
-    getClientBaseUrl,
-    getChangeId,
-    isMerged,
-    isClosed,
-    nobody,
-    toIdent,
-    ghostIdent,
-    sanitizeID,
-    isChangeTooOld,
-    swapDuration,
+  -- * Facilities
+  getClientBaseUrl,
+  getChangeId,
+  isMerged,
+  isClosed,
+  nobody,
+  toIdent,
+  ghostIdent,
+  sanitizeID,
+  isChangeTooOld,
+  swapDuration,
 
-    -- * Re-export
-    module Monocle.Class,
-  )
-where
+  -- * Re-export
+  module Monocle.Class,
+) where
 
 import Data.Text qualified as T
 import Google.Protobuf.Timestamp qualified as T
@@ -47,14 +46,14 @@ import Monocle.Client (MonocleClient, baseUrl, mkManager)
 import Monocle.Config qualified as Config
 import Monocle.Logging
 import Monocle.Prelude
-import Monocle.Protob.Change
-  ( Change (changeUpdatedAt),
-    ChangeEvent,
-    ChangeEventOptionalDuration (ChangeEventOptionalDurationDuration),
-    ChangeOptionalDuration (ChangeOptionalDurationDuration),
-    Change_ChangeState (Change_ChangeStateClosed, Change_ChangeStateMerged),
-    Ident (..),
-  )
+import Monocle.Protob.Change (
+  Change (changeUpdatedAt),
+  ChangeEvent,
+  ChangeEventOptionalDuration (ChangeEventOptionalDurationDuration),
+  ChangeOptionalDuration (ChangeOptionalDurationDuration),
+  Change_ChangeState (Change_ChangeStateClosed, Change_ChangeStateMerged),
+  Ident (..),
+ )
 import Network.HTTP.Client qualified as HTTP
 import Proto3.Suite (Enumerated (Enumerated))
 
@@ -67,9 +66,9 @@ newtype LentilleM a = LentilleM {unLentille :: ReaderT CrawlerEnv IO a}
   deriving newtype (MonadUnliftIO, MonadMonitor)
 
 data CrawlerEnv = CrawlerEnv
-  { crawlerClient :: MonocleClient,
-    crawlerLogger :: Logger,
-    crawlerStop :: IORef Bool
+  { crawlerClient :: MonocleClient
+  , crawlerLogger :: Logger
+  , crawlerStop :: IORef Bool
   }
 
 getClientBaseUrl :: MonadReader CrawlerEnv m => m Text
@@ -88,17 +87,17 @@ runLentilleM :: MonadIO m => Logger -> MonocleClient -> LentilleM a -> m a
 runLentilleM logger client lm = do
   r <- liftIO $ newIORef False
   liftIO . flip runReaderT (env r) . unLentille $ lm
-  where
-    env = CrawlerEnv client logger
+ where
+  env = CrawlerEnv client logger
 
 stopLentille :: MonadThrow m => LentilleError -> LentilleStream m a
 stopLentille = lift . throwM
 
 data RequestLog = RequestLog
-  { rlRequest :: HTTP.Request,
-    rlRequestBody :: LByteString,
-    rlResponse :: HTTP.Response LByteString,
-    rlResponseBody :: LByteString
+  { rlRequest :: HTTP.Request
+  , rlRequestBody :: LByteString
+  , rlResponse :: HTTP.Response LByteString
+  , rlResponseBody :: LByteString
   }
   deriving (Show)
 
@@ -148,10 +147,10 @@ instance Config.MonadConfig LentilleM where
 type LentilleStream m a = Stream (Of a) m ()
 
 type LentilleMonad m =
-  ( MonadTime m,
-    MonadLog m, -- log is the monocle log facility
-    MonadCrawler m, -- for monocle crawler http api
-    Config.MonadConfig m
+  ( MonadTime m
+  , MonadLog m -- log is the monocle log facility
+  , MonadCrawler m -- for monocle crawler http api
+  , Config.MonadConfig m
   )
 
 -------------------------------------------------------------------------------
@@ -162,8 +161,8 @@ logEvent :: Log -> LentilleM ()
 logEvent x = do
   logger <- asks crawlerLogger
   liftIO $ doLog logger message
-  where
-    message = encodeUtf8 @Text @ByteString . from $ x
+ where
+  message = encodeUtf8 @Text @ByteString . from $ x
 
 logRaw :: MonadLog m => Text -> m ()
 logRaw text = mLog $ Log Unspecified (LogRaw text)
@@ -193,10 +192,10 @@ nobody = "ghost"
 
 toIdent :: Text -> (Text -> Maybe Text) -> Text -> Ident
 toIdent host cb username = Ident {..}
-  where
-    uid = host <> "/" <> username
-    identUid = from uid
-    identMuid = from $ fromMaybe username (cb uid)
+ where
+  uid = host <> "/" <> username
+  identUid = from uid
+  identMuid = from $ fromMaybe username (cb uid)
 
 ghostIdent :: Text -> Ident
 ghostIdent host = toIdent host (const Nothing) nobody

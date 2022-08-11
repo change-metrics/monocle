@@ -1,30 +1,29 @@
 -- | Monocle search language query
 -- The goal of this module is to transform a 'Expr' into a 'Bloodhound.Query'
-module Monocle.Search.Query
-  ( Query (..),
-    queryWithMods,
-    query,
-    ensureMinBound,
-    fields,
-    queryFieldToDocument,
-    loadAliases,
-    loadAliases',
-    load,
-    QueryFlavor (..),
-    AuthorFlavor (..),
-    RangeFlavor (..),
-    rangeField,
-    defaultQueryFlavor,
-    dropDate,
-    dropField,
-    blankQuery,
-    yearAgo,
-    TimeRange (..),
+module Monocle.Search.Query (
+  Query (..),
+  queryWithMods,
+  query,
+  ensureMinBound,
+  fields,
+  queryFieldToDocument,
+  loadAliases,
+  loadAliases',
+  load,
+  QueryFlavor (..),
+  AuthorFlavor (..),
+  RangeFlavor (..),
+  rangeField,
+  defaultQueryFlavor,
+  dropDate,
+  dropField,
+  blankQuery,
+  yearAgo,
+  TimeRange (..),
 
-    -- * helper
-    parseDateValue,
-  )
-where
+  -- * helper
+  parseDateValue,
+) where
 
 import Control.Monad.Trans.Except (Except, runExcept, throwE)
 import Data.List (lookup)
@@ -68,8 +67,8 @@ rangeField = \case
   OnCreatedAndCreated -> Nothing
 
 data QueryFlavor = QueryFlavor
-  { qfAuthor :: AuthorFlavor,
-    qfRange :: RangeFlavor
+  { qfAuthor :: AuthorFlavor
+  , qfRange :: RangeFlavor
   }
   deriving (Show, Eq)
 
@@ -87,19 +86,19 @@ yearAgo :: UTCTime -> UTCTime
 yearAgo since = subUTCTimeSecond since (3600 * 24 * 365)
 
 data Query = Query
-  { -- | queryGet provide the bloodhound query.
-    -- it is a list to be combined as a bool query
-    queryGet :: (Maybe Expr -> Maybe Expr) -> Maybe QueryFlavor -> [BH.Query],
-    -- | queryBounds is the (minimum, maximum) date found anywhere in the query.
-    -- It defaults to (now-3weeks, now)
-    -- It doesn't prevent empty bounds, e.g. `date>2021 and date<2020` results in (2021, 2020).
-    -- It doesn't check the fields, e.g. `created_at>2020 and updated_at<2021` resuls in (2020, 2021).
-    -- It keeps the maximum minbound and minimum maxbound, e.g.
-    --  `date>2020 and date>2021` results in (2021, now).
-    -- The goal is to get an approximate bound for histo grams queries.
-    queryBounds :: (UTCTime, UTCTime),
-    -- | queryBoundsSet indicate when a minimum bound has been set by the user.
-    queryMinBoundsSet :: Bool
+  { queryGet :: (Maybe Expr -> Maybe Expr) -> Maybe QueryFlavor -> [BH.Query]
+  -- ^ queryGet provide the bloodhound query.
+  -- it is a list to be combined as a bool query
+  , queryBounds :: (UTCTime, UTCTime)
+  -- ^ queryBounds is the (minimum, maximum) date found anywhere in the query.
+  -- It defaults to (now-3weeks, now)
+  -- It doesn't prevent empty bounds, e.g. `date>2021 and date<2020` results in (2021, 2020).
+  -- It doesn't check the fields, e.g. `created_at>2020 and updated_at<2021` resuls in (2020, 2021).
+  -- It keeps the maximum minbound and minimum maxbound, e.g.
+  --  `date>2020 and date>2021` results in (2021, now).
+  -- The goal is to get an approximate bound for histo grams queries.
+  , queryMinBoundsSet :: Bool
+  -- ^ queryBoundsSet indicate when a minimum bound has been set by the user.
   }
 
 -- $setup
@@ -110,10 +109,10 @@ data Query = Query
 type Bound = (Maybe UTCTime, UTCTime)
 
 data Env = Env
-  { envNow :: UTCTime,
-    envUsername :: Text,
-    envIndex :: Config.Index,
-    envFlavor :: QueryFlavor
+  { envNow :: UTCTime
+  , envUsername :: Text
+  , envIndex :: Config.Index
+  , envFlavor :: QueryFlavor
   }
 
 type Parser a = ReaderT Env (StateT Bound (Except ParseError)) a
@@ -136,23 +135,23 @@ flavoredField = error "Field name should be set at runtime"
 -- | 'fields' specifies how to handle field value
 fields :: [(Field, (FieldType, Field, Text))]
 fields =
-  [ ("updated_at", (fieldDate, "updated_at", "Change last update date")),
-    ("created_at", (fieldDate, "created_at", "Change creation date")),
-    ("from", (fieldDate, flavoredField, "Range starting date")),
-    ("to", (fieldDate, flavoredField, "Range ending date")),
-    ("state", (fieldText, "state", "Change state, one of: open, merged, self_merged, abandoned")),
-    ("repo", (fieldRegex, "repository_fullname", "Repository name")),
-    ("project", (fieldText, "project_def", "Project name")),
-    ("author", (fieldRegex, flavoredField, "Change author name")),
-    ("group", (fieldText, flavoredField, "Group name")),
-    ("branch", (fieldRegex, "target_branch", "Change branch name")),
-    ("approval", (fieldText, "approval", "Change approval name")),
-    ("ttm", (fieldNumber, "duration", "Change duration (Time To Merge) in second(s)")),
-    ("tag", (fieldText, "labels", "Change tag name")),
-    ("task.priority", (fieldText, "tasks_data.priority", "Task priority")),
-    ("task.severity", (fieldText, "tasks_data.severity", "Task severity")),
-    ("task.tag", (fieldRegex, "tasks_data.ttype", "Task tag name")),
-    ("task.score", (fieldNumber, "tasks_data.score", "Task score value"))
+  [ ("updated_at", (fieldDate, "updated_at", "Change last update date"))
+  , ("created_at", (fieldDate, "created_at", "Change creation date"))
+  , ("from", (fieldDate, flavoredField, "Range starting date"))
+  , ("to", (fieldDate, flavoredField, "Range ending date"))
+  , ("state", (fieldText, "state", "Change state, one of: open, merged, self_merged, abandoned"))
+  , ("repo", (fieldRegex, "repository_fullname", "Repository name"))
+  , ("project", (fieldText, "project_def", "Project name"))
+  , ("author", (fieldRegex, flavoredField, "Change author name"))
+  , ("group", (fieldText, flavoredField, "Group name"))
+  , ("branch", (fieldRegex, "target_branch", "Change branch name"))
+  , ("approval", (fieldText, "approval", "Change approval name"))
+  , ("ttm", (fieldNumber, "duration", "Change duration (Time To Merge) in second(s)"))
+  , ("tag", (fieldText, "labels", "Change tag name"))
+  , ("task.priority", (fieldText, "tasks_data.priority", "Task priority"))
+  , ("task.severity", (fieldText, "tasks_data.severity", "Task severity"))
+  , ("task.tag", (fieldRegex, "tasks_data.ttype", "Task tag name"))
+  , ("task.score", (fieldNumber, "tasks_data.score", "Task score value"))
   ]
 
 queryFieldToDocument :: Field -> Maybe Field
@@ -179,8 +178,8 @@ lookupField name = case lookup name fields of
 
 parseDateValue :: Text -> Maybe UTCTime
 parseDateValue txt = tryParse "%F" <|> tryParse "%Y-%m" <|> tryParse "%Y"
-  where
-    tryParse fmt = parseTimeM False defaultTimeLocale fmt (from txt)
+ where
+  tryParse fmt = parseTimeM False defaultTimeLocale fmt (from txt)
 
 subUTCTimeSecond :: UTCTime -> Integer -> UTCTime
 subUTCTimeSecond date sec =
@@ -196,10 +195,10 @@ instance From Pico TimeRange where
     | sec / month <= 6 = Week
     | sec / year <= 2 = Month
     | otherwise = Year
-    where
-      year = month * 12
-      month = day * 31
-      day = 24 * 3600
+   where
+    year = month * 12
+    month = day * 31
+    day = 24 * 3600
 
 instance From TimeRange Text where
   from = \case
@@ -211,12 +210,12 @@ instance From TimeRange Text where
 
 timeRangeReader :: ReadP.ReadP TimeRange
 timeRangeReader = (hourR <|> dayR <|> weekR <|> monthR <|> yearR) <* ReadP.optional (ReadP.char 's')
-  where
-    hourR = Hour <$ ReadP.string "hour"
-    dayR = Day <$ ReadP.string "day"
-    weekR = Week <$ ReadP.string "week"
-    monthR = Month <$ ReadP.string "month"
-    yearR = Year <$ ReadP.string "year"
+ where
+  hourR = Hour <$ ReadP.string "hour"
+  dayR = Day <$ ReadP.string "day"
+  weekR = Week <$ ReadP.string "week"
+  monthR = Month <$ ReadP.string "month"
+  yearR = Year <$ ReadP.string "year"
 
 instance Read TimeRange where
   readPrec = ReadPrec.lift timeRangeReader
@@ -226,25 +225,25 @@ data RelativeTime = MkRelativeTime Word TimeRange
 
 relTimeReader :: ReadP.ReadP RelativeTime
 relTimeReader = ReadP.string "now" *> (relR <|> pure defTime)
-  where
-    defTime = MkRelativeTime 0 Hour
-    relR = ReadP.char '-' *> (MkRelativeTime <$> countR <*> timeRangeReader)
-    countR :: ReadP.ReadP Word
-    countR = Text.Read.Lex.readDecP
+ where
+  defTime = MkRelativeTime 0 Hour
+  relR = ReadP.char '-' *> (MkRelativeTime <$> countR <*> timeRangeReader)
+  countR :: ReadP.ReadP Word
+  countR = Text.Read.Lex.readDecP
 
 instance Read RelativeTime where
   readPrec = ReadPrec.lift relTimeReader
 
 parseRelativeDateValue :: UTCTime -> Text -> Maybe UTCTime
 parseRelativeDateValue now@(UTCTime days diffT) txt = relTimeToUTCTime <$> readMaybe (from txt)
-  where
-    relTimeToUTCTime :: RelativeTime -> UTCTime
-    relTimeToUTCTime (MkRelativeTime (from -> count) range) = case range of
-      Hour -> subUTCTimeSecond now (count * 3600)
-      Day -> UTCTime (addDays (count * (-1)) days) diffT
-      Week -> UTCTime (addDays (count * (-7)) days) diffT
-      Month -> UTCTime (addGregorianMonthsClip (count * (-1)) days) diffT
-      Year -> UTCTime (addGregorianYearsClip (count * (-1)) days) diffT
+ where
+  relTimeToUTCTime :: RelativeTime -> UTCTime
+  relTimeToUTCTime (MkRelativeTime (from -> count) range) = case range of
+    Hour -> subUTCTimeSecond now (count * 3600)
+    Day -> UTCTime (addDays (count * (-1)) days) diffT
+    Week -> UTCTime (addDays (count * (-7)) days) diffT
+    Month -> UTCTime (addGregorianMonthsClip (count * (-1)) days) diffT
+    Year -> UTCTime (addGregorianYearsClip (count * (-1)) days) diffT
 
 parseNumber :: Text -> Either Text Double
 parseNumber txt = case readMaybe (from txt) of
@@ -289,11 +288,11 @@ updateBound :: RangeOp -> UTCTime -> Parser ()
 updateBound op date = do
   (minDateM, maxDate) <- get
   put $ newBounds minDateM maxDate
-  where
-    newBounds minDateM maxDate =
-      if isMinOp op
-        then (Just $ max date (fromMaybe date minDateM), maxDate)
-        else (minDateM, min date maxDate)
+ where
+  newBounds minDateM maxDate =
+    if isMinOp op
+      then (Just $ max date (fromMaybe date minDateM), maxDate)
+      else (minDateM, min date maxDate)
 
 mkRangeValue :: RangeOp -> Field -> FieldType -> Text -> Parser BH.RangeValue
 mkRangeValue op field fieldType value = do
@@ -343,17 +342,17 @@ toParseError e = case e of
 
 mkProjectQuery :: Config.Project -> BH.Query
 mkProjectQuery Config.Project {..} = BH.QueryBoolQuery $ BH.mkBoolQuery must [] [] []
-  where
-    must =
-      map BH.QueryRegexpQuery $
-        maybe [] repository repository_regex
-          <> maybe [] branch branch_regex
-          <> maybe [] file file_regex
-    mkRegexpQ field value =
-      [BH.RegexpQuery (BH.FieldName field) (BH.Regexp value) BH.AllRegexpFlags Nothing]
-    repository = mkRegexpQ "repository_fullname"
-    branch = mkRegexpQ "target_branch"
-    file = mkRegexpQ "changed_files.path"
+ where
+  must =
+    map BH.QueryRegexpQuery $
+      maybe [] repository repository_regex
+        <> maybe [] branch branch_regex
+        <> maybe [] file file_regex
+  mkRegexpQ field value =
+    [BH.RegexpQuery (BH.FieldName field) (BH.Regexp value) BH.AllRegexpFlags Nothing]
+  repository = mkRegexpQ "repository_fullname"
+  branch = mkRegexpQ "target_branch"
+  file = mkRegexpQ "changed_files.path"
 
 -- | Resolve the author field name and value.
 getAuthorField :: Field -> Text -> Parser (Field, Text)
@@ -462,14 +461,14 @@ queryWithMods now' username index exprM = do
                 Right (queryFlavored, _) -> [queryFlavored]
         Nothing -> []
   pure $ Query {..}
-  where
-    runParser expr flavor =
-      runExcept
-        . flip runStateT (Nothing, now)
-        . runReaderT (query expr)
-        $ Env now username index flavor
-    now = dropTime now'
-    threeWeeksAgo date = subUTCTimeSecond date (3600 * 24 * 7 * 3)
+ where
+  runParser expr flavor =
+    runExcept
+      . flip runStateT (Nothing, now)
+      . runReaderT (query expr)
+      $ Env now username index flavor
+  now = dropTime now'
+  threeWeeksAgo date = subUTCTimeSecond date (3600 * 24 * 7 * 3)
 
 -- | Utility function to simply create a query
 load :: UTCTime -> Text -> Config.Index -> Text -> Query
@@ -484,29 +483,29 @@ loadAliases :: Config.Index -> Either [Text] [(Text, Expr)]
 loadAliases index = case partitionEithers $ map loadAlias (Config.getSearchAliases index) of
   ([], xs) -> Right xs
   (xs, _) -> Left xs
-  where
-    fakeNow :: UTCTime
-    fakeNow = [utctime|2021-06-02 23:00:00|]
-    loadAlias :: (Text, Text) -> Either Text (Text, Expr)
-    loadAlias (name, code) = do
-      let toError :: Either ParseError a -> Either Text a
-          toError = \case
-            -- TODO: improve error reporting
-            Left e -> Left $ "Invalid alias " <> name <> ": " <> show e
-            Right x -> Right x
+ where
+  fakeNow :: UTCTime
+  fakeNow = [utctime|2021-06-02 23:00:00|]
+  loadAlias :: (Text, Text) -> Either Text (Text, Expr)
+  loadAlias (name, code) = do
+    let toError :: Either ParseError a -> Either Text a
+        toError = \case
+          -- TODO: improve error reporting
+          Left e -> Left $ "Invalid alias " <> name <> ": " <> show e
+          Right x -> Right x
 
-      exprM <- toError $ P.parse [] code
+    exprM <- toError $ P.parse [] code
 
-      -- Try to evaluate the alias with fake value
-      _testQuery <-
-        toError $
-          queryWithMods fakeNow "self" index exprM
+    -- Try to evaluate the alias with fake value
+    _testQuery <-
+      toError $
+        queryWithMods fakeNow "self" index exprM
 
-      case exprM of
-        Just expr ->
-          -- We now know the alias can be converted to a bloodhound query
-          Right (name, expr)
-        Nothing -> Left $ "Empty alias " <> name
+    case exprM of
+      Just expr ->
+        -- We now know the alias can be converted to a bloodhound query
+        Right (name, expr)
+      Nothing -> Left $ "Empty alias " <> name
 
 -- | Ensure a minimum range bound is set
 -- TODO: re-implement as a `QueryM a -> QueryM a` combinator
@@ -514,13 +513,13 @@ ensureMinBound :: Query -> Query
 ensureMinBound query'
   | queryMinBoundsSet query' = query'
   | otherwise = query' {queryGet = newQueryGet}
-  where
-    newQueryGet modifier = queryGet query' (newModifier modifier)
-    -- A modifier function that ensure a min bound is set, whenever the user provided an expr.
-    newModifier modifier exprM = case exprM of
-      Just expr -> modifier $ Just $ AndExpr minExpr expr
-      Nothing -> modifier $ Just minExpr
-    minExpr = GtExpr "from" $ from $ formatTime defaultTimeLocale "%F" (fst $ queryBounds query')
+ where
+  newQueryGet modifier = queryGet query' (newModifier modifier)
+  -- A modifier function that ensure a min bound is set, whenever the user provided an expr.
+  newModifier modifier exprM = case exprM of
+    Just expr -> modifier $ Just $ AndExpr minExpr expr
+    Nothing -> modifier $ Just minExpr
+  minExpr = GtExpr "from" $ from $ formatTime defaultTimeLocale "%F" (fst $ queryBounds query')
 
 -- | dropField remove a field from an Expr
 --
@@ -541,23 +540,23 @@ ensureMinBound query'
 dropField :: (Text -> Bool) -> Maybe Expr -> Maybe Expr
 dropField _ Nothing = Nothing
 dropField dropFieldPred (Just expr) = go expr
-  where
-    go e = case e of
-      AndExpr e1 e2 -> tryBoth AndExpr e1 e2 <|> go e1 <|> go e2
-      OrExpr e1 e2 -> tryBoth OrExpr e1 e2 <|> go e1 <|> go e2
-      NotExpr e1 -> Just . NotExpr =<< go e1
-      EqExpr field _ -> unlessField field e
-      GtExpr field _ -> unlessField field e
-      LtExpr field _ -> unlessField field e
-      GtEqExpr field _ -> unlessField field e
-      LtEqExpr field _ -> unlessField field e
-    tryBoth op e1 e2 = do
-      e1' <- go e1
-      e2' <- go e2
-      pure $ op e1' e2'
-    unlessField field e
-      | dropFieldPred field = Nothing
-      | otherwise = Just e
+ where
+  go e = case e of
+    AndExpr e1 e2 -> tryBoth AndExpr e1 e2 <|> go e1 <|> go e2
+    OrExpr e1 e2 -> tryBoth OrExpr e1 e2 <|> go e1 <|> go e2
+    NotExpr e1 -> Just . NotExpr =<< go e1
+    EqExpr field _ -> unlessField field e
+    GtExpr field _ -> unlessField field e
+    LtExpr field _ -> unlessField field e
+    GtEqExpr field _ -> unlessField field e
+    LtEqExpr field _ -> unlessField field e
+  tryBoth op e1 e2 = do
+    e1' <- go e1
+    e2' <- go e2
+    pure $ op e1' e2'
+  unlessField field e
+    | dropFieldPred field = Nothing
+    | otherwise = Just e
 
 dropDate :: Maybe Expr -> Maybe Expr
 dropDate = dropField (`elem` ["from", "to", "updated_at", "created_at"])

@@ -54,7 +54,7 @@ instance HsProtobuf.Message GetMagicJwtRequest where
     _
     GetMagicJwtRequest
       { getMagicJwtRequestToken =
-          getMagicJwtRequestToken
+        getMagicJwtRequestToken
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -167,7 +167,7 @@ instance HsProtobuf.Message GetMagicJwtResponse where
     _
     GetMagicJwtResponse
       { getMagicJwtResponseResult =
-          getMagicJwtResponseResult
+        getMagicJwtResponseResult
       } =
       ( Hs.mconcat
           [ case getMagicJwtResponseResult of
@@ -190,12 +190,14 @@ instance HsProtobuf.Message GetMagicJwtResponse where
     (Hs.pure GetMagicJwtResponse)
       <*> ( HsProtobuf.oneof
               Hs.Nothing
-              [ ( (HsProtobuf.FieldNumber 1),
-                  (Hs.pure (Hs.Just Hs.. GetMagicJwtResponseResultError))
+              [
+                ( (HsProtobuf.FieldNumber 1)
+                , (Hs.pure (Hs.Just Hs.. GetMagicJwtResponseResultError))
                     <*> HsProtobuf.decodeMessageField
-                ),
-                ( (HsProtobuf.FieldNumber 2),
-                  (Hs.pure (Hs.Just Hs.. GetMagicJwtResponseResultJwt))
+                )
+              ,
+                ( (HsProtobuf.FieldNumber 2)
+                , (Hs.pure (Hs.Just Hs.. GetMagicJwtResponseResultJwt))
                     <*> HsProtobuf.decodeMessageField
                 )
               ]
@@ -249,10 +251,10 @@ instance HsJSONPB.FromJSONPB GetMagicJwtResponse where
               <*> ( let parseResult parseObj =
                           Hs.msum
                             [ Hs.Just Hs.. GetMagicJwtResponseResultError
-                                <$> (HsJSONPB.parseField parseObj "error"),
-                              Hs.Just Hs.. GetMagicJwtResponseResultJwt
-                                <$> (HsJSONPB.parseField parseObj "jwt"),
-                              Hs.pure Hs.Nothing
+                                <$> (HsJSONPB.parseField parseObj "error")
+                            , Hs.Just Hs.. GetMagicJwtResponseResultJwt
+                                <$> (HsJSONPB.parseField parseObj "jwt")
+                            , Hs.pure Hs.Nothing
                             ]
                      in ( (obj .: "result")
                             Hs.>>= (HsJSONPB.withObject "result" parseResult)
@@ -410,12 +412,14 @@ instance HsProtobuf.Message WhoAmiResponse where
     (Hs.pure WhoAmiResponse)
       <*> ( HsProtobuf.oneof
               Hs.Nothing
-              [ ( (HsProtobuf.FieldNumber 1),
-                  (Hs.pure (Hs.Just Hs.. WhoAmiResponseResultError))
+              [
+                ( (HsProtobuf.FieldNumber 1)
+                , (Hs.pure (Hs.Just Hs.. WhoAmiResponseResultError))
                     <*> HsProtobuf.decodeMessageField
-                ),
-                ( (HsProtobuf.FieldNumber 2),
-                  (Hs.pure (Hs.Just Hs.. WhoAmiResponseResultUid))
+                )
+              ,
+                ( (HsProtobuf.FieldNumber 2)
+                , (Hs.pure (Hs.Just Hs.. WhoAmiResponseResultUid))
                     <*> HsProtobuf.decodeMessageField
                 )
               ]
@@ -467,10 +471,10 @@ instance HsJSONPB.FromJSONPB WhoAmiResponse where
               <*> ( let parseResult parseObj =
                           Hs.msum
                             [ Hs.Just Hs.. WhoAmiResponseResultError
-                                <$> (HsJSONPB.parseField parseObj "error"),
-                              Hs.Just Hs.. WhoAmiResponseResultUid
-                                <$> (HsJSONPB.parseField parseObj "uid"),
-                              Hs.pure Hs.Nothing
+                                <$> (HsJSONPB.parseField parseObj "error")
+                            , Hs.Just Hs.. WhoAmiResponseResultUid
+                                <$> (HsJSONPB.parseField parseObj "uid")
+                            , Hs.pure Hs.Nothing
                             ]
                      in ( (obj .: "result")
                             Hs.>>= (HsJSONPB.withObject "result" parseResult)

@@ -1,20 +1,19 @@
 {-# LANGUAGE PackageImports #-}
 
 -- | Extra functions for json-syntax
-module Json.Extras
-  ( -- * Data types
-    module Json,
-    ShortText,
-    TextShort.toText,
+module Json.Extras (
+  -- * Data types
+  module Json,
+  ShortText,
+  TextShort.toText,
 
-    -- * Extras
-    decodeThrow,
-    getAttr,
-    getArray,
-    getString,
-    getDate,
-  )
-where
+  -- * Extras
+  decodeThrow,
+  getAttr,
+  getArray,
+  getString,
+  getDate,
+) where
 
 import Data.ByteString.Lazy qualified as LBS
 import Data.Bytes qualified as Bytes
@@ -36,10 +35,10 @@ getAttr :: ShortText -> Json.Value -> Maybe Json.Value
 getAttr k v = case v of
   Json.Object xs -> getFirst $ foldMap getValue' xs
   _ -> Nothing
-  where
-    getValue' Json.Member {..}
-      | key == k = First $ Just value
-      | otherwise = First Nothing
+ where
+  getValue' Json.Member {..}
+    | key == k = First $ Just value
+    | otherwise = First Nothing
 
 getString :: Json.Value -> Maybe ShortText
 getString v = case v of

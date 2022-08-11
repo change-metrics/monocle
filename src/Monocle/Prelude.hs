@@ -5,185 +5,184 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 -- | An augmented relude with extra package such as time and aeson.
-module Monocle.Prelude
-  ( module Relude,
-    fromFixed,
-    double2Float,
-    orDie,
-    getExn,
-    getEnv',
-    setEnv,
-    headMaybe,
-    Secret (..),
-    (:::),
+module Monocle.Prelude (
+  module Relude,
+  fromFixed,
+  double2Float,
+  orDie,
+  getExn,
+  getEnv',
+  setEnv,
+  headMaybe,
+  Secret (..),
+  (:::),
 
-    -- * generic
-    selectors,
-    FromJSONField,
-    Rep,
-    AnyJSON,
-    Selectors,
+  -- * generic
+  selectors,
+  FromJSONField,
+  Rep,
+  AnyJSON,
+  Selectors,
 
-    -- * containers
-    mapMutate,
+  -- * containers
+  mapMutate,
 
-    -- * witch
-    From (..),
-    into,
-    unsafeFrom,
-    unsafeInto,
-    via,
-    TryFrom (..),
-    tryInto,
-    tryVia,
+  -- * witch
+  From (..),
+  into,
+  unsafeFrom,
+  unsafeInto,
+  via,
+  TryFrom (..),
+  tryInto,
+  tryVia,
 
-    -- * streaming
-    Stream,
-    Of (..),
-    toVector,
+  -- * streaming
+  Stream,
+  Of (..),
+  toVector,
 
-    -- * fast-logger
-    Logger,
-    withLogger,
-    doLog,
-    logMessage,
-    logText,
+  -- * fast-logger
+  Logger,
+  withLogger,
+  doLog,
+  logMessage,
+  logText,
 
-    -- * unliftio
-    MonadUnliftIO,
-    modifyMVar,
-    modifyMVar_,
-    withAsync,
-    cancel,
+  -- * unliftio
+  MonadUnliftIO,
+  modifyMVar,
+  modifyMVar_,
+  withAsync,
+  cancel,
 
-    -- * mmoprh
-    hoist,
+  -- * mmoprh
+  hoist,
 
-    -- * mtl
-    MonadError (..),
-    MonadWriter (..),
-    WriterT,
-    runWriterT,
+  -- * mtl
+  MonadError (..),
+  MonadWriter (..),
+  WriterT,
+  runWriterT,
 
-    -- * exceptions
-    MonadThrow (..),
-    MonadMask,
-    MonadCatch (..),
-    Handler (Handler),
-    tryAny,
+  -- * exceptions
+  MonadThrow (..),
+  MonadMask,
+  MonadCatch (..),
+  Handler (Handler),
+  tryAny,
 
-    -- * tests
-    Assertion,
-    assertEqual,
-    assertEqual',
-    assertBool,
-    assertFailure,
+  -- * tests
+  Assertion,
+  assertEqual,
+  assertEqual',
+  assertBool,
+  assertFailure,
 
-    -- * relude extra
-    groupBy,
-    average,
+  -- * relude extra
+  groupBy,
+  average,
 
-    -- * data.fixed
-    Fixed (..),
-    Deci,
-    Pico,
+  -- * data.fixed
+  Fixed (..),
+  Deci,
+  Pico,
 
-    -- * custom numerical newtype
-    Count,
-    countToWord,
-    countToDeci,
-    wordToCount,
-    naturalToCount,
+  -- * custom numerical newtype
+  Count,
+  countToWord,
+  countToDeci,
+  wordToCount,
+  naturalToCount,
 
-    -- * time
-    UTCTime,
-    Monocle.Prelude.getCurrentTime,
-    addUTCTime,
-    elapsedSeconds,
-    nominalDiffTimeToSeconds,
-    diffUTCTime,
-    formatTime',
-    parseDateValue,
-    dropTime,
-    dropMilliSec,
-    MonocleTime,
-    toMonocleTime,
-    diffTimeSec,
+  -- * time
+  UTCTime,
+  Monocle.Prelude.getCurrentTime,
+  addUTCTime,
+  elapsedSeconds,
+  nominalDiffTimeToSeconds,
+  diffUTCTime,
+  formatTime',
+  parseDateValue,
+  dropTime,
+  dropMilliSec,
+  MonocleTime,
+  toMonocleTime,
+  diffTimeSec,
 
-    -- * text
-    stripSpaces,
-    inText,
-    getPath,
+  -- * text
+  stripSpaces,
+  inText,
+  getPath,
 
-    -- * qq-literals
-    utctime,
+  -- * qq-literals
+  utctime,
 
-    -- * lens
-    Lens',
-    lens,
-    mapMOf,
-    view,
-    over,
-    preview,
-    at,
-    set,
+  -- * lens
+  Lens',
+  lens,
+  mapMOf,
+  view,
+  over,
+  preview,
+  at,
+  set,
 
-    -- * lens-aeson
-    _Integer,
-    _Object,
+  -- * lens-aeson
+  _Integer,
+  _Object,
 
-    -- * aeson
-    FromJSON (..),
-    ToJSON (..),
-    Value (Number),
-    encode,
-    encodePretty,
-    encodePrettyWithSpace,
-    (.=),
+  -- * aeson
+  FromJSON (..),
+  ToJSON (..),
+  Value (Number),
+  encode,
+  encodePretty,
+  encodePrettyWithSpace,
+  (.=),
 
-    -- * http-client-openssl
-    withOpenSSL,
-    newOpenSSLManager,
+  -- * http-client-openssl
+  withOpenSSL,
+  newOpenSSLManager,
 
-    -- * bloodhound
-    BH.MonadBH,
-    BH.DocId,
-    BH.BulkOperation (..),
-    simpleSearch,
-    doSearch,
-    mkAnd,
-    mkOr,
-    mkNot,
-    mkTerm,
-    BH.runBH,
+  -- * bloodhound
+  BH.MonadBH,
+  BH.DocId,
+  BH.BulkOperation (..),
+  simpleSearch,
+  doSearch,
+  mkAnd,
+  mkOr,
+  mkNot,
+  mkTerm,
+  BH.runBH,
 
-    -- * proto3
-    fromPBEnum,
+  -- * proto3
+  fromPBEnum,
 
-    -- * prometheus re-exports
-    Prometheus.MonadMonitor (..),
-    Prometheus.withLabel,
-    Prometheus.incCounter,
-    Prometheus.counter,
-    Prometheus.exportMetricsAsText,
-    Prometheus.Info (..),
+  -- * prometheus re-exports
+  Prometheus.MonadMonitor (..),
+  Prometheus.withLabel,
+  Prometheus.incCounter,
+  Prometheus.counter,
+  Prometheus.exportMetricsAsText,
+  Prometheus.Info (..),
 
-    -- * promehteus re-exports using alias to avoid conflicts
-    CounterLabel,
-    promRegister,
-    promVector,
+  -- * promehteus re-exports using alias to avoid conflicts
+  CounterLabel,
+  promRegister,
+  promVector,
 
-    -- * global metrics
-    incrementCounter,
-    httpRequestCounter,
-    httpFailureCounter,
-    monocleQueryCheckCounter,
-    monocleQueryCounter,
-    monocleMetricCounter,
-    monocleAuthSuccessCounter,
-    monocleAuthProviderRedirectCounter,
-  )
-where
+  -- * global metrics
+  incrementCounter,
+  httpRequestCounter,
+  httpFailureCounter,
+  monocleQueryCheckCounter,
+  monocleQueryCounter,
+  monocleMetricCounter,
+  monocleAuthSuccessCounter,
+  monocleAuthProviderRedirectCounter,
+) where
 
 import Control.Exception.Safe (tryAny)
 import Control.Foldl qualified as L
@@ -335,11 +334,11 @@ instance ToJSON MonocleTime where
 
 instance FromJSON MonocleTime where
   parseJSON = withText "UTCTimePlus" (parse . from)
-    where
-      oldFormat = "%FT%T"
-      utcFormat = "%FT%TZ"
-      tryParse = parseTimeM False defaultTimeLocale
-      parse s = MonocleTime <$> (tryParse oldFormat s <|> tryParse utcFormat s)
+   where
+    oldFormat = "%FT%T"
+    utcFormat = "%FT%TZ"
+    tryParse = parseTimeM False defaultTimeLocale
+    parse s = MonocleTime <$> (tryParse oldFormat s <|> tryParse utcFormat s)
 
 toMonocleTime :: UTCTime -> MonocleTime
 toMonocleTime = MonocleTime . dropMilliSec
@@ -361,8 +360,8 @@ withLogger :: (Logger -> IO a) -> IO a
 withLogger cb = do
   tc <- liftIO $ FastLogger.newTimeCache "%F %T "
   FastLogger.withTimedFastLogger tc logger cb
-  where
-    logger = FastLogger.LogStderr 1024
+ where
+  logger = FastLogger.LogStderr 1024
 
 doLog :: Logger -> ByteString -> IO ()
 doLog logger message = logger (\time -> FastLogger.toLogStr $ time <> message <> "\n")
@@ -379,8 +378,8 @@ getEnv' :: Text -> IO Text
 getEnv' var = do
   val <- from . exceptEnv <$> lookupEnv (from var)
   return $! val
-  where
-    exceptEnv = fromMaybe (error $ "ERROR: Missing environment variable named " <> var)
+ where
+  exceptEnv = fromMaybe (error $ "ERROR: Missing environment variable named " <> var)
 
 -- | A lifted version of getCurrentTime
 getCurrentTime :: MonadIO m => m UTCTime
@@ -402,8 +401,8 @@ parseDateValue str =
   tryParse "%F"
     <|> tryParse "%F %T %Z"
     <|> tryParse "%FT%XZ"
-  where
-    tryParse fmt = parseTimeM False defaultTimeLocale fmt str
+ where
+  tryParse fmt = parseTimeM False defaultTimeLocale fmt str
 
 -- | diffTimeSec a - b
 -- >>> diffTimeSec [utctime|2000-01-01 01:00:00|] [utctime|2000-01-01 00:00:00|]
@@ -501,10 +500,10 @@ doSearch indexName search = do
   case resp of
     Left _e -> handleError rawResp
     Right x -> pure x
-  where
-    handleError resp = do
-      logText (show resp)
-      error "Elastic response failed"
+ where
+  handleError resp = do
+    logText (show resp)
+    error "Elastic response failed"
 
 simpleSearch :: (FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m [BH.Hit a]
 simpleSearch indexName search = BH.hits . BH.searchHits <$> doSearch indexName search

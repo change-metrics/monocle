@@ -52,29 +52,29 @@ transformResponse result = do
         let rateLimit = case parseDateValue $ from resetAtText of
               Just resetAt -> RateLimit {..}
               Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAtText
-         in ( PageInfo hasNextPage endCursor (Just totalCount),
-              Just rateLimit,
-              [],
-              getRepos orgRepositories
+         in ( PageInfo hasNextPage endCursor (Just totalCount)
+            , Just rateLimit
+            , []
+            , getRepos orgRepositories
             )
     _anyOtherResponse ->
-      ( PageInfo False Nothing Nothing,
-        Nothing,
-        ["Unknown GetProjects response: " <> show result],
-        []
+      ( PageInfo False Nothing Nothing
+      , Nothing
+      , ["Unknown GetProjects response: " <> show result]
+      , []
       )
-  where
-    getRepos :: [Maybe OrganizationRepositoriesNodesRepository] -> [Project]
-    getRepos r = Project . from . nameWithOwner <$> catMaybes r
+ where
+  getRepos :: [Maybe OrganizationRepositoriesNodesRepository] -> [Project]
+  getRepos r = Project . from . nameWithOwner <$> catMaybes r
 
 streamOrganizationProjects :: MonadGraphQLE m => GraphClient -> (Entity -> LogCrawlerContext) -> Text -> Stream (Of Project) m ()
 streamOrganizationProjects client mkLC login =
   streamFetch client lc mkArgs optParams transformResponse
-  where
-    lc = mkLC $ Organization login
-    mkArgs _ = GetProjectsArgs login
-    optParams =
-      defaultStreamFetchOptParams
-        { fpRetryCheck = Just $ retryCheck Macroscope,
-          fpGetRatelimit = Just $ getRateLimit lc
-        }
+ where
+  lc = mkLC $ Organization login
+  mkArgs _ = GetProjectsArgs login
+  optParams =
+    defaultStreamFetchOptParams
+      { fpRetryCheck = Just $ retryCheck Macroscope
+      , fpGetRatelimit = Just $ getRateLimit lc
+      }

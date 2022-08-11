@@ -40,10 +40,10 @@ import Prelude qualified as Hs
 
 data ProjectDefinition = ProjectDefinition
   { projectDefinitionName ::
-      Hs.Text,
-    projectDefinitionRepositoryRegex :: Hs.Text,
-    projectDefinitionBranchRegex :: Hs.Text,
-    projectDefinitionFileRegex :: Hs.Text
+      Hs.Text
+  , projectDefinitionRepositoryRegex :: Hs.Text
+  , projectDefinitionBranchRegex :: Hs.Text
+  , projectDefinitionFileRegex :: Hs.Text
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -56,26 +56,26 @@ instance HsProtobuf.Message ProjectDefinition where
   encodeMessage
     _
     ProjectDefinition
-      { projectDefinitionName = projectDefinitionName,
-        projectDefinitionRepositoryRegex =
-          projectDefinitionRepositoryRegex,
-        projectDefinitionBranchRegex = projectDefinitionBranchRegex,
-        projectDefinitionFileRegex = projectDefinitionFileRegex
+      { projectDefinitionName = projectDefinitionName
+      , projectDefinitionRepositoryRegex =
+        projectDefinitionRepositoryRegex
+      , projectDefinitionBranchRegex = projectDefinitionBranchRegex
+      , projectDefinitionFileRegex = projectDefinitionFileRegex
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
                 projectDefinitionName
-            ),
-            ( HsProtobuf.encodeMessageField
+            )
+          , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
                 projectDefinitionRepositoryRegex
-            ),
-            ( HsProtobuf.encodeMessageField
+            )
+          , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 3)
                 projectDefinitionBranchRegex
-            ),
-            ( HsProtobuf.encodeMessageField
+            )
+          , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 4)
                 projectDefinitionFileRegex
             )
@@ -106,22 +106,22 @@ instance HsProtobuf.Message ProjectDefinition where
           (HsProtobuf.Single "name")
           []
           ""
-      ),
-      ( HsProtobuf.DotProtoField
+      )
+    , ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 2)
           (HsProtobuf.Prim HsProtobuf.String)
           (HsProtobuf.Single "repository_regex")
           []
           ""
-      ),
-      ( HsProtobuf.DotProtoField
+      )
+    , ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 3)
           (HsProtobuf.Prim HsProtobuf.String)
           (HsProtobuf.Single "branch_regex")
           []
           ""
-      ),
-      ( HsProtobuf.DotProtoField
+      )
+    , ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 4)
           (HsProtobuf.Prim HsProtobuf.String)
           (HsProtobuf.Single "file_regex")
@@ -133,18 +133,18 @@ instance HsProtobuf.Message ProjectDefinition where
 instance HsJSONPB.ToJSONPB ProjectDefinition where
   toJSONPB (ProjectDefinition f1 f2 f3 f4) =
     ( HsJSONPB.object
-        [ "name" .= f1,
-          "repository_regex" .= f2,
-          "branch_regex" .= f3,
-          "file_regex" .= f4
+        [ "name" .= f1
+        , "repository_regex" .= f2
+        , "branch_regex" .= f3
+        , "file_regex" .= f4
         ]
     )
   toEncodingPB (ProjectDefinition f1 f2 f3 f4) =
     ( HsJSONPB.pairs
-        [ "name" .= f1,
-          "repository_regex" .= f2,
-          "branch_regex" .= f3,
-          "file_regex" .= f4
+        [ "name" .= f1
+        , "repository_regex" .= f2
+        , "branch_regex" .= f3
+        , "file_regex" .= f4
         ]
     )
 
@@ -184,7 +184,7 @@ instance HsProtobuf.Message GetProjectsRequest where
     _
     GetProjectsRequest
       { getProjectsRequestIndex =
-          getProjectsRequestIndex
+        getProjectsRequestIndex
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -245,7 +245,7 @@ instance HsProtobuf.Message GetProjectsResponse where
     _
     GetProjectsResponse
       { getProjectsResponseProjects =
-          getProjectsResponseProjects
+        getProjectsResponseProjects
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -366,7 +366,7 @@ instance HsProtobuf.Message GetWorkspacesRequest where
     _
     GetWorkspacesRequest
       { getWorkspacesRequestVoid =
-          getWorkspacesRequestVoid
+        getWorkspacesRequestVoid
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -427,7 +427,7 @@ instance HsProtobuf.Message GetWorkspacesResponse where
     _
     GetWorkspacesResponse
       { getWorkspacesResponseWorkspaces =
-          getWorkspacesResponseWorkspaces
+        getWorkspacesResponseWorkspaces
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -482,9 +482,9 @@ instance HsJSONPB.FromJSON GetWorkspacesResponse where
   parseJSON = HsJSONPB.parseJSONPB
 
 data About = About
-  { aboutVersion :: Hs.Text,
-    aboutLinks :: Hs.Vector Monocle.Protob.Config.About_AboutLink,
-    aboutAuth :: Hs.Maybe AboutAuth
+  { aboutVersion :: Hs.Text
+  , aboutLinks :: Hs.Vector Monocle.Protob.Config.About_AboutLink
+  , aboutAuth :: Hs.Maybe AboutAuth
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -497,23 +497,23 @@ instance HsProtobuf.Message About where
   encodeMessage
     _
     About
-      { aboutVersion = aboutVersion,
-        aboutLinks = aboutLinks,
-        aboutAuth = aboutAuth
+      { aboutVersion = aboutVersion
+      , aboutLinks = aboutLinks
+      , aboutAuth = aboutAuth
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
                 aboutVersion
-            ),
-            ( HsProtobuf.encodeMessageField
+            )
+          , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
                 ( Hs.coerce @(Hs.Vector Monocle.Protob.Config.About_AboutLink)
                     @(HsProtobuf.NestedVec Monocle.Protob.Config.About_AboutLink)
                     aboutLinks
                 )
-            ),
-            case aboutAuth of
+            )
+          , case aboutAuth of
               Hs.Nothing -> Hs.mempty
               Hs.Just x ->
                 case x of
@@ -543,8 +543,9 @@ instance HsProtobuf.Message About where
           )
       <*> ( HsProtobuf.oneof
               Hs.Nothing
-              [ ( (HsProtobuf.FieldNumber 3),
-                  (Hs.pure (Hs.fmap AboutAuthAuthConfig))
+              [
+                ( (HsProtobuf.FieldNumber 3)
+                , (Hs.pure (Hs.fmap AboutAuthAuthConfig))
                     <*> ( Hs.coerce
                             @(_ (HsProtobuf.Nested Monocle.Protob.Config.About_AuthConfig))
                             @(_ (Hs.Maybe Monocle.Protob.Config.About_AuthConfig))
@@ -560,8 +561,8 @@ instance HsProtobuf.Message About where
           (HsProtobuf.Single "version")
           []
           ""
-      ),
-      ( HsProtobuf.DotProtoField
+      )
+    , ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 2)
           ( HsProtobuf.Repeated
               (HsProtobuf.Named (HsProtobuf.Single "AboutLink"))
@@ -575,9 +576,9 @@ instance HsProtobuf.Message About where
 instance HsJSONPB.ToJSONPB About where
   toJSONPB (About f1 f2 f3) =
     ( HsJSONPB.object
-        [ "version" .= f1,
-          "links" .= f2,
-          ( let encodeAuth =
+        [ "version" .= f1
+        , "links" .= f2
+        , ( let encodeAuth =
                   ( case f3 of
                       Hs.Just (AboutAuthAuthConfig f3) ->
                         (HsJSONPB.pair "auth_config" f3)
@@ -592,9 +593,9 @@ instance HsJSONPB.ToJSONPB About where
     )
   toEncodingPB (About f1 f2 f3) =
     ( HsJSONPB.pairs
-        [ "version" .= f1,
-          "links" .= f2,
-          ( let encodeAuth =
+        [ "version" .= f1
+        , "links" .= f2
+        , ( let encodeAuth =
                   ( case f3 of
                       Hs.Just (AboutAuthAuthConfig f3) ->
                         (HsJSONPB.pair "auth_config" f3)
@@ -619,8 +620,8 @@ instance HsJSONPB.FromJSONPB About where
               <*> ( let parseAuth parseObj =
                           Hs.msum
                             [ Hs.Just Hs.. AboutAuthAuthConfig
-                                <$> (HsJSONPB.parseField parseObj "auth_config"),
-                              Hs.pure Hs.Nothing
+                                <$> (HsJSONPB.parseField parseObj "auth_config")
+                            , Hs.pure Hs.Nothing
                             ]
                      in ((obj .: "auth") Hs.>>= (HsJSONPB.withObject "auth" parseAuth))
                           <|> (parseAuth obj)
@@ -637,9 +638,9 @@ instance HsJSONPB.FromJSON About where
 
 data About_AboutLink = About_AboutLink
   { about_AboutLinkName ::
-      Hs.Text,
-    about_AboutLinkUrl :: Hs.Text,
-    about_AboutLinkCategory :: Hs.Text
+      Hs.Text
+  , about_AboutLinkUrl :: Hs.Text
+  , about_AboutLinkCategory :: Hs.Text
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -652,20 +653,20 @@ instance HsProtobuf.Message About_AboutLink where
   encodeMessage
     _
     About_AboutLink
-      { about_AboutLinkName = about_AboutLinkName,
-        about_AboutLinkUrl = about_AboutLinkUrl,
-        about_AboutLinkCategory = about_AboutLinkCategory
+      { about_AboutLinkName = about_AboutLinkName
+      , about_AboutLinkUrl = about_AboutLinkUrl
+      , about_AboutLinkCategory = about_AboutLinkCategory
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
                 about_AboutLinkName
-            ),
-            ( HsProtobuf.encodeMessageField
+            )
+          , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
                 about_AboutLinkUrl
-            ),
-            ( HsProtobuf.encodeMessageField
+            )
+          , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 3)
                 about_AboutLinkCategory
             )
@@ -692,15 +693,15 @@ instance HsProtobuf.Message About_AboutLink where
           (HsProtobuf.Single "name")
           []
           ""
-      ),
-      ( HsProtobuf.DotProtoField
+      )
+    , ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 2)
           (HsProtobuf.Prim HsProtobuf.String)
           (HsProtobuf.Single "url")
           []
           ""
-      ),
-      ( HsProtobuf.DotProtoField
+      )
+    , ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 3)
           (HsProtobuf.Prim HsProtobuf.String)
           (HsProtobuf.Single "category")
@@ -736,9 +737,9 @@ instance HsJSONPB.FromJSON About_AboutLink where
 
 data About_AuthConfig = About_AuthConfig
   { about_AuthConfigForceLogin ::
-      Hs.Bool,
-    about_AuthConfigIssuer :: Hs.Text,
-    about_AuthConfigProviderName :: Hs.Text
+      Hs.Bool
+  , about_AuthConfigIssuer :: Hs.Text
+  , about_AuthConfigProviderName :: Hs.Text
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -752,20 +753,20 @@ instance HsProtobuf.Message About_AuthConfig where
     _
     About_AuthConfig
       { about_AuthConfigForceLogin =
-          about_AuthConfigForceLogin,
-        about_AuthConfigIssuer = about_AuthConfigIssuer,
-        about_AuthConfigProviderName = about_AuthConfigProviderName
+        about_AuthConfigForceLogin
+      , about_AuthConfigIssuer = about_AuthConfigIssuer
+      , about_AuthConfigProviderName = about_AuthConfigProviderName
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
                 about_AuthConfigForceLogin
-            ),
-            ( HsProtobuf.encodeMessageField
+            )
+          , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
                 about_AuthConfigIssuer
-            ),
-            ( HsProtobuf.encodeMessageField
+            )
+          , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 3)
                 about_AuthConfigProviderName
             )
@@ -792,15 +793,15 @@ instance HsProtobuf.Message About_AuthConfig where
           (HsProtobuf.Single "force_login")
           []
           ""
-      ),
-      ( HsProtobuf.DotProtoField
+      )
+    , ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 2)
           (HsProtobuf.Prim HsProtobuf.String)
           (HsProtobuf.Single "issuer")
           []
           ""
-      ),
-      ( HsProtobuf.DotProtoField
+      )
+    , ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 3)
           (HsProtobuf.Prim HsProtobuf.String)
           (HsProtobuf.Single "provider_name")
@@ -965,8 +966,8 @@ instance HsJSONPB.FromJSON GetAboutResponse where
 
 data GroupDefinition = GroupDefinition
   { groupDefinitionName ::
-      Hs.Text,
-    groupDefinitionMembers :: Hs.Word32
+      Hs.Text
+  , groupDefinitionMembers :: Hs.Word32
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -979,15 +980,15 @@ instance HsProtobuf.Message GroupDefinition where
   encodeMessage
     _
     GroupDefinition
-      { groupDefinitionName = groupDefinitionName,
-        groupDefinitionMembers = groupDefinitionMembers
+      { groupDefinitionName = groupDefinitionName
+      , groupDefinitionMembers = groupDefinitionMembers
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
                 groupDefinitionName
-            ),
-            ( HsProtobuf.encodeMessageField
+            )
+          , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
                 groupDefinitionMembers
             )
@@ -1010,8 +1011,8 @@ instance HsProtobuf.Message GroupDefinition where
           (HsProtobuf.Single "name")
           []
           ""
-      ),
-      ( HsProtobuf.DotProtoField
+      )
+    , ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 2)
           (HsProtobuf.Prim HsProtobuf.UInt32)
           (HsProtobuf.Single "members")
@@ -1167,8 +1168,8 @@ instance HsJSONPB.FromJSON GetGroupsResponse where
 
 data GetGroupMembersRequest = GetGroupMembersRequest
   { getGroupMembersRequestIndex ::
-      Hs.Text,
-    getGroupMembersRequestGroup :: Hs.Text
+      Hs.Text
+  , getGroupMembersRequestGroup :: Hs.Text
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -1182,15 +1183,15 @@ instance HsProtobuf.Message GetGroupMembersRequest where
     _
     GetGroupMembersRequest
       { getGroupMembersRequestIndex =
-          getGroupMembersRequestIndex,
-        getGroupMembersRequestGroup = getGroupMembersRequestGroup
+        getGroupMembersRequestIndex
+      , getGroupMembersRequestGroup = getGroupMembersRequestGroup
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
                 getGroupMembersRequestIndex
-            ),
-            ( HsProtobuf.encodeMessageField
+            )
+          , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
                 getGroupMembersRequestGroup
             )
@@ -1213,8 +1214,8 @@ instance HsProtobuf.Message GetGroupMembersRequest where
           (HsProtobuf.Single "index")
           []
           ""
-      ),
-      ( HsProtobuf.DotProtoField
+      )
+    , ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 2)
           (HsProtobuf.Prim HsProtobuf.String)
           (HsProtobuf.Single "group")
@@ -1263,7 +1264,7 @@ instance HsProtobuf.Message GetGroupMembersResponse where
     _
     GetGroupMembersResponse
       { getGroupMembersResponseMembers =
-          getGroupMembersResponseMembers
+        getGroupMembersResponseMembers
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField

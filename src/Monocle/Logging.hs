@@ -8,9 +8,9 @@ import Monocle.Protob.Search (QueryRequest_QueryType (..))
 import Monocle.Search.Query qualified as Q
 
 data LogCrawlerContext = LogCrawlerContext
-  { lccIndex :: Text,
-    lccName :: Text,
-    lccEntity :: Maybe Entity
+  { lccIndex :: Text
+  , lccName :: Text
+  , lccEntity :: Maybe Entity
   }
 
 noContext :: LogCrawlerContext
@@ -121,5 +121,5 @@ instance From LogEvent Text where
       "Requested OIDC IdToken: " <> content
     JWTCreated mUid redirectUri -> "JSON Web Token created for mUid: " <> mUid <> ". Redirecting user to: " <> redirectUri
     JWTCreateFailed mUid err -> "JSON Web Token created failed for mUid: " <> mUid <> " due to: " <> err
-    where
-      prefix LogCrawlerContext {..} = "[" <> lccIndex <> "] " <> "Crawler: " <> lccName
+   where
+    prefix LogCrawlerContext {..} = "[" <> lccIndex <> "] " <> "Crawler: " <> lccName

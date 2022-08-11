@@ -1,21 +1,20 @@
 {-# LANGUAGE RecordWildCards #-}
 
 -- | A test module to load some fake data
-module Monocle.Backend.Provisioner
-  ( -- * Provisioner
-    runProvisioner,
+module Monocle.Backend.Provisioner (
+  -- * Provisioner
+  runProvisioner,
 
-    -- * Fake datas
-    fakeAuthor,
-    fakeChange,
-    fakeChangeEvent,
-    fakeETaskData,
-    fakeTaskData,
+  -- * Fake datas
+  fakeAuthor,
+  fakeChange,
+  fakeChangeEvent,
+  fakeETaskData,
+  fakeTaskData,
 
-    -- * re-exports
-    Faker.generateNonDeterministic,
-  )
-where
+  -- * re-exports
+  Faker.generateNonDeterministic,
+) where
 
 import Data.Time.Clock.System
 import Faker qualified
@@ -54,8 +53,8 @@ setChangeID xs = do
     map
       ( \c ->
           c
-            { echangeChangeId = "change-" <> echangeId c,
-              echangeUrl = "http://review.example.org/" <> echangeId c
+            { echangeChangeId = "change-" <> echangeId c
+            , echangeUrl = "http://review.example.org/" <> echangeId c
             }
       )
       newChanges

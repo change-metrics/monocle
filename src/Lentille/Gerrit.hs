@@ -4,22 +4,21 @@
 -- Maintainer: Monocle authors
 --
 -- Monocle Gerrit crawler system
-module Lentille.Gerrit
-  ( getProjectsStream,
-    getChangesStream,
-    G.GerritProjectQuery (..),
-    G.GerritQuery (..),
+module Lentille.Gerrit (
+  getProjectsStream,
+  getChangesStream,
+  G.GerritProjectQuery (..),
+  G.GerritQuery (..),
 
-    -- * The context
-    MonadGerrit (..),
-    GerritEnv (..),
-    G.getClient,
+  -- * The context
+  MonadGerrit (..),
+  GerritEnv (..),
+  G.getClient,
 
-    -- * Helpers
-    streamChange,
-    streamProject,
-  )
-where
+  -- * Helpers
+  streamChange,
+  streamProject,
+) where
 
 import Data.Attoparsec.Text qualified as P
 import Data.Char
@@ -67,14 +66,14 @@ getClient url auth = do
   pure $ G.getClientWithManager manager url auth
 
 data GerritEnv = GerritEnv
-  { -- | The Gerrit connexion client
-    client :: G.GerritClient,
-    -- | A project fullname prefix as defined in the Monocle configuration
-    prefix :: Maybe Text,
-    -- | The identity alias callback
-    identAliasCB :: Text -> Maybe Text,
-    -- | The crawler name
-    crawlerName :: Text
+  { client :: G.GerritClient
+  -- ^ The Gerrit connexion client
+  , prefix :: Maybe Text
+  -- ^ A project fullname prefix as defined in the Monocle configuration
+  , identAliasCB :: Text -> Maybe Text
+  -- ^ The identity alias callback
+  , crawlerName :: Text
+  -- ^ The crawler name
   }
 
 -------------------------------------------------------------------------------
@@ -112,8 +111,8 @@ approvalsParser = do
   void (P.decimal :: P.Parser Integer)
   void $ P.string ": "
   word `P.sepBy1` P.char ' '
-  where
-    word = P.takeWhile1 (not . isSpace)
+ where
+  word = P.takeWhile1 (not . isSpace)
 
 -- >>> P.parseOnly commentParser "Patch Set 3: Verified-1\n\nBuild failed."
 -- Right "Build failed."
@@ -148,16 +147,16 @@ getHostFromURL url =
 -}
 toApprovals :: [(Text, GerritDetailedLabel)] -> [Text]
 toApprovals = concatMap genApprovals
-  where
-    genApprovals :: (Text, GerritDetailedLabel) -> [Text]
-    genApprovals (label, GerritDetailedLabel {..}) =
-      (label <>) <$> case all of
-        Just votes -> filter (/= "+0") $ genTextVal <$> votes
-        Nothing -> []
-    genTextVal :: GerritDetailedLabelVote -> Text
-    genTextVal vote = case value vote of
-      Just v -> if v >= 0 then "+" <> show v else show v
-      Nothing -> "+0"
+ where
+  genApprovals :: (Text, GerritDetailedLabel) -> [Text]
+  genApprovals (label, GerritDetailedLabel {..}) =
+    (label <>) <$> case all of
+      Just votes -> filter (/= "+0") $ genTextVal <$> votes
+      Nothing -> []
+  genTextVal :: GerritDetailedLabelVote -> Text
+  genTextVal vote = case value vote of
+    Just v -> if v >= 0 then "+" <> show v else show v
+    Nothing -> "+0"
 
 -- >>> getPrefix Nothing "config"
 -- ""
@@ -180,14 +179,14 @@ streamProject ::
   G.GerritProjectQuery ->
   S.Stream (S.Of CrawlerPB.Project) m ()
 streamProject env query = go 0
-  where
-    size = 100
-    doGet offset = getProjects env size query (Just offset)
-    go offset = do
-      projects <- lift $ do httpRetry (crawlerName env, G.serverUrl $ client env, "crawler") . doGet $ offset
-      let pNames = M.keys projects
-      S.each $ CrawlerPB.Project . from <$> pNames
-      when (length pNames == size) $ go (offset + size)
+ where
+  size = 100
+  doGet offset = getProjects env size query (Just offset)
+  go offset = do
+    projects <- lift $ do httpRetry (crawlerName env, G.serverUrl $ client env, "crawler") . doGet $ offset
+    let pNames = M.keys projects
+    S.each $ CrawlerPB.Project . from <$> pNames
+    when (length pNames == size) $ go (offset + size)
 
 streamChange ::
   MonadGerrit m =>
@@ -207,188 +206,188 @@ streamChange' ::
   Maybe Text ->
   S.Stream (S.Of (ChangePB.Change, [ChangePB.ChangeEvent])) m ()
 streamChange' env identCB serverUrl query prefixM = go 0
-  where
-    size = 100
-    go offset = do
-      changes <- lift $ do httpRetry (crawlerName env, G.serverUrl $ client env, "crawler") . doGet $ offset
-      S.each $ (\c -> let cT = toMChange c in (cT, toMEvents cT (messages c))) <$> changes
-      when (length changes == size) $ go (offset + size)
-    doGet offset = queryChanges env size query (Just offset)
-    getIdent :: GerritAuthor -> ChangePB.Ident
-    getIdent GerritAuthor {..} =
-      toIdent
-        (getHostFromURL serverUrl)
-        identCB
-        $ name <> "/" <> show aAccountId
-      where
-        name = fromMaybe nobody aName
-    toMEvents :: ChangePB.Change -> [GerritChangeMessage] -> [ChangePB.ChangeEvent]
-    toMEvents ChangePB.Change {..} messages =
-      [toChangeCreatedEvent]
-        <> toChangeMergedEvent
-        <> toChangeAbandonedEvent
-        <> toChangeReviewedEvents
-        <> toChangeCommentedEvents
-        <> toChangePushedEvents
-      where
-        baseEvent :: ChangePB.ChangeEventType -> LText -> ChangePB.ChangeEvent
-        baseEvent eType eId =
-          let changeEventId = eId
-              changeEventCreatedAt = changeCreatedAt
-              changeEventAuthor = changeAuthor
-              changeEventRepositoryFullname = changeRepositoryFullname
-              changeEventRepositoryPrefix = changeRepositoryPrefix
-              changeEventRepositoryShortname = changeRepositoryShortname
-              changeEventBranch = changeBranch
-              changeEventTargetBranch = changeTargetBranch
-              changeEventNumber = changeNumber
-              changeEventChangeId = changeChangeId
-              changeEventUrl = changeUrl
-              changeEventOnAuthor = changeAuthor
-              changeEventOnCreatedAt = changeCreatedAt
-              changeEventChangedFiles = ChangePB.ChangedFilePath . ChangePB.changedFilePath <$> changeChangedFiles
-              changeEventLabels = changeLabels
-              changeEventType = Just eType
-              changeEventOptionalDuration = swapDuration <$> changeOptionalDuration
-           in ChangePB.ChangeEvent {..}
-        toChangeCreatedEvent =
-          baseEvent (ChangePB.ChangeEventTypeChangeCreated ChangePB.ChangeCreatedEvent) $ "CCE" <> changeId
+ where
+  size = 100
+  go offset = do
+    changes <- lift $ do httpRetry (crawlerName env, G.serverUrl $ client env, "crawler") . doGet $ offset
+    S.each $ (\c -> let cT = toMChange c in (cT, toMEvents cT (messages c))) <$> changes
+    when (length changes == size) $ go (offset + size)
+  doGet offset = queryChanges env size query (Just offset)
+  getIdent :: GerritAuthor -> ChangePB.Ident
+  getIdent GerritAuthor {..} =
+    toIdent
+      (getHostFromURL serverUrl)
+      identCB
+      $ name <> "/" <> show aAccountId
+   where
+    name = fromMaybe nobody aName
+  toMEvents :: ChangePB.Change -> [GerritChangeMessage] -> [ChangePB.ChangeEvent]
+  toMEvents ChangePB.Change {..} messages =
+    [toChangeCreatedEvent]
+      <> toChangeMergedEvent
+      <> toChangeAbandonedEvent
+      <> toChangeReviewedEvents
+      <> toChangeCommentedEvents
+      <> toChangePushedEvents
+   where
+    baseEvent :: ChangePB.ChangeEventType -> LText -> ChangePB.ChangeEvent
+    baseEvent eType eId =
+      let changeEventId = eId
+          changeEventCreatedAt = changeCreatedAt
+          changeEventAuthor = changeAuthor
+          changeEventRepositoryFullname = changeRepositoryFullname
+          changeEventRepositoryPrefix = changeRepositoryPrefix
+          changeEventRepositoryShortname = changeRepositoryShortname
+          changeEventBranch = changeBranch
+          changeEventTargetBranch = changeTargetBranch
+          changeEventNumber = changeNumber
+          changeEventChangeId = changeChangeId
+          changeEventUrl = changeUrl
+          changeEventOnAuthor = changeAuthor
+          changeEventOnCreatedAt = changeCreatedAt
+          changeEventChangedFiles = ChangePB.ChangedFilePath . ChangePB.changedFilePath <$> changeChangedFiles
+          changeEventLabels = changeLabels
+          changeEventType = Just eType
+          changeEventOptionalDuration = swapDuration <$> changeOptionalDuration
+       in ChangePB.ChangeEvent {..}
+    toChangeCreatedEvent =
+      baseEvent (ChangePB.ChangeEventTypeChangeCreated ChangePB.ChangeCreatedEvent) $ "CCE" <> changeId
 
-        toChangeMergedEvent = case changeState of
-          Enumerated (Right ChangePB.Change_ChangeStateMerged) ->
-            [ (baseEvent (ChangePB.ChangeEventTypeChangeMerged ChangePB.ChangeMergedEvent) $ "CCLE" <> changeId)
-                { ChangePB.changeEventAuthor = case changeOptionalMergedBy of
-                    Just (ChangePB.ChangeOptionalMergedByMergedBy ident) -> Just ident
-                    Nothing -> Nothing,
-                  ChangePB.changeEventCreatedAt = case changeOptionalMergedAt of
-                    Just (ChangePB.ChangeOptionalMergedAtMergedAt ts) -> Just ts
-                    Nothing -> Nothing
-                }
-            ]
-          _ -> mempty
-        toChangeAbandonedEvent = case changeState of
-          Enumerated (Right ChangePB.Change_ChangeStateClosed) ->
-            [ (baseEvent (ChangePB.ChangeEventTypeChangeAbandoned ChangePB.ChangeAbandonedEvent) $ "CCLE" <> changeId)
-                { ChangePB.changeEventCreatedAt = case changeOptionalClosedAt of
-                    Just (ChangePB.ChangeOptionalClosedAtClosedAt ts) -> Just ts
-                    Nothing -> Nothing
-                }
-            ]
-          _ -> mempty
-        toChangeReviewedEvents = mapMaybe toReviewEvent messages
-          where
-            toReviewEvent GerritChangeMessage {..} = case P.parseOnly approvalsParser mMessage of
-              Right approvals ->
-                Just $
-                  commentBasedEvent
-                    (ChangePB.ChangeEventTypeChangeReviewed . ChangePB.ChangeReviewedEvent $ V.fromList $ from <$> approvals)
-                    ("approval_" <> from mId)
-                    mAuthor
-                    mDate
-              Left _ -> Nothing
-        toChangeCommentedEvents =
-          toCommentBasedEvent commentParser (ChangePB.ChangeEventTypeChangeCommented ChangePB.ChangeCommentedEvent) ""
-        toChangePushedEvents =
-          toCommentBasedEvent newPSParser (ChangePB.ChangeEventTypeChangeCommitPushed ChangePB.ChangeCommitPushedEvent) "push_"
-        toCommentBasedEvent parser eType prefix = mapMaybe toEvent messages
-          where
-            toEvent GerritChangeMessage {..} = case P.parseOnly parser mMessage of
-              Right _ ->
-                Just $ commentBasedEvent eType (prefix <> from mId) mAuthor mDate
-              Left _ -> Nothing
-        commentBasedEvent t eId author date =
-          (baseEvent t eId)
-            { ChangePB.changeEventAuthor = getIdent <$> author,
-              ChangePB.changeEventCreatedAt = Just . T.fromUTCTime . unGerritTime $ date
+    toChangeMergedEvent = case changeState of
+      Enumerated (Right ChangePB.Change_ChangeStateMerged) ->
+        [ (baseEvent (ChangePB.ChangeEventTypeChangeMerged ChangePB.ChangeMergedEvent) $ "CCLE" <> changeId)
+            { ChangePB.changeEventAuthor = case changeOptionalMergedBy of
+                Just (ChangePB.ChangeOptionalMergedByMergedBy ident) -> Just ident
+                Nothing -> Nothing
+            , ChangePB.changeEventCreatedAt = case changeOptionalMergedAt of
+                Just (ChangePB.ChangeOptionalMergedAtMergedAt ts) -> Just ts
+                Nothing -> Nothing
             }
+        ]
+      _ -> mempty
+    toChangeAbandonedEvent = case changeState of
+      Enumerated (Right ChangePB.Change_ChangeStateClosed) ->
+        [ (baseEvent (ChangePB.ChangeEventTypeChangeAbandoned ChangePB.ChangeAbandonedEvent) $ "CCLE" <> changeId)
+            { ChangePB.changeEventCreatedAt = case changeOptionalClosedAt of
+                Just (ChangePB.ChangeOptionalClosedAtClosedAt ts) -> Just ts
+                Nothing -> Nothing
+            }
+        ]
+      _ -> mempty
+    toChangeReviewedEvents = mapMaybe toReviewEvent messages
+     where
+      toReviewEvent GerritChangeMessage {..} = case P.parseOnly approvalsParser mMessage of
+        Right approvals ->
+          Just $
+            commentBasedEvent
+              (ChangePB.ChangeEventTypeChangeReviewed . ChangePB.ChangeReviewedEvent $ V.fromList $ from <$> approvals)
+              ("approval_" <> from mId)
+              mAuthor
+              mDate
+        Left _ -> Nothing
+    toChangeCommentedEvents =
+      toCommentBasedEvent commentParser (ChangePB.ChangeEventTypeChangeCommented ChangePB.ChangeCommentedEvent) ""
+    toChangePushedEvents =
+      toCommentBasedEvent newPSParser (ChangePB.ChangeEventTypeChangeCommitPushed ChangePB.ChangeCommitPushedEvent) "push_"
+    toCommentBasedEvent parser eType prefix = mapMaybe toEvent messages
+     where
+      toEvent GerritChangeMessage {..} = case P.parseOnly parser mMessage of
+        Right _ ->
+          Just $ commentBasedEvent eType (prefix <> from mId) mAuthor mDate
+        Left _ -> Nothing
+    commentBasedEvent t eId author date =
+      (baseEvent t eId)
+        { ChangePB.changeEventAuthor = getIdent <$> author
+        , ChangePB.changeEventCreatedAt = Just . T.fromUTCTime . unGerritTime $ date
+        }
 
-    toMChange :: GerritChange -> ChangePB.Change
-    toMChange GerritChange {..} =
-      let changeId = from id
-          changeNumber = from number
-          changeChangeId = getChangeId project (show number)
-          changeTitle = from subject
-          changeText = getCommitMessage
-          changeUrl = from $ T.dropWhileEnd (== '/') serverUrl <> "/" <> show changeNumber
-          changeCommitCount = 1
-          changeAdditions = from insertions
-          changeDeletions = from deletions
-          changeChangedFilesCount = getFilesCount
-          changeChangedFiles = V.fromList getFiles
-          changeCommits = V.fromList $ maybe [] getCommits current_revision
-          changeRepositoryPrefix = getPrefix prefixM project
-          changeRepositoryFullname =
-            if T.null $ from changeRepositoryPrefix
-              then changeRepositoryShortname
-              else changeRepositoryPrefix <> "/" <> changeRepositoryShortname
-          changeRepositoryShortname = from . Prelude.last $ T.split (== '/') project
-          changeAuthor = Just author
-          changeOptionalMergedBy =
-            if status == MERGED
-              then ChangePB.ChangeOptionalMergedByMergedBy <$> merger
-              else Nothing
-          changeBranch = from branch
-          changeTargetBranch = from branch
-          changeCreatedAt = Just $ toTimestamp created
-          changeOptionalMergedAt =
-            if status == MERGED
-              then Just . ChangePB.ChangeOptionalMergedAtMergedAt $ maybe (toTimestamp updated) toTimestamp submitted
-              else Nothing
-          changeUpdatedAt = Just $ toTimestamp updated
-          changeOptionalClosedAt = case status of
-            ABANDONED -> Just $ ChangePB.ChangeOptionalClosedAtClosedAt $ toTimestamp updated
-            MERGED -> Just $ ChangePB.ChangeOptionalClosedAtClosedAt $ maybe (toTimestamp updated) toTimestamp submitted
-            _ -> Nothing
-          changeState = toState status
-          changeOptionalDuration = case submitted of
-            Just merged_ts -> Just . ChangePB.ChangeOptionalDurationDuration . from $ diffTimeSec (unGerritTime merged_ts) (unGerritTime created)
-            Nothing -> Nothing
-          changeMergeable = case mergeable of
-            Just False -> "CONFLICT"
-            _ -> "MERGEABLE"
-          changeLabels = V.fromList $ from <$> hashtags <> maybe mempty (: []) topic
-          -- TODO(fbo) add assignees support to gerrit-haskell
-          changeAssignees = V.fromList []
-          changeApprovals = V.fromList $ from <$> toApprovals (M.toList labels)
-          changeDraft = status == DRAFT
-          changeOptionalSelfMerged =
-            if status == MERGED
-              then ChangePB.ChangeOptionalSelfMergedSelfMerged . isSelfMerged owner <$> submitter
-              else Nothing
-       in ChangePB.Change {..}
-      where
-        getRevision sha = join (M.lookup sha revisions)
-        revision = getRevision =<< current_revision
-        author = getIdent owner
-        uploader = grUploader <$> revision
-        merger = getIdent <$> submitter
-        isSelfMerged s a = aAccountId s == aAccountId a
-        toTimestamp = T.fromUTCTime . unGerritTime
-        ghostIdent' = ghostIdent $ getHostFromURL serverUrl
-        getCommitMessage = maybe "" (from . cMessage . grCommit) revision
-        getFilesCount = from $ maybe 0 (length . M.keys . grFiles) revision
-        getFiles = maybe [] (fmap toChangeFile) $ M.toList . grFiles <$> revision
-          where
-            toChangeFile (fp, details) =
-              let changedFileAdditions = maybe 0 from $ gfLinesInserted details
-                  changedFileDeletions = maybe 0 from $ gfLinesDeleted details
-                  changedFilePath = from fp
-               in ChangePB.ChangedFile {..}
-        getCommits sha = maybe [] toCommit $ grCommit <$> revision
-          where
-            toCommit GerritCommit {..} =
-              let commitSha = from sha
-                  commitAuthor = Just author
-                  commitCommitter = Just $ maybe ghostIdent' getIdent uploader
-                  commitAuthoredAt = Just . T.fromUTCTime . unGerritTime . caDate $ cAuthor
-                  commitCommittedAt = Just . T.fromUTCTime . unGerritTime . caDate $ cCommitter
-                  commitAdditions = from insertions
-                  commitDeletions = from deletions
-                  commitTitle = from cSubject
-               in [ChangePB.Commit {..}]
-        toState :: GerritChangeStatus -> Enumerated ChangePB.Change_ChangeState
-        toState status' = Enumerated . Right $ case status' of
-          ABANDONED -> ChangePB.Change_ChangeStateClosed
-          MERGED -> ChangePB.Change_ChangeStateMerged
-          NEW -> ChangePB.Change_ChangeStateOpen
-          DRAFT -> ChangePB.Change_ChangeStateOpen
+  toMChange :: GerritChange -> ChangePB.Change
+  toMChange GerritChange {..} =
+    let changeId = from id
+        changeNumber = from number
+        changeChangeId = getChangeId project (show number)
+        changeTitle = from subject
+        changeText = getCommitMessage
+        changeUrl = from $ T.dropWhileEnd (== '/') serverUrl <> "/" <> show changeNumber
+        changeCommitCount = 1
+        changeAdditions = from insertions
+        changeDeletions = from deletions
+        changeChangedFilesCount = getFilesCount
+        changeChangedFiles = V.fromList getFiles
+        changeCommits = V.fromList $ maybe [] getCommits current_revision
+        changeRepositoryPrefix = getPrefix prefixM project
+        changeRepositoryFullname =
+          if T.null $ from changeRepositoryPrefix
+            then changeRepositoryShortname
+            else changeRepositoryPrefix <> "/" <> changeRepositoryShortname
+        changeRepositoryShortname = from . Prelude.last $ T.split (== '/') project
+        changeAuthor = Just author
+        changeOptionalMergedBy =
+          if status == MERGED
+            then ChangePB.ChangeOptionalMergedByMergedBy <$> merger
+            else Nothing
+        changeBranch = from branch
+        changeTargetBranch = from branch
+        changeCreatedAt = Just $ toTimestamp created
+        changeOptionalMergedAt =
+          if status == MERGED
+            then Just . ChangePB.ChangeOptionalMergedAtMergedAt $ maybe (toTimestamp updated) toTimestamp submitted
+            else Nothing
+        changeUpdatedAt = Just $ toTimestamp updated
+        changeOptionalClosedAt = case status of
+          ABANDONED -> Just $ ChangePB.ChangeOptionalClosedAtClosedAt $ toTimestamp updated
+          MERGED -> Just $ ChangePB.ChangeOptionalClosedAtClosedAt $ maybe (toTimestamp updated) toTimestamp submitted
+          _ -> Nothing
+        changeState = toState status
+        changeOptionalDuration = case submitted of
+          Just merged_ts -> Just . ChangePB.ChangeOptionalDurationDuration . from $ diffTimeSec (unGerritTime merged_ts) (unGerritTime created)
+          Nothing -> Nothing
+        changeMergeable = case mergeable of
+          Just False -> "CONFLICT"
+          _ -> "MERGEABLE"
+        changeLabels = V.fromList $ from <$> hashtags <> maybe mempty (: []) topic
+        -- TODO(fbo) add assignees support to gerrit-haskell
+        changeAssignees = V.fromList []
+        changeApprovals = V.fromList $ from <$> toApprovals (M.toList labels)
+        changeDraft = status == DRAFT
+        changeOptionalSelfMerged =
+          if status == MERGED
+            then ChangePB.ChangeOptionalSelfMergedSelfMerged . isSelfMerged owner <$> submitter
+            else Nothing
+     in ChangePB.Change {..}
+   where
+    getRevision sha = join (M.lookup sha revisions)
+    revision = getRevision =<< current_revision
+    author = getIdent owner
+    uploader = grUploader <$> revision
+    merger = getIdent <$> submitter
+    isSelfMerged s a = aAccountId s == aAccountId a
+    toTimestamp = T.fromUTCTime . unGerritTime
+    ghostIdent' = ghostIdent $ getHostFromURL serverUrl
+    getCommitMessage = maybe "" (from . cMessage . grCommit) revision
+    getFilesCount = from $ maybe 0 (length . M.keys . grFiles) revision
+    getFiles = maybe [] (fmap toChangeFile) $ M.toList . grFiles <$> revision
+     where
+      toChangeFile (fp, details) =
+        let changedFileAdditions = maybe 0 from $ gfLinesInserted details
+            changedFileDeletions = maybe 0 from $ gfLinesDeleted details
+            changedFilePath = from fp
+         in ChangePB.ChangedFile {..}
+    getCommits sha = maybe [] toCommit $ grCommit <$> revision
+     where
+      toCommit GerritCommit {..} =
+        let commitSha = from sha
+            commitAuthor = Just author
+            commitCommitter = Just $ maybe ghostIdent' getIdent uploader
+            commitAuthoredAt = Just . T.fromUTCTime . unGerritTime . caDate $ cAuthor
+            commitCommittedAt = Just . T.fromUTCTime . unGerritTime . caDate $ cCommitter
+            commitAdditions = from insertions
+            commitDeletions = from deletions
+            commitTitle = from cSubject
+         in [ChangePB.Commit {..}]
+    toState :: GerritChangeStatus -> Enumerated ChangePB.Change_ChangeState
+    toState status' = Enumerated . Right $ case status' of
+      ABANDONED -> ChangePB.Change_ChangeStateClosed
+      MERGED -> ChangePB.Change_ChangeStateMerged
+      NEW -> ChangePB.Change_ChangeStateOpen
+      DRAFT -> ChangePB.Change_ChangeStateOpen
