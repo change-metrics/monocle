@@ -2299,7 +2299,8 @@ data Change = Change
     changeChangedFilesCount :: Hs.Word32,
     changeCommits :: Hs.Vector Monocle.Protob.Search.Commit,
     changeCommitsCount :: Hs.Word32,
-    changeTaskData :: Hs.Vector Monocle.Protob.Search.TaskData
+    changeTaskData :: Hs.Vector Monocle.Protob.Search.TaskData,
+    changeTtm :: Hs.Maybe ChangeTtm
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -2336,7 +2337,8 @@ instance HsProtobuf.Message Change where
         changeChangedFilesCount = changeChangedFilesCount,
         changeCommits = changeCommits,
         changeCommitsCount = changeCommitsCount,
-        changeTaskData = changeTaskData
+        changeTaskData = changeTaskData,
+        changeTtm = changeTtm
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -2467,7 +2469,16 @@ instance HsProtobuf.Message Change where
                     @(HsProtobuf.NestedVec Monocle.Protob.Search.TaskData)
                     changeTaskData
                 )
-            )
+            ),
+            case changeTtm of
+              Hs.Nothing -> Hs.mempty
+              Hs.Just x ->
+                case x of
+                  ChangeTtmDuration y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 80)
+                        (HsProtobuf.ForceEmit y)
+                    )
           ]
       )
   decodeMessage _ =
@@ -2606,6 +2617,14 @@ instance HsProtobuf.Message Change where
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 70)
               )
+          )
+      <*> ( HsProtobuf.oneof
+              Hs.Nothing
+              [ ( (HsProtobuf.FieldNumber 80),
+                  (Hs.pure (Hs.Just Hs.. ChangeTtmDuration))
+                    <*> HsProtobuf.decodeMessageField
+                )
+              ]
           )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
@@ -2828,6 +2847,7 @@ instance HsJSONPB.ToJSONPB Change where
         f60
         f61
         f70
+        f80
       ) =
       ( HsJSONPB.object
           [ "change_id" .= f1,
@@ -2868,7 +2888,17 @@ instance HsJSONPB.ToJSONPB Change where
             "changed_files_count" .= f51,
             "commits" .= f60,
             "commits_count" .= f61,
-            "task_data" .= f70
+            "task_data" .= f70,
+            ( let encodeTtm =
+                    ( case f80 of
+                        Hs.Just (ChangeTtmDuration f80) -> (HsJSONPB.pair "duration" f80)
+                        Hs.Nothing -> Hs.mempty
+                    )
+               in \options ->
+                    if HsJSONPB.optEmitNamedOneof options
+                      then ("ttm" .= (HsJSONPB.objectOrNull [encodeTtm] options)) options
+                      else encodeTtm options
+            )
           ]
       )
   toEncodingPB
@@ -2898,6 +2928,7 @@ instance HsJSONPB.ToJSONPB Change where
         f60
         f61
         f70
+        f80
       ) =
       ( HsJSONPB.pairs
           [ "change_id" .= f1,
@@ -2936,7 +2967,17 @@ instance HsJSONPB.ToJSONPB Change where
             "changed_files_count" .= f51,
             "commits" .= f60,
             "commits_count" .= f61,
-            "task_data" .= f70
+            "task_data" .= f70,
+            ( let encodeTtm =
+                    ( case f80 of
+                        Hs.Just (ChangeTtmDuration f80) -> (HsJSONPB.pair "duration" f80)
+                        Hs.Nothing -> Hs.mempty
+                    )
+               in \options ->
+                    if HsJSONPB.optEmitNamedOneof options
+                      then ("ttm" .= (HsJSONPB.pairsOrNull [encodeTtm] options)) options
+                      else encodeTtm options
+            )
           ]
       )
 
@@ -2981,6 +3022,15 @@ instance HsJSONPB.FromJSONPB Change where
               <*> obj .: "commits"
               <*> obj .: "commits_count"
               <*> obj .: "task_data"
+              <*> ( let parseTtm parseObj =
+                          Hs.msum
+                            [ Hs.Just Hs.. ChangeTtmDuration
+                                <$> (HsJSONPB.parseField parseObj "duration"),
+                              Hs.pure Hs.Nothing
+                            ]
+                     in ((obj .: "ttm") Hs.>>= (HsJSONPB.withObject "ttm" parseTtm))
+                          <|> (parseTtm obj)
+                  )
         )
     )
 
@@ -2996,6 +3046,12 @@ data ChangeMergedByM = ChangeMergedByMMergedBy Hs.Text
 
 instance HsProtobuf.Named ChangeMergedByM where
   nameOf _ = (Hs.fromString "ChangeMergedByM")
+
+data ChangeTtm = ChangeTtmDuration Hs.Word32
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named ChangeTtm where
+  nameOf _ = (Hs.fromString "ChangeTtm")
 
 newtype Changes = Changes
   { changesChanges ::

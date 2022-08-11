@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - [api] Add support for the 'ttm' field in the query language. The field allows to filter on merged changes of a specific duration (in seconds).
+- [api] Expose the duration field of the change object. Duration is the time to merge delay in seconds.
 
 ### Changed
 

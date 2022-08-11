@@ -142,6 +142,9 @@ type commit = {
 type change_merged_by_m =
   | Merged_by of string
 
+and change_ttm =
+  | Duration of int32
+
 and change = {
   change_id : string;
   author : string;
@@ -168,6 +171,7 @@ and change = {
   commits : commit list;
   commits_count : int32;
   task_data : task_data list;
+  ttm : change_ttm;
 }
 
 type changes = {
@@ -437,6 +441,9 @@ val default_commit :
 val default_change_merged_by_m : unit -> change_merged_by_m
 (** [default_change_merged_by_m ()] is the default value for type [change_merged_by_m] *)
 
+val default_change_ttm : unit -> change_ttm
+(** [default_change_ttm ()] is the default value for type [change_ttm] *)
+
 val default_change : 
   ?change_id:string ->
   ?author:string ->
@@ -463,6 +470,7 @@ val default_change :
   ?commits:commit list ->
   ?commits_count:int32 ->
   ?task_data:task_data list ->
+  ?ttm:change_ttm ->
   unit ->
   change
 (** [default_change ()] is the default value for type [change] *)

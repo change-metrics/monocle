@@ -226,6 +226,7 @@ type change_mutable = {
   mutable commits : SearchTypes.commit list;
   mutable commits_count : int32;
   mutable task_data : SearchTypes.task_data list;
+  mutable ttm : SearchTypes.change_ttm;
 }
 
 let default_change_mutable () : change_mutable = {
@@ -254,6 +255,7 @@ let default_change_mutable () : change_mutable = {
   commits = [];
   commits_count = 0l;
   task_data = [];
+  ttm = SearchTypes.Duration (0l);
 }
 
 type changes_mutable = {
@@ -1016,6 +1018,21 @@ let rec decode_change_merged_by_m json =
   in
   loop (Array.length keys - 1)
 
+and decode_change_ttm json =
+  let keys = Js.Dict.keys json in
+  let rec loop = function 
+    | -1 -> Pbrt_bs.E.malformed_variant "change_ttm"
+    | i -> 
+      begin match Array.unsafe_get keys i with
+      | "duration" -> 
+        let json = Js.Dict.unsafeGet json "duration" in
+        (SearchTypes.Duration (Pbrt_bs.int32 json "change_ttm" "Duration") : SearchTypes.change_ttm)
+      
+      | _ -> loop (i - 1)
+      end
+  in
+  loop (Array.length keys - 1)
+
 and decode_change json =
   let v = default_change_mutable () in
   let keys = Js.Dict.keys json in
@@ -1133,6 +1150,9 @@ and decode_change json =
         (decode_task_data (Pbrt_bs.object_ json "change" "task_data"))
       ) a |> Array.to_list;
     end
+    | "duration" -> 
+      let json = Js.Dict.unsafeGet json "duration" in
+      v.ttm <- Duration (Pbrt_bs.int32 json "change" "ttm")
     
     | _ -> () (*Unknown fields are ignored*)
   done;
@@ -1162,6 +1182,7 @@ and decode_change json =
     SearchTypes.commits = v.commits;
     SearchTypes.commits_count = v.commits_count;
     SearchTypes.task_data = v.task_data;
+    SearchTypes.ttm = v.ttm;
   } : SearchTypes.change)
 
 let rec decode_changes json =
@@ -1944,6 +1965,14 @@ let rec encode_change_merged_by_m (v:SearchTypes.change_merged_by_m) =
   end;
   json
 
+and encode_change_ttm (v:SearchTypes.change_ttm) = 
+  let json = Js.Dict.empty () in
+  begin match v with
+  | SearchTypes.Duration v ->
+    Js.Dict.set json "duration" (Js.Json.number (Int32.to_float v));
+  end;
+  json
+
 and encode_change (v:SearchTypes.change) = 
   let json = Js.Dict.empty () in
   Js.Dict.set json "change_id" (Js.Json.string v.SearchTypes.change_id);
@@ -2028,6 +2057,10 @@ and encode_change (v:SearchTypes.change) =
     in
     Js.Dict.set json "task_data" task_data';
   end;
+  begin match v.SearchTypes.ttm with
+    | Duration v ->
+      Js.Dict.set json "duration" (Js.Json.number (Int32.to_float v));
+  end; (* match v.ttm *)
   json
 
 let rec encode_changes (v:SearchTypes.changes) = 
