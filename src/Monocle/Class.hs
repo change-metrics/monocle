@@ -9,14 +9,14 @@ import Monocle.Client (MonocleClient, mkManager)
 import Monocle.Client.Api (crawlerAddDoc, crawlerCommit, crawlerCommitInfo)
 import Monocle.Logging
 import Monocle.Prelude
-import Monocle.Protob.Crawler
-  ( AddDocRequest,
-    AddDocResponse,
-    CommitInfoRequest,
-    CommitInfoResponse,
-    CommitRequest,
-    CommitResponse,
-  )
+import Monocle.Protob.Crawler (
+  AddDocRequest,
+  AddDocResponse,
+  CommitInfoRequest,
+  CommitInfoResponse,
+  CommitRequest,
+  CommitResponse,
+ )
 import Network.HTTP.Client (HttpException (..))
 import Network.HTTP.Client qualified as HTTP
 
@@ -120,43 +120,43 @@ retry' policy handler baseAction =
     policy
     [handler]
     action
-  where
-    action (RetryStatus num _ _) = baseAction num
+ where
+  action (RetryStatus num _ _) = baseAction num
 
 -- | Retry HTTP network action, doubling backoff each time
 httpRetry :: (MonadLog m, MonadMonitor m, MonadRetry m) => (Text, Text, Text) -> m a -> m a
 httpRetry label baseAction = retry policy httpHandler (const action)
-  where
-    backoff = 500000 -- 500ms
-    policy = Retry.exponentialBackoff backoff <> Retry.limitRetries retryLimit
-    action = do
-      res <- baseAction
-      incrementCounter httpRequestCounter label
-      pure res
-    httpHandler (RetryStatus num _ _) = Handler $ \case
-      HttpExceptionRequest req ctx -> do
-        let url = decodeUtf8 $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
-            arg = decodeUtf8 $ HTTP.queryString req
-            loc = if num == 0 then url <> arg else url
-        mLog . Log Unspecified . LogNetworkFailure $
-          counterT num retryLimit
-            <> " "
-            <> loc
-            <> " failed: "
-            <> show ctx
-        incrementCounter httpFailureCounter label
-        pure True
-      InvalidUrlException _ _ -> pure False
+ where
+  backoff = 500000 -- 500ms
+  policy = Retry.exponentialBackoff backoff <> Retry.limitRetries retryLimit
+  action = do
+    res <- baseAction
+    incrementCounter httpRequestCounter label
+    pure res
+  httpHandler (RetryStatus num _ _) = Handler $ \case
+    HttpExceptionRequest req ctx -> do
+      let url = decodeUtf8 $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
+          arg = decodeUtf8 $ HTTP.queryString req
+          loc = if num == 0 then url <> arg else url
+      mLog . Log Unspecified . LogNetworkFailure $
+        counterT num retryLimit
+          <> " "
+          <> loc
+          <> " failed: "
+          <> show ctx
+      incrementCounter httpFailureCounter label
+      pure True
+    InvalidUrlException _ _ -> pure False
 
 -- | A retry helper with a constant policy. This helper is in charge of low level logging
 -- and TODO: incrementCounter for graphql request and errors
 constantRetry :: (MonadRetry m, MonadLog m) => Text -> Handler m Bool -> (Int -> m a) -> m a
 constantRetry msg handler baseAction = retry policy (const handler) action
-  where
-    delay = 1_100_000 -- 1.1 seconds
-    policy = Retry.constantDelay delay <> Retry.limitRetries retryLimit
-    action num = do
-      when (num > 0) $
-        mLog . Log Macroscope . LogRaw $
-          counterT num retryLimit <> " failed: " <> msg
-      baseAction num
+ where
+  delay = 1_100_000 -- 1.1 seconds
+  policy = Retry.constantDelay delay <> Retry.limitRetries retryLimit
+  action num = do
+    when (num > 0) $
+      mLog . Log Macroscope . LogRaw $
+        counterT num retryLimit <> " failed: " <> msg
+    baseAction num

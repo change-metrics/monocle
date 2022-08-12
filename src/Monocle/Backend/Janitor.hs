@@ -1,13 +1,12 @@
 -- | Utility function to clean up and maintain the backend
-module Monocle.Backend.Janitor
-  ( removeTDCrawlerData,
-    wipeCrawlerData,
-    updateIdentsOnEvents,
-    updateIdentsOnChanges,
-    updateIdentsOnWorkspace,
-    removeProjectMD,
-  )
-where
+module Monocle.Backend.Janitor (
+  removeTDCrawlerData,
+  wipeCrawlerData,
+  updateIdentsOnEvents,
+  updateIdentsOnChanges,
+  updateIdentsOnWorkspace,
+  removeProjectMD,
+) where
 
 import Data.Aeson (genericParseJSON, genericToJSON)
 import Data.Aeson qualified as Aeson
@@ -30,11 +29,11 @@ updateAuthor index author@D.Author {..} = case getIdent of
   Nothing
     | newMuid /= from authorMuid -> D.Author (from newMuid) authorUid
     | otherwise -> author
-  where
-    getIdent :: Maybe LText
-    getIdent = from <$> Config.getIdentByAlias index (from authorUid)
-    -- Remove the host prefix
-    newMuid = T.drop 1 $ T.dropWhile (/= '/') (from authorUid)
+ where
+  getIdent :: Maybe LText
+  getIdent = from <$> Config.getIdentByAlias index (from authorUid)
+  -- Remove the host prefix
+  newMuid = T.drop 1 $ T.dropWhile (/= '/') (from authorUid)
 
 updateIdentsOnWorkspace :: QueryM ()
 updateIdentsOnWorkspace = do
@@ -73,11 +72,11 @@ updateIdentsOnChanges = do
 
 --- Dedicated reduced data type of EChange with only Author fields
 data EChangeAuthors = EChangeAuthors
-  { echangeaId :: LText,
-    echangeaCommits :: [Commit],
-    echangeaAuthor :: Author,
-    echangeaMergedBy :: Maybe Author,
-    echangeaAssignees :: [Author]
+  { echangeaId :: LText
+  , echangeaCommits :: [Commit]
+  , echangeaAuthor :: Author
+  , echangeaMergedBy :: Maybe Author
+  , echangeaAssignees :: [Author]
   }
   deriving (Show, Eq, Generic)
 
@@ -95,33 +94,33 @@ doUpdateIdentsOnChanges indexName updateAuthor' = do
             >>> Streaming.map mkEChangeBulkUpdate
             >>> I.bulkStream
         )
-  where
-    scanChanges :: Stream (Of EChangeAuthors) QueryM ()
-    scanChanges = Q.scanSearchHit
-    changeQuery = mkQuery [Q.documentType D.EChangeDoc]
-    updateChange :: EChangeAuthors -> Maybe EChangeAuthors
-    updateChange change@EChangeAuthors {..} =
-      let updatedChange =
-            change
-              { echangeaAuthor = updateAuthor' echangeaAuthor,
-                echangeaMergedBy = updateAuthor' <$> echangeaMergedBy,
-                echangeaAssignees = updateAuthor' <$> echangeaAssignees,
-                echangeaCommits = updateCommitAuthors <$> echangeaCommits
-              }
-       in if updatedChange == change then Nothing else Just updatedChange
-      where
-        updateCommitAuthors :: D.Commit -> D.Commit
-        updateCommitAuthors commit@D.Commit {..} =
-          commit
-            { commitAuthor = updateAuthor' commitAuthor,
-              commitCommitter = updateAuthor' commitCommitter
+ where
+  scanChanges :: Stream (Of EChangeAuthors) QueryM ()
+  scanChanges = Q.scanSearchHit
+  changeQuery = mkQuery [Q.documentType D.EChangeDoc]
+  updateChange :: EChangeAuthors -> Maybe EChangeAuthors
+  updateChange change@EChangeAuthors {..} =
+    let updatedChange =
+          change
+            { echangeaAuthor = updateAuthor' echangeaAuthor
+            , echangeaMergedBy = updateAuthor' <$> echangeaMergedBy
+            , echangeaAssignees = updateAuthor' <$> echangeaAssignees
+            , echangeaCommits = updateCommitAuthors <$> echangeaCommits
             }
-    mkEChangeBulkUpdate :: EChangeAuthors -> BulkOperation
-    mkEChangeBulkUpdate ec =
-      BulkUpdate indexName (getChangeDocId ec) $ toJSON ec
-      where
-        getChangeDocId :: EChangeAuthors -> BH.DocId
-        getChangeDocId change = BH.DocId . from $ echangeaId change
+     in if updatedChange == change then Nothing else Just updatedChange
+   where
+    updateCommitAuthors :: D.Commit -> D.Commit
+    updateCommitAuthors commit@D.Commit {..} =
+      commit
+        { commitAuthor = updateAuthor' commitAuthor
+        , commitCommitter = updateAuthor' commitCommitter
+        }
+  mkEChangeBulkUpdate :: EChangeAuthors -> BulkOperation
+  mkEChangeBulkUpdate ec =
+    BulkUpdate indexName (getChangeDocId ec) $ toJSON ec
+   where
+    getChangeDocId :: EChangeAuthors -> BH.DocId
+    getChangeDocId change = BH.DocId . from $ echangeaId change
 
 -- | Apply identities according to the configuration on Events
 -- Try this on the REPL with:
@@ -136,9 +135,9 @@ updateIdentsOnEvents = do
 
 --- Dedicated reduced data type of EChangeEvent with only Author fields
 data EChangeEventAuthors = EChangeEventAuthors
-  { echangeeventaId :: LText,
-    echangeeventaAuthor :: Maybe Author,
-    echangeeventaOnAuthor :: Author
+  { echangeeventaId :: LText
+  , echangeeventaAuthor :: Maybe Author
+  , echangeeventaOnAuthor :: Author
   }
   deriving (Show, Eq, Generic)
 
@@ -156,26 +155,26 @@ doUpdateIdentsOnEvents indexName updateAuthor' =
             >>> Streaming.map mkEventBulkUpdate
             >>> I.bulkStream
         )
-  where
-    scanEvents :: Stream (Of EChangeEventAuthors) QueryM ()
-    scanEvents = Q.scanSearchHit
-    eventQuery = mkQuery [Q.documentTypes $ fromList allEventTypes]
+ where
+  scanEvents :: Stream (Of EChangeEventAuthors) QueryM ()
+  scanEvents = Q.scanSearchHit
+  eventQuery = mkQuery [Q.documentTypes $ fromList allEventTypes]
 
-    updateEvent :: EChangeEventAuthors -> Maybe EChangeEventAuthors
-    updateEvent event@EChangeEventAuthors {..} =
-      let updatedEvent =
-            event
-              { echangeeventaAuthor = updateAuthor' <$> echangeeventaAuthor,
-                echangeeventaOnAuthor = updateAuthor' echangeeventaOnAuthor
-              }
-       in if updatedEvent == event then Nothing else Just updatedEvent
+  updateEvent :: EChangeEventAuthors -> Maybe EChangeEventAuthors
+  updateEvent event@EChangeEventAuthors {..} =
+    let updatedEvent =
+          event
+            { echangeeventaAuthor = updateAuthor' <$> echangeeventaAuthor
+            , echangeeventaOnAuthor = updateAuthor' echangeeventaOnAuthor
+            }
+     in if updatedEvent == event then Nothing else Just updatedEvent
 
-    mkEventBulkUpdate :: EChangeEventAuthors -> BulkOperation
-    mkEventBulkUpdate ev =
-      BulkUpdate indexName (getEventDocId ev) $ toJSON ev
-      where
-        getEventDocId :: EChangeEventAuthors -> BH.DocId
-        getEventDocId event = BH.DocId . from $ echangeeventaId event
+  mkEventBulkUpdate :: EChangeEventAuthors -> BulkOperation
+  mkEventBulkUpdate ev =
+    BulkUpdate indexName (getEventDocId ev) $ toJSON ev
+   where
+    getEventDocId :: EChangeEventAuthors -> BH.DocId
+    getEventDocId event = BH.DocId . from $ echangeeventaId event
 
 -- | Remove changes and events associated with a crawler name
 -- Try this on the REPL with:
@@ -197,35 +196,35 @@ wipeCrawlerData crawlerName = do
   traverse_ deleteDocsByRepoName ((prefix <>) <$> projects)
   -- Finally remove crawler metadata objects
   deleteCrawlerMDs
-  where
-    getProjectsCrawler :: QueryM [Text]
-    getProjectsCrawler = do
-      projectCrawlerMDs <- withQuery sQuery Q.scanSearchSimple
-      pure $ from . getValue <$> projectCrawlerMDs
-      where
-        sQuery =
-          mkQuery
-            [ mkTerm "crawler_metadata.crawler_name" crawlerName,
-              mkTerm "crawler_metadata.crawler_type" "project"
-            ]
-        getValue :: ECrawlerMetadata -> LText
-        getValue (ECrawlerMetadata ECrawlerMetadataObject {..}) = ecmCrawlerTypeValue
-    deleteDocsByRepoName :: Text -> QueryM ()
-    deleteDocsByRepoName fullname = do
-      logText $ "Deleting " <> fullname <> " ..."
-      withQuery sQuery Q.deleteDocs
-      where
-        sQuery =
-          mkQuery
-            [ mkTerm "repository_fullname" fullname,
-              documentTypes . fromList $ D.allEventTypes <> [D.EChangeDoc]
-            ]
-    deleteCrawlerMDs :: QueryM ()
-    deleteCrawlerMDs = do
-      logText $ "Deleting " <> crawlerName <> " crawling metadata objects ..."
-      withQuery sQuery Q.deleteDocs
-      where
-        sQuery = mkQuery [mkTerm "crawler_metadata.crawler_name" crawlerName]
+ where
+  getProjectsCrawler :: QueryM [Text]
+  getProjectsCrawler = do
+    projectCrawlerMDs <- withQuery sQuery Q.scanSearchSimple
+    pure $ from . getValue <$> projectCrawlerMDs
+   where
+    sQuery =
+      mkQuery
+        [ mkTerm "crawler_metadata.crawler_name" crawlerName
+        , mkTerm "crawler_metadata.crawler_type" "project"
+        ]
+    getValue :: ECrawlerMetadata -> LText
+    getValue (ECrawlerMetadata ECrawlerMetadataObject {..}) = ecmCrawlerTypeValue
+  deleteDocsByRepoName :: Text -> QueryM ()
+  deleteDocsByRepoName fullname = do
+    logText $ "Deleting " <> fullname <> " ..."
+    withQuery sQuery Q.deleteDocs
+   where
+    sQuery =
+      mkQuery
+        [ mkTerm "repository_fullname" fullname
+        , documentTypes . fromList $ D.allEventTypes <> [D.EChangeDoc]
+        ]
+  deleteCrawlerMDs :: QueryM ()
+  deleteCrawlerMDs = do
+    logText $ "Deleting " <> crawlerName <> " crawling metadata objects ..."
+    withQuery sQuery Q.deleteDocs
+   where
+    sQuery = mkQuery [mkTerm "crawler_metadata.crawler_name" crawlerName]
 
 -- | Remove all the taskdata associated with a crawler name
 -- Try this on the REPL with:
@@ -237,56 +236,56 @@ removeTDCrawlerData crawlerName = do
   tdChangesCount <- removeChangeTaskDatas index
   logText $
     crawlerName <> ": deleted " <> show tdDeletedCount <> " td, updated " <> show tdChangesCount <> " changes"
-  where
-    -- Note about the structure:
-    --   ($)   :: (a -> b) -> a -> b
-    --   (&)   :: a -> (a -> b) -> b
-    --   (>>>) :: (a -> b) -> (b -> c) -> (a -> c)
-    -- Thus `f $ s & (m1 >>> m2 >>> a)` is equivalent to: `f $ a $ m2 $ m1 $ s`
-    -- And this let us write the data flow from top to bottom, in particular for:
-    -- - the initial `withQuery` needs to be applied first, since it operate on `QueryM`, not on `Stream`
-    -- - the `scanSearchXXX` value does take argument, thus we uses `&` to insert it in the pipeline
-    -- - the Streaming.map composition is more natural using `>>>` instead of `.`.
-    removeChangeTaskDatas :: BH.IndexName -> QueryM Int
-    removeChangeTaskDatas index =
-      withQuery changeTaskDataQuery $ -- filter on changes which have a task data from that crawler
-        Q.scanSearchHit -- scan the Hit (get a Stream (Of EChange))
-          & ( Streaming.map removeTDFromChange -- remove the task data from the EChange
-                >>> Streaming.map mkEChangeBulkUpdate -- create bulk operation
-                >>> I.bulkStream -- perform the bulk operation stream
-            )
-      where
-        changeTaskDataQuery =
-          mkQuery [mkTerm "tasks_data.crawler_name" crawlerName, Q.documentType D.EChangeDoc]
-        mkEChangeBulkUpdate :: EChange -> BulkOperation
-        mkEChangeBulkUpdate ec =
-          BulkUpdate index (I.getChangeDocId ec) (Aeson.object ["tasks_data" .= echangeTasksData ec])
+ where
+  -- Note about the structure:
+  --   ($)   :: (a -> b) -> a -> b
+  --   (&)   :: a -> (a -> b) -> b
+  --   (>>>) :: (a -> b) -> (b -> c) -> (a -> c)
+  -- Thus `f $ s & (m1 >>> m2 >>> a)` is equivalent to: `f $ a $ m2 $ m1 $ s`
+  -- And this let us write the data flow from top to bottom, in particular for:
+  -- - the initial `withQuery` needs to be applied first, since it operate on `QueryM`, not on `Stream`
+  -- - the `scanSearchXXX` value does take argument, thus we uses `&` to insert it in the pipeline
+  -- - the Streaming.map composition is more natural using `>>>` instead of `.`.
+  removeChangeTaskDatas :: BH.IndexName -> QueryM Int
+  removeChangeTaskDatas index =
+    withQuery changeTaskDataQuery $ -- filter on changes which have a task data from that crawler
+      Q.scanSearchHit -- scan the Hit (get a Stream (Of EChange))
+        & ( Streaming.map removeTDFromChange -- remove the task data from the EChange
+              >>> Streaming.map mkEChangeBulkUpdate -- create bulk operation
+              >>> I.bulkStream -- perform the bulk operation stream
+          )
+   where
+    changeTaskDataQuery =
+      mkQuery [mkTerm "tasks_data.crawler_name" crawlerName, Q.documentType D.EChangeDoc]
+    mkEChangeBulkUpdate :: EChange -> BulkOperation
+    mkEChangeBulkUpdate ec =
+      BulkUpdate index (I.getChangeDocId ec) (Aeson.object ["tasks_data" .= echangeTasksData ec])
 
-        removeTDFromChange :: EChange -> EChange
-        removeTDFromChange ec = ec {echangeTasksData = newTaskDatas}
-          where
-            newTaskDatas :: Maybe [D.ETaskData]
-            newTaskDatas = case filter isNotCrawler $ fromMaybe [] (echangeTasksData ec) of
-              [] -> Nothing
-              x -> Just x
-            isNotCrawler :: D.ETaskData -> Bool
-            isNotCrawler etd
-              | tdCrawlerName etd == Just crawlerName = False
-              | otherwise = True
+    removeTDFromChange :: EChange -> EChange
+    removeTDFromChange ec = ec {echangeTasksData = newTaskDatas}
+     where
+      newTaskDatas :: Maybe [D.ETaskData]
+      newTaskDatas = case filter isNotCrawler $ fromMaybe [] (echangeTasksData ec) of
+        [] -> Nothing
+        x -> Just x
+      isNotCrawler :: D.ETaskData -> Bool
+      isNotCrawler etd
+        | tdCrawlerName etd == Just crawlerName = False
+        | otherwise = True
 
-    removeOrphanTaskDatas :: BH.IndexName -> QueryM Int
-    removeOrphanTaskDatas index =
-      withQuery taskDataQuery $ -- filter on orphaned task data from that crawler
-        Q.scanSearchId -- scan the DocId
-          & ( Streaming.map (BulkDelete index) -- create bulk delete operation
-                >>> I.bulkStream -- perform the bulk operation stream
-            )
-      where
-        taskDataQuery =
-          mkQuery
-            [ mkTerm "tasks_data.crawler_name" crawlerName,
-              Q.documentType D.EOrphanTaskData
-            ]
+  removeOrphanTaskDatas :: BH.IndexName -> QueryM Int
+  removeOrphanTaskDatas index =
+    withQuery taskDataQuery $ -- filter on orphaned task data from that crawler
+      Q.scanSearchId -- scan the DocId
+        & ( Streaming.map (BulkDelete index) -- create bulk delete operation
+              >>> I.bulkStream -- perform the bulk operation stream
+          )
+   where
+    taskDataQuery =
+      mkQuery
+        [ mkTerm "tasks_data.crawler_name" crawlerName
+        , Q.documentType D.EOrphanTaskData
+        ]
 
 removeProjectMD :: Text -> QueryM ()
 removeProjectMD = removeMD (EntityEntityProjectName "")

@@ -54,7 +54,7 @@ instance HsProtobuf.Message LoginValidationRequest where
     _
     LoginValidationRequest
       { loginValidationRequestUsername =
-          loginValidationRequestUsername
+        loginValidationRequestUsername
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -115,7 +115,7 @@ instance HsProtobuf.Message LoginValidationResponse where
     _
     LoginValidationResponse
       { loginValidationResponseResult =
-          loginValidationResponseResult
+        loginValidationResponseResult
       } =
       ( Hs.mconcat
           [ case loginValidationResponseResult of
@@ -133,8 +133,9 @@ instance HsProtobuf.Message LoginValidationResponse where
     (Hs.pure LoginValidationResponse)
       <*> ( HsProtobuf.oneof
               Hs.Nothing
-              [ ( (HsProtobuf.FieldNumber 1),
-                  ( Hs.pure
+              [
+                ( (HsProtobuf.FieldNumber 1)
+                , ( Hs.pure
                       (Hs.Just Hs.. LoginValidationResponseResultValidationResult)
                   )
                     <*> HsProtobuf.decodeMessageField
@@ -186,8 +187,8 @@ instance HsJSONPB.FromJSONPB LoginValidationResponse where
               <*> ( let parseResult parseObj =
                           Hs.msum
                             [ Hs.Just Hs.. LoginValidationResponseResultValidationResult
-                                <$> (HsJSONPB.parseField parseObj "validation_result"),
-                              Hs.pure Hs.Nothing
+                                <$> (HsJSONPB.parseField parseObj "validation_result")
+                            , Hs.pure Hs.Nothing
                             ]
                      in ( (obj .: "result")
                             Hs.>>= (HsJSONPB.withObject "result" parseResult)

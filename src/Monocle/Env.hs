@@ -20,20 +20,20 @@ import Servant.Auth.Server (JWTSettings)
 -- The main AppM context, embeded in the Servant handler
 -------------------------------------------------------------------------------
 data Env = Env
-  { bhEnv :: BH.BHEnv,
-    glLogger :: Logger
+  { bhEnv :: BH.BHEnv
+  , glLogger :: Logger
   }
 
 data OIDC = OIDC
-  { oidcEnv :: Maybe OIDCEnv,
-    localJWTSettings :: JWTSettings
+  { oidcEnv :: Maybe OIDCEnv
+  , localJWTSettings :: JWTSettings
   }
 
 -- | 'Env' is the global environment
 data AppEnv = AppEnv
-  { config :: IO Config.ConfigStatus,
-    aEnv :: Env,
-    aOIDC :: OIDC
+  { config :: IO Config.ConfigStatus
+  , aEnv :: Env
+  , aOIDC :: OIDC
   }
 
 -- | 'AppM' is the main context, it just adds Env to the servant Handler using Reader
@@ -64,14 +64,14 @@ data QueryTarget
 
 -- | 'QueryEnv' is the request environment, after validation
 data QueryEnv = QueryEnv
-  { -- | The current workspace configuration (todo: rename tenant and Index into Workspace)
-    tenant :: QueryTarget,
-    -- | The application env, for logging and accessing bloodhound
-    tEnv :: Env,
-    -- | The query language expression, used by the `withXXX` combinator below
-    tQuery :: Q.Query,
-    -- | An optional context label, used by the Query.measure profiler
-    tContext :: Maybe Text
+  { tenant :: QueryTarget
+  -- ^ The current workspace configuration (todo: rename tenant and Index into Workspace)
+  , tEnv :: Env
+  -- ^ The application env, for logging and accessing bloodhound
+  , tQuery :: Q.Query
+  -- ^ The query language expression, used by the `withXXX` combinator below
+  , tContext :: Maybe Text
+  -- ^ An optional context label, used by the Query.measure profiler
   }
 
 -- | 'QueryM' is a concret newtype so that we get better error message,
@@ -121,9 +121,9 @@ runQueryM :: Config.Index -> Q.Query -> QueryM a -> AppM a
 runQueryM ws tQuery (QueryM im) = do
   tEnv <- asks aEnv
   liftIO $ runReaderT im (QueryEnv {..})
-  where
-    tenant = QueryWorkspace ws
-    tContext = Nothing
+ where
+  tenant = QueryWorkspace ws
+  tContext = Nothing
 
 -- | Run a 'QueryM' with an existing BHEnv
 runQueryM' :: forall a. BH.BHEnv -> Config.Index -> QueryM a -> IO a
@@ -164,9 +164,9 @@ getIndexName = do
   pure $ case queryTarget of
     QueryWorkspace ws -> tenantIndexName ws
     QueryConfig _ -> BH.IndexName "monocle.config"
-  where
-    tenantIndexName :: Config.Index -> BH.IndexName
-    tenantIndexName Config.Index {..} = BH.IndexName $ "monocle.changes.1." <> name
+ where
+  tenantIndexName :: Config.Index -> BH.IndexName
+  tenantIndexName Config.Index {..} = BH.IndexName $ "monocle.changes.1." <> name
 
 -- | Utility function to hide the ReaderT layer
 getIndexConfig :: QueryMonad m => m Config.Index
@@ -198,52 +198,52 @@ mkFinalQuery :: QueryMonad m => Maybe Q.QueryFlavor -> m (Maybe BH.Query)
 mkFinalQuery flavorM = do
   query <- getQuery
   pure $ toBoolQuery $ Q.queryGet query id flavorM
-  where
-    toBoolQuery = \case
-      [] -> Nothing
-      [x] -> Just x
-      xs -> Just $ BH.QueryBoolQuery $ BH.mkBoolQuery [] (BH.Filter <$> xs) [] []
+ where
+  toBoolQuery = \case
+    [] -> Nothing
+    [x] -> Just x
+    xs -> Just $ BH.QueryBoolQuery $ BH.mkBoolQuery [] (BH.Filter <$> xs) [] []
 
 withQuery :: QueryMonad m => Q.Query -> m a -> m a
 withQuery query = local addQuery
-  where
-    addQuery e = e {tQuery = query}
+ where
+  addQuery e = e {tQuery = query}
 
 withCallStackContext :: QueryMonad m => HasCallStack => Text -> m a -> m a
 withCallStackContext context = local setContext
-  where
-    setContext (QueryEnv tenant tEnv query _) = QueryEnv tenant tEnv query (Just contextName)
-    contextName = maybe context getLoc $ headMaybe (getCallStack callStack)
-    getLoc (_, loc) = "[" <> context <> " " <> from (srcLocFile loc) <> ":" <> show (srcLocStartLine loc) <> "]"
+ where
+  setContext (QueryEnv tenant tEnv query _) = QueryEnv tenant tEnv query (Just contextName)
+  contextName = maybe context getLoc $ headMaybe (getCallStack callStack)
+  getLoc (_, loc) = "[" <> context <> " " <> from (srcLocFile loc) <> ":" <> show (srcLocStartLine loc) <> "]"
 
 -- | 'dropQuery' remove the query from the context
 dropQuery :: QueryMonad m => m a -> m a
 dropQuery = local dropQuery'
-  where
-    -- we still want to call the provided modifier, so
-    -- the expr is removed by discarding the modifier parameter
-    dropQuery' (QueryEnv tenant tEnv query context) =
-      let newQueryGet modifier = Q.queryGet query (const $ modifier Nothing)
-       in QueryEnv tenant tEnv (query {Q.queryGet = newQueryGet}) context
+ where
+  -- we still want to call the provided modifier, so
+  -- the expr is removed by discarding the modifier parameter
+  dropQuery' (QueryEnv tenant tEnv query context) =
+    let newQueryGet modifier = Q.queryGet query (const $ modifier Nothing)
+     in QueryEnv tenant tEnv (query {Q.queryGet = newQueryGet}) context
 
 -- | 'withFlavor' change the query flavor
 withFlavor :: QueryMonad m => Q.QueryFlavor -> m a -> m a
 withFlavor flavor = local setFlavor
-  where
-    -- the new flavor replaces the oldFlavor
-    setFlavor (QueryEnv tenant tEnv query context) =
-      let newQueryGet modifier oldFlavor = Q.queryGet query modifier (Just $ fromMaybe flavor oldFlavor)
-       in QueryEnv tenant tEnv (query {Q.queryGet = newQueryGet}) context
+ where
+  -- the new flavor replaces the oldFlavor
+  setFlavor (QueryEnv tenant tEnv query context) =
+    let newQueryGet modifier oldFlavor = Q.queryGet query modifier (Just $ fromMaybe flavor oldFlavor)
+     in QueryEnv tenant tEnv (query {Q.queryGet = newQueryGet}) context
 
 -- | 'withModified' run a queryM with a modified query
 -- Use it to remove or change field from the initial expr, for example to drop dates.
 withModified :: QueryMonad m => (Maybe Expr -> Maybe Expr) -> m a -> m a
 withModified modifier = local addModifier
-  where
-    -- The new modifier is composed with the previous one
-    addModifier (QueryEnv tenant tEnv query context) =
-      let newQueryGet oldModifier = Q.queryGet query (modifier . oldModifier)
-       in QueryEnv tenant tEnv (query {Q.queryGet = newQueryGet}) context
+ where
+  -- The new modifier is composed with the previous one
+  addModifier (QueryEnv tenant tEnv query context) =
+    let newQueryGet oldModifier = Q.queryGet query (modifier . oldModifier)
+     in QueryEnv tenant tEnv (query {Q.queryGet = newQueryGet}) context
 
 -- | 'withFilter' run a queryM with extra queries.
 -- Use it to mappend bloodhound expression to the final result

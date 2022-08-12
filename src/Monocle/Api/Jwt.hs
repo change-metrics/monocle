@@ -1,17 +1,16 @@
-module Monocle.Api.Jwt
-  ( --- JWT
-    mkJwt,
-    doGenJwk,
-    AuthenticatedUser (..),
-    --- OIDC Flow
-    OIDCEnv (..),
-    LoginInUser (..),
-    initOIDCEnv,
-    mkSessionStore,
-    OIDCState (OIDCState),
-    decodeOIDCState,
-  )
-where
+module Monocle.Api.Jwt (
+  --- JWT
+  mkJwt,
+  doGenJwk,
+  AuthenticatedUser (..),
+  --- OIDC Flow
+  OIDCEnv (..),
+  LoginInUser (..),
+  initOIDCEnv,
+  mkSessionStore,
+  OIDCState (OIDCState),
+  decodeOIDCState,
+) where
 
 import Control.Monad.Random (genByteString)
 import Control.Monad.Random qualified as Random
@@ -25,12 +24,12 @@ import Data.Map.Strict qualified as HM
 import Monocle.Config (OIDCProviderConfig (..))
 import Monocle.Prelude
 import Network.HTTP.Client (Manager)
-import Servant.Auth.Server
-  ( FromJWT,
-    JWTSettings,
-    ToJWT,
-    makeJWT,
-  )
+import Servant.Auth.Server (
+  FromJWT,
+  JWTSettings,
+  ToJWT,
+  makeJWT,
+ )
 import Text.Blaze (ToMarkup (..))
 import Text.Blaze.Html5 qualified as H
 import Web.OIDC.Client qualified as O
@@ -41,17 +40,17 @@ doGenJwk :: Maybe ByteString -> IO JWK
 doGenJwk keyM = case keyM of
   Just key | BS.length key >= 64 -> pure $ keyFromBS key
   _ -> randomJWK
-  where
-    randomJWK = keyFromBS <$> genRandom
-    keyFromBS = fromOctets . take 64 . BSL.unpack . from
+ where
+  randomJWK = keyFromBS <$> genRandom
+  keyFromBS = fromOctets . take 64 . BSL.unpack . from
 
 type MUidMap = Map Text Text
 
 -- Will be added as the 'dat' unregistered claim
 data AuthenticatedUser = AUser
   { -- A mapping that contains a Monocle UID by Index name
-    aMuidMap :: MUidMap,
-    -- A default Monocle UID to be used when aMuidMap is empty
+    aMuidMap :: MUidMap
+  , -- A default Monocle UID to be used when aMuidMap is empty
     aDefaultMuid :: Text
   }
   deriving (Generic, Show)
@@ -70,17 +69,17 @@ mkJwt settings aMuidMap aDefaultMuid = makeJWT (AUser {..}) settings
 --- $ OIDC Flow
 
 data OIDCEnv = OIDCEnv
-  { oidc :: O.OIDC,
-    manager :: Manager,
-    provider :: O.Provider,
-    redirectUri :: ByteString,
-    sessionStoreStorage :: MVar (HM.Map O.State O.Nonce),
-    providerConfig :: OIDCProviderConfig
+  { oidc :: O.OIDC
+  , manager :: Manager
+  , provider :: O.Provider
+  , redirectUri :: ByteString
+  , sessionStoreStorage :: MVar (HM.Map O.State O.Nonce)
+  , providerConfig :: OIDCProviderConfig
   }
 
 data LoginInUser = LoginInUser
-  { liJWT :: Text,
-    liRedirectURI :: Text
+  { liJWT :: Text
+  , liRedirectURI :: Text
   }
   deriving (Show, Eq, Ord)
 
@@ -112,8 +111,8 @@ initOIDCEnv providerConfig@OIDCProviderConfig {..} = do
   pure OIDCEnv {..}
 
 data OIDCState = OIDCState
-  { randomT :: Text,
-    uri :: Maybe Text
+  { randomT :: Text
+  , uri :: Maybe Text
   }
   deriving (Generic, Show)
 
@@ -138,16 +137,16 @@ mkSessionStore OIDCEnv {sessionStoreStorage} stateM uriM = do
         Just state' -> modifyMVar_ sessionStoreStorage $ \store -> pure $ HM.delete state' store
         Nothing -> pure ()
    in O.SessionStore {..}
-  where
-    storeSave :: O.State -> O.Nonce -> IO ()
-    storeSave state' nonce = modifyMVar_ sessionStoreStorage $ \store -> pure $ HM.insert state' nonce store
-    storeGet :: IO (Maybe O.State, Maybe O.Nonce)
-    storeGet = case stateM of
-      Just state' -> do
-        store <- readMVar sessionStoreStorage
-        let nonce = HM.lookup state' store
-        pure (Just state', nonce)
-      Nothing -> pure (Nothing, Nothing)
+ where
+  storeSave :: O.State -> O.Nonce -> IO ()
+  storeSave state' nonce = modifyMVar_ sessionStoreStorage $ \store -> pure $ HM.insert state' nonce store
+  storeGet :: IO (Maybe O.State, Maybe O.Nonce)
+  storeGet = case stateM of
+    Just state' -> do
+      store <- readMVar sessionStoreStorage
+      let nonce = HM.lookup state' store
+      pure (Just state', nonce)
+    Nothing -> pure (Nothing, Nothing)
 
 -- | Generate a random fixed size string of 42 char base64 encoded
 genRandomB64 :: IO ByteString

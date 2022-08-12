@@ -22,8 +22,8 @@ import Monocle.Protob.Change qualified as ChangePB
 import Monocle.Protob.Search qualified as SearchPB
 
 data Author = Author
-  { authorMuid :: LText,
-    authorUid :: LText
+  { authorMuid :: LText
+  , authorUid :: LText
   }
   deriving (Show, Eq, Generic)
 
@@ -36,14 +36,14 @@ instance FromJSON Author where
 instance From ChangePB.Ident Author where
   from ChangePB.Ident {..} =
     Author
-      { authorMuid = identMuid,
-        authorUid = identUid
+      { authorMuid = identMuid
+      , authorUid = identUid
       }
 
 -- | CachedAuthor is used by the Author search cache
 data CachedAuthor = CachedAuthor
-  { caType :: EDocType,
-    caCachedAuthorMuid :: LText
+  { caType :: EDocType
+  , caCachedAuthorMuid :: LText
   }
   deriving (Show, Eq, Generic)
 
@@ -54,9 +54,9 @@ instance FromJSON CachedAuthor where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 data File = File
-  { fileAdditions :: Word32,
-    fileDeletions :: Word32,
-    filePath :: LText
+  { fileAdditions :: Word32
+  , fileDeletions :: Word32
+  , filePath :: LText
   }
   deriving (Show, Eq, Generic)
 
@@ -81,14 +81,14 @@ instance FromJSON SimpleFile where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 data Commit = Commit
-  { commitSha :: LText,
-    commitAuthor :: Author,
-    commitCommitter :: Author,
-    commitAuthoredAt :: UTCTime,
-    commitCommittedAt :: UTCTime,
-    commitAdditions :: Word32,
-    commitDeletions :: Word32,
-    commitTitle :: LText
+  { commitSha :: LText
+  , commitAuthor :: Author
+  , commitCommitter :: Author
+  , commitAuthoredAt :: UTCTime
+  , commitCommittedAt :: UTCTime
+  , commitAdditions :: Word32
+  , commitDeletions :: Word32
+  , commitTitle :: LText
   }
   deriving (Show, Eq, Generic)
 
@@ -107,27 +107,27 @@ ensureAuthor = \case
 instance From ChangePB.Commit Commit where
   from ChangePB.Commit {..} =
     Commit
-      { commitSha = commitSha,
-        commitAuthor = from $ ensureAuthor commitAuthor,
-        commitCommitter = from $ ensureAuthor commitCommitter,
-        commitAuthoredAt = from $ fromMaybe (error "AuthoredAt field is mandatory") commitAuthoredAt,
-        commitCommittedAt = from $ fromMaybe (error "CommittedAt field is mandatory") commitCommittedAt,
-        commitDeletions = fromIntegral commitDeletions,
-        commitAdditions = fromIntegral commitAdditions,
-        commitTitle = commitTitle
+      { commitSha = commitSha
+      , commitAuthor = from $ ensureAuthor commitAuthor
+      , commitCommitter = from $ ensureAuthor commitCommitter
+      , commitAuthoredAt = from $ fromMaybe (error "AuthoredAt field is mandatory") commitAuthoredAt
+      , commitCommittedAt = from $ fromMaybe (error "CommittedAt field is mandatory") commitCommittedAt
+      , commitDeletions = fromIntegral commitDeletions
+      , commitAdditions = fromIntegral commitAdditions
+      , commitTitle = commitTitle
       }
 
 instance From Commit SearchPB.Commit where
   from Commit {..} =
     SearchPB.Commit
-      { commitSha = commitSha,
-        commitTitle = commitTitle,
-        commitAuthor = authorMuid commitAuthor,
-        commitAuthoredAt = Just $ from commitAuthoredAt,
-        commitCommitter = authorMuid commitCommitter,
-        commitCommittedAt = Just $ from commitCommittedAt,
-        commitAdditions = commitAdditions,
-        commitDeletions = commitDeletions
+      { commitSha = commitSha
+      , commitTitle = commitTitle
+      , commitAuthor = authorMuid commitAuthor
+      , commitAuthoredAt = Just $ from commitAuthoredAt
+      , commitCommitter = authorMuid commitCommitter
+      , commitCommittedAt = Just $ from commitCommittedAt
+      , commitAdditions = commitAdditions
+      , commitDeletions = commitDeletions
       }
 
 -- | A custom utctime that supports optional 'Z' trailing suffix
@@ -138,24 +138,24 @@ instance ToJSON UTCTimePlus where
 
 instance FromJSON UTCTimePlus where
   parseJSON = withText "UTCTimePlus" (parse . from)
-    where
-      oldFormat = "%FT%T"
-      utcFormat = "%FT%TZ"
-      tryParse = parseTimeM False defaultTimeLocale
-      parse s = UTCTimePlus <$> (tryParse oldFormat s <|> tryParse utcFormat s)
+   where
+    oldFormat = "%FT%T"
+    utcFormat = "%FT%TZ"
+    tryParse = parseTimeM False defaultTimeLocale
+    parse s = UTCTimePlus <$> (tryParse oldFormat s <|> tryParse utcFormat s)
 
 data ETaskData = ETaskData
-  { tdTid :: Text,
-    tdCrawlerName :: Maybe Text,
-    tdTtype :: [Text],
-    tdUpdatedAt :: MonocleTime,
-    tdChangeUrl :: Text,
-    tdSeverity :: Text,
-    tdPriority :: Text,
-    tdScore :: Int32,
-    tdUrl :: Text,
-    tdTitle :: Text,
-    tdPrefix :: Maybe Text
+  { tdTid :: Text
+  , tdCrawlerName :: Maybe Text
+  , tdTtype :: [Text]
+  , tdUpdatedAt :: MonocleTime
+  , tdChangeUrl :: Text
+  , tdSeverity :: Text
+  , tdPriority :: Text
+  , tdScore :: Int32
+  , tdUrl :: Text
+  , tdTitle :: Text
+  , tdPrefix :: Maybe Text
   }
   deriving (Show, Eq, Generic)
 
@@ -244,13 +244,13 @@ instance From EDocType LText where
 eventTypesAsText :: [Text]
 eventTypesAsText =
   from
-    <$> [ EChangeCreatedEvent,
-          EChangeMergedEvent,
-          EChangeReviewedEvent,
-          EChangeCommentedEvent,
-          EChangeAbandonedEvent,
-          EChangeCommitPushedEvent,
-          EChangeCommitForcePushedEvent
+    <$> [ EChangeCreatedEvent
+        , EChangeMergedEvent
+        , EChangeReviewedEvent
+        , EChangeCommentedEvent
+        , EChangeAbandonedEvent
+        , EChangeCommitPushedEvent
+        , EChangeCommitForcePushedEvent
         ]
 
 instance ToJSON EDocType where
@@ -275,39 +275,39 @@ instance FromJSON EDocType where
       )
 
 data EChange = EChange
-  { echangeId :: LText,
-    echangeNumber :: Int,
-    echangeType :: EDocType,
-    echangeChangeId :: LText,
-    echangeTitle :: LText,
-    echangeText :: LText,
-    echangeUrl :: LText,
-    echangeCommitCount :: Word32,
-    echangeAdditions :: Word32,
-    echangeDeletions :: Word32,
-    echangeChangedFilesCount :: Word32,
-    echangeChangedFiles :: [File],
-    echangeCommits :: [Commit],
-    echangeRepositoryPrefix :: LText,
-    echangeRepositoryShortname :: LText,
-    echangeRepositoryFullname :: LText,
-    echangeAuthor :: Author,
-    echangeMergedBy :: Maybe Author,
-    echangeBranch :: LText,
-    echangeTargetBranch :: LText,
-    echangeCreatedAt :: UTCTime,
-    echangeMergedAt :: Maybe UTCTime,
-    echangeUpdatedAt :: UTCTime,
-    echangeClosedAt :: Maybe UTCTime,
-    echangeState :: EChangeState,
-    echangeDuration :: Maybe Int,
-    echangeMergeable :: LText,
-    echangeLabels :: [LText],
-    echangeAssignees :: [Author],
-    echangeApproval :: Maybe [LText],
-    echangeDraft :: Bool,
-    echangeSelfMerged :: Maybe Bool,
-    echangeTasksData :: Maybe [ETaskData]
+  { echangeId :: LText
+  , echangeNumber :: Int
+  , echangeType :: EDocType
+  , echangeChangeId :: LText
+  , echangeTitle :: LText
+  , echangeText :: LText
+  , echangeUrl :: LText
+  , echangeCommitCount :: Word32
+  , echangeAdditions :: Word32
+  , echangeDeletions :: Word32
+  , echangeChangedFilesCount :: Word32
+  , echangeChangedFiles :: [File]
+  , echangeCommits :: [Commit]
+  , echangeRepositoryPrefix :: LText
+  , echangeRepositoryShortname :: LText
+  , echangeRepositoryFullname :: LText
+  , echangeAuthor :: Author
+  , echangeMergedBy :: Maybe Author
+  , echangeBranch :: LText
+  , echangeTargetBranch :: LText
+  , echangeCreatedAt :: UTCTime
+  , echangeMergedAt :: Maybe UTCTime
+  , echangeUpdatedAt :: UTCTime
+  , echangeClosedAt :: Maybe UTCTime
+  , echangeState :: EChangeState
+  , echangeDuration :: Maybe Int
+  , echangeMergeable :: LText
+  , echangeLabels :: [LText]
+  , echangeAssignees :: [Author]
+  , echangeApproval :: Maybe [LText]
+  , echangeDraft :: Bool
+  , echangeSelfMerged :: Maybe Bool
+  , echangeTasksData :: Maybe [ETaskData]
   }
   deriving (Show, Eq, Generic)
 
@@ -351,50 +351,50 @@ instance From EChange SearchPB.Change where
 instance From ChangePB.Change EChange where
   from ChangePB.Change {..} =
     EChange
-      { echangeId = changeId,
-        echangeType = EChangeDoc,
-        echangeTitle = changeTitle,
-        echangeUrl = changeUrl,
-        echangeCommitCount = fromInteger . toInteger $ changeCommitCount,
-        echangeNumber = fromInteger . toInteger $ changeNumber,
-        echangeChangeId = changeChangeId,
-        echangeText = changeText,
-        echangeAdditions = fromInteger $ toInteger changeAdditions,
-        echangeDeletions = fromInteger $ toInteger changeDeletions,
-        echangeChangedFilesCount = fromInteger $ toInteger changeChangedFilesCount,
-        echangeChangedFiles = map from $ toList changeChangedFiles,
-        echangeCommits = map from $ toList changeCommits,
-        echangeRepositoryPrefix = changeRepositoryPrefix,
-        echangeRepositoryFullname = changeRepositoryFullname,
-        echangeRepositoryShortname = changeRepositoryShortname,
-        echangeAuthor = from (ensureAuthor changeAuthor),
-        echangeMergedBy = toMergedByAuthor <$> changeOptionalMergedBy,
-        echangeBranch = changeBranch,
-        echangeTargetBranch = changeTargetBranch,
-        echangeCreatedAt = from $ fromMaybe (error "CreatedAt field is mandatory") changeCreatedAt,
-        echangeMergedAt = toMergedAt <$> changeOptionalMergedAt,
-        echangeUpdatedAt = from $ fromMaybe (error "UpdatedAt field is mandatory") changeUpdatedAt,
-        echangeClosedAt = toClosedAt <$> changeOptionalClosedAt,
-        echangeState = toState $ fromPBEnum changeState,
-        echangeDuration = toDuration <$> changeOptionalDuration,
-        echangeMergeable = changeMergeable,
-        echangeLabels = toList changeLabels,
-        echangeAssignees = map (from . ensureAuthor) $ toList $ fmap Just changeAssignees,
-        echangeApproval = Just $ toList changeApprovals,
-        echangeDraft = changeDraft,
-        echangeSelfMerged = toSelfMerged <$> changeOptionalSelfMerged,
-        echangeTasksData = Nothing
+      { echangeId = changeId
+      , echangeType = EChangeDoc
+      , echangeTitle = changeTitle
+      , echangeUrl = changeUrl
+      , echangeCommitCount = fromInteger . toInteger $ changeCommitCount
+      , echangeNumber = fromInteger . toInteger $ changeNumber
+      , echangeChangeId = changeChangeId
+      , echangeText = changeText
+      , echangeAdditions = fromInteger $ toInteger changeAdditions
+      , echangeDeletions = fromInteger $ toInteger changeDeletions
+      , echangeChangedFilesCount = fromInteger $ toInteger changeChangedFilesCount
+      , echangeChangedFiles = map from $ toList changeChangedFiles
+      , echangeCommits = map from $ toList changeCommits
+      , echangeRepositoryPrefix = changeRepositoryPrefix
+      , echangeRepositoryFullname = changeRepositoryFullname
+      , echangeRepositoryShortname = changeRepositoryShortname
+      , echangeAuthor = from (ensureAuthor changeAuthor)
+      , echangeMergedBy = toMergedByAuthor <$> changeOptionalMergedBy
+      , echangeBranch = changeBranch
+      , echangeTargetBranch = changeTargetBranch
+      , echangeCreatedAt = from $ fromMaybe (error "CreatedAt field is mandatory") changeCreatedAt
+      , echangeMergedAt = toMergedAt <$> changeOptionalMergedAt
+      , echangeUpdatedAt = from $ fromMaybe (error "UpdatedAt field is mandatory") changeUpdatedAt
+      , echangeClosedAt = toClosedAt <$> changeOptionalClosedAt
+      , echangeState = toState $ fromPBEnum changeState
+      , echangeDuration = toDuration <$> changeOptionalDuration
+      , echangeMergeable = changeMergeable
+      , echangeLabels = toList changeLabels
+      , echangeAssignees = map (from . ensureAuthor) $ toList $ fmap Just changeAssignees
+      , echangeApproval = Just $ toList changeApprovals
+      , echangeDraft = changeDraft
+      , echangeSelfMerged = toSelfMerged <$> changeOptionalSelfMerged
+      , echangeTasksData = Nothing
       }
-    where
-      toMergedByAuthor (ChangePB.ChangeOptionalMergedByMergedBy m) = from $ ensureAuthor (Just m)
-      toMergedAt (ChangePB.ChangeOptionalMergedAtMergedAt t) = from t
-      toClosedAt (ChangePB.ChangeOptionalClosedAtClosedAt t) = from t
-      toDuration (ChangePB.ChangeOptionalDurationDuration d) = fromInteger $ toInteger d
-      toSelfMerged (ChangePB.ChangeOptionalSelfMergedSelfMerged b) = b
-      toState cstate = case cstate of
-        ChangePB.Change_ChangeStateOpen -> EChangeOpen
-        ChangePB.Change_ChangeStateMerged -> EChangeMerged
-        ChangePB.Change_ChangeStateClosed -> EChangeClosed
+   where
+    toMergedByAuthor (ChangePB.ChangeOptionalMergedByMergedBy m) = from $ ensureAuthor (Just m)
+    toMergedAt (ChangePB.ChangeOptionalMergedAtMergedAt t) = from t
+    toClosedAt (ChangePB.ChangeOptionalClosedAtClosedAt t) = from t
+    toDuration (ChangePB.ChangeOptionalDurationDuration d) = fromInteger $ toInteger d
+    toSelfMerged (ChangePB.ChangeOptionalSelfMergedSelfMerged b) = b
+    toState cstate = case cstate of
+      ChangePB.Change_ChangeStateOpen -> EChangeOpen
+      ChangePB.Change_ChangeStateMerged -> EChangeMerged
+      ChangePB.Change_ChangeStateClosed -> EChangeClosed
 
 instance From ChangePB.ChangedFile File where
   from ChangePB.ChangedFile {..} =
@@ -412,9 +412,9 @@ instance FromJSON EChangeTD where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
 data EChangeOrphanTD = EChangeOrphanTD
-  { echangeorphantdId :: Text,
-    echangeorphantdType :: EDocType,
-    echangeorphantdTasksData :: ETaskData
+  { echangeorphantdId :: Text
+  , echangeorphantdType :: EDocType
+  , echangeorphantdTasksData :: ETaskData
   }
   deriving (Show, Eq, Generic)
 
@@ -432,9 +432,9 @@ instance ToJSON ETaskDataAdopted where
   toJSON = genericToJSON defaultOptions
 
 data EChangeOrphanTDAdopted = EChangeOrphanTDAdopted
-  { echangeorphantdadptId :: Text,
-    echangeorphantdadptType :: EDocType,
-    echangeorphantdadptTasksData :: ETaskDataAdopted
+  { echangeorphantdadptId :: Text
+  , echangeorphantdadptType :: EDocType
+  , echangeorphantdadptTasksData :: ETaskDataAdopted
   }
   deriving (Generic)
 
@@ -442,29 +442,29 @@ instance ToJSON EChangeOrphanTDAdopted where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
 data EChangeEvent = EChangeEvent
-  { echangeeventId :: LText,
-    echangeeventNumber :: Word32,
-    echangeeventType :: EDocType,
-    echangeeventChangeId :: LText,
-    echangeeventUrl :: LText,
-    echangeeventChangedFiles :: [SimpleFile],
-    echangeeventRepositoryPrefix :: LText,
-    echangeeventRepositoryShortname :: LText,
-    echangeeventRepositoryFullname :: LText,
-    -- echangeeventAuthor is optional due to the fact Gerrit closer
+  { echangeeventId :: LText
+  , echangeeventNumber :: Word32
+  , echangeeventType :: EDocType
+  , echangeeventChangeId :: LText
+  , echangeeventUrl :: LText
+  , echangeeventChangedFiles :: [SimpleFile]
+  , echangeeventRepositoryPrefix :: LText
+  , echangeeventRepositoryShortname :: LText
+  , echangeeventRepositoryFullname :: LText
+  , -- echangeeventAuthor is optional due to the fact Gerrit closer
     -- does not set any author for ChangeAbandonedEvent
-    echangeeventAuthor :: Maybe Author,
-    echangeeventOnAuthor :: Author,
-    echangeeventSelfMerged :: Maybe Bool,
-    echangeeventBranch :: LText,
-    -- Set labels as a Maybe type because existing indexes do not have the event docs with labels
+    echangeeventAuthor :: Maybe Author
+  , echangeeventOnAuthor :: Author
+  , echangeeventSelfMerged :: Maybe Bool
+  , echangeeventBranch :: LText
+  , -- Set labels as a Maybe type because existing indexes do not have the event docs with labels
     -- TODO: implement a migration procedure in the Janitor and remove the 'Maybe' from this value
-    echangeeventLabels :: Maybe [LText],
-    echangeeventOnCreatedAt :: UTCTime,
-    echangeeventCreatedAt :: UTCTime,
-    echangeeventApproval :: Maybe [LText],
-    echangeeventTasksData :: Maybe [ETaskData],
-    echangeeventDuration :: Maybe Int
+    echangeeventLabels :: Maybe [LText]
+  , echangeeventOnCreatedAt :: UTCTime
+  , echangeeventCreatedAt :: UTCTime
+  , echangeeventApproval :: Maybe [LText]
+  , echangeeventTasksData :: Maybe [ETaskData]
+  , echangeeventDuration :: Maybe Int
   }
   deriving (Show, Eq, Generic)
 
@@ -487,10 +487,10 @@ instance From EChangeEvent SearchPB.ChangeEvent where
      in SearchPB.ChangeEvent {..}
 
 data ECrawlerMetadataObject = ECrawlerMetadataObject
-  { ecmCrawlerName :: LText,
-    ecmCrawlerType :: LText,
-    ecmCrawlerTypeValue :: LText,
-    ecmLastCommitAt :: UTCTime
+  { ecmCrawlerName :: LText
+  , ecmCrawlerType :: LText
+  , ecmCrawlerTypeValue :: LText
+  , ecmLastCommitAt :: UTCTime
   }
   deriving (Show, Eq, Generic)
 

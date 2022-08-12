@@ -4,29 +4,28 @@
 -- Maintainer: Monocle authors <fboucher@redhat.com>
 --
 -- The Monocle API client
-module Monocle.Client
-  ( MonocleClient,
-    withClient,
-    mkManager,
-    monocleReq,
-    baseUrl,
-    tokenM,
-  )
-where
+module Monocle.Client (
+  MonocleClient,
+  withClient,
+  mkManager,
+  monocleReq,
+  baseUrl,
+  tokenM,
+) where
 
 import Data.Text qualified as T
 import Monocle.Prelude
-import Network.HTTP.Client
-  ( Manager,
-    RequestBody (..),
-    httpLbs,
-    method,
-    newManager,
-    parseUrlThrow,
-    requestBody,
-    requestHeaders,
-    responseBody,
-  )
+import Network.HTTP.Client (
+  Manager,
+  RequestBody (..),
+  httpLbs,
+  method,
+  newManager,
+  parseUrlThrow,
+  requestBody,
+  requestHeaders,
+  responseBody,
+ )
 import Network.HTTP.Client.OpenSSL qualified as OpenSSL
 import OpenSSL.Session (VerificationMode (VerifyNone))
 import Proto3.Suite.JSONPB (FromJSONPB (..), ToJSONPB (..))
@@ -34,10 +33,10 @@ import Proto3.Suite.JSONPB qualified as JSONPB
 
 -- | The MonocleClient record, use 'withClient' to create
 data MonocleClient = MonocleClient
-  { -- | the base url
-    baseUrl :: Text,
-    tokenM :: Maybe Text,
-    manager :: Manager
+  { baseUrl :: Text
+  -- ^ the base url
+  , tokenM :: Maybe Text
+  , manager :: Manager
   }
 
 data TlsVerify = Verify | Insecure
@@ -79,8 +78,8 @@ withClient url managerM callBack =
     let tokenM = from <$> tokenM'
     manager <- maybe (liftIO mkManager) pure managerM
     callBack MonocleClient {..}
-  where
-    baseUrl = T.dropWhileEnd (== '/') url <> "/"
+ where
+  baseUrl = T.dropWhileEnd (== '/') url <> "/"
 
 monocleReq ::
   (MonadIO m, MonadThrow m, Show body, ToJSONPB body, FromJSONPB a) =>
@@ -94,17 +93,17 @@ monocleReq path MonocleClient {..} body =
     let request =
           initRequest
             { requestHeaders =
-                [ ("Accept", "*/*"),
-                  ("Content-Type", "application/json")
+                [ ("Accept", "*/*")
+                , ("Content-Type", "application/json")
                 ]
-                  <> maybeToList authorizationH,
-              method = "POST",
-              requestBody = RequestBodyLBS . JSONPB.encode JSONPB.jsonPBOptions $ body
+                  <> maybeToList authorizationH
+            , method = "POST"
+            , requestBody = RequestBodyLBS . JSONPB.encode JSONPB.jsonPBOptions $ body
             }
     response <- liftIO $ httpLbs request manager
     pure $ decodeResponse (responseBody response)
-  where
-    decodeResponse body' = case JSONPB.eitherDecode body' of
-      Left err -> error $ "Decoding of " <> show body <> " failed with: " <> show err
-      Right a -> a
-    authorizationH = fmap (\token -> ("Authorization", "Bearer " <> from token)) tokenM
+ where
+  decodeResponse body' = case JSONPB.eitherDecode body' of
+    Left err -> error $ "Decoding of " <> show body <> " failed with: " <> show err
+    Right a -> a
+  authorizationH = fmap (\token -> ("Authorization", "Bearer " <> from token)) tokenM

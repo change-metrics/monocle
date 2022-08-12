@@ -51,11 +51,11 @@ app env = do
       (Proxy :: Proxy '[CookieSettings, JWTSettings])
       mkAppM
       (server' :<|> server')
-  where
-    jwtCfg = localJWTSettings $ aOIDC env
-    cfg = jwtCfg :. defaultCookieSettings :. EmptyContext
-    mkAppM :: AppM x -> Servant.Handler x
-    mkAppM apM = runReaderT (unApp apM) env
+ where
+  jwtCfg = localJWTSettings $ aOIDC env
+  cfg = jwtCfg :. defaultCookieSettings :. EmptyContext
+  mkAppM :: AppM x -> Servant.Handler x
+  mkAppM apM = runReaderT (unApp apM) env
 
 fallbackWebAppPath :: FilePath
 fallbackWebAppPath = "web/build/"
@@ -67,38 +67,38 @@ mkStaticMiddleware publicUrl title webAppPath = do
   -- Load the index and inject the customization
   index <- Text.readFile $ rootDir <> "index.html"
   pure $ staticMiddleware (from $ prepIndex index) rootDir
-  where
-    -- Replace env variable in the index page
-    prepIndex :: Text -> Text
-    prepIndex index = Text.replace "__TITLE__" (from title) $ Text.replace "__API_URL__" (from publicUrl) index
+ where
+  -- Replace env variable in the index page
+  prepIndex :: Text -> Text
+  prepIndex index = Text.replace "__TITLE__" (from title) $ Text.replace "__API_URL__" (from publicUrl) index
 
-    -- Helper that checks if `fp` exists, otherwise it returns `otherFP`
-    existOr :: FilePath -> Maybe FilePath -> IO (Maybe FilePath)
-    existOr fp otherFP = do
-      exist <- System.Directory.doesPathExist fp
-      pure $ if exist then Just fp else otherFP
+  -- Helper that checks if `fp` exists, otherwise it returns `otherFP`
+  existOr :: FilePath -> Maybe FilePath -> IO (Maybe FilePath)
+  existOr fp otherFP = do
+    exist <- System.Directory.doesPathExist fp
+    pure $ if exist then Just fp else otherFP
 
-    -- The middleware pass the request to the monocle app
-    staticMiddleware :: LByteString -> FilePath -> Wai.Application -> Wai.Application
-    staticMiddleware index rootDir app' req waiRespond = app' req responder
-      where
-        responder resp
-          -- The application handled the request, forward the responce
-          | HTTP.statusCode (Wai.responseStatus resp) /= 404 = waiRespond resp
-          | otherwise = handle
-        handle = do
-          respPath <- do
-            let reqPath = drop 1 $ decodeUtf8 $ Wai.rawPathInfo req
-            if Data.List.null reqPath || ".." `Data.List.isInfixOf` reqPath
-              then -- The path is empty or fishy
-                pure Nothing
-              else -- Checks if the request match a file, such as favico or css
-                (rootDir <> reqPath) `existOr` Nothing
-          waiRespond $ case respPath of
-            -- The path exist, returns it
-            Just path -> Wai.responseFile HTTP.status200 [] path Nothing
-            -- Otherwise returns the index
-            Nothing -> Wai.responseLBS HTTP.status200 [] index
+  -- The middleware pass the request to the monocle app
+  staticMiddleware :: LByteString -> FilePath -> Wai.Application -> Wai.Application
+  staticMiddleware index rootDir app' req waiRespond = app' req responder
+   where
+    responder resp
+      -- The application handled the request, forward the responce
+      | HTTP.statusCode (Wai.responseStatus resp) /= 404 = waiRespond resp
+      | otherwise = handle
+    handle = do
+      respPath <- do
+        let reqPath = drop 1 $ decodeUtf8 $ Wai.rawPathInfo req
+        if Data.List.null reqPath || ".." `Data.List.isInfixOf` reqPath
+          then -- The path is empty or fishy
+            pure Nothing
+          else -- Checks if the request match a file, such as favico or css
+            (rootDir <> reqPath) `existOr` Nothing
+      waiRespond $ case respPath of
+        -- The path exist, returns it
+        Just path -> Wai.responseFile HTTP.status200 [] path Nothing
+        -- Otherwise returns the index
+        Nothing -> Wai.responseLBS HTTP.status200 [] index
 
 healthMiddleware :: Wai.Application -> Wai.Application
 healthMiddleware app' req resp
@@ -106,14 +106,14 @@ healthMiddleware app' req resp
   | otherwise = app' req resp
 
 data ApiConfig = ApiConfig
-  { port :: Int,
-    elasticUrl :: Text,
-    configFile :: FilePath,
-    publicUrl :: Text,
-    title :: Text,
-    webAppPath :: FilePath,
-    jwkKey :: Maybe String,
-    adminToken :: Maybe String
+  { port :: Int
+  , elasticUrl :: Text
+  , configFile :: FilePath
+  , publicUrl :: Text
+  , title :: Text
+  , webAppPath :: FilePath
+  , jwkKey :: Maybe String
+  , adminToken :: Maybe String
   }
 
 defaultApiConfig :: Int -> Text -> FilePath -> ApiConfig
@@ -183,6 +183,6 @@ run ApiConfig {..} = withLogger $ \glLogger -> do
         . healthMiddleware
         . staticMiddleware
         $ app (AppEnv {..})
-  where
-    policy =
-      simpleCorsResourcePolicy {corsRequestHeaders = ["content-type"]}
+ where
+  policy =
+    simpleCorsResourcePolicy {corsRequestHeaders = ["content-type"]}

@@ -20,35 +20,35 @@ import Relude
 newtype Time = Time Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 
 data DiffStatsSummary = DiffStatsSummary
-  { additions :: Int,
-    deletions :: Int,
-    fileCount :: Int
+  { additions :: Int
+  , deletions :: Int
+  , fileCount :: Int
   }
 
 data DiffStatsSummaryItem = DSSAdditions | DSSDeletions | DSSFileCount
 
 data DiffStats = DiffStats
-  { path :: Text,
-    additions :: Int,
-    deletions :: Int
+  { path :: Text
+  , additions :: Int
+  , deletions :: Int
   }
 
 newtype MRUserCore = MRUserCore {username :: Text}
 
 data MRCommit = MRCommit
-  { sha :: Text,
-    cauthor :: Maybe MRUserCore,
-    authoredDate :: Maybe Time,
-    ctitle :: Maybe Text
+  { sha :: Text
+  , cauthor :: Maybe MRUserCore
+  , authoredDate :: Maybe Time
+  , ctitle :: Maybe Text
   }
 
 data CommentType = CoApproval Text | CoComment | CoOther deriving (Show)
 
 data MRComment = MRComment
-  { coId :: Text,
-    coAuthor :: Ident,
-    coAuthoredAt :: Time,
-    coType :: CommentType
+  { coId :: Text
+  , coAuthor :: Ident
+  , coAuthoredAt :: Time
+  , coType :: CommentType
   }
   deriving (Show)
 
@@ -108,11 +108,11 @@ toCommit host cb MRCommit {..} =
     0
     0
     (from $ fromMaybe "" ctitle)
-  where
-    getAuthor :: Maybe MRUserCore -> Text
-    getAuthor (Just MRUserCore {..}) = username
-    getAuthor Nothing = nobody
-    toIdent' = toIdent host cb
+ where
+  getAuthor :: Maybe MRUserCore -> Text
+  getAuthor (Just MRUserCore {..}) = username
+  getAuthor Nothing = nobody
+  toIdent' = toIdent host cb
 
 toState :: Text -> Enumerated Change_ChangeState
 toState state' = case state' of

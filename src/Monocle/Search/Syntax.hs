@@ -1,9 +1,8 @@
 -- | The Monocle Search Language Syntax
-module Monocle.Search.Syntax
-  ( Expr (..),
-    ParseError (..),
-  )
-where
+module Monocle.Search.Syntax (
+  Expr (..),
+  ParseError (..),
+) where
 
 import Relude
 

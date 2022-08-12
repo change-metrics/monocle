@@ -28,30 +28,30 @@ mkAppEnv workspace = do
 
 withTestApi :: IO AppEnv -> (Logger -> MonocleClient -> Assertion) -> IO ()
 withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
-  where
-    -- Using a mockedManager, run the Api behind a MonocleClient for the tests
-    runTest :: AppEnv -> Assertion
-    runTest appEnv = do
-      conf <- Config.csConfig <$> config appEnv
-      let indexes = Config.getWorkspaces conf
-      traverse_
-        (\index -> runQueryM' (bhEnv $ aEnv appEnv) index I.ensureIndex)
-        indexes
-      withMockedManager
-        (dropVersionPath $ app appEnv)
-        (\manager -> withLogger $ \logger -> withClient "http://localhost" (Just manager) (testCb logger))
-    dropVersionPath app' req = do
-      app'
-        ( req
-            { rawPathInfo = B.drop (B.length "/api/2/") (rawPathInfo req),
-              pathInfo = drop 2 (pathInfo req)
-            }
-        )
-    -- Remove the index
-    cleanIndex :: AppEnv -> IO ()
-    cleanIndex appEnv = do
-      conf <- Config.csConfig <$> config appEnv
-      let indexes = Config.getWorkspaces conf
-      traverse_
-        (\index -> runQueryM' (bhEnv $ aEnv appEnv) index I.removeIndex)
-        indexes
+ where
+  -- Using a mockedManager, run the Api behind a MonocleClient for the tests
+  runTest :: AppEnv -> Assertion
+  runTest appEnv = do
+    conf <- Config.csConfig <$> config appEnv
+    let indexes = Config.getWorkspaces conf
+    traverse_
+      (\index -> runQueryM' (bhEnv $ aEnv appEnv) index I.ensureIndex)
+      indexes
+    withMockedManager
+      (dropVersionPath $ app appEnv)
+      (\manager -> withLogger $ \logger -> withClient "http://localhost" (Just manager) (testCb logger))
+  dropVersionPath app' req = do
+    app'
+      ( req
+          { rawPathInfo = B.drop (B.length "/api/2/") (rawPathInfo req)
+          , pathInfo = drop 2 (pathInfo req)
+          }
+      )
+  -- Remove the index
+  cleanIndex :: AppEnv -> IO ()
+  cleanIndex appEnv = do
+    conf <- Config.csConfig <$> config appEnv
+    let indexes = Config.getWorkspaces conf
+    traverse_
+      (\index -> runQueryM' (bhEnv $ aEnv appEnv) index I.removeIndex)
+      indexes
