@@ -38,6 +38,14 @@ let default_trend_mutable () : trend_mutable = {
   interval = "";
 }
 
+type top_mutable = {
+  mutable limit : int32;
+}
+
+let default_top_mutable () : top_mutable = {
+  limit = 0l;
+}
+
 type get_request_mutable = {
   mutable index : string;
   mutable username : string;
@@ -88,6 +96,46 @@ type histo_float_stat_mutable = {
 
 let default_histo_float_stat_mutable () : histo_float_stat_mutable = {
   histo = [];
+}
+
+type term_count_int_mutable = {
+  mutable term : string;
+  mutable count : int32;
+}
+
+let default_term_count_int_mutable () : term_count_int_mutable = {
+  term = "";
+  count = 0l;
+}
+
+type terms_count_int_mutable = {
+  mutable termcount : MetricTypes.term_count_int list;
+  mutable total_hits : int32;
+}
+
+let default_terms_count_int_mutable () : terms_count_int_mutable = {
+  termcount = [];
+  total_hits = 0l;
+}
+
+type term_count_float_mutable = {
+  mutable term : string;
+  mutable count : float;
+}
+
+let default_term_count_float_mutable () : term_count_float_mutable = {
+  term = "";
+  count = 0.;
+}
+
+type terms_count_float_mutable = {
+  mutable termcount : MetricTypes.term_count_float list;
+  mutable total_hits : int32;
+}
+
+let default_terms_count_float_mutable () : terms_count_float_mutable = {
+  termcount = [];
+  total_hits = 0l;
 }
 
 
@@ -173,6 +221,22 @@ let rec decode_trend json =
     MetricTypes.interval = v.interval;
   } : MetricTypes.trend)
 
+let rec decode_top json =
+  let v = default_top_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "limit" -> 
+      let json = Js.Dict.unsafeGet json "limit" in
+      v.limit <- Pbrt_bs.int32 json "top" "limit"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    MetricTypes.limit = v.limit;
+  } : MetricTypes.top)
+
 let rec decode_get_request_options json =
   let keys = Js.Dict.keys json in
   let rec loop = function 
@@ -182,6 +246,9 @@ let rec decode_get_request_options json =
       | "trend" -> 
         let json = Js.Dict.unsafeGet json "trend" in
         (MetricTypes.Trend ((decode_trend (Pbrt_bs.object_ json "get_request_options" "Trend"))) : MetricTypes.get_request_options)
+      | "top" -> 
+        let json = Js.Dict.unsafeGet json "top" in
+        (MetricTypes.Top ((decode_top (Pbrt_bs.object_ json "get_request_options" "Top"))) : MetricTypes.get_request_options)
       
       | _ -> loop (i - 1)
       end
@@ -209,6 +276,9 @@ and decode_get_request json =
     | "trend" -> 
       let json = Js.Dict.unsafeGet json "trend" in
       v.options <- Trend ((decode_trend (Pbrt_bs.object_ json "get_request" "options")))
+    | "top" -> 
+      let json = Js.Dict.unsafeGet json "top" in
+      v.options <- Top ((decode_top (Pbrt_bs.object_ json "get_request" "options")))
     
     | _ -> () (*Unknown fields are ignored*)
   done;
@@ -304,6 +374,98 @@ let rec decode_histo_float_stat json =
     MetricTypes.histo = v.histo;
   } : MetricTypes.histo_float_stat)
 
+let rec decode_term_count_int json =
+  let v = default_term_count_int_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "term" -> 
+      let json = Js.Dict.unsafeGet json "term" in
+      v.term <- Pbrt_bs.string json "term_count_int" "term"
+    | "count" -> 
+      let json = Js.Dict.unsafeGet json "count" in
+      v.count <- Pbrt_bs.int32 json "term_count_int" "count"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    MetricTypes.term = v.term;
+    MetricTypes.count = v.count;
+  } : MetricTypes.term_count_int)
+
+let rec decode_terms_count_int json =
+  let v = default_terms_count_int_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "termcount" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "termcount" in 
+        Pbrt_bs.array_ a "terms_count_int" "termcount"
+      in
+      v.termcount <- Array.map (fun json -> 
+        (decode_term_count_int (Pbrt_bs.object_ json "terms_count_int" "termcount"))
+      ) a |> Array.to_list;
+    end
+    | "total_hits" -> 
+      let json = Js.Dict.unsafeGet json "total_hits" in
+      v.total_hits <- Pbrt_bs.int32 json "terms_count_int" "total_hits"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    MetricTypes.termcount = v.termcount;
+    MetricTypes.total_hits = v.total_hits;
+  } : MetricTypes.terms_count_int)
+
+let rec decode_term_count_float json =
+  let v = default_term_count_float_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "term" -> 
+      let json = Js.Dict.unsafeGet json "term" in
+      v.term <- Pbrt_bs.string json "term_count_float" "term"
+    | "count" -> 
+      let json = Js.Dict.unsafeGet json "count" in
+      v.count <- Pbrt_bs.float json "term_count_float" "count"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    MetricTypes.term = v.term;
+    MetricTypes.count = v.count;
+  } : MetricTypes.term_count_float)
+
+let rec decode_terms_count_float json =
+  let v = default_terms_count_float_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "termcount" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "termcount" in 
+        Pbrt_bs.array_ a "terms_count_float" "termcount"
+      in
+      v.termcount <- Array.map (fun json -> 
+        (decode_term_count_float (Pbrt_bs.object_ json "terms_count_float" "termcount"))
+      ) a |> Array.to_list;
+    end
+    | "total_hits" -> 
+      let json = Js.Dict.unsafeGet json "total_hits" in
+      v.total_hits <- Pbrt_bs.int32 json "terms_count_float" "total_hits"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    MetricTypes.termcount = v.termcount;
+    MetricTypes.total_hits = v.total_hits;
+  } : MetricTypes.terms_count_float)
+
 let rec decode_get_response json =
   let keys = Js.Dict.keys json in
   let rec loop = function 
@@ -325,6 +487,12 @@ let rec decode_get_response json =
       | "histo_floatValue" -> 
         let json = Js.Dict.unsafeGet json "histo_floatValue" in
         (MetricTypes.Histo_float_value ((decode_histo_float_stat (Pbrt_bs.object_ json "get_response" "Histo_float_value"))) : MetricTypes.get_response)
+      | "top_intValue" -> 
+        let json = Js.Dict.unsafeGet json "top_intValue" in
+        (MetricTypes.Top_int_value ((decode_terms_count_int (Pbrt_bs.object_ json "get_response" "Top_int_value"))) : MetricTypes.get_response)
+      | "top_floatValue" -> 
+        let json = Js.Dict.unsafeGet json "top_floatValue" in
+        (MetricTypes.Top_float_value ((decode_terms_count_float (Pbrt_bs.object_ json "get_response" "Top_float_value"))) : MetricTypes.get_response)
       
       | _ -> loop (i - 1)
       end
@@ -364,6 +532,11 @@ let rec encode_trend (v:MetricTypes.trend) =
   Js.Dict.set json "interval" (Js.Json.string v.MetricTypes.interval);
   json
 
+let rec encode_top (v:MetricTypes.top) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "limit" (Js.Json.number (Int32.to_float v.MetricTypes.limit));
+  json
+
 let rec encode_get_request_options (v:MetricTypes.get_request_options) = 
   let json = Js.Dict.empty () in
   begin match v with
@@ -371,6 +544,11 @@ let rec encode_get_request_options (v:MetricTypes.get_request_options) =
     begin (* trend field *)
       let json' = encode_trend v in
       Js.Dict.set json "trend" (Js.Json.object_ json');
+    end;
+  | MetricTypes.Top v ->
+    begin (* top field *)
+      let json' = encode_top v in
+      Js.Dict.set json "top" (Js.Json.object_ json');
     end;
   end;
   json
@@ -386,6 +564,11 @@ and encode_get_request (v:MetricTypes.get_request) =
       begin (* trend field *)
         let json' = encode_trend v in
         Js.Dict.set json "trend" (Js.Json.object_ json');
+      end;
+    | Top v ->
+      begin (* top field *)
+        let json' = encode_top v in
+        Js.Dict.set json "top" (Js.Json.object_ json');
       end;
   end; (* match v.options *)
   json
@@ -432,6 +615,50 @@ let rec encode_histo_float_stat (v:MetricTypes.histo_float_stat) =
   end;
   json
 
+let rec encode_term_count_int (v:MetricTypes.term_count_int) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "term" (Js.Json.string v.MetricTypes.term);
+  Js.Dict.set json "count" (Js.Json.number (Int32.to_float v.MetricTypes.count));
+  json
+
+let rec encode_terms_count_int (v:MetricTypes.terms_count_int) = 
+  let json = Js.Dict.empty () in
+  begin (* termcount field *)
+    let (termcount':Js.Json.t) =
+      v.MetricTypes.termcount
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_term_count_int |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "termcount" termcount';
+  end;
+  Js.Dict.set json "total_hits" (Js.Json.number (Int32.to_float v.MetricTypes.total_hits));
+  json
+
+let rec encode_term_count_float (v:MetricTypes.term_count_float) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "term" (Js.Json.string v.MetricTypes.term);
+  Js.Dict.set json "count" (Js.Json.number v.MetricTypes.count);
+  json
+
+let rec encode_terms_count_float (v:MetricTypes.terms_count_float) = 
+  let json = Js.Dict.empty () in
+  begin (* termcount field *)
+    let (termcount':Js.Json.t) =
+      v.MetricTypes.termcount
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_term_count_float |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "termcount" termcount';
+  end;
+  Js.Dict.set json "total_hits" (Js.Json.number (Int32.to_float v.MetricTypes.total_hits));
+  json
+
 let rec encode_get_response (v:MetricTypes.get_response) = 
   let json = Js.Dict.empty () in
   begin match v with
@@ -450,6 +677,16 @@ let rec encode_get_response (v:MetricTypes.get_response) =
     begin (* histoFloatValue field *)
       let json' = encode_histo_float_stat v in
       Js.Dict.set json "histo_floatValue" (Js.Json.object_ json');
+    end;
+  | MetricTypes.Top_int_value v ->
+    begin (* topIntValue field *)
+      let json' = encode_terms_count_int v in
+      Js.Dict.set json "top_intValue" (Js.Json.object_ json');
+    end;
+  | MetricTypes.Top_float_value v ->
+    begin (* topFloatValue field *)
+      let json' = encode_terms_count_float v in
+      Js.Dict.set json "top_floatValue" (Js.Json.object_ json');
     end;
   end;
   json

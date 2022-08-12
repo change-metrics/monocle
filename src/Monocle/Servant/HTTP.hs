@@ -39,7 +39,6 @@ type MonocleAPI =
     :<|> "crawler" :> "add" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.AddDocRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.AddDocResponse
     :<|> "crawler" :> "commit" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.CommitRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.CommitResponse
     :<|> "crawler" :> "get_commit_info" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.CommitInfoRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.CommitInfoResponse
-
 server :: ServerT MonocleAPI AppM
 server =
   loginLoginValidation

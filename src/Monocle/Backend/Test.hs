@@ -4,6 +4,7 @@ module Monocle.Backend.Test where
 import Control.Exception (bracket_)
 import Control.Monad.Random.Lazy
 import Data.List (partition)
+import Data.Maybe (fromJust)
 import Data.Text qualified as Text
 import Data.Time.Clock (secondsToNominalDiffTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
@@ -732,28 +733,30 @@ testTopAuthors = withTenant doTest
 
     -- Check for expected metrics
     withQuery defaultQuery $ do
-      results <- Q.getMostActiveAuthorByChangeCreated 10
+      results <- fromJust <$> Q.runMetricTop Q.metricChangeAuthors 10
       assertEqual'
-        "Check getMostActiveAuthorByChangeCreated count"
-        [Q.TermResult {trTerm = "eve", trCount = 4}]
-        (Q.tsrTR results)
-      results' <- Q.getMostActiveAuthorByChangeMerged 10
+        "Check metricChangeAuthors Top"
+        (V.fromList [Q.TermCount {tcTerm = "eve", tcCount = 4}])
+        (Q.tscData results)
+      results' <- fromJust <$> Q.runMetricTop Q.metricChangeMergedAuthors 10
       assertEqual'
-        "Check getMostActiveAuthorByChangeMerged count"
-        [Q.TermResult {trTerm = "eve", trCount = 2}]
-        (Q.tsrTR results')
-      results'' <- Q.getMostActiveAuthorByChangeReviewed 10
+        "Check metricChangeMergedAuthors Top"
+        (V.fromList [Q.TermCount {tcTerm = "eve", tcCount = 2}])
+        (Q.tscData results')
+      results'' <- fromJust <$> Q.runMetricTop Q.metricReviewAuthors 10
       assertEqual'
-        "Check getMostActiveAuthorByChangeReviewed count"
-        [ Q.TermResult {trTerm = "alice", trCount = 2}
-        , Q.TermResult {trTerm = "bob", trCount = 2}
-        ]
-        (Q.tsrTR results'')
-      results''' <- Q.getMostActiveAuthorByChangeCommented 10
+        "Check metricReviewAuthors Top"
+        ( V.fromList
+            [ Q.TermCount {tcTerm = "alice", tcCount = 2}
+            , Q.TermCount {tcTerm = "bob", tcCount = 2}
+            ]
+        )
+        (Q.tscData results'')
+      results''' <- fromJust <$> Q.runMetricTop Q.metricCommentAuthors 10
       assertEqual'
-        "Check getMostActiveAuthorByChangeCommented count"
-        [Q.TermResult {trTerm = "alice", trCount = 2}]
-        (Q.tsrTR results''')
+        "Check metricCommentAuthors Top"
+        (V.fromList [Q.TermCount {tcTerm = "alice", tcCount = 2}])
+        (Q.tscData results''')
       results'''' <- Q.getMostReviewedAuthor 10
       assertEqual'
         "Check getMostReviewedAuthor count"
@@ -911,45 +914,45 @@ testGetChangesTops = withTenant doTest
         ( SearchPB.ChangesTops
             { changesTopsAuthors =
                 Just
-                  ( SearchPB.TermsCount
-                      { termsCountTermcount =
+                  ( MetricPB.TermsCountInt
+                      { termsCountIntTermcount =
                           V.fromList
-                            [ SearchPB.TermCount
-                                { termCountTerm = "eve"
-                                , termCountCount = 4
+                            [ MetricPB.TermCountInt
+                                { termCountIntTerm = "eve"
+                                , termCountIntCount = 4
                                 }
                             ]
-                      , termsCountTotalHits = 4
+                      , termsCountIntTotalHits = 4
                       }
                   )
             , changesTopsRepos =
                 Just
-                  ( SearchPB.TermsCount
-                      { termsCountTermcount =
+                  ( MetricPB.TermsCountInt
+                      { termsCountIntTermcount =
                           V.fromList
-                            [ SearchPB.TermCount
-                                { termCountTerm = "openstack/neutron"
-                                , termCountCount = 2
+                            [ MetricPB.TermCountInt
+                                { termCountIntTerm = "openstack/neutron"
+                                , termCountIntCount = 2
                                 }
-                            , SearchPB.TermCount
-                                { termCountTerm = "openstack/nova"
-                                , termCountCount = 2
+                            , MetricPB.TermCountInt
+                                { termCountIntTerm = "openstack/nova"
+                                , termCountIntCount = 2
                                 }
                             ]
-                      , termsCountTotalHits = 4
+                      , termsCountIntTotalHits = 4
                       }
                   )
             , changesTopsApprovals =
                 Just
-                  ( SearchPB.TermsCount
-                      { termsCountTermcount =
+                  ( MetricPB.TermsCountInt
+                      { termsCountIntTermcount =
                           V.fromList
-                            [ SearchPB.TermCount
-                                { termCountTerm = "OK"
-                                , termCountCount = 4
+                            [ MetricPB.TermCountInt
+                                { termCountIntTerm = "OK"
+                                , termCountIntCount = 4
                                 }
                             ]
-                      , termsCountTotalHits = 4
+                      , termsCountIntTotalHits = 4
                       }
                   )
             }

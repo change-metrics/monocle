@@ -593,7 +593,16 @@ getCardinalityAgg (BH.FieldName fieldName) threshold = do
   unCountValue . parseAggregationResults "agg1" <$> doAggregation search
 
 countAuthors :: QueryMonad m => m Count
-countAuthors = getCardinalityAgg (BH.FieldName "author.muid") (Just 3000)
+countAuthors = cntAuthors "author.muid"
+
+countOnAuthors :: QueryMonad m => m Count
+countOnAuthors = cntAuthors "on_author.muid"
+
+cntAuthors :: QueryMonad m => Text -> m Count
+cntAuthors = runCount
+ where
+  runCount fn = getCardinalityAgg (BH.FieldName fn) maxCount
+  maxCount = Just 3000
 
 getDocTypeTopCountByField :: QueryMonad m => NonEmpty EDocType -> Text -> Maybe Word32 -> m TermsResultWTH
 getDocTypeTopCountByField doctype attr size = withFilter [documentTypes doctype] $ do
@@ -654,26 +663,9 @@ getReposSummary = do
 
     pure $ RepoSummary {..}
 
--- | get authors tops
-getMostActiveAuthorByChangeCreated :: QueryMonad m => Word32 -> m TermsResultWTH
-getMostActiveAuthorByChangeCreated limit =
-  withFlavor (QueryFlavor Author CreatedAt) $
-    getDocTypeTopCountByField (EChangeCreatedEvent :| []) "author.muid" (Just limit)
-
-getMostActiveAuthorByChangeMerged :: QueryMonad m => Word32 -> m TermsResultWTH
-getMostActiveAuthorByChangeMerged limit =
-  withFlavor (QueryFlavor OnAuthor CreatedAt) $
-    getDocTypeTopCountByField (EChangeMergedEvent :| []) "on_author.muid" (Just limit)
-
-getMostActiveAuthorByChangeReviewed :: QueryMonad m => Word32 -> m TermsResultWTH
-getMostActiveAuthorByChangeReviewed limit =
-  withFlavor (QueryFlavor Author CreatedAt) $
-    getDocTypeTopCountByField (EChangeReviewedEvent :| []) "author.muid" (Just limit)
-
-getMostActiveAuthorByChangeCommented :: QueryMonad m => Word32 -> m TermsResultWTH
-getMostActiveAuthorByChangeCommented limit =
-  withFlavor (QueryFlavor Author CreatedAt) $
-    getDocTypeTopCountByField (EChangeCommentedEvent :| []) "author.muid" (Just limit)
+getChangeEventsTop :: QueryMonad m => Word32 -> NonEmpty EDocType -> Text -> QueryFlavor -> m TermsResultWTH
+getChangeEventsTop limit docs qfield qf =
+  withFlavor qf $ getDocTypeTopCountByField docs qfield (Just limit)
 
 getMostReviewedAuthor :: QueryMonad m => Word32 -> m TermsResultWTH
 getMostReviewedAuthor limit =
@@ -791,9 +783,6 @@ getChangesTop limit attr =
       -- get a total count that is accurate
       (Just limit)
 
-getChangesTopAuthors :: QueryMonad m => Word32 -> m TermsResultWTH
-getChangesTopAuthors limit = getChangesTop limit "author.muid"
-
 getChangesTopRepos :: QueryMonad m => Word32 -> m TermsResultWTH
 getChangesTopRepos limit = getChangesTop limit "repository_fullname"
 
@@ -802,26 +791,26 @@ getChangesTopApprovals limit = getChangesTop limit "approval"
 
 getChangesTops :: QueryMonad m => Word32 -> m SearchPB.ChangesTops
 getChangesTops limit = do
-  authors <- getChangesTopAuthors limit
+  authors <- runMetricTop metricChangeAuthors limit
   repos <- getChangesTopRepos limit
   approvals <- getChangesTopApprovals limit
   let result =
-        let changesTopsAuthors = toTermsCount (toInt $ tsrTH authors) (tsrTR authors)
+        let changesTopsAuthors = toTermsCountPBInt <$> authors
             changesTopsRepos = toTermsCount (toInt $ tsrTH repos) (tsrTR repos)
             changesTopsApprovals = toTermsCount (toInt $ tsrTH approvals) (tsrTR approvals)
          in SearchPB.ChangesTops {..}
   pure result
  where
   toPBTermCount TermResult {..} =
-    SearchPB.TermCount
+    MetricPB.TermCountInt
       (from trTerm)
       (toInt trCount)
   toInt c = fromInteger $ toInteger c
   toTermsCount total tsc =
     Just $
-      SearchPB.TermsCount
-        { termsCountTermcount = V.fromList $ toPBTermCount <$> tsc
-        , termsCountTotalHits = total
+      MetricPB.TermsCountInt
+        { termsCountIntTermcount = V.fromList $ toPBTermCount <$> tsc
+        , termsCountIntTotalHits = total
         }
 
 searchBody :: QueryMonad m => QueryFlavor -> Value -> m Value
@@ -983,6 +972,24 @@ data Histo a = Histo
 instance Functor Histo where
   fmap f (Histo d n) = Histo d $ f n
 
+data TermCount a = TermCount
+  { tcTerm :: Text
+  , tcCount :: a
+  }
+  deriving (Show, Eq)
+
+instance Functor TermCount where
+  fmap f (TermCount {..}) = TermCount tcTerm (f tcCount)
+
+data TermsCount a = TermsCount
+  { tscData :: V.Vector (TermCount a)
+  , tscTotalHits :: Word32
+  }
+  deriving (Show, Eq)
+
+instance Functor TermsCount where
+  fmap f (TermsCount {..}) = TermsCount (fmap f <$> tscData) tscTotalHits
+
 data MetricInfo = MetricInfo
   { miMetricName :: Text
   , miName :: Text
@@ -994,6 +1001,7 @@ data Metric m a = Metric
   { metricInfo :: MetricInfo
   , runMetric :: m (Numeric a)
   , runMetricTrend :: Maybe Q.TimeRange -> m (V.Vector (Histo a))
+  , runMetricTop :: Word32 -> m (Maybe (TermsCount a))
   }
 
 instance (Functor m) => Functor (Metric m) where
@@ -1002,6 +1010,7 @@ instance (Functor m) => Functor (Metric m) where
       metricInfo
       (fmap f <$> runMetric)
       (const $ (fmap . fmap) f <$> runMetricTrend Nothing)
+      (const $ (fmap . fmap) f <$> runMetricTop 0)
 
 runMetricNum :: QueryMonad m => Metric m a -> m a
 runMetricNum m = unNum <$> runMetric m
@@ -1017,6 +1026,28 @@ toPBHistoFloat (Histo {..}) =
   let histoFloatDate = from hDate
       histoFloatCount = hValue
    in MetricPB.HistoFloat {..}
+
+toPBTermsCountInt :: TermsCount Word32 -> MetricPB.TermsCountInt
+toPBTermsCountInt (TermsCount {..}) =
+  let termsCountIntTermcount = fmap toPBTermCountInt tscData
+      termsCountIntTotalHits = tscTotalHits
+   in MetricPB.TermsCountInt {..}
+ where
+  toPBTermCountInt TermCount {..} =
+    let termCountIntCount = tcCount
+        termCountIntTerm = from tcTerm
+     in MetricPB.TermCountInt {..}
+
+toPBTermsCountFloat :: TermsCount Float -> MetricPB.TermsCountFloat
+toPBTermsCountFloat (TermsCount {..}) =
+  let termsCountFloatTermcount = fmap toPBTermCountFloat tscData
+      termsCountFloatTotalHits = tscTotalHits
+   in MetricPB.TermsCountFloat {..}
+ where
+  toPBTermCountFloat TermCount {..} =
+    let termCountFloatCount = tcCount
+        termCountFloatTerm = from tcTerm
+     in MetricPB.TermCountFloat {..}
 
 runMetricTrendIntPB :: QueryMonad m => Metric m Word32 -> m (V.Vector MetricPB.HistoInt)
 runMetricTrendIntPB m = fmap toPBHistoInt <$> runMetricTrend m Nothing
@@ -1125,7 +1156,13 @@ countHisto rf intervalM = fmap toHisto <$> getCountHisto
     hBuckets . parseAggregationResults "agg1" <$> doAggregation search
 
 authorCountHisto :: forall m. QueryMonad m => EDocType -> Maybe Q.TimeRange -> m (V.Vector (Histo Word32))
-authorCountHisto changeEvent intervalM = withDocType changeEvent qf getAuthorHistoPB
+authorCountHisto = authorCntHisto "author.muid"
+
+onAuthorCountHisto :: forall m. QueryMonad m => EDocType -> Maybe Q.TimeRange -> m (V.Vector (Histo Word32))
+onAuthorCountHisto = authorCntHisto "on_author.muid"
+
+authorCntHisto :: forall m. QueryMonad m => Text -> EDocType -> Maybe Q.TimeRange -> m (V.Vector (Histo Word32))
+authorCntHisto aField changeEvent intervalM = withDocType changeEvent qf getAuthorHistoPB
  where
   qf = QueryFlavor Author CreatedAt
   getAuthorHistoPB = fmap toHisto <$> getAuthorCountHisto
@@ -1163,7 +1200,7 @@ authorCountHisto changeEvent intervalM = withDocType changeEvent qf getAuthorHis
                 .= Aeson.object
                   [ "terms"
                       .= Aeson.object
-                        [ "field" .= ("author.muid" :: Text)
+                        [ "field" .= aField
                         , "size" .= (10000 :: Word)
                         ]
                   ]
@@ -1185,9 +1222,33 @@ authorCountHisto changeEvent intervalM = withDocType changeEvent qf getAuthorHis
 
     hBuckets . parseAggregationResults "agg1" <$> doAggregation search
 
+topNotSupported :: QueryMonad m => Word32 -> m (Maybe (TermsCount a))
+topNotSupported = const $ pure Nothing
+
+toTermsCountWord32 :: TermsResultWTH -> TermsCount Word32
+toTermsCountWord32 TermsResultWTH {..} =
+  TermsCount
+    ( fromList $ fmap toTermCountWord32 tsrTR
+    )
+    (fromInteger . toInteger $ tsrTH)
+ where
+  toTermCountWord32 TermResult {..} = TermCount trTerm (fromInteger . toInteger $ trCount)
+
+toTermsCountPBInt :: TermsCount Word32 -> MetricPB.TermsCountInt
+toTermsCountPBInt TermsCount {..} =
+  MetricPB.TermsCountInt
+    { termsCountIntTermcount = toTermCountPB <$> tscData
+    , termsCountIntTotalHits = tscTotalHits
+    }
+ where
+  toTermCountPB TermCount {..} =
+    MetricPB.TermCountInt
+      (from tcTerm)
+      (fromInteger . toInteger $ tcCount)
+
 changeEventCount :: QueryMonad m => MetricInfo -> EDocType -> Metric m Word32
 changeEventCount mi dt =
-  Metric mi (Num . countToWord <$> compute) computeTrend
+  Metric mi (Num . countToWord <$> compute) computeTrend topNotSupported
  where
   compute = withFilter [documentType dt] (withFlavor qf countDocs)
   computeTrend interval = withDocType EChangeCreatedEvent qf $ countHisto CreatedAt interval
@@ -1236,7 +1297,7 @@ metricChangesAbandoned = changeEventCount mi EChangeAbandonedEvent
       )
 
 metricChangeUpdates :: QueryMonad m => Metric m Word32
-metricChangeUpdates = Metric mi compute computeTrend
+metricChangeUpdates = Metric mi compute computeTrend topNotSupported
  where
   mi =
     MetricInfo
@@ -1278,6 +1339,7 @@ metricChangeWithTests =
     )
     (Num <$> compute)
     computeTrend
+    topNotSupported
  where
   compute =
     countToWord
@@ -1305,6 +1367,7 @@ metricChangesSelfMerged =
     )
     (Num <$> compute)
     computeTrend
+    topNotSupported
  where
   compute = countToWord <$> withFilter selfMerged (withFlavor' countDocs)
   selfMerged =
@@ -1315,7 +1378,7 @@ metricChangesSelfMerged =
   computeTrend = flip monoHisto compute
 
 metricReviews :: QueryMonad m => Metric m Word32
-metricReviews = Metric mi compute computeTrend
+metricReviews = Metric mi compute computeTrend topNotSupported
  where
   mi =
     MetricInfo
@@ -1338,7 +1401,7 @@ metricReviews = Metric mi compute computeTrend
   qf = QueryFlavor Author CreatedAt
 
 metricReviewsAndComments :: QueryMonad m => Metric m Word32
-metricReviewsAndComments = Metric mi compute computeTrend
+metricReviewsAndComments = Metric mi compute computeTrend topNotSupported
  where
   mi =
     MetricInfo
@@ -1361,7 +1424,7 @@ metricReviewsAndComments = Metric mi compute computeTrend
   docs = [EChangeReviewedEvent, EChangeCommentedEvent]
 
 metricComments :: QueryMonad m => Metric m Word32
-metricComments = Metric mi compute computeTrend
+metricComments = Metric mi compute computeTrend topNotSupported
  where
   mi =
     MetricInfo
@@ -1381,7 +1444,7 @@ metricComments = Metric mi compute computeTrend
   qf = QueryFlavor Author CreatedAt
 
 metricReviewAuthors :: QueryMonad m => Metric m Word32
-metricReviewAuthors = Metric mi compute computeTrend
+metricReviewAuthors = Metric mi compute computeTrend computeTop
  where
   mi =
     MetricInfo
@@ -1396,12 +1459,16 @@ metricReviewAuthors = Metric mi compute computeTrend
       )
   compute =
     Num . countToWord
-      <$> withFilter [documentType EChangeReviewedEvent] (withFlavor qf countAuthors)
-  computeTrend = authorCountHisto EChangeReviewedEvent
+      <$> withFilter [documentType ev] (withFlavor qf countAuthors)
+  computeTrend = authorCountHisto ev
+  computeTop limit =
+    Just . toTermsCountWord32
+      <$> getChangeEventsTop limit (ev :| []) "author.muid" qf
   qf = QueryFlavor Author CreatedAt
+  ev = EChangeReviewedEvent
 
 metricCommentAuthors :: QueryMonad m => Metric m Word32
-metricCommentAuthors = Metric mi compute computeTrend
+metricCommentAuthors = Metric mi compute computeTrend computeTop
  where
   mi =
     MetricInfo
@@ -1416,12 +1483,40 @@ metricCommentAuthors = Metric mi compute computeTrend
       )
   compute =
     Num . countToWord
-      <$> withFilter [documentType EChangeCommentedEvent] (withFlavor qf countAuthors)
-  computeTrend = authorCountHisto EChangeCommentedEvent
+      <$> withFilter [documentType ev] (withFlavor qf countAuthors)
+  computeTrend = authorCountHisto ev
+  computeTop limit =
+    Just . toTermsCountWord32
+      <$> getChangeEventsTop limit (ev :| []) "author.muid" qf
   qf = QueryFlavor Author CreatedAt
+  ev = EChangeCommentedEvent
+
+metricChangeMergedAuthors :: QueryMonad m => Metric m Word32
+metricChangeMergedAuthors = Metric mi compute computeTrend computeTop
+ where
+  mi =
+    MetricInfo
+      "change_merged_authors"
+      "Merged change' authors count"
+      "The count of merged change's authors"
+      ( Just $
+          "The metric is the count of change merged events aggregated by unique authors. "
+            <> authorFlavorToDesc OnAuthor
+            <> " "
+            <> rangeFlavorToDesc CreatedAt
+      )
+  compute =
+    Num . countToWord
+      <$> withFilter [documentType ev] (withFlavor qf countOnAuthors)
+  computeTrend = onAuthorCountHisto ev
+  computeTop limit =
+    Just . toTermsCountWord32
+      <$> getChangeEventsTop limit (ev :| []) "on_author.muid" qf
+  qf = QueryFlavor OnAuthor CreatedAt
+  ev = EChangeMergedEvent
 
 metricChangeAuthors :: QueryMonad m => Metric m Word32
-metricChangeAuthors = Metric mi compute computeTrend
+metricChangeAuthors = Metric mi compute computeTrend computeTop
  where
   mi =
     MetricInfo
@@ -1438,6 +1533,7 @@ metricChangeAuthors = Metric mi compute computeTrend
     Num . countToWord
       <$> withFilter [documentType EChangeCreatedEvent] (withFlavor qf countAuthors)
   computeTrend = authorCountHisto EChangeCreatedEvent
+  computeTop limit = Just . toTermsCountWord32 <$> getChangesTop limit "author.muid"
   qf = QueryFlavor Author CreatedAt
 
 -- | The average duration for an open change to be merged
@@ -1458,6 +1554,7 @@ metricTimeToMerge =
     )
     (Num <$> compute)
     computeTrend
+    topNotSupported
  where
   compute =
     double2Float
@@ -1482,6 +1579,7 @@ metricTimeToMergeVariance =
     )
     (Num <$> compute)
     computeTrend
+    topNotSupported
  where
   compute =
     double2Float
@@ -1505,6 +1603,7 @@ metricFirstReviewMeanTime =
     )
     (Num <$> compute)
     computeTrend
+    topNotSupported
  where
   compute =
     firstEventAverageDuration
@@ -1529,6 +1628,7 @@ metricFirstCommentMeanTime =
     )
     (Num <$> compute)
     computeTrend
+    topNotSupported
  where
   compute =
     firstEventAverageDuration
@@ -1553,6 +1653,7 @@ metricCommitsPerChange =
     )
     (Num <$> compute)
     computeTrend
+    topNotSupported
  where
   compute =
     double2Float
@@ -1576,6 +1677,7 @@ allMetrics =
     , toJSON <$> metricReviewAuthors
     , toJSON <$> metricCommentAuthors
     , toJSON <$> metricChangeAuthors
+    , toJSON <$> metricChangeMergedAuthors
     , toJSON <$> metricTimeToMerge
     , toJSON <$> metricTimeToMergeVariance
     , toJSON <$> metricFirstCommentMeanTime

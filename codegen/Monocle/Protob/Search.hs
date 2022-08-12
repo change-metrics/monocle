@@ -4056,8 +4056,8 @@ instance HsProtobuf.Message QueryResponse where
                   QueryResponseResultTopAuthors y ->
                     ( HsProtobuf.encodeMessageField
                         (HsProtobuf.FieldNumber 4)
-                        ( Hs.coerce @(Hs.Maybe Monocle.Protob.Search.TermsCount)
-                            @(HsProtobuf.Nested Monocle.Protob.Search.TermsCount)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Protob.Metric.TermsCountInt)
+                            @(HsProtobuf.Nested Monocle.Protob.Metric.TermsCountInt)
                             (Hs.Just y)
                         )
                     )
@@ -4072,8 +4072,8 @@ instance HsProtobuf.Message QueryResponse where
                   QueryResponseResultNewAuthors y ->
                     ( HsProtobuf.encodeMessageField
                         (HsProtobuf.FieldNumber 6)
-                        ( Hs.coerce @(Hs.Maybe Monocle.Protob.Search.TermsCount)
-                            @(HsProtobuf.Nested Monocle.Protob.Search.TermsCount)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Protob.Metric.TermsCountInt)
+                            @(HsProtobuf.Nested Monocle.Protob.Metric.TermsCountInt)
                             (Hs.Just y)
                         )
                     )
@@ -4166,8 +4166,8 @@ instance HsProtobuf.Message QueryResponse where
                 ( (HsProtobuf.FieldNumber 4)
                 , (Hs.pure (Hs.fmap QueryResponseResultTopAuthors))
                     <*> ( Hs.coerce
-                            @(_ (HsProtobuf.Nested Monocle.Protob.Search.TermsCount))
-                            @(_ (Hs.Maybe Monocle.Protob.Search.TermsCount))
+                            @(_ (HsProtobuf.Nested Monocle.Protob.Metric.TermsCountInt))
+                            @(_ (Hs.Maybe Monocle.Protob.Metric.TermsCountInt))
                             HsProtobuf.decodeMessageField
                         )
                 )
@@ -4184,8 +4184,8 @@ instance HsProtobuf.Message QueryResponse where
                 ( (HsProtobuf.FieldNumber 6)
                 , (Hs.pure (Hs.fmap QueryResponseResultNewAuthors))
                     <*> ( Hs.coerce
-                            @(_ (HsProtobuf.Nested Monocle.Protob.Search.TermsCount))
-                            @(_ (Hs.Maybe Monocle.Protob.Search.TermsCount))
+                            @(_ (HsProtobuf.Nested Monocle.Protob.Metric.TermsCountInt))
+                            @(_ (Hs.Maybe Monocle.Protob.Metric.TermsCountInt))
                             HsProtobuf.decodeMessageField
                         )
                 )
@@ -4393,9 +4393,9 @@ data QueryResponseResult
   = QueryResponseResultError Monocle.Protob.Search.QueryError
   | QueryResponseResultChanges Monocle.Protob.Search.Changes
   | QueryResponseResultReposSummary Monocle.Protob.Search.ReposSummary
-  | QueryResponseResultTopAuthors Monocle.Protob.Search.TermsCount
+  | QueryResponseResultTopAuthors Monocle.Protob.Metric.TermsCountInt
   | QueryResponseResultAuthorsPeers Monocle.Protob.Search.AuthorsPeers
-  | QueryResponseResultNewAuthors Monocle.Protob.Search.TermsCount
+  | QueryResponseResultNewAuthors Monocle.Protob.Metric.TermsCountInt
   | QueryResponseResultReviewStats Monocle.Protob.Search.ReviewStats
   | QueryResponseResultLifecycleStats Monocle.Protob.Search.LifecycleStats
   | QueryResponseResultActivityStats Monocle.Protob.Search.ActivityStats
@@ -5091,174 +5091,6 @@ instance HsJSONPB.ToJSON ReposSummary where
 instance HsJSONPB.FromJSON ReposSummary where
   parseJSON = HsJSONPB.parseJSONPB
 
-data TermCount = TermCount
-  { termCountTerm :: Hs.Text
-  , termCountCount :: Hs.Word32
-  }
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
-
-instance HsProtobuf.Named TermCount where
-  nameOf _ = (Hs.fromString "TermCount")
-
-instance HsProtobuf.HasDefault TermCount
-
-instance HsProtobuf.Message TermCount where
-  encodeMessage
-    _
-    TermCount
-      { termCountTerm = termCountTerm
-      , termCountCount = termCountCount
-      } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                termCountTerm
-            )
-          , ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 2)
-                termCountCount
-            )
-          ]
-      )
-  decodeMessage _ =
-    (Hs.pure TermCount)
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 1)
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 2)
-          )
-  dotProto _ =
-    [ ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "term")
-          []
-          ""
-      )
-    , ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 2)
-          (HsProtobuf.Prim HsProtobuf.UInt32)
-          (HsProtobuf.Single "count")
-          []
-          ""
-      )
-    ]
-
-instance HsJSONPB.ToJSONPB TermCount where
-  toJSONPB (TermCount f1 f2) =
-    (HsJSONPB.object ["term" .= f1, "count" .= f2])
-  toEncodingPB (TermCount f1 f2) =
-    (HsJSONPB.pairs ["term" .= f1, "count" .= f2])
-
-instance HsJSONPB.FromJSONPB TermCount where
-  parseJSONPB =
-    ( HsJSONPB.withObject
-        "TermCount"
-        ( \obj ->
-            (Hs.pure TermCount) <*> obj .: "term" <*> obj .: "count"
-        )
-    )
-
-instance HsJSONPB.ToJSON TermCount where
-  toJSON = HsJSONPB.toAesonValue
-  toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON TermCount where
-  parseJSON = HsJSONPB.parseJSONPB
-
-data TermsCount = TermsCount
-  { termsCountTermcount ::
-      Hs.Vector Monocle.Protob.Search.TermCount
-  , termsCountTotalHits :: Hs.Word32
-  }
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
-
-instance HsProtobuf.Named TermsCount where
-  nameOf _ = (Hs.fromString "TermsCount")
-
-instance HsProtobuf.HasDefault TermsCount
-
-instance HsProtobuf.Message TermsCount where
-  encodeMessage
-    _
-    TermsCount
-      { termsCountTermcount = termsCountTermcount
-      , termsCountTotalHits = termsCountTotalHits
-      } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                ( Hs.coerce @(Hs.Vector Monocle.Protob.Search.TermCount)
-                    @(HsProtobuf.NestedVec Monocle.Protob.Search.TermCount)
-                    termsCountTermcount
-                )
-            )
-          , ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 2)
-                termsCountTotalHits
-            )
-          ]
-      )
-  decodeMessage _ =
-    (Hs.pure TermsCount)
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.NestedVec Monocle.Protob.Search.TermCount))
-              @(_ (Hs.Vector Monocle.Protob.Search.TermCount))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 1)
-              )
-          )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 2)
-          )
-  dotProto _ =
-    [ ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          ( HsProtobuf.Repeated
-              (HsProtobuf.Named (HsProtobuf.Single "TermCount"))
-          )
-          (HsProtobuf.Single "termcount")
-          []
-          ""
-      )
-    , ( HsProtobuf.DotProtoField
-          (HsProtobuf.FieldNumber 2)
-          (HsProtobuf.Prim HsProtobuf.UInt32)
-          (HsProtobuf.Single "total_hits")
-          []
-          ""
-      )
-    ]
-
-instance HsJSONPB.ToJSONPB TermsCount where
-  toJSONPB (TermsCount f1 f2) =
-    (HsJSONPB.object ["termcount" .= f1, "total_hits" .= f2])
-  toEncodingPB (TermsCount f1 f2) =
-    (HsJSONPB.pairs ["termcount" .= f1, "total_hits" .= f2])
-
-instance HsJSONPB.FromJSONPB TermsCount where
-  parseJSONPB =
-    ( HsJSONPB.withObject
-        "TermsCount"
-        ( \obj ->
-            (Hs.pure TermsCount)
-              <*> obj .: "termcount"
-              <*> obj .: "total_hits"
-        )
-    )
-
-instance HsJSONPB.ToJSON TermsCount where
-  toJSON = HsJSONPB.toAesonValue
-  toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON TermsCount where
-  parseJSON = HsJSONPB.parseJSONPB
-
 data AuthorPeer = AuthorPeer
   { authorPeerAuthor :: Hs.Text
   , authorPeerPeer :: Hs.Text
@@ -5428,9 +5260,10 @@ instance HsJSONPB.FromJSON AuthorsPeers where
 
 data ChangesTops = ChangesTops
   { changesTopsAuthors ::
-      Hs.Maybe Monocle.Protob.Search.TermsCount
-  , changesTopsRepos :: Hs.Maybe Monocle.Protob.Search.TermsCount
-  , changesTopsApprovals :: Hs.Maybe Monocle.Protob.Search.TermsCount
+      Hs.Maybe Monocle.Protob.Metric.TermsCountInt
+  , changesTopsRepos :: Hs.Maybe Monocle.Protob.Metric.TermsCountInt
+  , changesTopsApprovals ::
+      Hs.Maybe Monocle.Protob.Metric.TermsCountInt
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -5450,22 +5283,22 @@ instance HsProtobuf.Message ChangesTops where
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
-                ( Hs.coerce @(Hs.Maybe Monocle.Protob.Search.TermsCount)
-                    @(HsProtobuf.Nested Monocle.Protob.Search.TermsCount)
+                ( Hs.coerce @(Hs.Maybe Monocle.Protob.Metric.TermsCountInt)
+                    @(HsProtobuf.Nested Monocle.Protob.Metric.TermsCountInt)
                     changesTopsAuthors
                 )
             )
           , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
-                ( Hs.coerce @(Hs.Maybe Monocle.Protob.Search.TermsCount)
-                    @(HsProtobuf.Nested Monocle.Protob.Search.TermsCount)
+                ( Hs.coerce @(Hs.Maybe Monocle.Protob.Metric.TermsCountInt)
+                    @(HsProtobuf.Nested Monocle.Protob.Metric.TermsCountInt)
                     changesTopsRepos
                 )
             )
           , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 3)
-                ( Hs.coerce @(Hs.Maybe Monocle.Protob.Search.TermsCount)
-                    @(HsProtobuf.Nested Monocle.Protob.Search.TermsCount)
+                ( Hs.coerce @(Hs.Maybe Monocle.Protob.Metric.TermsCountInt)
+                    @(HsProtobuf.Nested Monocle.Protob.Metric.TermsCountInt)
                     changesTopsApprovals
                 )
             )
@@ -5474,24 +5307,24 @@ instance HsProtobuf.Message ChangesTops where
   decodeMessage _ =
     (Hs.pure ChangesTops)
       <*> ( Hs.coerce
-              @(_ (HsProtobuf.Nested Monocle.Protob.Search.TermsCount))
-              @(_ (Hs.Maybe Monocle.Protob.Search.TermsCount))
+              @(_ (HsProtobuf.Nested Monocle.Protob.Metric.TermsCountInt))
+              @(_ (Hs.Maybe Monocle.Protob.Metric.TermsCountInt))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 1)
               )
           )
       <*> ( Hs.coerce
-              @(_ (HsProtobuf.Nested Monocle.Protob.Search.TermsCount))
-              @(_ (Hs.Maybe Monocle.Protob.Search.TermsCount))
+              @(_ (HsProtobuf.Nested Monocle.Protob.Metric.TermsCountInt))
+              @(_ (Hs.Maybe Monocle.Protob.Metric.TermsCountInt))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 2)
               )
           )
       <*> ( Hs.coerce
-              @(_ (HsProtobuf.Nested Monocle.Protob.Search.TermsCount))
-              @(_ (Hs.Maybe Monocle.Protob.Search.TermsCount))
+              @(_ (HsProtobuf.Nested Monocle.Protob.Metric.TermsCountInt))
+              @(_ (Hs.Maybe Monocle.Protob.Metric.TermsCountInt))
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 3)
@@ -5501,7 +5334,11 @@ instance HsProtobuf.Message ChangesTops where
     [ ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 1)
           ( HsProtobuf.Prim
-              (HsProtobuf.Named (HsProtobuf.Single "TermsCount"))
+              ( HsProtobuf.Named
+                  ( HsProtobuf.Dots
+                      (HsProtobuf.Path ("monocle_metric" Hs.:| ["TermsCountInt"]))
+                  )
+              )
           )
           (HsProtobuf.Single "authors")
           []
@@ -5510,7 +5347,11 @@ instance HsProtobuf.Message ChangesTops where
     , ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 2)
           ( HsProtobuf.Prim
-              (HsProtobuf.Named (HsProtobuf.Single "TermsCount"))
+              ( HsProtobuf.Named
+                  ( HsProtobuf.Dots
+                      (HsProtobuf.Path ("monocle_metric" Hs.:| ["TermsCountInt"]))
+                  )
+              )
           )
           (HsProtobuf.Single "repos")
           []
@@ -5519,7 +5360,11 @@ instance HsProtobuf.Message ChangesTops where
     , ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 3)
           ( HsProtobuf.Prim
-              (HsProtobuf.Named (HsProtobuf.Single "TermsCount"))
+              ( HsProtobuf.Named
+                  ( HsProtobuf.Dots
+                      (HsProtobuf.Path ("monocle_metric" Hs.:| ["TermsCountInt"]))
+                  )
+              )
           )
           (HsProtobuf.Single "approvals")
           []

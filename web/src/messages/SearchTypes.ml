@@ -231,16 +231,6 @@ type repos_summary = {
   reposum : repo_summary list;
 }
 
-type term_count = {
-  term : string;
-  count : int32;
-}
-
-type terms_count = {
-  termcount : term_count list;
-  total_hits : int32;
-}
-
 type author_peer = {
   author : string;
   peer : string;
@@ -270,18 +260,18 @@ type lifecycle_stats = {
 }
 
 type changes_tops = {
-  authors : terms_count option;
-  repos : terms_count option;
-  approvals : terms_count option;
+  authors : MetricTypes.terms_count_int option;
+  repos : MetricTypes.terms_count_int option;
+  approvals : MetricTypes.terms_count_int option;
 }
 
 type query_response =
   | Error of query_error
   | Changes of changes
   | Repos_summary of repos_summary
-  | Top_authors of terms_count
+  | Top_authors of MetricTypes.terms_count_int
   | Authors_peers of authors_peers
-  | New_authors of terms_count
+  | New_authors of MetricTypes.terms_count_int
   | Review_stats of review_stats
   | Lifecycle_stats of lifecycle_stats
   | Activity_stats of activity_stats
@@ -630,22 +620,6 @@ let rec default_repos_summary
   reposum;
 }
 
-let rec default_term_count 
-  ?term:((term:string) = "")
-  ?count:((count:int32) = 0l)
-  () : term_count  = {
-  term;
-  count;
-}
-
-let rec default_terms_count 
-  ?termcount:((termcount:term_count list) = [])
-  ?total_hits:((total_hits:int32) = 0l)
-  () : terms_count  = {
-  termcount;
-  total_hits;
-}
-
 let rec default_author_peer 
   ?author:((author:string) = "")
   ?peer:((peer:string) = "")
@@ -697,9 +671,9 @@ let rec default_lifecycle_stats
 }
 
 let rec default_changes_tops 
-  ?authors:((authors:terms_count option) = None)
-  ?repos:((repos:terms_count option) = None)
-  ?approvals:((approvals:terms_count option) = None)
+  ?authors:((authors:MetricTypes.terms_count_int option) = None)
+  ?repos:((repos:MetricTypes.terms_count_int option) = None)
+  ?approvals:((approvals:MetricTypes.terms_count_int option) = None)
   () : changes_tops  = {
   authors;
   repos;

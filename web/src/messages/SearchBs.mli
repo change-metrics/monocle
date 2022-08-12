@@ -96,12 +96,6 @@ val encode_repo_summary : SearchTypes.repo_summary -> Js.Json.t Js.Dict.t
 val encode_repos_summary : SearchTypes.repos_summary -> Js.Json.t Js.Dict.t
 (** [encode_repos_summary v dict] encodes [v] int the given JSON [dict] *)
 
-val encode_term_count : SearchTypes.term_count -> Js.Json.t Js.Dict.t
-(** [encode_term_count v dict] encodes [v] int the given JSON [dict] *)
-
-val encode_terms_count : SearchTypes.terms_count -> Js.Json.t Js.Dict.t
-(** [encode_terms_count v dict] encodes [v] int the given JSON [dict] *)
-
 val encode_author_peer : SearchTypes.author_peer -> Js.Json.t Js.Dict.t
 (** [encode_author_peer v dict] encodes [v] int the given JSON [dict] *)
 
@@ -212,12 +206,6 @@ val decode_repo_summary : Js.Json.t Js.Dict.t -> SearchTypes.repo_summary
 
 val decode_repos_summary : Js.Json.t Js.Dict.t -> SearchTypes.repos_summary
 (** [decode_repos_summary decoder] decodes a [repos_summary] value from [decoder] *)
-
-val decode_term_count : Js.Json.t Js.Dict.t -> SearchTypes.term_count
-(** [decode_term_count decoder] decodes a [term_count] value from [decoder] *)
-
-val decode_terms_count : Js.Json.t Js.Dict.t -> SearchTypes.terms_count
-(** [decode_terms_count decoder] decodes a [terms_count] value from [decoder] *)
 
 val decode_author_peer : Js.Json.t Js.Dict.t -> SearchTypes.author_peer
 (** [decode_author_peer decoder] decodes a [author_peer] value from [decoder] *)

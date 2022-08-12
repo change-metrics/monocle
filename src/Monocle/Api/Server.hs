@@ -8,6 +8,7 @@ import Data.Aeson.KeyMap qualified as AKM (lookup)
 import Data.ByteString.Lazy qualified as LBS
 import Data.List (lookup)
 import Data.Map qualified as Map
+import Data.Maybe (fromJust)
 import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Monocle.Api.Jwt (
@@ -36,6 +37,7 @@ import Monocle.Protob.Crawler qualified as CrawlerPB
 import Monocle.Protob.Login qualified as LoginPB
 import Monocle.Protob.Metric (GetRequest (getRequestMetric))
 import Monocle.Protob.Metric qualified as MetricPB
+import Monocle.Protob.Search (QueryRequest (queryRequestLimit))
 import Monocle.Protob.Search qualified as SearchPB
 import Monocle.Search.Parser qualified as P
 import Monocle.Search.Query qualified as Q
@@ -103,18 +105,8 @@ checkAuth auth action = do
 -- curl -XPOST -d '{"void": ""}' -H "Content-type: application/json" -H 'Authorization: Bearer <token>' http://localhost:8080/auth/whoami
 authWhoAmi :: AuthResult AuthenticatedUser -> AuthPB.WhoAmiRequest -> AppM AuthPB.WhoAmiResponse
 authWhoAmi (Authenticated au) _request =
-  pure
-    $ AuthPB.WhoAmiResponse
-      . Just
-      . AuthPB.WhoAmiResponseResultUid
-    $ show au
-authWhoAmi _auth _request =
-  pure
-    $ AuthPB.WhoAmiResponse
-      . Just
-      . AuthPB.WhoAmiResponseResultError
-      . Enumerated
-    $ Right AuthPB.WhoAmiErrorUnAuthorized
+  pure $ AuthPB.WhoAmiResponse . Just . AuthPB.WhoAmiResponseResultUid $ show au
+authWhoAmi _auth _request = pure $ AuthPB.WhoAmiResponse . Just . AuthPB.WhoAmiResponseResultError . Enumerated $ Right AuthPB.WhoAmiErrorUnAuthorized
 
 -- curl -XPOST -d '{"token": "admin-token"}' -H "Content-type: application/json" http://localhost:8080/auth/get
 authGetMagicJwt :: AuthResult AuthenticatedUser -> AuthPB.GetMagicJwtRequest -> AppM AuthPB.GetMagicJwtResponse
@@ -573,13 +565,17 @@ searchQuery auth request = checkAuth auth response
             SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultActivityStats
               <$> Q.getActivityStats
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_COMMENTED ->
-            handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeCommented
+            termsCountWord32ToResult . fromJust
+              <$> Q.runMetricTop Q.metricCommentAuthors queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_REVIEWED ->
-            handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeReviewed
+            termsCountWord32ToResult . fromJust
+              <$> Q.runMetricTop Q.metricReviewAuthors queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_CREATED ->
-            handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeCreated
+            termsCountWord32ToResult . fromJust
+              <$> Q.runMetricTop Q.metricChangeAuthors queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_MERGED ->
-            handleTopAuthorsQ queryRequestLimit Q.getMostActiveAuthorByChangeMerged
+            termsCountWord32ToResult . fromJust
+              <$> Q.runMetricTop Q.metricChangeMergedAuthors queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_REVIEWED_AUTHORS ->
             handleTopAuthorsQ queryRequestLimit Q.getMostReviewedAuthor
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS ->
@@ -628,13 +624,20 @@ searchQuery auth request = checkAuth auth response
         (from msg)
         (fromInteger . toInteger $ offset)
 
+  termsCountWord32ToResult :: Q.TermsCount Word32 -> SearchPB.QueryResponse
+  termsCountWord32ToResult =
+    SearchPB.QueryResponse
+      . Just
+      . SearchPB.QueryResponseResultTopAuthors
+      . Q.toTermsCountPBInt
+
   handleTopAuthorsQ :: Word32 -> (Word32 -> QueryM Q.TermsResultWTH) -> QueryM SearchPB.QueryResponse
   handleTopAuthorsQ limit cb = do
     results <- cb limit
     pure
-      $ SearchPB.QueryResponse
-        . Just
-      $ SearchPB.QueryResponseResultTopAuthors
+      . SearchPB.QueryResponse
+      . Just
+      . SearchPB.QueryResponseResultTopAuthors
       $ toTermsCount (V.fromList $ toTTResult <$> Q.tsrTR results) (toInt $ Q.tsrTH results)
    where
     toInt c = fromInteger $ toInteger c
@@ -646,15 +649,15 @@ searchQuery auth request = checkAuth auth response
       (from psrPeer)
       psrStrength
 
-  toTermsCount :: V.Vector SearchPB.TermCount -> Word32 -> SearchPB.TermsCount
+  toTermsCount :: V.Vector MetricPB.TermCountInt -> Word32 -> MetricPB.TermsCountInt
   toTermsCount tcV total =
-    let termsCountTermcount = tcV
-        termsCountTotalHits = total
-     in SearchPB.TermsCount {..}
+    let termsCountIntTermcount = tcV
+        termsCountIntTotalHits = total
+     in MetricPB.TermsCountInt {..}
 
-  toTTResult :: Q.TermResult -> SearchPB.TermCount
+  toTTResult :: Q.TermResult -> MetricPB.TermCountInt
   toTTResult Q.TermResult {..} =
-    SearchPB.TermCount
+    MetricPB.TermCountInt
       (from trTerm)
       (fromInteger $ toInteger trCount)
 
@@ -724,6 +727,31 @@ instance TrendPB Word32 where
       . MetricPB.HistoIntStat
       $ Q.toPBHistoInt <$> v
 
+class Num a => TopPB a where
+  toTopResult :: Q.TermsCount a -> MetricPB.GetResponse
+
+instance TopPB Word32 where
+  toTopResult v =
+    MetricPB.GetResponse
+      . Just
+      . MetricPB.GetResponseResultTopIntValue
+      $ Q.toPBTermsCountInt v
+
+instance TopPB Float where
+  toTopResult v =
+    MetricPB.GetResponse
+      . Just
+      . MetricPB.GetResponseResultTopFloatValue
+      $ Q.toPBTermsCountFloat v
+
+toTopResultOrFail :: TopPB a => Maybe (Q.TermsCount a) -> MetricPB.GetResponse
+toTopResultOrFail = \case
+  Just tc -> toTopResult tc
+  Nothing ->
+    MetricPB.GetResponse
+      . Just
+      $ MetricPB.GetResponseResultError "This metric does not support Top option"
+
 metricGet :: AuthResult AuthenticatedUser -> MetricPB.GetRequest -> AppM MetricPB.GetResponse
 metricGet auth request = checkAuth auth response
  where
@@ -772,6 +800,7 @@ metricGet auth request = checkAuth auth response
     runMetric m = case getRequestOptions of
       Just (MetricPB.GetRequestOptionsTrend (MetricPB.Trend interval)) ->
         toTrendResult <$> runM (Q.runMetricTrend m $ Just $ fromPBTrendInterval $ from interval)
+      Just (MetricPB.GetRequestOptionsTop (MetricPB.Top limit)) -> toTopResultOrFail <$> runM (Q.runMetricTop m limit)
       _ -> toNumResult <$> runM (Q.runMetric m)
     fromPBTrendInterval :: Text -> Q.TimeRange
     fromPBTrendInterval interval = case readMaybe (from interval) of

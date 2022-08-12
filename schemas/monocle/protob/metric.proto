@@ -25,6 +25,10 @@ message Trend {
   string interval = 1;
 }
 
+message Top {
+  uint32 limit = 1;
+}
+
 message GetRequest {
   string index = 1;
   string username = 2;
@@ -32,6 +36,7 @@ message GetRequest {
   string metric = 4;
   oneof options {
     Trend trend = 5;
+    Top top = 6;
   }
 }
 
@@ -53,6 +58,26 @@ message HistoFloatStat {
   repeated HistoFloat histo = 1;
 }
 
+message TermCountInt {
+  string term = 1;
+  uint32 count = 2;
+}
+
+message TermsCountInt {
+  repeated TermCountInt termcount = 1;
+  uint32 total_hits = 2;
+}
+
+message TermCountFloat {
+  string term = 1;
+  float count = 2;
+}
+
+message TermsCountFloat {
+  repeated TermCountFloat termcount = 1;
+  uint32 total_hits = 2;
+}
+
 message GetResponse {
   oneof result {
     string error = 1;
@@ -60,5 +85,7 @@ message GetResponse {
     int32 int_value = 3;
     HistoIntStat histo_int_value = 4;
     HistoFloatStat histo_float_value = 5;
+    TermsCountInt top_int_value = 6;
+    TermsCountFloat top_float_value = 7;
   }
 }

@@ -11,12 +11,16 @@ module TopTermsTable = {
   @react.component
   let make = (
     ~store,
-    ~items: list<SearchTypes.term_count>,
+    ~items: list<MetricTypes.term_count_int>,
     ~columnNames: array<string>,
     ~link: t,
   ) => {
     let (state, dispatch) = store
-    let isOrdered = (first: SearchTypes.term_count, second: SearchTypes.term_count, index) =>
+    let isOrdered = (
+      first: MetricTypes.term_count_int,
+      second: MetricTypes.term_count_int,
+      index,
+    ) =>
       switch index {
       | 0 => first.term < second.term
       | 1 => first.count < second.count
@@ -32,7 +36,7 @@ module TopTermsTable = {
       }
     let mkAuthorLink = (name, extraFilter) =>
       <MLink.MonoLink store filter={name->mkFilter(extraFilter)} path={"changes"} name />
-    let formatters: list<SearchTypes.term_count => React.element> = list{
+    let formatters: list<MetricTypes.term_count_int => React.element> = list{
       item =>
         switch link {
         | NoLink => item.term->str
@@ -88,7 +92,7 @@ module MostActiveAuthor = {
       | SearchTypes.Top_authors(data) => Some(data)
       | _ => None
       }
-    let childrenBuilder = (data: Web.SearchTypes.terms_count) =>
+    let childrenBuilder = (data: MetricTypes.terms_count_int) =>
       <TopTermsTable store items=data.termcount columnNames link />
     <QueryRenderCard
       request tokenM trigger title tooltip_content icon limitSelector match childrenBuilder

@@ -257,9 +257,9 @@ message QueryResponse {
     QueryError error = 1;
     Changes changes = 2;
     ReposSummary repos_summary = 3;
-    TermsCount top_authors = 4;
+    monocle_metric.TermsCountInt top_authors = 4;
     AuthorsPeers authors_peers = 5;
-    TermsCount new_authors = 6;
+    monocle_metric.TermsCountInt new_authors = 6;
     ReviewStats review_stats = 20;
     LifecycleStats lifecycle_stats = 21;
     ActivityStats activity_stats = 22;
@@ -308,16 +308,6 @@ message ReposSummary {
   repeated RepoSummary reposum = 1;
 }
 
-message TermCount {
-  string term = 1;
-  uint32 count = 2;
-}
-
-message TermsCount {
-  repeated TermCount termcount = 1;
-  uint32 total_hits = 2;
-}
-
 message AuthorPeer {
   string author = 1;
   string peer = 2;
@@ -329,7 +319,7 @@ message AuthorsPeers {
 }
 
 message ChangesTops {
-  TermsCount authors = 1;
-  TermsCount repos = 2;
-  TermsCount approvals = 3;
+  monocle_metric.TermsCountInt authors = 1;
+  monocle_metric.TermsCountInt repos = 2;
+  monocle_metric.TermsCountInt approvals = 3;
 }
