@@ -350,7 +350,8 @@ transformResponse host identCB result = do
           changeEventType = Just eType,
           -- To be filled by caller function
           changeEventCreatedAt = Nothing,
-          changeEventAuthor = Nothing
+          changeEventAuthor = Nothing,
+          changeEventOptionalDuration = swapDuration <$> changeOptionalDuration change
         }
     getEventsFromTimeline :: Change -> RepositoryPullRequestsNodesTimelineItemsPullRequestTimelineItemsConnection -> [ChangeEvent]
     getEventsFromTimeline change (RepositoryPullRequestsNodesTimelineItemsPullRequestTimelineItemsConnection nodes) =

@@ -123,4 +123,7 @@ message ChangeEvent {
     ChangeMergedEvent ChangeMerged = 21;
   }
   repeated string labels = 22;
+  oneof optional_duration {
+    int32 duration = 23;
+  }
 }

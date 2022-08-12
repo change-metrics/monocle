@@ -227,14 +227,14 @@ transformResponse host getIdentIdCB result =
                   then Just . ChangeOptionalClosedAtClosedAt $ timeToTimestamp Nothing updatedAt
                   else Nothing
               changeState = toState state
-              changeOptionalDuration =
-                ( ChangeOptionalDurationDuration
+              changeOptionalDuration = case mergedAt of
+                Just merged_ts ->
+                  Just
+                    . ChangeOptionalDurationDuration
                     . from
-                    . diffTimeSec
-                      ( timeToUTCTime Nothing createdAt
-                      )
-                    <$> (timeToUTCTime Nothing <$> mergedAt)
-                )
+                    $ diffTimeSec (timeToUTCTime Nothing merged_ts) (timeToUTCTime Nothing createdAt)
+                Nothing -> Nothing
+
               -- TODO(fbo) Use the merge status : https://docs.gitlab.com/ee/api/graphql/reference/index.html#mergestatus
               changeMergeable = (if mergeable then "MERGEABLE" else "CONFLICT")
               changeLabels = (fromList $ getLabelTitle <$> maybe [] toLabelsNodes labels)
@@ -292,6 +292,7 @@ transformResponse host getIdentIdCB result =
               changeEventAuthor = Nothing
               changeEventType = Nothing
               changeEventLabels = changeLabels
+              changeEventOptionalDuration = swapDuration <$> changeOptionalDuration
               changeEventId = ""
            in ChangeEvent {..}
           where
