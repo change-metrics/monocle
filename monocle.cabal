@@ -111,6 +111,7 @@ library
                      , aeson-casing
                      , aeson-pretty
                      , attoparsec                 >= 0.13
+                     , cgroup-rts-threads
                      , base64-bytestring          >= 1.1
                      , blaze-markup               >= 0.8.2.8
                      , blaze-html                 >= 0.9.1.2
@@ -262,7 +263,7 @@ executable monocle
   import:              common-options
   hs-source-dirs:      app
   build-depends:       base, monocle
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -with-rtsopts=-T
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-T
   main-is:             Monocle.hs
 
 benchmark json-decode

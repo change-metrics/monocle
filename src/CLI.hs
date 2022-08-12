@@ -5,6 +5,7 @@
 -- | The Main module of the command line interface.
 module CLI (main) where
 
+import Control.Concurrent.CGroup qualified
 import Env hiding (Parser, auto, footer)
 import Env qualified
 import Lentille.Gerrit qualified as G
@@ -104,7 +105,9 @@ usage =
 
 -- | The CLI entrypoint.
 main :: IO ()
-main = withOpenSSL $ join $ execParser opts
+main = do
+  Control.Concurrent.CGroup.initRTSThreads
+  withOpenSSL . join $ execParser opts
   where
     opts =
       info
