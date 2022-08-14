@@ -18,6 +18,9 @@ val encode_trend : MetricTypes.trend -> Js.Json.t Js.Dict.t
 val encode_top : MetricTypes.top -> Js.Json.t Js.Dict.t
 (** [encode_top v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_compute : MetricTypes.compute -> Js.Json.t Js.Dict.t
+(** [encode_compute v dict] encodes [v] int the given JSON [dict] *)
+
 val encode_get_request_options : MetricTypes.get_request_options -> Js.Json.t Js.Dict.t
 (** [encode_get_request_options v dict] encodes [v] int the given JSON [dict] *)
 
@@ -68,6 +71,9 @@ val decode_trend : Js.Json.t Js.Dict.t -> MetricTypes.trend
 
 val decode_top : Js.Json.t Js.Dict.t -> MetricTypes.top
 (** [decode_top decoder] decodes a [top] value from [decoder] *)
+
+val decode_compute : Js.Json.t Js.Dict.t -> MetricTypes.compute
+(** [decode_compute decoder] decodes a [compute] value from [decoder] *)
 
 val decode_get_request_options : Js.Json.t Js.Dict.t -> MetricTypes.get_request_options
 (** [decode_get_request_options decoder] decodes a [get_request_options] value from [decoder] *)

@@ -27,7 +27,12 @@ type top = {
   limit : int32;
 }
 
+type compute = {
+  void : string;
+}
+
 type get_request_options =
+  | Compute of compute
   | Trend of trend
   | Top of top
 
@@ -81,10 +86,10 @@ type get_response =
   | Error of string
   | Float_value of float
   | Int_value of int32
-  | Histo_int_value of histo_int_stat
-  | Histo_float_value of histo_float_stat
-  | Top_int_value of terms_count_int
-  | Top_float_value of terms_count_float
+  | Histo_int of histo_int_stat
+  | Histo_float of histo_float_stat
+  | Top_int of terms_count_int
+  | Top_float of terms_count_float
 
 
 (** {2 Default values} *)
@@ -121,6 +126,12 @@ val default_top :
   unit ->
   top
 (** [default_top ()] is the default value for type [top] *)
+
+val default_compute : 
+  ?void:string ->
+  unit ->
+  compute
+(** [default_compute ()] is the default value for type [compute] *)
 
 val default_get_request_options : unit -> get_request_options
 (** [default_get_request_options ()] is the default value for type [get_request_options] *)

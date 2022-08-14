@@ -29,12 +29,17 @@ message Top {
   uint32 limit = 1;
 }
 
+message Compute {
+  string void = 1;
+}
+
 message GetRequest {
   string index = 1;
   string username = 2;
   string query = 3;
   string metric = 4;
   oneof options {
+    Compute compute = 7;
     Trend trend = 5;
     Top top = 6;
   }
@@ -83,9 +88,9 @@ message GetResponse {
     string error = 1;
     float float_value = 2;
     int32 int_value = 3;
-    HistoIntStat histo_int_value = 4;
-    HistoFloatStat histo_float_value = 5;
-    TermsCountInt top_int_value = 6;
-    TermsCountFloat top_float_value = 7;
+    HistoIntStat histo_int = 4;
+    HistoFloatStat histo_float = 5;
+    TermsCountInt top_int = 6;
+    TermsCountFloat top_float = 7;
   }
 }

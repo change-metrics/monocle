@@ -46,6 +46,14 @@ let default_top_mutable () : top_mutable = {
   limit = 0l;
 }
 
+type compute_mutable = {
+  mutable void : string;
+}
+
+let default_compute_mutable () : compute_mutable = {
+  void = "";
+}
+
 type get_request_mutable = {
   mutable index : string;
   mutable username : string;
@@ -59,7 +67,7 @@ let default_get_request_mutable () : get_request_mutable = {
   username = "";
   query = "";
   metric = "";
-  options = MetricTypes.Trend (MetricTypes.default_trend ());
+  options = MetricTypes.Compute (MetricTypes.default_compute ());
 }
 
 type histo_int_mutable = {
@@ -237,12 +245,31 @@ let rec decode_top json =
     MetricTypes.limit = v.limit;
   } : MetricTypes.top)
 
+let rec decode_compute json =
+  let v = default_compute_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "void" -> 
+      let json = Js.Dict.unsafeGet json "void" in
+      v.void <- Pbrt_bs.string json "compute" "void"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    MetricTypes.void = v.void;
+  } : MetricTypes.compute)
+
 let rec decode_get_request_options json =
   let keys = Js.Dict.keys json in
   let rec loop = function 
     | -1 -> Pbrt_bs.E.malformed_variant "get_request_options"
     | i -> 
       begin match Array.unsafe_get keys i with
+      | "compute" -> 
+        let json = Js.Dict.unsafeGet json "compute" in
+        (MetricTypes.Compute ((decode_compute (Pbrt_bs.object_ json "get_request_options" "Compute"))) : MetricTypes.get_request_options)
       | "trend" -> 
         let json = Js.Dict.unsafeGet json "trend" in
         (MetricTypes.Trend ((decode_trend (Pbrt_bs.object_ json "get_request_options" "Trend"))) : MetricTypes.get_request_options)
@@ -273,6 +300,9 @@ and decode_get_request json =
     | "metric" -> 
       let json = Js.Dict.unsafeGet json "metric" in
       v.metric <- Pbrt_bs.string json "get_request" "metric"
+    | "compute" -> 
+      let json = Js.Dict.unsafeGet json "compute" in
+      v.options <- Compute ((decode_compute (Pbrt_bs.object_ json "get_request" "options")))
     | "trend" -> 
       let json = Js.Dict.unsafeGet json "trend" in
       v.options <- Trend ((decode_trend (Pbrt_bs.object_ json "get_request" "options")))
@@ -481,18 +511,18 @@ let rec decode_get_response json =
       | "int_value" -> 
         let json = Js.Dict.unsafeGet json "int_value" in
         (MetricTypes.Int_value (Pbrt_bs.int32 json "get_response" "Int_value") : MetricTypes.get_response)
-      | "histo_intValue" -> 
-        let json = Js.Dict.unsafeGet json "histo_intValue" in
-        (MetricTypes.Histo_int_value ((decode_histo_int_stat (Pbrt_bs.object_ json "get_response" "Histo_int_value"))) : MetricTypes.get_response)
-      | "histo_floatValue" -> 
-        let json = Js.Dict.unsafeGet json "histo_floatValue" in
-        (MetricTypes.Histo_float_value ((decode_histo_float_stat (Pbrt_bs.object_ json "get_response" "Histo_float_value"))) : MetricTypes.get_response)
-      | "top_intValue" -> 
-        let json = Js.Dict.unsafeGet json "top_intValue" in
-        (MetricTypes.Top_int_value ((decode_terms_count_int (Pbrt_bs.object_ json "get_response" "Top_int_value"))) : MetricTypes.get_response)
-      | "top_floatValue" -> 
-        let json = Js.Dict.unsafeGet json "top_floatValue" in
-        (MetricTypes.Top_float_value ((decode_terms_count_float (Pbrt_bs.object_ json "get_response" "Top_float_value"))) : MetricTypes.get_response)
+      | "histo_int" -> 
+        let json = Js.Dict.unsafeGet json "histo_int" in
+        (MetricTypes.Histo_int ((decode_histo_int_stat (Pbrt_bs.object_ json "get_response" "Histo_int"))) : MetricTypes.get_response)
+      | "histo_float" -> 
+        let json = Js.Dict.unsafeGet json "histo_float" in
+        (MetricTypes.Histo_float ((decode_histo_float_stat (Pbrt_bs.object_ json "get_response" "Histo_float"))) : MetricTypes.get_response)
+      | "top_int" -> 
+        let json = Js.Dict.unsafeGet json "top_int" in
+        (MetricTypes.Top_int ((decode_terms_count_int (Pbrt_bs.object_ json "get_response" "Top_int"))) : MetricTypes.get_response)
+      | "top_float" -> 
+        let json = Js.Dict.unsafeGet json "top_float" in
+        (MetricTypes.Top_float ((decode_terms_count_float (Pbrt_bs.object_ json "get_response" "Top_float"))) : MetricTypes.get_response)
       
       | _ -> loop (i - 1)
       end
@@ -537,9 +567,19 @@ let rec encode_top (v:MetricTypes.top) =
   Js.Dict.set json "limit" (Js.Json.number (Int32.to_float v.MetricTypes.limit));
   json
 
+let rec encode_compute (v:MetricTypes.compute) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "void" (Js.Json.string v.MetricTypes.void);
+  json
+
 let rec encode_get_request_options (v:MetricTypes.get_request_options) = 
   let json = Js.Dict.empty () in
   begin match v with
+  | MetricTypes.Compute v ->
+    begin (* compute field *)
+      let json' = encode_compute v in
+      Js.Dict.set json "compute" (Js.Json.object_ json');
+    end;
   | MetricTypes.Trend v ->
     begin (* trend field *)
       let json' = encode_trend v in
@@ -560,6 +600,11 @@ and encode_get_request (v:MetricTypes.get_request) =
   Js.Dict.set json "query" (Js.Json.string v.MetricTypes.query);
   Js.Dict.set json "metric" (Js.Json.string v.MetricTypes.metric);
   begin match v.MetricTypes.options with
+    | Compute v ->
+      begin (* compute field *)
+        let json' = encode_compute v in
+        Js.Dict.set json "compute" (Js.Json.object_ json');
+      end;
     | Trend v ->
       begin (* trend field *)
         let json' = encode_trend v in
@@ -668,25 +713,25 @@ let rec encode_get_response (v:MetricTypes.get_response) =
     Js.Dict.set json "float_value" (Js.Json.number v);
   | MetricTypes.Int_value v ->
     Js.Dict.set json "int_value" (Js.Json.number (Int32.to_float v));
-  | MetricTypes.Histo_int_value v ->
-    begin (* histoIntValue field *)
+  | MetricTypes.Histo_int v ->
+    begin (* histoInt field *)
       let json' = encode_histo_int_stat v in
-      Js.Dict.set json "histo_intValue" (Js.Json.object_ json');
+      Js.Dict.set json "histo_int" (Js.Json.object_ json');
     end;
-  | MetricTypes.Histo_float_value v ->
-    begin (* histoFloatValue field *)
+  | MetricTypes.Histo_float v ->
+    begin (* histoFloat field *)
       let json' = encode_histo_float_stat v in
-      Js.Dict.set json "histo_floatValue" (Js.Json.object_ json');
+      Js.Dict.set json "histo_float" (Js.Json.object_ json');
     end;
-  | MetricTypes.Top_int_value v ->
-    begin (* topIntValue field *)
+  | MetricTypes.Top_int v ->
+    begin (* topInt field *)
       let json' = encode_terms_count_int v in
-      Js.Dict.set json "top_intValue" (Js.Json.object_ json');
+      Js.Dict.set json "top_int" (Js.Json.object_ json');
     end;
-  | MetricTypes.Top_float_value v ->
-    begin (* topFloatValue field *)
+  | MetricTypes.Top_float v ->
+    begin (* topFloat field *)
       let json' = encode_terms_count_float v in
-      Js.Dict.set json "top_floatValue" (Js.Json.object_ json');
+      Js.Dict.set json "top_float" (Js.Json.object_ json');
     end;
   end;
   json

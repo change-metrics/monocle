@@ -715,7 +715,7 @@ instance TrendPB Float where
   toTrendResult v =
     MetricPB.GetResponse
       . Just
-      . MetricPB.GetResponseResultHistoFloatValue
+      . MetricPB.GetResponseResultHistoFloat
       . MetricPB.HistoFloatStat
       $ Q.toPBHistoFloat <$> v
 
@@ -723,7 +723,7 @@ instance TrendPB Word32 where
   toTrendResult v =
     MetricPB.GetResponse
       . Just
-      . MetricPB.GetResponseResultHistoIntValue
+      . MetricPB.GetResponseResultHistoInt
       . MetricPB.HistoIntStat
       $ Q.toPBHistoInt <$> v
 
@@ -734,14 +734,14 @@ instance TopPB Word32 where
   toTopResult v =
     MetricPB.GetResponse
       . Just
-      . MetricPB.GetResponseResultTopIntValue
+      . MetricPB.GetResponseResultTopInt
       $ Q.toPBTermsCountInt v
 
 instance TopPB Float where
   toTopResult v =
     MetricPB.GetResponse
       . Just
-      . MetricPB.GetResponseResultTopFloatValue
+      . MetricPB.GetResponseResultTopFloat
       $ Q.toPBTermsCountFloat v
 
 toTopResultOrFail :: TopPB a => Maybe (Q.TermsCount a) -> MetricPB.GetResponse
@@ -799,13 +799,11 @@ metricGet auth request = checkAuth auth response
     runM = runQueryM tenant (Q.ensureMinBound query)
     runMetric m = case getRequestOptions of
       Just (MetricPB.GetRequestOptionsTrend (MetricPB.Trend interval)) ->
-        toTrendResult <$> runM (Q.runMetricTrend m $ Just $ fromPBTrendInterval $ from interval)
+        toTrendResult <$> runM (Q.runMetricTrend m $ fromPBTrendInterval $ from interval)
       Just (MetricPB.GetRequestOptionsTop (MetricPB.Top limit)) -> toTopResultOrFail <$> runM (Q.runMetricTop m limit)
       _ -> toNumResult <$> runM (Q.runMetric m)
-    fromPBTrendInterval :: Text -> Q.TimeRange
-    fromPBTrendInterval interval = case readMaybe (from interval) of
-      Just timeRange -> timeRange
-      Nothing -> error "Unable to parse trend interval"
+    fromPBTrendInterval :: String -> Maybe Q.TimeRange
+    fromPBTrendInterval = readMaybe
 
 -- | gen a 302 redirect helper
 redirects :: ByteString -> AppM ()

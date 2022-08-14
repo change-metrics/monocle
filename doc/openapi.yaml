@@ -706,6 +706,10 @@ components:
                 validation_result:
                     type: integer
                     format: enum
+        monocle_metric_Compute:
+            properties:
+                void:
+                    type: string
         monocle_metric_GetRequest:
             properties:
                 index:
@@ -716,6 +720,8 @@ components:
                     type: string
                 metric:
                     type: string
+                compute:
+                    $ref: '#/components/schemas/monocle_metric_Compute'
                 trend:
                     $ref: '#/components/schemas/monocle_metric_Trend'
                 top:
@@ -730,13 +736,13 @@ components:
                 int_value:
                     type: integer
                     format: int32
-                histo_int_value:
+                histo_int:
                     $ref: '#/components/schemas/monocle_metric_HistoIntStat'
-                histo_float_value:
+                histo_float:
                     $ref: '#/components/schemas/monocle_metric_HistoFloatStat'
-                top_int_value:
+                top_int:
                     $ref: '#/components/schemas/monocle_metric_TermsCountInt'
-                top_float_value:
+                top_float:
                     $ref: '#/components/schemas/monocle_metric_TermsCountFloat'
         monocle_metric_HistoFloat:
             properties:
