@@ -4,12 +4,52 @@
 open Prelude
 include Patternfly
 
-module MetricCompute = {
+module MetricInfo = {
   @react.component
   let make = (~store: Store.t, ~metric: string) => {
     let (state, _dispatch) = store
-    let title = metric ++ " compute"
+    let title = "Metric Info"
     let tooltip_content = ""
+    let icon = <Patternfly.Icons.Bundle />
+    let tokenM = state->Store.Store.getAuthenticatedUserJWT
+    <MonoCard title tooltip_content icon>
+      <NetworkRender
+        get={() =>
+          WebApi.Metric.info(
+            {
+              metric: metric,
+            },
+            tokenM,
+          )}
+        trigger={""}
+        render={(resp: MetricTypes.info_response) => {
+          switch resp {
+          | MetricTypes.Info(i) =>
+            <React.Fragment>
+              <p> <b> {"Metric Name: "->str} </b> {i.name->str} </p>
+              <p> <b> {"Metric ID: "->str} </b> {i.metric->str} </p>
+              <p> <b> {"Metric Description: "->str} </b> {i.long_description->str} </p>
+            </React.Fragment>
+          | _ => <p> {"Not supported"->str} </p>
+          }
+        }}
+      />
+    </MonoCard>
+  }
+}
+
+module MetricCompute = {
+  module Count = {
+    @react.component
+    let make = (~value: string) => {
+      <TextContent> <Text component=#H1> {value->str} </Text> </TextContent>
+    }
+  }
+  @react.component
+  let make = (~store: Store.t, ~metric: string) => {
+    let (state, _dispatch) = store
+    let title = "Count"
+    let tooltip_content = "The result of the metric computation"
     let icon = <Patternfly.Icons.Bundle />
     let tokenM = state->Store.Store.getAuthenticatedUserJWT
     let compute: MetricTypes.compute = MetricTypes.default_compute()
@@ -30,8 +70,8 @@ module MetricCompute = {
         trigger
         render={(resp: MetricTypes.get_response) => {
           switch resp {
-          | MetricTypes.Int_value(v) => <p> {v->int32_str->str} </p>
-          | MetricTypes.Float_value(v) => <p> {v->Belt.Float.toString->str} </p>
+          | MetricTypes.Int_value(v) => <Count value={v->int32_str} />
+          | MetricTypes.Float_value(v) => <Count value={v->Belt.Float.toString} />
           | _ => <p> {"Not supported"->str} </p>
           }
         }}
@@ -212,9 +252,20 @@ module MetricTrend = {
 @react.component
 let make = (~store: Store.t, ~name: string) => {
   <MCenteredContent>
-    <MetricCompute store metric=name />
-    <MetricTrend store metric=name />
-    <MetricTop store metric=name />
+    <MStack>
+      <MStackItem>
+        <MGrid>
+          <MGridItemXl6> <MetricInfo store metric=name /> </MGridItemXl6>
+          <MGridItemXl6> <MetricCompute store metric=name /> </MGridItemXl6>
+        </MGrid>
+      </MStackItem>
+      <MStackItem>
+        <MGrid>
+          <MGridItemXl6> <MetricTrend store metric=name /> </MGridItemXl6>
+          <MGridItemXl6> <MetricTop store metric=name /> </MGridItemXl6>
+        </MGrid>
+      </MStackItem>
+    </MStack>
   </MCenteredContent>
 }
 
