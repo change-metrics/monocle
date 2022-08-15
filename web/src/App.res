@@ -64,6 +64,7 @@ module MonocleNav = {
               ("Groups", "/user_groups"),
             },
           ),
+          navGroup("Metrics", list{("Catalog", "/metrics")}),
         ]->React.array}
       </NavList>
     </Nav>

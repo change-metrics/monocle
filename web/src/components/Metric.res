@@ -10,7 +10,7 @@ module MetricInfo = {
     let (state, _dispatch) = store
     let title = "Metric Info"
     let tooltip_content = ""
-    let icon = <Patternfly.Icons.Bundle />
+    let icon = <Patternfly.Icons.InfoAlt />
     let tokenM = state->Store.Store.getAuthenticatedUserJWT
     <MonoCard title tooltip_content icon>
       <NetworkRender
@@ -84,9 +84,9 @@ module MetricTop = {
   @react.component
   let make = (~store: Store.t, ~metric: string) => {
     let (state, _dispatch) = store
-    let title = metric ++ " top"
-    let tooltip_content = ""
-    let icon = <Patternfly.Icons.Bundle />
+    let title = "Top"
+    let tooltip_content = "This show the top terms for metrics based on a term aggregation."
+    let icon = <Patternfly.Icons.Bars />
     let tokenM = state->Store.Store.getAuthenticatedUserJWT
     let columnNames = ["Name", "Count"]
     let link = ActivePeopleView.TopTermsTable.NoLink
@@ -140,9 +140,9 @@ module MetricTrend = {
   @react.component
   let make = (~store: Store.t, ~metric: string) => {
     let (state, _dispatch) = store
-    let title = metric ++ " trend"
-    let tooltip_content = ""
-    let icon = <Patternfly.Icons.Bundle />
+    let title = "Trend"
+    let tooltip_content = "This shows the metric value trend over a customisable period"
+    let icon = <Patternfly.Icons.TrendUp />
     let tokenM = state->Store.Store.getAuthenticatedUserJWT
     let defaultInterval = {
       auto: false,
