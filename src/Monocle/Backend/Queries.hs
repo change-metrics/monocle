@@ -8,6 +8,7 @@ import Data.Aeson.Types qualified as Aeson
 import Data.HashMap.Strict qualified as HM
 import Data.List qualified
 import Data.Map qualified as Map
+import Data.String.Interpolate (i, iii)
 import Data.Time (UTCTime (UTCTime), addDays, addGregorianMonthsClip, addGregorianYearsClip, secondsToNominalDiffTime)
 import Data.Time.Clock (secondsToDiffTime)
 import Data.Vector qualified as V
@@ -612,8 +613,8 @@ getDocTypeTopCountByField doctype attr size = withFilter [documentTypes doctype]
  where
   runTermAgg query = getTermsAgg query attr
   getSize size' = toInt <$> size'
-  toInt i =
-    let i' = fromInteger $ toInteger i
+  toInt int =
+    let i' = fromInteger $ toInteger int
      in if i' <= 0 then 10 else i'
 
 openChangesCount :: QueryMonad m => m Count
@@ -1265,9 +1266,7 @@ metricChangesCreated = changeEventCount mi EChangeCreatedEvent
       "changes_created"
       "Changes created count"
       "The count of changes created"
-      ( "The metric is the count change created events."
-          <> changeEventFlavorDesc
-      )
+      [i|The metric is the count change created events. #{changeEventFlavorDesc}|]
 
 metricChangesMerged :: QueryMonad m => Metric m Word32
 metricChangesMerged = changeEventCount mi EChangeMergedEvent
@@ -1277,9 +1276,7 @@ metricChangesMerged = changeEventCount mi EChangeMergedEvent
       "changes_merged"
       "Changes merged count"
       "The count of changes merged"
-      ( "The metric is the count change merged events."
-          <> changeEventFlavorDesc
-      )
+      [i|The metric is the count change merged events. #{changeEventFlavorDesc}|]
 
 metricChangesAbandoned :: QueryMonad m => Metric m Word32
 metricChangesAbandoned = changeEventCount mi EChangeAbandonedEvent
@@ -1289,9 +1286,7 @@ metricChangesAbandoned = changeEventCount mi EChangeAbandonedEvent
       "changes_abandoned"
       "Changes abandoned count"
       "The count of changes abandoned"
-      ( "The metric is the count change abandoned events."
-          <> changeEventFlavorDesc
-      )
+      [i|The metric is the count change abandoned events. #{changeEventFlavorDesc}|]
 
 metricChangeUpdates :: QueryMonad m => Metric m Word32
 metricChangeUpdates = Metric mi compute computeTrend topNotSupported
@@ -1301,11 +1296,8 @@ metricChangeUpdates = Metric mi compute computeTrend topNotSupported
       "change_updates"
       "Change updates count"
       "The count of updates of changes"
-      ( "The metric is the count of commit push and force commit push events. "
-          <> authorFlavorToDesc Author
-          <> " "
-          <> rangeFlavorToDesc OnCreatedAt
-      )
+      [iii|The metric is the count of commit push and force commit push events.
+       #{authorFlavorToDesc Author} #{rangeFlavorToDesc OnCreatedAt}|]
   compute =
     Num . countToWord
       <$> withFilter
@@ -1324,13 +1316,8 @@ metricChangeWithTests =
         "change_with_tests_count"
         "Change with tests count"
         "The count of changes with tests modifications"
-        ( "The metric is the count of changes with modification on files named based on the following regex: "
-            <> regexp
-            <> " "
-            <> authorFlavorToDesc Author
-            <> " "
-            <> rangeFlavorToDesc CreatedAt
-        )
+        [iii|The metric is the count of changes with modification on files named based on the following regex: "#{regexp}".
+         #{authorFlavorToDesc Author} #{rangeFlavorToDesc CreatedAt}|]
     )
     (Num <$> compute)
     computeTrend
@@ -1354,10 +1341,8 @@ metricChangesSelfMerged =
         "changes_self_merged_count"
         "Changes self merged count"
         "The count of changes self merged"
-        ( "The metric is the count change merged events for which "
-            <> "the event's author and the change's author are the same. "
-            <> rangeFlavorToDesc CreatedAt
-        )
+        [iii|The metric is the count change merged events for which the event's author and the change's
+         author are the same. #{rangeFlavorToDesc CreatedAt}|]
     )
     (Num <$> compute)
     computeTrend
@@ -1379,11 +1364,8 @@ metricReviews = Metric mi compute computeTrend topNotSupported
       "reviews"
       "Reviews count"
       "The count of change' reviews"
-      ( "The metric is the count change' code reviews. "
-          <> authorFlavorToDesc Author
-          <> " "
-          <> rangeFlavorToDesc CreatedAt
-      )
+      [iii|The metric is the count change' code reviews. #{authorFlavorToDesc Author}
+       #{rangeFlavorToDesc CreatedAt}|]
   compute =
     Num . countToWord
       <$> withFilter
@@ -1401,11 +1383,8 @@ metricReviewsAndComments = Metric mi compute computeTrend topNotSupported
       "reviews_and_comments"
       "Reviews and comments count"
       "The count of change' reviews + comments"
-      ( "The metric is the count change' code reviews + comments. "
-          <> authorFlavorToDesc Author
-          <> " "
-          <> rangeFlavorToDesc CreatedAt
-      )
+      [iii|The metric is the count change' code reviews + comments. #{authorFlavorToDesc Author}
+       #{rangeFlavorToDesc CreatedAt}|]
   compute =
     Num . countToWord
       <$> withFilter
@@ -1423,11 +1402,8 @@ metricComments = Metric mi compute computeTrend topNotSupported
       "comments"
       "Comments count"
       "The count of change' comments"
-      ( "The metric is the count of change' comments. "
-          <> authorFlavorToDesc Author
-          <> " "
-          <> rangeFlavorToDesc CreatedAt
-      )
+      [iii|The metric is the count of change' comments. #{authorFlavorToDesc Author} 
+       #{rangeFlavorToDesc CreatedAt}|]
   compute =
     Num . countToWord
       <$> withFilter [documentType EChangeCommentedEvent] (withFlavor qf countDocs)
@@ -1442,11 +1418,8 @@ metricReviewAuthors = Metric mi compute computeTrend computeTop
       "review_authors"
       "Review authors count"
       "The count of change's review authors"
-      ( "The metric is the count of change' reviews aggregated by unique authors. "
-          <> authorFlavorToDesc Author
-          <> " "
-          <> rangeFlavorToDesc CreatedAt
-      )
+      [iii|The metric is the count of change' reviews aggregated by unique authors. #{authorFlavorToDesc Author}
+       #{rangeFlavorToDesc CreatedAt}|]
   compute =
     Num . countToWord
       <$> withFilter [documentType ev] (withFlavor qf countAuthors)
@@ -1465,11 +1438,8 @@ metricCommentAuthors = Metric mi compute computeTrend computeTop
       "comment_authors"
       "Comment authors count"
       "The count of change's comment authors"
-      ( "The metric is the count of change' comments aggregated by unique authors. "
-          <> authorFlavorToDesc Author
-          <> " "
-          <> rangeFlavorToDesc CreatedAt
-      )
+      [iii|The metric is the count of change' comments aggregated by unique authors. #{authorFlavorToDesc Author}
+       #{rangeFlavorToDesc CreatedAt}|]
   compute =
     Num . countToWord
       <$> withFilter [documentType ev] (withFlavor qf countAuthors)
@@ -1488,11 +1458,8 @@ metricChangeMergedAuthors = Metric mi compute computeTrend computeTop
       "change_merged_authors"
       "Merged change' authors count"
       "The count of merged change's authors"
-      ( "The metric is the count of change merged events aggregated by unique authors. "
-          <> authorFlavorToDesc OnAuthor
-          <> " "
-          <> rangeFlavorToDesc CreatedAt
-      )
+      [iii|The metric is the count of change merged events aggregated by unique authors. #{authorFlavorToDesc OnAuthor}
+       #{rangeFlavorToDesc CreatedAt}|]
   compute =
     Num . countToWord
       <$> withFilter [documentType ev] (withFlavor qf countOnAuthors)
@@ -1511,11 +1478,8 @@ metricChangeAuthors = Metric mi compute computeTrend computeTop
       "change_authors"
       "Change authors count"
       "The count of change's authors"
-      ( "The metric is the count of change created events aggregated by unique authors. "
-          <> authorFlavorToDesc Author
-          <> " "
-          <> rangeFlavorToDesc CreatedAt
-      )
+      [iii|The metric is the count of change created events aggregated by unique authors. #{authorFlavorToDesc Author}
+       #{rangeFlavorToDesc CreatedAt}|]
   compute =
     Num . countToWord
       <$> withFilter [documentType EChangeCreatedEvent] (withFlavor qf countAuthors)
@@ -1531,12 +1495,8 @@ metricTimeToMerge =
         "time_to_merge"
         "Time to merge"
         "The average duration for an open change to be merged"
-        ( "The metric is the average duration for changes "
-            <> "between their creation date and their merge date."
-            <> authorFlavorToDesc Author
-            <> " "
-            <> rangeFlavorToDesc CreatedAt
-        )
+        [iii|The metric is the average duration for changes between their creation date and their merge date.
+         #{authorFlavorToDesc Author} #{rangeFlavorToDesc CreatedAt}|]
     )
     (Num <$> compute)
     computeTrend
@@ -1555,12 +1515,8 @@ metricTimeToMergeVariance =
         "time_to_merge_variance"
         "Time to merge variance"
         "The variance of the duration for an open change to be merged"
-        ( "The metric is the variance of the duration for changes "
-            <> "between their creation date and their merge date."
-            <> authorFlavorToDesc Author
-            <> " "
-            <> rangeFlavorToDesc CreatedAt
-        )
+        [iii|The metric is the variance of the duration for changes between their creation date and their merge date.
+         #{authorFlavorToDesc Author} #{rangeFlavorToDesc CreatedAt}|]
     )
     (Num <$> compute)
     computeTrend
@@ -1579,11 +1535,8 @@ metricFirstReviewMeanTime =
         "first_review_mean_time"
         "1st review mean time"
         "The average duration until a change gets a first review event"
-        ( "The metric is the average duration for changes to get their first review."
-            <> authorFlavorToDesc Author
-            <> " "
-            <> rangeFlavorToDesc CreatedAt
-        )
+        [iii|The metric is the average duration for changes to get their first review. #{authorFlavorToDesc Author}
+          #{rangeFlavorToDesc CreatedAt}|]
     )
     (Num <$> compute)
     computeTrend
@@ -1603,11 +1556,8 @@ metricFirstCommentMeanTime =
         "first_comment_mean_time"
         "1st comment mean time"
         "The average delay until a change gets a comment event"
-        ( "The metric is the average duration for changes to get their first comment."
-            <> authorFlavorToDesc Author
-            <> " "
-            <> rangeFlavorToDesc CreatedAt
-        )
+        [iii|The metric is the average duration for changes to get their first comment. #{authorFlavorToDesc Author}
+         #{rangeFlavorToDesc CreatedAt}|]
     )
     (Num <$> compute)
     computeTrend
@@ -1627,11 +1577,8 @@ metricCommitsPerChange =
         "commits_per_change"
         "commits per change"
         "The average commits count per merged change"
-        ( "The metric is the average of the number of commits a merged change is composed of."
-            <> authorFlavorToDesc Author
-            <> " "
-            <> rangeFlavorToDesc CreatedAt
-        )
+        [iii|The metric is the average of the number of commits a merged change is composed of. #{authorFlavorToDesc Author}
+         #{rangeFlavorToDesc CreatedAt}|]
     )
     (Num <$> compute)
     computeTrend
