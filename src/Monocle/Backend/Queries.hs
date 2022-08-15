@@ -1666,3 +1666,8 @@ allMetrics =
     , toJSON <$> metricFirstReviewMeanTime
     , toJSON <$> metricCommitsPerChange
     ]
+
+getMetricInfo :: Text -> Maybe MetricInfo
+getMetricInfo metric = case filter (\m -> metric == miMetricName m) allMetrics of
+  [m] -> Just m
+  _ -> Nothing

@@ -45,6 +45,10 @@ message GetRequest {
   }
 }
 
+message InfoRequest {
+  string metric = 1;
+}
+
 message HistoInt {
   string date = 1;
   uint32 count = 2;
@@ -92,5 +96,12 @@ message GetResponse {
     HistoFloatStat histo_float = 5;
     TermsCountInt top_int = 6;
     TermsCountFloat top_float = 7;
+  }
+}
+
+message InfoResponse {
+  oneof result {
+    string error = 1;
+    MetricInfo info = 2;
   }
 }

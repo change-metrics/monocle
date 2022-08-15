@@ -208,6 +208,22 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/monocle_metric_GetResponse'
+    /api/2/metric/info:
+        post:
+            operationId: Metric_Info
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/monocle_metric_InfoRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/monocle_metric_InfoResponse'
     /api/2/metric/list:
         post:
             operationId: Metric_List
@@ -770,6 +786,16 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_metric_HistoInt'
+        monocle_metric_InfoRequest:
+            properties:
+                metric:
+                    type: string
+        monocle_metric_InfoResponse:
+            properties:
+                error:
+                    type: string
+                info:
+                    $ref: '#/components/schemas/monocle_metric_MetricInfo'
         monocle_metric_ListRequest:
             properties:
                 void:

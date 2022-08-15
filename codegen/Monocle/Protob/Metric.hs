@@ -675,6 +675,57 @@ data GetRequestOptions
 instance HsProtobuf.Named GetRequestOptions where
   nameOf _ = (Hs.fromString "GetRequestOptions")
 
+newtype InfoRequest = InfoRequest {infoRequestMetric :: Hs.Text}
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named InfoRequest where
+  nameOf _ = (Hs.fromString "InfoRequest")
+
+instance HsProtobuf.HasDefault InfoRequest
+
+instance HsProtobuf.Message InfoRequest where
+  encodeMessage _ InfoRequest {infoRequestMetric = infoRequestMetric} =
+    ( Hs.mconcat
+        [ ( HsProtobuf.encodeMessageField
+              (HsProtobuf.FieldNumber 1)
+              infoRequestMetric
+          )
+        ]
+    )
+  decodeMessage _ =
+    (Hs.pure InfoRequest)
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 1)
+          )
+  dotProto _ =
+    [ ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobuf.Prim HsProtobuf.String)
+          (HsProtobuf.Single "metric")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB InfoRequest where
+  toJSONPB (InfoRequest f1) = (HsJSONPB.object ["metric" .= f1])
+  toEncodingPB (InfoRequest f1) = (HsJSONPB.pairs ["metric" .= f1])
+
+instance HsJSONPB.FromJSONPB InfoRequest where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "InfoRequest"
+        (\obj -> (Hs.pure InfoRequest) <*> obj .: "metric")
+    )
+
+instance HsJSONPB.ToJSON InfoRequest where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON InfoRequest where
+  parseJSON = HsJSONPB.parseJSONPB
+
 data HistoInt = HistoInt
   { histoIntDate :: Hs.Text
   , histoIntCount :: Hs.Word32
@@ -1527,3 +1578,131 @@ data GetResponseResult
 
 instance HsProtobuf.Named GetResponseResult where
   nameOf _ = (Hs.fromString "GetResponseResult")
+
+newtype InfoResponse = InfoResponse
+  { infoResponseResult ::
+      Hs.Maybe InfoResponseResult
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named InfoResponse where
+  nameOf _ = (Hs.fromString "InfoResponse")
+
+instance HsProtobuf.HasDefault InfoResponse
+
+instance HsProtobuf.Message InfoResponse where
+  encodeMessage
+    _
+    InfoResponse {infoResponseResult = infoResponseResult} =
+      ( Hs.mconcat
+          [ case infoResponseResult of
+              Hs.Nothing -> Hs.mempty
+              Hs.Just x ->
+                case x of
+                  InfoResponseResultError y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 1)
+                        (HsProtobuf.ForceEmit y)
+                    )
+                  InfoResponseResultInfo y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 2)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Protob.Metric.MetricInfo)
+                            @(HsProtobuf.Nested Monocle.Protob.Metric.MetricInfo)
+                            (Hs.Just y)
+                        )
+                    )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure InfoResponse)
+      <*> ( HsProtobuf.oneof
+              Hs.Nothing
+              [
+                ( (HsProtobuf.FieldNumber 1)
+                , (Hs.pure (Hs.Just Hs.. InfoResponseResultError))
+                    <*> HsProtobuf.decodeMessageField
+                )
+              ,
+                ( (HsProtobuf.FieldNumber 2)
+                , (Hs.pure (Hs.fmap InfoResponseResultInfo))
+                    <*> ( Hs.coerce
+                            @(_ (HsProtobuf.Nested Monocle.Protob.Metric.MetricInfo))
+                            @(_ (Hs.Maybe Monocle.Protob.Metric.MetricInfo))
+                            HsProtobuf.decodeMessageField
+                        )
+                )
+              ]
+          )
+  dotProto _ = []
+
+instance HsJSONPB.ToJSONPB InfoResponse where
+  toJSONPB (InfoResponse f1_or_f2) =
+    ( HsJSONPB.object
+        [ ( let encodeResult =
+                  ( case f1_or_f2 of
+                      Hs.Just (InfoResponseResultError f1) -> (HsJSONPB.pair "error" f1)
+                      Hs.Just (InfoResponseResultInfo f2) -> (HsJSONPB.pair "info" f2)
+                      Hs.Nothing -> Hs.mempty
+                  )
+             in \options ->
+                  if HsJSONPB.optEmitNamedOneof options
+                    then
+                      ("result" .= (HsJSONPB.objectOrNull [encodeResult] options))
+                        options
+                    else encodeResult options
+          )
+        ]
+    )
+  toEncodingPB (InfoResponse f1_or_f2) =
+    ( HsJSONPB.pairs
+        [ ( let encodeResult =
+                  ( case f1_or_f2 of
+                      Hs.Just (InfoResponseResultError f1) -> (HsJSONPB.pair "error" f1)
+                      Hs.Just (InfoResponseResultInfo f2) -> (HsJSONPB.pair "info" f2)
+                      Hs.Nothing -> Hs.mempty
+                  )
+             in \options ->
+                  if HsJSONPB.optEmitNamedOneof options
+                    then ("result" .= (HsJSONPB.pairsOrNull [encodeResult] options)) options
+                    else encodeResult options
+          )
+        ]
+    )
+
+instance HsJSONPB.FromJSONPB InfoResponse where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "InfoResponse"
+        ( \obj ->
+            (Hs.pure InfoResponse)
+              <*> ( let parseResult parseObj =
+                          Hs.msum
+                            [ Hs.Just Hs.. InfoResponseResultError
+                                <$> (HsJSONPB.parseField parseObj "error")
+                            , Hs.Just Hs.. InfoResponseResultInfo
+                                <$> (HsJSONPB.parseField parseObj "info")
+                            , Hs.pure Hs.Nothing
+                            ]
+                     in ( (obj .: "result")
+                            Hs.>>= (HsJSONPB.withObject "result" parseResult)
+                        )
+                          <|> (parseResult obj)
+                  )
+        )
+    )
+
+instance HsJSONPB.ToJSON InfoResponse where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON InfoResponse where
+  parseJSON = HsJSONPB.parseJSONPB
+
+data InfoResponseResult
+  = InfoResponseResultError Hs.Text
+  | InfoResponseResultInfo Monocle.Protob.Metric.MetricInfo
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named InfoResponseResult where
+  nameOf _ = (Hs.fromString "InfoResponseResult")

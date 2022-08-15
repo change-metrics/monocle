@@ -41,6 +41,10 @@ and get_request = {
   options : get_request_options;
 }
 
+type info_request = {
+  metric : string;
+}
+
 type histo_int = {
   date : string;
   count : int32;
@@ -87,6 +91,10 @@ type get_response =
   | Histo_float of histo_float_stat
   | Top_int of terms_count_int
   | Top_float of terms_count_float
+
+type info_response =
+  | Error of string
+  | Info of metric_info
 
 let rec default_metric_info 
   ?name:((name:string) = "")
@@ -144,6 +152,12 @@ and default_get_request
   query;
   metric;
   options;
+}
+
+let rec default_info_request 
+  ?metric:((metric:string) = "")
+  () : info_request  = {
+  metric;
 }
 
 let rec default_histo_int 
@@ -207,3 +221,5 @@ let rec default_terms_count_float
 }
 
 let rec default_get_response () : get_response = Error ("")
+
+let rec default_info_response () : info_response = Error ("")

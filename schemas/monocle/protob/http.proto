@@ -139,6 +139,14 @@ service Metric {
       body: "*"
     };
   }
+
+  rpc Info(monocle_metric.InfoRequest)
+      returns (monocle_metric.InfoResponse) {
+    option (google.api.http) = {
+      post: "/api/2/metric/info"
+      body: "*"
+    };
+  }
 }
 
 service Crawler {

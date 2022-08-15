@@ -8,13 +8,13 @@
 module Monocle.Servant.HTTP (MonocleAPI, server) where
 
 import Monocle.Api.Jwt (AuthenticatedUser)
-import Monocle.Api.Server (authGetMagicJwt, authWhoAmi, configGetAbout, configGetGroupMembers, configGetGroups, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, loginLoginValidation, metricGet, metricList, searchAuthor, searchCheck, searchFields, searchQuery, searchSuggestions)
+import Monocle.Api.Server (authGetMagicJwt, authWhoAmi, configGetAbout, configGetGroupMembers, configGetGroups, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, loginLoginValidation, metricGet, metricInfo, metricList, searchAuthor, searchCheck, searchFields, searchQuery, searchSuggestions)
 import Monocle.Env
 import Monocle.Protob.Auth (GetMagicJwtRequest, GetMagicJwtResponse, WhoAmiRequest, WhoAmiResponse)
 import Monocle.Protob.Config (GetAboutRequest, GetAboutResponse, GetGroupMembersRequest, GetGroupMembersResponse, GetGroupsRequest, GetGroupsResponse, GetProjectsRequest, GetProjectsResponse, GetWorkspacesRequest, GetWorkspacesResponse)
 import Monocle.Protob.Crawler (AddDocRequest, AddDocResponse, CommitInfoRequest, CommitInfoResponse, CommitRequest, CommitResponse)
 import Monocle.Protob.Login (LoginValidationRequest, LoginValidationResponse)
-import Monocle.Protob.Metric (GetRequest, GetResponse, ListRequest, ListResponse)
+import Monocle.Protob.Metric (GetRequest, GetResponse, InfoRequest, InfoResponse, ListRequest, ListResponse)
 import Monocle.Protob.Search (AuthorRequest, AuthorResponse, CheckRequest, CheckResponse, FieldsRequest, FieldsResponse, QueryRequest, QueryResponse, SuggestionsRequest, SuggestionsResponse)
 import Monocle.Servant.PBJSON (PBJSON)
 import Servant
@@ -36,6 +36,7 @@ type MonocleAPI =
     :<|> "search" :> "author" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Search.AuthorRequest :> Post '[PBJSON, JSON] Monocle.Protob.Search.AuthorResponse
     :<|> "metric" :> "list" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Metric.ListRequest :> Post '[PBJSON, JSON] Monocle.Protob.Metric.ListResponse
     :<|> "metric" :> "get" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Metric.GetRequest :> Post '[PBJSON, JSON] Monocle.Protob.Metric.GetResponse
+    :<|> "metric" :> "info" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Metric.InfoRequest :> Post '[PBJSON, JSON] Monocle.Protob.Metric.InfoResponse
     :<|> "crawler" :> "add" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.AddDocRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.AddDocResponse
     :<|> "crawler" :> "commit" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.CommitRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.CommitResponse
     :<|> "crawler" :> "get_commit_info" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.CommitInfoRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.CommitInfoResponse
@@ -56,6 +57,7 @@ server =
     :<|> searchAuthor
     :<|> metricList
     :<|> metricGet
+    :<|> metricInfo
     :<|> crawlerAddDoc
     :<|> crawlerCommit
     :<|> crawlerCommitInfo

@@ -699,6 +699,23 @@ metricList auth _request = checkAuth auth . const $ response
       , metricInfoMetric = from miMetricName
       }
 
+metricInfo :: AuthResult AuthenticatedUser -> MetricPB.InfoRequest -> AppM MetricPB.InfoResponse
+metricInfo auth (MetricPB.InfoRequest {..}) = checkAuth auth . const $ response
+ where
+  response = pure
+    . MetricPB.InfoResponse
+    . Just
+    $ case Q.getMetricInfo (from infoRequestMetric) of
+      Just (Q.MetricInfo {..}) ->
+        MetricPB.InfoResponseResultInfo $
+          MetricPB.MetricInfo
+            { metricInfoName = from miName
+            , metricInfoDescription = from miDesc
+            , metricInfoLongDescription = from miLongDesc
+            , metricInfoMetric = from miMetricName
+            }
+      Nothing -> MetricPB.InfoResponseResultError "No such metric"
+
 class Num a => NumPB a where
   toNumResult :: Q.Numeric a -> MetricPB.GetResponse
 

@@ -27,6 +27,9 @@ val encode_get_request_options : MetricTypes.get_request_options -> Js.Json.t Js
 val encode_get_request : MetricTypes.get_request -> Js.Json.t Js.Dict.t
 (** [encode_get_request v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_info_request : MetricTypes.info_request -> Js.Json.t Js.Dict.t
+(** [encode_info_request v dict] encodes [v] int the given JSON [dict] *)
+
 val encode_histo_int : MetricTypes.histo_int -> Js.Json.t Js.Dict.t
 (** [encode_histo_int v dict] encodes [v] int the given JSON [dict] *)
 
@@ -53,6 +56,9 @@ val encode_terms_count_float : MetricTypes.terms_count_float -> Js.Json.t Js.Dic
 
 val encode_get_response : MetricTypes.get_response -> Js.Json.t Js.Dict.t
 (** [encode_get_response v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_info_response : MetricTypes.info_response -> Js.Json.t Js.Dict.t
+(** [encode_info_response v dict] encodes [v] int the given JSON [dict] *)
 
 
 (** {2 BS Decoding} *)
@@ -81,6 +87,9 @@ val decode_get_request_options : Js.Json.t Js.Dict.t -> MetricTypes.get_request_
 val decode_get_request : Js.Json.t Js.Dict.t -> MetricTypes.get_request
 (** [decode_get_request decoder] decodes a [get_request] value from [decoder] *)
 
+val decode_info_request : Js.Json.t Js.Dict.t -> MetricTypes.info_request
+(** [decode_info_request decoder] decodes a [info_request] value from [decoder] *)
+
 val decode_histo_int : Js.Json.t Js.Dict.t -> MetricTypes.histo_int
 (** [decode_histo_int decoder] decodes a [histo_int] value from [decoder] *)
 
@@ -107,3 +116,6 @@ val decode_terms_count_float : Js.Json.t Js.Dict.t -> MetricTypes.terms_count_fl
 
 val decode_get_response : Js.Json.t Js.Dict.t -> MetricTypes.get_response
 (** [decode_get_response decoder] decodes a [get_response] value from [decoder] *)
+
+val decode_info_response : Js.Json.t Js.Dict.t -> MetricTypes.info_response
+(** [decode_info_response decoder] decodes a [info_response] value from [decoder] *)

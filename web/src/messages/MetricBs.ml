@@ -70,6 +70,14 @@ let default_get_request_mutable () : get_request_mutable = {
   options = MetricTypes.Compute (MetricTypes.default_compute ());
 }
 
+type info_request_mutable = {
+  mutable metric : string;
+}
+
+let default_info_request_mutable () : info_request_mutable = {
+  metric = "";
+}
+
 type histo_int_mutable = {
   mutable date : string;
   mutable count : int32;
@@ -320,6 +328,22 @@ and decode_get_request json =
     MetricTypes.options = v.options;
   } : MetricTypes.get_request)
 
+let rec decode_info_request json =
+  let v = default_info_request_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "metric" -> 
+      let json = Js.Dict.unsafeGet json "metric" in
+      v.metric <- Pbrt_bs.string json "info_request" "metric"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    MetricTypes.metric = v.metric;
+  } : MetricTypes.info_request)
+
 let rec decode_histo_int json =
   let v = default_histo_int_mutable () in
   let keys = Js.Dict.keys json in
@@ -529,6 +553,24 @@ let rec decode_get_response json =
   in
   loop (Array.length keys - 1)
 
+let rec decode_info_response json =
+  let keys = Js.Dict.keys json in
+  let rec loop = function 
+    | -1 -> Pbrt_bs.E.malformed_variant "info_response"
+    | i -> 
+      begin match Array.unsafe_get keys i with
+      | "error" -> 
+        let json = Js.Dict.unsafeGet json "error" in
+        (MetricTypes.Error (Pbrt_bs.string json "info_response" "Error") : MetricTypes.info_response)
+      | "info" -> 
+        let json = Js.Dict.unsafeGet json "info" in
+        (MetricTypes.Info ((decode_metric_info (Pbrt_bs.object_ json "info_response" "Info"))) : MetricTypes.info_response)
+      
+      | _ -> loop (i - 1)
+      end
+  in
+  loop (Array.length keys - 1)
+
 let rec encode_metric_info (v:MetricTypes.metric_info) = 
   let json = Js.Dict.empty () in
   Js.Dict.set json "name" (Js.Json.string v.MetricTypes.name);
@@ -616,6 +658,11 @@ and encode_get_request (v:MetricTypes.get_request) =
         Js.Dict.set json "top" (Js.Json.object_ json');
       end;
   end; (* match v.options *)
+  json
+
+let rec encode_info_request (v:MetricTypes.info_request) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "metric" (Js.Json.string v.MetricTypes.metric);
   json
 
 let rec encode_histo_int (v:MetricTypes.histo_int) = 
@@ -732,6 +779,19 @@ let rec encode_get_response (v:MetricTypes.get_response) =
     begin (* topFloat field *)
       let json' = encode_terms_count_float v in
       Js.Dict.set json "top_float" (Js.Json.object_ json');
+    end;
+  end;
+  json
+
+let rec encode_info_response (v:MetricTypes.info_response) = 
+  let json = Js.Dict.empty () in
+  begin match v with
+  | MetricTypes.Error v ->
+    Js.Dict.set json "error" (Js.Json.string v);
+  | MetricTypes.Info v ->
+    begin (* info field *)
+      let json' = encode_metric_info v in
+      Js.Dict.set json "info" (Js.Json.object_ json');
     end;
   end;
   json

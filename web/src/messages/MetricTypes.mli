@@ -44,6 +44,10 @@ and get_request = {
   options : get_request_options;
 }
 
+type info_request = {
+  metric : string;
+}
+
 type histo_int = {
   date : string;
   count : int32;
@@ -90,6 +94,10 @@ type get_response =
   | Histo_float of histo_float_stat
   | Top_int of terms_count_int
   | Top_float of terms_count_float
+
+type info_response =
+  | Error of string
+  | Info of metric_info
 
 
 (** {2 Default values} *)
@@ -145,6 +153,12 @@ val default_get_request :
   unit ->
   get_request
 (** [default_get_request ()] is the default value for type [get_request] *)
+
+val default_info_request : 
+  ?metric:string ->
+  unit ->
+  info_request
+(** [default_info_request ()] is the default value for type [info_request] *)
 
 val default_histo_int : 
   ?date:string ->
@@ -202,3 +216,6 @@ val default_terms_count_float :
 
 val default_get_response : unit -> get_response
 (** [default_get_response ()] is the default value for type [get_response] *)
+
+val default_info_response : unit -> info_response
+(** [default_info_response ()] is the default value for type [info_response] *)
