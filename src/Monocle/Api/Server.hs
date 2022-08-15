@@ -695,7 +695,7 @@ metricList auth _request = checkAuth auth . const $ response
     MetricPB.MetricInfo
       { metricInfoName = from miName
       , metricInfoDescription = from miDesc
-      , metricInfoLongDescription = mempty
+      , metricInfoLongDescription = from miLongDesc
       , metricInfoMetric = from miMetricName
       }
 

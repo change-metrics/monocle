@@ -994,7 +994,7 @@ data MetricInfo = MetricInfo
   { miMetricName :: Text
   , miName :: Text
   , miDesc :: Text
-  , miLongDesc :: Maybe Text
+  , miLongDesc :: Text
   }
 
 data Metric m a = Metric
@@ -1265,9 +1265,8 @@ metricChangesCreated = changeEventCount mi EChangeCreatedEvent
       "changes_created"
       "Changes created count"
       "The count of changes created"
-      ( Just $
-          "The metric is the count change created events."
-            <> changeEventFlavorDesc
+      ( "The metric is the count change created events."
+          <> changeEventFlavorDesc
       )
 
 metricChangesMerged :: QueryMonad m => Metric m Word32
@@ -1278,9 +1277,8 @@ metricChangesMerged = changeEventCount mi EChangeMergedEvent
       "changes_merged"
       "Changes merged count"
       "The count of changes merged"
-      ( Just $
-          "The metric is the count change merged events."
-            <> changeEventFlavorDesc
+      ( "The metric is the count change merged events."
+          <> changeEventFlavorDesc
       )
 
 metricChangesAbandoned :: QueryMonad m => Metric m Word32
@@ -1291,9 +1289,8 @@ metricChangesAbandoned = changeEventCount mi EChangeAbandonedEvent
       "changes_abandoned"
       "Changes abandoned count"
       "The count of changes abandoned"
-      ( Just $
-          "The metric is the count change abandoned events."
-            <> changeEventFlavorDesc
+      ( "The metric is the count change abandoned events."
+          <> changeEventFlavorDesc
       )
 
 metricChangeUpdates :: QueryMonad m => Metric m Word32
@@ -1304,11 +1301,10 @@ metricChangeUpdates = Metric mi compute computeTrend topNotSupported
       "change_updates"
       "Change updates count"
       "The count of updates of changes"
-      ( Just $
-          "The metric is the count of commit push and force commit push events. "
-            <> authorFlavorToDesc Author
-            <> " "
-            <> rangeFlavorToDesc OnCreatedAt
+      ( "The metric is the count of commit push and force commit push events. "
+          <> authorFlavorToDesc Author
+          <> " "
+          <> rangeFlavorToDesc OnCreatedAt
       )
   compute =
     Num . countToWord
@@ -1328,13 +1324,12 @@ metricChangeWithTests =
         "change_with_tests_count"
         "Change with tests count"
         "The count of changes with tests modifications"
-        ( Just $
-            "The metric is the count of changes with modification on files named based on the following regex: "
-              <> regexp
-              <> " "
-              <> authorFlavorToDesc Author
-              <> " "
-              <> rangeFlavorToDesc CreatedAt
+        ( "The metric is the count of changes with modification on files named based on the following regex: "
+            <> regexp
+            <> " "
+            <> authorFlavorToDesc Author
+            <> " "
+            <> rangeFlavorToDesc CreatedAt
         )
     )
     (Num <$> compute)
@@ -1359,10 +1354,9 @@ metricChangesSelfMerged =
         "changes_self_merged_count"
         "Changes self merged count"
         "The count of changes self merged"
-        ( Just $
-            "The metric is the count change merged events for which "
-              <> "the event's author and the change's author are the same. "
-              <> rangeFlavorToDesc CreatedAt
+        ( "The metric is the count change merged events for which "
+            <> "the event's author and the change's author are the same. "
+            <> rangeFlavorToDesc CreatedAt
         )
     )
     (Num <$> compute)
@@ -1385,11 +1379,10 @@ metricReviews = Metric mi compute computeTrend topNotSupported
       "reviews"
       "Reviews count"
       "The count of change' reviews"
-      ( Just $
-          "The metric is the count change' code reviews. "
-            <> authorFlavorToDesc Author
-            <> " "
-            <> rangeFlavorToDesc CreatedAt
+      ( "The metric is the count change' code reviews. "
+          <> authorFlavorToDesc Author
+          <> " "
+          <> rangeFlavorToDesc CreatedAt
       )
   compute =
     Num . countToWord
@@ -1408,11 +1401,10 @@ metricReviewsAndComments = Metric mi compute computeTrend topNotSupported
       "reviews_and_comments"
       "Reviews and comments count"
       "The count of change' reviews + comments"
-      ( Just $
-          "The metric is the count change' code reviews + comments. "
-            <> authorFlavorToDesc Author
-            <> " "
-            <> rangeFlavorToDesc CreatedAt
+      ( "The metric is the count change' code reviews + comments. "
+          <> authorFlavorToDesc Author
+          <> " "
+          <> rangeFlavorToDesc CreatedAt
       )
   compute =
     Num . countToWord
@@ -1431,11 +1423,10 @@ metricComments = Metric mi compute computeTrend topNotSupported
       "comments"
       "Comments count"
       "The count of change' comments"
-      ( Just $
-          "The metric is the count of change' comments. "
-            <> authorFlavorToDesc Author
-            <> " "
-            <> rangeFlavorToDesc CreatedAt
+      ( "The metric is the count of change' comments. "
+          <> authorFlavorToDesc Author
+          <> " "
+          <> rangeFlavorToDesc CreatedAt
       )
   compute =
     Num . countToWord
@@ -1451,11 +1442,10 @@ metricReviewAuthors = Metric mi compute computeTrend computeTop
       "review_authors"
       "Review authors count"
       "The count of change's review authors"
-      ( Just $
-          "The metric is the count of change' reviews aggregated by unique authors. "
-            <> authorFlavorToDesc Author
-            <> " "
-            <> rangeFlavorToDesc CreatedAt
+      ( "The metric is the count of change' reviews aggregated by unique authors. "
+          <> authorFlavorToDesc Author
+          <> " "
+          <> rangeFlavorToDesc CreatedAt
       )
   compute =
     Num . countToWord
@@ -1475,11 +1465,10 @@ metricCommentAuthors = Metric mi compute computeTrend computeTop
       "comment_authors"
       "Comment authors count"
       "The count of change's comment authors"
-      ( Just $
-          "The metric is the count of change' comments aggregated by unique authors. "
-            <> authorFlavorToDesc Author
-            <> " "
-            <> rangeFlavorToDesc CreatedAt
+      ( "The metric is the count of change' comments aggregated by unique authors. "
+          <> authorFlavorToDesc Author
+          <> " "
+          <> rangeFlavorToDesc CreatedAt
       )
   compute =
     Num . countToWord
@@ -1499,11 +1488,10 @@ metricChangeMergedAuthors = Metric mi compute computeTrend computeTop
       "change_merged_authors"
       "Merged change' authors count"
       "The count of merged change's authors"
-      ( Just $
-          "The metric is the count of change merged events aggregated by unique authors. "
-            <> authorFlavorToDesc OnAuthor
-            <> " "
-            <> rangeFlavorToDesc CreatedAt
+      ( "The metric is the count of change merged events aggregated by unique authors. "
+          <> authorFlavorToDesc OnAuthor
+          <> " "
+          <> rangeFlavorToDesc CreatedAt
       )
   compute =
     Num . countToWord
@@ -1523,11 +1511,10 @@ metricChangeAuthors = Metric mi compute computeTrend computeTop
       "change_authors"
       "Change authors count"
       "The count of change's authors"
-      ( Just $
-          "The metric is the count of change created events aggregated by unique authors. "
-            <> authorFlavorToDesc Author
-            <> " "
-            <> rangeFlavorToDesc CreatedAt
+      ( "The metric is the count of change created events aggregated by unique authors. "
+          <> authorFlavorToDesc Author
+          <> " "
+          <> rangeFlavorToDesc CreatedAt
       )
   compute =
     Num . countToWord
@@ -1544,12 +1531,11 @@ metricTimeToMerge =
         "time_to_merge"
         "Time to merge"
         "The average duration for an open change to be merged"
-        ( Just $
-            "The metric is the average duration for changes "
-              <> "between their creation date and their merge date."
-              <> authorFlavorToDesc Author
-              <> " "
-              <> rangeFlavorToDesc CreatedAt
+        ( "The metric is the average duration for changes "
+            <> "between their creation date and their merge date."
+            <> authorFlavorToDesc Author
+            <> " "
+            <> rangeFlavorToDesc CreatedAt
         )
     )
     (Num <$> compute)
@@ -1569,12 +1555,11 @@ metricTimeToMergeVariance =
         "time_to_merge_variance"
         "Time to merge variance"
         "The variance of the duration for an open change to be merged"
-        ( Just $
-            "The metric is the variance of the duration for changes "
-              <> "between their creation date and their merge date."
-              <> authorFlavorToDesc Author
-              <> " "
-              <> rangeFlavorToDesc CreatedAt
+        ( "The metric is the variance of the duration for changes "
+            <> "between their creation date and their merge date."
+            <> authorFlavorToDesc Author
+            <> " "
+            <> rangeFlavorToDesc CreatedAt
         )
     )
     (Num <$> compute)
@@ -1594,11 +1579,10 @@ metricFirstReviewMeanTime =
         "first_review_mean_time"
         "1st review mean time"
         "The average duration until a change gets a first review event"
-        ( Just $
-            "The metric is the average duration for changes to get their first review."
-              <> authorFlavorToDesc Author
-              <> " "
-              <> rangeFlavorToDesc CreatedAt
+        ( "The metric is the average duration for changes to get their first review."
+            <> authorFlavorToDesc Author
+            <> " "
+            <> rangeFlavorToDesc CreatedAt
         )
     )
     (Num <$> compute)
@@ -1619,11 +1603,10 @@ metricFirstCommentMeanTime =
         "first_comment_mean_time"
         "1st comment mean time"
         "The average delay until a change gets a comment event"
-        ( Just $
-            "The metric is the average duration for changes to get their first comment."
-              <> authorFlavorToDesc Author
-              <> " "
-              <> rangeFlavorToDesc CreatedAt
+        ( "The metric is the average duration for changes to get their first comment."
+            <> authorFlavorToDesc Author
+            <> " "
+            <> rangeFlavorToDesc CreatedAt
         )
     )
     (Num <$> compute)
@@ -1644,11 +1627,10 @@ metricCommitsPerChange =
         "commits_per_change"
         "commits per change"
         "The average commits count per merged change"
-        ( Just $
-            "The metric is the average of the number of commits a merged change is composed of."
-              <> authorFlavorToDesc Author
-              <> " "
-              <> rangeFlavorToDesc CreatedAt
+        ( "The metric is the average of the number of commits a merged change is composed of."
+            <> authorFlavorToDesc Author
+            <> " "
+            <> rangeFlavorToDesc CreatedAt
         )
     )
     (Num <$> compute)
