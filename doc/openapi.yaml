@@ -208,6 +208,22 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/monocle_metric_GetResponse'
+    /api/2/metric/info:
+        post:
+            operationId: Metric_Info
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/monocle_metric_InfoRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/monocle_metric_InfoResponse'
     /api/2/metric/list:
         post:
             operationId: Metric_List
@@ -706,6 +722,10 @@ components:
                 validation_result:
                     type: integer
                     format: enum
+        monocle_metric_Compute:
+            properties:
+                void:
+                    type: string
         monocle_metric_GetRequest:
             properties:
                 index:
@@ -716,6 +736,8 @@ components:
                     type: string
                 metric:
                     type: string
+                compute:
+                    $ref: '#/components/schemas/monocle_metric_Compute'
                 trend:
                     $ref: '#/components/schemas/monocle_metric_Trend'
                 top:
@@ -730,13 +752,13 @@ components:
                 int_value:
                     type: integer
                     format: int32
-                histo_int_value:
+                histo_int:
                     $ref: '#/components/schemas/monocle_metric_HistoIntStat'
-                histo_float_value:
+                histo_float:
                     $ref: '#/components/schemas/monocle_metric_HistoFloatStat'
-                top_int_value:
+                top_int:
                     $ref: '#/components/schemas/monocle_metric_TermsCountInt'
-                top_float_value:
+                top_float:
                     $ref: '#/components/schemas/monocle_metric_TermsCountFloat'
         monocle_metric_HistoFloat:
             properties:
@@ -764,6 +786,16 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_metric_HistoInt'
+        monocle_metric_InfoRequest:
+            properties:
+                metric:
+                    type: string
+        monocle_metric_InfoResponse:
+            properties:
+                error:
+                    type: string
+                info:
+                    $ref: '#/components/schemas/monocle_metric_MetricInfo'
         monocle_metric_ListRequest:
             properties:
                 void:

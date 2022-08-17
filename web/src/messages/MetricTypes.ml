@@ -24,7 +24,12 @@ type top = {
   limit : int32;
 }
 
+type compute = {
+  void : string;
+}
+
 type get_request_options =
+  | Compute of compute
   | Trend of trend
   | Top of top
 
@@ -34,6 +39,10 @@ and get_request = {
   query : string;
   metric : string;
   options : get_request_options;
+}
+
+type info_request = {
+  metric : string;
 }
 
 type histo_int = {
@@ -78,10 +87,14 @@ type get_response =
   | Error of string
   | Float_value of float
   | Int_value of int32
-  | Histo_int_value of histo_int_stat
-  | Histo_float_value of histo_float_stat
-  | Top_int_value of terms_count_int
-  | Top_float_value of terms_count_float
+  | Histo_int of histo_int_stat
+  | Histo_float of histo_float_stat
+  | Top_int of terms_count_int
+  | Top_float of terms_count_float
+
+type info_response =
+  | Error of string
+  | Info of metric_info
 
 let rec default_metric_info 
   ?name:((name:string) = "")
@@ -119,20 +132,32 @@ let rec default_top
   limit;
 }
 
-let rec default_get_request_options () : get_request_options = Trend (default_trend ())
+let rec default_compute 
+  ?void:((void:string) = "")
+  () : compute  = {
+  void;
+}
+
+let rec default_get_request_options () : get_request_options = Compute (default_compute ())
 
 and default_get_request 
   ?index:((index:string) = "")
   ?username:((username:string) = "")
   ?query:((query:string) = "")
   ?metric:((metric:string) = "")
-  ?options:((options:get_request_options) = Trend (default_trend ()))
+  ?options:((options:get_request_options) = Compute (default_compute ()))
   () : get_request  = {
   index;
   username;
   query;
   metric;
   options;
+}
+
+let rec default_info_request 
+  ?metric:((metric:string) = "")
+  () : info_request  = {
+  metric;
 }
 
 let rec default_histo_int 
@@ -196,3 +221,5 @@ let rec default_terms_count_float
 }
 
 let rec default_get_response () : get_response = Error ("")
+
+let rec default_info_response () : info_response = Error ("")

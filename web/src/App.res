@@ -64,6 +64,7 @@ module MonocleNav = {
               ("Groups", "/user_groups"),
             },
           ),
+          navGroup("Metrics", list{("Catalog", "/metrics")}),
         ]->React.array}
       </NavList>
     </Nav>
@@ -388,6 +389,8 @@ module App = {
               | list{_, "change", change} => <ChangeView change store />
               | list{_, "board"} => <Board store />
               | list{_, "search_author"} => <AuthorSearch store />
+              | list{_, "metrics"} => <Metrics store />
+              | list{_, "metric", name} => <Metric store name />
               | _ => <p> {"Not found"->str} </p>
               }}
             </PageSection>

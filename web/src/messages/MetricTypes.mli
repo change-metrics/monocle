@@ -27,7 +27,12 @@ type top = {
   limit : int32;
 }
 
+type compute = {
+  void : string;
+}
+
 type get_request_options =
+  | Compute of compute
   | Trend of trend
   | Top of top
 
@@ -37,6 +42,10 @@ and get_request = {
   query : string;
   metric : string;
   options : get_request_options;
+}
+
+type info_request = {
+  metric : string;
 }
 
 type histo_int = {
@@ -81,10 +90,14 @@ type get_response =
   | Error of string
   | Float_value of float
   | Int_value of int32
-  | Histo_int_value of histo_int_stat
-  | Histo_float_value of histo_float_stat
-  | Top_int_value of terms_count_int
-  | Top_float_value of terms_count_float
+  | Histo_int of histo_int_stat
+  | Histo_float of histo_float_stat
+  | Top_int of terms_count_int
+  | Top_float of terms_count_float
+
+type info_response =
+  | Error of string
+  | Info of metric_info
 
 
 (** {2 Default values} *)
@@ -122,6 +135,12 @@ val default_top :
   top
 (** [default_top ()] is the default value for type [top] *)
 
+val default_compute : 
+  ?void:string ->
+  unit ->
+  compute
+(** [default_compute ()] is the default value for type [compute] *)
+
 val default_get_request_options : unit -> get_request_options
 (** [default_get_request_options ()] is the default value for type [get_request_options] *)
 
@@ -134,6 +153,12 @@ val default_get_request :
   unit ->
   get_request
 (** [default_get_request ()] is the default value for type [get_request] *)
+
+val default_info_request : 
+  ?metric:string ->
+  unit ->
+  info_request
+(** [default_info_request ()] is the default value for type [info_request] *)
 
 val default_histo_int : 
   ?date:string ->
@@ -191,3 +216,6 @@ val default_terms_count_float :
 
 val default_get_response : unit -> get_response
 (** [default_get_response ()] is the default value for type [get_response] *)
+
+val default_info_response : unit -> info_response
+(** [default_info_response ()] is the default value for type [info_response] *)

@@ -646,6 +646,23 @@ defaultQuery =
       queryMinBoundsSet = False
    in Q.Query {..}
 
+testGetInfoMetric :: Assertion
+testGetInfoMetric = withTenantConfig tenant $ do
+  liftIO . Monocle.Api.Test.withTestApi env $ \_logger client -> do
+    -- Get basic metric
+    resp <- Monocle.Client.Api.metricInfo client (MetricPB.InfoRequest "time_to_merge")
+    assertEqual
+      "Metric info response match"
+      (Just "time_to_merge")
+      (getMetricName resp)
+ where
+  tenant = Config.mkTenant "demo"
+  env = Monocle.Api.Test.mkAppEnv tenant
+  getMetricName :: MetricPB.InfoResponse -> Maybe Text
+  getMetricName resp = case resp of
+    MetricPB.InfoResponse (Just (MetricPB.InfoResponseResultInfo (MetricPB.MetricInfo {..}))) -> from <$> Just metricInfoMetric
+    _ -> Nothing
+
 testGetMetrics :: Assertion
 testGetMetrics = withTenantConfig tenant $ do
   -- Add data to the index

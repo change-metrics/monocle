@@ -221,6 +221,19 @@ module Metric = {
     ) |> Js.Promise.then_(resp =>
       {data: resp.data->MetricBs.decode_get_response}->Js.Promise.resolve
     )
+  @module("axios")
+  external infoRaw: (string, 'data, option<axiosRequestConfig>) => axios<'b> = "post"
+
+  let info = (request: MetricTypes.info_request, token: option<string>): axios<
+    MetricTypes.info_response,
+  > =>
+    infoRaw(
+      serverUrl ++ "/api/2/metric/info",
+      request->MetricBs.encode_info_request,
+      token->Belt.Option.flatMap(jwt => {headers: {"Authorization": "Bearer " ++ jwt}}->Some),
+    ) |> Js.Promise.then_(resp =>
+      {data: resp.data->MetricBs.decode_info_response}->Js.Promise.resolve
+    )
 }
 
 module Crawler = {

@@ -124,6 +124,7 @@ monocleApiTests =
     [ testCase "Test getGroups and getGroupMembers" testGetGroups
     , testCase "Test crawler MDs refreshed after config reload" testReloadedConfig
     , testCase "Test get metrics" testGetMetrics
+    , testCase "Test get info metric" testGetInfoMetric
     , testCase "Test Auth Magic Token endpoint" testAuthMagicTokenEndpoint
     ]
  where

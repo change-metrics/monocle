@@ -46,6 +46,45 @@ class InterweaveContent extends React.Component {
   }
 }
 
+class SingleLineHisto extends React.Component {
+  prepareData(histo, label) {
+    const data = {
+      labels: histo.map(bucket => bucket.date),
+      datasets: [
+        {
+          label: label,
+          data: histo.map(bucket => bucket.count),
+          lineTension: 0.5,
+          pointBorderColor: 'rgba(247,242,141,1)',
+          pointBackgroundColor: '#fff',
+          backgroundColor: 'rgba(247,242,141,0.4)',
+          borderColor: 'rgba(247,242,141,1)'
+
+        }
+      ]
+    }
+    return data
+  }
+
+  render() {
+    const data = this.prepareData(this.props.data.histo, this.props.data.label)
+    return (
+      <Line
+        data={data}
+        width={100}
+        // on small screen the legend takes the whole height so detect and adjust
+        height={hasSmallWidth() ? 90 : 68}
+        options={{
+          legend: {
+            labels: {
+              boxWidth: 30
+            }
+          }
+        }}
+      />)
+  }
+}
+
 class ChangeReviewEventsHisto extends React.Component {
   prepareDataSet(histos) {
     const eventNameMapping = {
@@ -575,12 +614,14 @@ const CChangesLifeCycleHisto = (prop) => <ChangesLifeCycleHisto histos={prop} />
 const ChangesReviewStats = (prop) => (
   <DurationComplexityGraph data={prop.data} onClick={prop.onClick} />
 )
+const SimpleHisto = (prop) => <SingleLineHisto data={prop} />
 
 export {
   CAuthorsHistoStats,
   CChangeReviewEventsHisto,
   CChangesLifeCycleHisto,
   ChangesReviewStats,
+  SimpleHisto,
   ConnectionDiagram,
   PieChart,
   TimelineGraph,
