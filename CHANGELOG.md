@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - [web] Keep User-Agent to the URI after an OIDC login to Monocle.
 - [nix] The project is now available as an installable flake. The file structure has been updated. Development environment is provided by `nix develop` instead of `nix-shell`.
 - [compose] Bumped Elasticsearch to 7.17.5.
+- [compose] Changed the image name from `monocle_api` to `monocle`.
 
 ### Removed
 ### Fixed
