@@ -1252,7 +1252,7 @@ changeEventCount mi dt =
   Metric mi (Num . countToWord <$> compute) computeTrend topNotSupported
  where
   compute = withFilter [documentType dt] (withFlavor qf countDocs)
-  computeTrend interval = withDocType EChangeCreatedEvent qf $ countHisto CreatedAt interval
+  computeTrend interval = withDocType dt qf $ countHisto CreatedAt interval
   qf = QueryFlavor OnAuthor CreatedAt
 
 changeEventFlavorDesc :: Text
