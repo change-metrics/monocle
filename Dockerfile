@@ -22,7 +22,8 @@ ARG MONOCLE_COMMIT
 
 # Build project
 COPY . /build
-RUN cabal v2-install -v1 exe:monocle
+RUN echo "Building monocle '${MONOCLE_COMMIT}'" && \
+    env MONOCLE_COMMIT=$MONOCLE_COMMIT cabal v2-install -v1 exe:monocle
 
 # web build
 FROM registry.fedoraproject.org/fedora:35
