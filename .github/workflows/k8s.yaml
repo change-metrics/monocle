@@ -2,9 +2,8 @@ name: k8s deployment validation
 on:
   pull_request:
     paths:
-      - 'deployment/*'
-      - '.github/workflows/k8s.yaml'
-
+      - "deployment/*"
+      - ".github/workflows/k8s.yaml"
 
 jobs:
   check-k8s:
@@ -33,7 +32,9 @@ jobs:
           kubernetes-version: stable
       - name: run k8s deployment on the cluster
         run: |
+          echo CRAWLERS_API_KEY=$(uuidgen) > .secrets
           kubectl create namespace "${namespace}"
+          kubectl -n "${namespace}" create secret generic monocle-secrets --from-file=.secrets
           kubectl create --namespace "${namespace}" --filename ./deployment/
       - name: validate components have been deployed successfuly
         run: |
