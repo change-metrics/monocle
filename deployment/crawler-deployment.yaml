@@ -16,7 +16,6 @@ spec:
     type: Recreate
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app.kubernetes.io/name: crawler
         app.kubernetes.io/component: crawler
@@ -24,13 +23,12 @@ spec:
     spec:
       containers:
         - args:
-            - monocle
-            - crawler
+            - bash
+            - -c
+            - "export $(cat /etc/monocle-secrets/.secrets) && monocle crawler"
           env:
-            - name: CONFIG
-              value: /etc/monocle/config.yaml
-            - name: CHANGE_ME
-              value: change-me
+            - name: MONOCLE_PUBLIC_URL
+              value: http://api:8080
           image: quay.io/change-metrics/monocle:latest
           name: crawler
           resources: {}
@@ -43,10 +41,14 @@ spec:
           volumeMounts:
             - mountPath: /etc/monocle
               name: monocle-config-volume
+            - mountPath: /etc/monocle-secrets
+              name: monocle-secret-volume
       restartPolicy: Always
       volumes:
         - name: monocle-config-volume
           configMap:
             defaultMode: 420
             name: monocle-config
-status: {}
+        - name: monocle-secret-volume
+          secret:
+            secretName: monocle-secrets
