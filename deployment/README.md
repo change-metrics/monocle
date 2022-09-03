@@ -38,7 +38,7 @@ You might want to setup an HTTP Ingress instead of the port forward if your clus
 The inital deployment sets an empty config file via a ConfigMap mounted as a volume. To
 amend the configuration we need to:
 
-Create a config.yaml file on your local filesystem. Here is a sample one:
+Create a `config.yaml` file on your local filesystem. Here is a sample one:
 
 ```
 workspaces:
@@ -52,7 +52,7 @@ workspaces:
         update_since: '2022-07-01'
 ```
 
-Then update the ConfigMap with:
+Then update the `monocle-config` ConfigMap with:
 
 ```
 kubectl create configmap monocle-config --from-file config.yaml -o yaml --dry-run=client | kubectl replace -f -
@@ -61,5 +61,21 @@ kubectl create configmap monocle-config --from-file config.yaml -o yaml --dry-ru
 Monocle api and crawler processes will detect the config change and reload the
 configuration automatically.
 
-If a secret needs to set for a crawler, then the monocle-secrets secret resources must be updated
-and the crawler deployment must be re-created.
+If a secret needs to set for a crawler, then the `monocle-secrets` secret resources must be updated
+and the crawler deployment must be re-created. To do so, amend your `.secrets` file to add the new
+environment variable then run:
+
+```
+kubectl create secret generic monocle-secrets --from-file .secrets -o yaml --dry-run=client | kubectl replace -f -
+kubectl delete deployment crawler
+kubectl apply -f deployment/crawler-deployment.yaml
+```
+
+## Run the update-idents janitor
+
+To update author identities, the operator needs to join the Monocle api Pod via kubectl exec:
+
+```
+kubectl exec -it api-9dfb77ddd-5xtvt bash
+monocle janitor update-idents --config /etc/monocle/config.yaml --elastic elastic:9200
+```
