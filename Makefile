@@ -42,6 +42,3 @@ codegen-javascript:
 codegen-openapi:
 	protoc $(PINCLUDE) --openapi_out=./doc/ $(BASEDIR)/http.proto
 	@echo Created doc/openapi.yaml
-
-up-stage:
-	oc -n monocle-stage apply -f deployment/
