@@ -1,4 +1,4 @@
-# Deploy Monocle on K8S
+# Deploy Monocle on k8s
 
 Note that the following procedure must be valid for deploying on OpenShift. For this
 you might want to use the `oc` command instead of `kubectl`.
@@ -21,7 +21,7 @@ kubectl create secret generic monocle-secrets --from-file=.secrets
 Then apply manifests:
 
 ```
-kubectl apply -f deployment/
+kubectl apply -f k8s/
 ```
 
 You can then access the Monocle Web UI by setting a port forward
@@ -68,7 +68,7 @@ environment variable then run:
 ```
 kubectl create secret generic monocle-secrets --from-file .secrets -o yaml --dry-run=client | kubectl replace -f -
 kubectl delete deployment crawler
-kubectl apply -f deployment/crawler-deployment.yaml
+kubectl apply -f k8s/crawler-deployment.yaml
 ```
 
 ## Run the update-idents janitor

@@ -2,7 +2,7 @@ name: k8s deployment validation
 on:
   pull_request:
     paths:
-      - "deployment/*"
+      - "k8s/*"
       - ".github/workflows/k8s.yaml"
 
 jobs:
@@ -14,7 +14,7 @@ jobs:
         uses: vetyy/kubeval-action@master
         with:
           strict: true
-          files: ./deployment
+          files: ./k8s
           ignore_missing_schemas: false
           additional_schema_locations: https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/
 
@@ -35,10 +35,10 @@ jobs:
           echo CRAWLERS_API_KEY=$(uuidgen) > .secrets
           kubectl create namespace "${namespace}"
           kubectl -n "${namespace}" create secret generic monocle-secrets --from-file=.secrets
-          kubectl create --namespace "${namespace}" --filename ./deployment/
+          kubectl create --namespace "${namespace}" --filename ./k8s/
       - name: validate components have been deployed successfuly
         run: |
-          deploy_pod_labels_raw=$(kubectl get --namespace "${namespace}" --filename ./deployment/elastic-deployment.yaml --output go-template='{{ range $k, $v :=.spec.selector.matchLabels }}{{$k}}={{$v}},{{ end }}')
+          deploy_pod_labels_raw=$(kubectl get --namespace "${namespace}" --filename ./k8s/elastic-deployment.yaml --output go-template='{{ range $k, $v :=.spec.selector.matchLabels }}{{$k}}={{$v}},{{ end }}')
           deploy_pod_labels_elastic=$(echo "${deploy_pod_labels_raw}" | rev | cut --delimiter=',' --fields='2-' | rev)
 
           while [[ $(kubectl get po --namespace "${namespace}" --no-headers 2>/dev/null | wc -l) -eq  0 ]]; do
@@ -54,7 +54,7 @@ jobs:
 
       - name: Display indexes
         run: |
-          kubectl port-forward --namespace "${namespace}" $( kubectl get --namespace "${namespace}" -f deployment/elastic-service.yaml --output name) 9200:9200 &
+          kubectl port-forward --namespace "${namespace}" $( kubectl get --namespace "${namespace}" -f k8s/elastic-service.yaml --output name) 9200:9200 &
           sleep 30s
 
           curl -s -I -X GET http://localhost:9200/_cat/indices
@@ -62,14 +62,14 @@ jobs:
           kill %1
       - name: Check api service
         run: |
-          kubectl port-forward --namespace "${namespace}" $( kubectl get --namespace "${namespace}" -f deployment/api-service.yaml --output name) 8080:8080 &
+          kubectl port-forward --namespace "${namespace}" $( kubectl get --namespace "${namespace}" -f k8s/api-service.yaml --output name) 8080:8080 &
           sleep 30s
 
           curl -s --fail -H 'Content-type: application/json' http://localhost:8080/api/2/get_workspaces -d '{}' | grep 'workspaces'
           kill %1
       - name: Check web service to fetch web app
         run: |
-          kubectl port-forward --namespace "${namespace}" $( kubectl get --namespace "${namespace}" -f deployment/api-service.yaml --output name) 8080:8080 &
+          kubectl port-forward --namespace "${namespace}" $( kubectl get --namespace "${namespace}" -f k8s/api-service.yaml --output name) 8080:8080 &
           sleep 30s
 
           curl -s http://localhost:8080/index.html | grep 'window.document.title'
