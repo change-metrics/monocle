@@ -39,7 +39,10 @@ and then how to start the web UI to browse metrics.
 
 The deployment is based on Docker via a docker-compose definition.
 
-Note that you can also [deploy from source code](CONTRIBUTING.md#deploy-from-source-code).
+Alternatively, the following deployment method are supported:
+
+- [deploy on Kubernetes](k8s/README.md)
+- [deploy from source code](CONTRIBUTING.md#deploy-from-source-code)
 
 ### Checkout the code
 
