@@ -214,8 +214,7 @@ the listed repositories. To crawl repositories from a personnal GitHub account, 
 `github_token` might be specified to use an alternate environment variable name to look for the
 token value. Default is "GITHUB_TOKEN"
 
-To crawl privates repositories, either you must use a [GitHub Application](#github-application)
-or you must generate a Personal Access Token with the "repo" scope.
+To crawl privates repositories, you must generate a Personal Access Token with the "repo" scope.
 
 
 A Gerrit provider settings
