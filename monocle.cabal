@@ -93,7 +93,11 @@ common common-options
                        BlockArguments,
                        -- TypeFamilies enables effect dispatch definition
                        TypeFamilies,
-                       PartialTypeSignatures
+                       PartialTypeSignatures,
+                       -- DuplicateRecordFields enables attribute like `id` or `name` without causing a name conflict.
+                       DuplicateRecordFields,
+                       -- OverloadedRecordDot enables accessing attribute with `obj.name` (see Note [Record Dot Syntax])
+                       OverloadedRecordDot
 
 common codegen
   default-language:    Haskell2010
@@ -151,6 +155,7 @@ library
                      , http-types                 >=0.12
                      , json-syntax                >= 0.2
                      , jose                       >= 0.9
+                     , list-t
                      , lens
                      , lens-aeson
                      , lucid                      >= 2.11.1
@@ -244,6 +249,8 @@ library
                      , Lentille
                      , Lentille.GraphQL
                      , Lentille.Bugzilla
+                     , Lentille.Jira
+                     , Lentille.JiraSpec
 
                      , Lentille.GitHub.Types
                      , Lentille.GitHub.Issues

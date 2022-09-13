@@ -8,17 +8,18 @@ module CLI (main) where
 import Control.Concurrent.CGroup qualified
 import Env hiding (Parser, auto, footer)
 import Env qualified
+import Lentille
 import Lentille.Gerrit qualified as G
 import Lentille.GitHub.Organization qualified as GH_ORG
 import Lentille.GitHub.PullRequests qualified as GH_PR
 import Lentille.GitHub.Watching qualified
 import Lentille.GraphQL (newGraphClient)
+import Lentille.Jira qualified as Jira
 import Macroscope.Main (runMacroscope)
 import Monocle.Backend.Janitor qualified as J
 import Monocle.Client (withClient)
 import Monocle.Config qualified as Config
 import Monocle.Env (mkEnv)
-import Monocle.Logging
 import Monocle.Main (ApiConfig (..))
 import Monocle.Main qualified
 import Monocle.Prelude hiding ((:::))
@@ -31,8 +32,7 @@ import Streaming.Prelude qualified as S
 
 import Database.Bloodhound qualified as BH
 import Effectful.Prometheus
-import Lentille (LentilleError)
-import Monocle.Class
+import ListT qualified
 import Monocle.Effects
 
 ---------------------------------------------------------------
@@ -169,6 +169,7 @@ usageLentille =
         <> mkSubCommand "github-projects" "Get projects list" githubProjectsUsage
         <> mkSubCommand "github-changes" "Get changes list" githubChangesUsage
         <> mkSubCommand "github-watching" "Get watched list" githubWatchingUsage
+        <> mkSubCommand "jira-issues" "Get recent issues" jiraIssuesUsage
     )
  where
   gerritChangeUsage = io <$> parser
@@ -219,6 +220,13 @@ usageLentille =
       client <- getGraphClient url secret
       dump limitM $ GH_PR.streamPullRequests client (const Nothing) (toSince since) repo
 
+  jiraIssuesUsage = io <$> parser
+   where
+    parser = (,,,) <$> urlOption <*> secretOption <*> sinceOption <*> jqlOption
+    io (url, secret, since, jql) = runStandaloneStream do
+      let client = getJiraClient url secret
+      dumpListT $ Jira.getIssueBodies client (toSince since) jql
+
   toSince txt = case Monocle.Search.Query.parseDateValue txt of
     Just x -> x
     Nothing -> error $ "Invalid date: " <> show txt
@@ -226,8 +234,10 @@ usageLentille =
     client <- G.getGerritClient url Nothing
     pure $ G.GerritEnv client Nothing (const Nothing) "cli"
   getGraphClient url secret = newGraphClient url (from secret)
+  getJiraClient url token = Jira.newJiraClient url (from token)
 
   urlOption = strOption (long "url" <> O.help "API url, e.g. https://api.github.com/graphql" <> metavar "URL")
+  jqlOption = Jira.JQL <$> strOption (long "jql" <> O.help "Jira query")
   queryOption = strOption (long "query" <> O.help "Gerrit regexp query")
   orgOption = strOption (long "organization" <> O.help "GitHub organization name")
   userOption = strOption (long "user" <> O.help "GitHub user name")
@@ -248,3 +258,11 @@ dump limitM stream = do
   liftIO . putLBSLn =<< exportMetricsAsText
  where
   brk = maybe id S.take limitM
+
+dumpListT :: (IOE :> es, ToJSON a) => ListT (Eff es) a -> Eff es ()
+dumpListT listT = do
+  ListT.uncons listT >>= \case
+    Nothing -> pure ()
+    Just (x, xs) -> do
+      liftIO . putBSLn . from . encodePrettyWithSpace 2 $ x
+      dumpListT xs

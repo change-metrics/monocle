@@ -3,6 +3,7 @@ module Tests (main) where
 
 import Data.Vector qualified as V
 import Lentille.Bugzilla.Spec
+import Lentille.JiraSpec (jiraClientTests)
 import Macroscope.Test (monocleMacroscopeTests)
 import Monocle.Api.Test (mkAppEnv, withTestApi)
 import Monocle.Backend.Test
@@ -55,6 +56,7 @@ main = withOpenSSL do
         [ monocleSearchLanguage
         , monocleConfig
         , bzClientTests
+        , jiraClientTests
         ]
           <> integrationTests
     )

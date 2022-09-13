@@ -481,8 +481,11 @@ newtype instance StaticRep HttpEffect = HttpEffect HttpEnv
 -- | 'runHttpEffect' simply add a Manager to the static rep env.
 runHttpEffect :: IOE :> es => Eff (HttpEffect : es) a -> Eff es a
 runHttpEffect action = do
-  ctx <- liftIO Monocle.Client.mkManager
-  evalStaticRep (HttpEffect ctx) action
+  manager <- liftIO Monocle.Client.mkManager
+  runHttpEffectWithManager manager action
+
+runHttpEffectWithManager :: IOE :> es => HTTP.Manager -> Eff (HttpEffect : es) a -> Eff es a
+runHttpEffectWithManager manager = evalStaticRep (HttpEffect manager)
 
 -- | 'httpRequest' catches http exceptions
 httpRequest ::
