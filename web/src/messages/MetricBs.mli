@@ -54,6 +54,21 @@ val encode_term_count_float : MetricTypes.term_count_float -> Js.Json.t Js.Dict.
 val encode_terms_count_float : MetricTypes.terms_count_float -> Js.Json.t Js.Dict.t
 (** [encode_terms_count_float v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_duration : MetricTypes.duration -> Js.Json.t Js.Dict.t
+(** [encode_duration v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_histo_duration : MetricTypes.histo_duration -> Js.Json.t Js.Dict.t
+(** [encode_histo_duration v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_histo_duration_stat : MetricTypes.histo_duration_stat -> Js.Json.t Js.Dict.t
+(** [encode_histo_duration_stat v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_term_count_duration : MetricTypes.term_count_duration -> Js.Json.t Js.Dict.t
+(** [encode_term_count_duration v dict] encodes [v] int the given JSON [dict] *)
+
+val encode_terms_count_duration : MetricTypes.terms_count_duration -> Js.Json.t Js.Dict.t
+(** [encode_terms_count_duration v dict] encodes [v] int the given JSON [dict] *)
+
 val encode_get_response : MetricTypes.get_response -> Js.Json.t Js.Dict.t
 (** [encode_get_response v dict] encodes [v] int the given JSON [dict] *)
 
@@ -113,6 +128,21 @@ val decode_term_count_float : Js.Json.t Js.Dict.t -> MetricTypes.term_count_floa
 
 val decode_terms_count_float : Js.Json.t Js.Dict.t -> MetricTypes.terms_count_float
 (** [decode_terms_count_float decoder] decodes a [terms_count_float] value from [decoder] *)
+
+val decode_duration : Js.Json.t Js.Dict.t -> MetricTypes.duration
+(** [decode_duration decoder] decodes a [duration] value from [decoder] *)
+
+val decode_histo_duration : Js.Json.t Js.Dict.t -> MetricTypes.histo_duration
+(** [decode_histo_duration decoder] decodes a [histo_duration] value from [decoder] *)
+
+val decode_histo_duration_stat : Js.Json.t Js.Dict.t -> MetricTypes.histo_duration_stat
+(** [decode_histo_duration_stat decoder] decodes a [histo_duration_stat] value from [decoder] *)
+
+val decode_term_count_duration : Js.Json.t Js.Dict.t -> MetricTypes.term_count_duration
+(** [decode_term_count_duration decoder] decodes a [term_count_duration] value from [decoder] *)
+
+val decode_terms_count_duration : Js.Json.t Js.Dict.t -> MetricTypes.terms_count_duration
+(** [decode_terms_count_duration decoder] decodes a [terms_count_duration] value from [decoder] *)
 
 val decode_get_response : Js.Json.t Js.Dict.t -> MetricTypes.get_response
 (** [decode_get_response decoder] decodes a [get_response] value from [decoder] *)

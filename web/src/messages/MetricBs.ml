@@ -154,6 +154,52 @@ let default_terms_count_float_mutable () : terms_count_float_mutable = {
   total_hits = 0l;
 }
 
+type duration_mutable = {
+  mutable value : int32;
+}
+
+let default_duration_mutable () : duration_mutable = {
+  value = 0l;
+}
+
+type histo_duration_mutable = {
+  mutable date : string;
+  mutable count : int32;
+}
+
+let default_histo_duration_mutable () : histo_duration_mutable = {
+  date = "";
+  count = 0l;
+}
+
+type histo_duration_stat_mutable = {
+  mutable histo : MetricTypes.histo_duration list;
+}
+
+let default_histo_duration_stat_mutable () : histo_duration_stat_mutable = {
+  histo = [];
+}
+
+type term_count_duration_mutable = {
+  mutable term : string;
+  mutable count : int32;
+}
+
+let default_term_count_duration_mutable () : term_count_duration_mutable = {
+  term = "";
+  count = 0l;
+}
+
+type terms_count_duration_mutable = {
+  mutable termcount : MetricTypes.term_count_duration list;
+  mutable total_hits : int32;
+}
+
+let default_terms_count_duration_mutable () : terms_count_duration_mutable = {
+  termcount = [];
+  total_hits = 0l;
+}
+
 
 let rec decode_metric_info json =
   let v = default_metric_info_mutable () in
@@ -520,6 +566,110 @@ let rec decode_terms_count_float json =
     MetricTypes.total_hits = v.total_hits;
   } : MetricTypes.terms_count_float)
 
+let rec decode_duration json =
+  let v = default_duration_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "value" -> 
+      let json = Js.Dict.unsafeGet json "value" in
+      v.value <- Pbrt_bs.int32 json "duration" "value"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    MetricTypes.value = v.value;
+  } : MetricTypes.duration)
+
+let rec decode_histo_duration json =
+  let v = default_histo_duration_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "date" -> 
+      let json = Js.Dict.unsafeGet json "date" in
+      v.date <- Pbrt_bs.string json "histo_duration" "date"
+    | "count" -> 
+      let json = Js.Dict.unsafeGet json "count" in
+      v.count <- Pbrt_bs.int32 json "histo_duration" "count"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    MetricTypes.date = v.date;
+    MetricTypes.count = v.count;
+  } : MetricTypes.histo_duration)
+
+let rec decode_histo_duration_stat json =
+  let v = default_histo_duration_stat_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "histo" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "histo" in 
+        Pbrt_bs.array_ a "histo_duration_stat" "histo"
+      in
+      v.histo <- Array.map (fun json -> 
+        (decode_histo_duration (Pbrt_bs.object_ json "histo_duration_stat" "histo"))
+      ) a |> Array.to_list;
+    end
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    MetricTypes.histo = v.histo;
+  } : MetricTypes.histo_duration_stat)
+
+let rec decode_term_count_duration json =
+  let v = default_term_count_duration_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "term" -> 
+      let json = Js.Dict.unsafeGet json "term" in
+      v.term <- Pbrt_bs.string json "term_count_duration" "term"
+    | "count" -> 
+      let json = Js.Dict.unsafeGet json "count" in
+      v.count <- Pbrt_bs.int32 json "term_count_duration" "count"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    MetricTypes.term = v.term;
+    MetricTypes.count = v.count;
+  } : MetricTypes.term_count_duration)
+
+let rec decode_terms_count_duration json =
+  let v = default_terms_count_duration_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "termcount" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "termcount" in 
+        Pbrt_bs.array_ a "terms_count_duration" "termcount"
+      in
+      v.termcount <- Array.map (fun json -> 
+        (decode_term_count_duration (Pbrt_bs.object_ json "terms_count_duration" "termcount"))
+      ) a |> Array.to_list;
+    end
+    | "total_hits" -> 
+      let json = Js.Dict.unsafeGet json "total_hits" in
+      v.total_hits <- Pbrt_bs.int32 json "terms_count_duration" "total_hits"
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    MetricTypes.termcount = v.termcount;
+    MetricTypes.total_hits = v.total_hits;
+  } : MetricTypes.terms_count_duration)
+
 let rec decode_get_response json =
   let keys = Js.Dict.keys json in
   let rec loop = function 
@@ -547,6 +697,15 @@ let rec decode_get_response json =
       | "top_float" -> 
         let json = Js.Dict.unsafeGet json "top_float" in
         (MetricTypes.Top_float ((decode_terms_count_float (Pbrt_bs.object_ json "get_response" "Top_float"))) : MetricTypes.get_response)
+      | "duration_value" -> 
+        let json = Js.Dict.unsafeGet json "duration_value" in
+        (MetricTypes.Duration_value ((decode_duration (Pbrt_bs.object_ json "get_response" "Duration_value"))) : MetricTypes.get_response)
+      | "histo_duration" -> 
+        let json = Js.Dict.unsafeGet json "histo_duration" in
+        (MetricTypes.Histo_duration ((decode_histo_duration_stat (Pbrt_bs.object_ json "get_response" "Histo_duration"))) : MetricTypes.get_response)
+      | "top_duration" -> 
+        let json = Js.Dict.unsafeGet json "top_duration" in
+        (MetricTypes.Top_duration ((decode_terms_count_duration (Pbrt_bs.object_ json "get_response" "Top_duration"))) : MetricTypes.get_response)
       
       | _ -> loop (i - 1)
       end
@@ -751,6 +910,54 @@ let rec encode_terms_count_float (v:MetricTypes.terms_count_float) =
   Js.Dict.set json "total_hits" (Js.Json.number (Int32.to_float v.MetricTypes.total_hits));
   json
 
+let rec encode_duration (v:MetricTypes.duration) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "value" (Js.Json.number (Int32.to_float v.MetricTypes.value));
+  json
+
+let rec encode_histo_duration (v:MetricTypes.histo_duration) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "date" (Js.Json.string v.MetricTypes.date);
+  Js.Dict.set json "count" (Js.Json.number (Int32.to_float v.MetricTypes.count));
+  json
+
+let rec encode_histo_duration_stat (v:MetricTypes.histo_duration_stat) = 
+  let json = Js.Dict.empty () in
+  begin (* histo field *)
+    let (histo':Js.Json.t) =
+      v.MetricTypes.histo
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_histo_duration |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "histo" histo';
+  end;
+  json
+
+let rec encode_term_count_duration (v:MetricTypes.term_count_duration) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "term" (Js.Json.string v.MetricTypes.term);
+  Js.Dict.set json "count" (Js.Json.number (Int32.to_float v.MetricTypes.count));
+  json
+
+let rec encode_terms_count_duration (v:MetricTypes.terms_count_duration) = 
+  let json = Js.Dict.empty () in
+  begin (* termcount field *)
+    let (termcount':Js.Json.t) =
+      v.MetricTypes.termcount
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_term_count_duration |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "termcount" termcount';
+  end;
+  Js.Dict.set json "total_hits" (Js.Json.number (Int32.to_float v.MetricTypes.total_hits));
+  json
+
 let rec encode_get_response (v:MetricTypes.get_response) = 
   let json = Js.Dict.empty () in
   begin match v with
@@ -779,6 +986,21 @@ let rec encode_get_response (v:MetricTypes.get_response) =
     begin (* topFloat field *)
       let json' = encode_terms_count_float v in
       Js.Dict.set json "top_float" (Js.Json.object_ json');
+    end;
+  | MetricTypes.Duration_value v ->
+    begin (* durationValue field *)
+      let json' = encode_duration v in
+      Js.Dict.set json "duration_value" (Js.Json.object_ json');
+    end;
+  | MetricTypes.Histo_duration v ->
+    begin (* histoDuration field *)
+      let json' = encode_histo_duration_stat v in
+      Js.Dict.set json "histo_duration" (Js.Json.object_ json');
+    end;
+  | MetricTypes.Top_duration v ->
+    begin (* topDuration field *)
+      let json' = encode_terms_count_duration v in
+      Js.Dict.set json "top_duration" (Js.Json.object_ json');
     end;
   end;
   json

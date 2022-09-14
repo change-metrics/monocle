@@ -674,7 +674,7 @@ testGetMetrics = withTenantConfig tenant $ do
     resp <- Monocle.Client.Api.metricGet client (mkReq "time_to_merge")
     assertEqual
       "Metric response match"
-      (mkResp . MetricPB.GetResponseResultFloatValue $ 1800)
+      (mkResp . MetricPB.GetResponseResultDurationValue $ MetricPB.Duration 1800)
       resp
 
     -- Get bad metric
