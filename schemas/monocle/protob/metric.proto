@@ -87,6 +87,29 @@ message TermsCountFloat {
   uint32 total_hits = 2;
 }
 
+message Duration {
+  uint32 value = 1;
+}
+
+message HistoDuration {
+  string date = 1;
+  uint32 count = 2;
+}
+
+message HistoDurationStat {
+  repeated HistoDuration histo = 1;
+}
+
+message TermCountDuration {
+  string term = 1;
+  uint32 count = 2;
+}
+
+message TermsCountDuration {
+  repeated TermCountDuration termcount = 1;
+  uint32 total_hits = 2;
+}
+
 message GetResponse {
   oneof result {
     string error = 1;
@@ -96,6 +119,9 @@ message GetResponse {
     HistoFloatStat histo_float = 5;
     TermsCountInt top_int = 6;
     TermsCountFloat top_float = 7;
+    Duration duration_value = 8;
+    HistoDurationStat histo_duration = 9;
+    TermsCountDuration top_duration = 10;
   }
 }
 

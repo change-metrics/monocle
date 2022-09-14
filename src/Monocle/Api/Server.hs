@@ -35,9 +35,7 @@ import Monocle.Protob.Auth qualified as AuthPB
 import Monocle.Protob.Config qualified as ConfigPB
 import Monocle.Protob.Crawler qualified as CrawlerPB
 import Monocle.Protob.Login qualified as LoginPB
-import Monocle.Protob.Metric (GetRequest (getRequestMetric))
 import Monocle.Protob.Metric qualified as MetricPB
-import Monocle.Protob.Search (QueryRequest (queryRequestLimit))
 import Monocle.Protob.Search qualified as SearchPB
 import Monocle.Search.Parser qualified as P
 import Monocle.Search.Query qualified as Q
@@ -725,6 +723,18 @@ instance NumPB Float where
 instance NumPB Word32 where
   toNumResult (Q.Num v) = MetricPB.GetResponse . Just . MetricPB.GetResponseResultIntValue . fromInteger $ toInteger v
 
+instance NumPB Q.Duration where
+  toNumResult (Q.Num v) =
+    MetricPB.GetResponse
+      . Just
+      . MetricPB.GetResponseResultDurationValue
+      . MetricPB.Duration
+      . fromInteger
+      . toInteger
+      $ fromDuration v
+   where
+    fromDuration (Q.Duration value) = value
+
 class Num a => TrendPB a where
   toTrendResult :: V.Vector (Q.Histo a) -> MetricPB.GetResponse
 
@@ -744,6 +754,14 @@ instance TrendPB Word32 where
       . MetricPB.HistoIntStat
       $ Q.toPBHistoInt <$> v
 
+instance TrendPB Q.Duration where
+  toTrendResult v =
+    MetricPB.GetResponse
+      . Just
+      . MetricPB.GetResponseResultHistoDuration
+      . MetricPB.HistoDurationStat
+      $ Q.toPBHistoDuration <$> v
+
 class Num a => TopPB a where
   toTopResult :: Q.TermsCount a -> MetricPB.GetResponse
 
@@ -760,6 +778,13 @@ instance TopPB Float where
       . Just
       . MetricPB.GetResponseResultTopFloat
       $ Q.toPBTermsCountFloat v
+
+instance TopPB Q.Duration where
+  toTopResult v =
+    MetricPB.GetResponse
+      . Just
+      . MetricPB.GetResponseResultTopDuration
+      $ Q.toPBTermsCountDuration v
 
 toTopResultOrFail :: TopPB a => Maybe (Q.TermsCount a) -> MetricPB.GetResponse
 toTopResultOrFail = \case
@@ -805,6 +830,7 @@ metricGet auth request = checkAuth auth response
       "review_authors" -> runMetric Q.metricReviewAuthors
       "comment_authors" -> runMetric Q.metricCommentAuthors
       "change_authors" -> runMetric Q.metricChangeAuthors
+      "change_merged_authors" -> runMetric Q.metricChangeMergedAuthors
       "time_to_merge" -> runMetric Q.metricTimeToMerge
       "time_to_merge_variance" -> runMetric Q.metricTimeToMergeVariance
       "first_review_mean_time" -> runMetric Q.metricFirstReviewMeanTime

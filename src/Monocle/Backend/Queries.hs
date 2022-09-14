@@ -870,8 +870,8 @@ getReviewStats = do
   reviewStatsCommentCount <- Just <$> statCountC
   reviewStatsReviewCount <- Just <$> statCountR
 
-  reviewStatsCommentDelay <- runMetricNum metricFirstCommentMeanTime
-  reviewStatsReviewDelay <- runMetricNum metricFirstReviewMeanTime
+  reviewStatsCommentDelay <- fromDuration <$> runMetricNum metricFirstCommentMeanTime
+  reviewStatsReviewDelay <- fromDuration <$> runMetricNum metricFirstReviewMeanTime
 
   pure $ SearchPB.ReviewStats {..}
  where
@@ -883,6 +883,7 @@ getReviewStats = do
     SearchPB.ReviewCount
       <$> runMetricNum metricCommentAuthors
       <*> runMetricNum metricComments
+  fromDuration (Duration value) = value
 
 -- | changes lifecycle stats
 getLifecycleStats :: QueryMonad m => m SearchPB.LifecycleStats
@@ -898,8 +899,8 @@ getLifecycleStats = do
   created <- wordToCount <$> runMetricNum metricChangesCreated
   changeCreatedAuthor <- runMetricNum metricChangeAuthors
 
-  lifecycleStatsTtmMean <- runMetricNum metricTimeToMerge
-  lifecycleStatsTtmVariability <- runMetricNum metricTimeToMergeVariance
+  lifecycleStatsTtmMean <- fromDuration <$> runMetricNum metricTimeToMerge
+  lifecycleStatsTtmVariability <- fromDuration <$> runMetricNum metricTimeToMergeVariance
   lifecycleStatsUpdatesOfChanges <- runMetricNum metricChangeUpdates
   lifecycleStatsCommitsPerChange <- runMetricNum metricCommitsPerChange
 
@@ -921,6 +922,8 @@ getLifecycleStats = do
     | otherwise = m * countToDeci x / countToDeci y
   ratioF x = fromFixed . ratio 100 x
   ratioN x = fromFixed . ratio 1 x
+  fromDuration :: Duration -> Float
+  fromDuration (Duration value) = fromIntegral value
 
 getActivityStats :: QueryMonad m => m SearchPB.ActivityStats
 getActivityStats = do
@@ -978,6 +981,8 @@ data TermCount a = TermCount
   , tcCount :: a
   }
   deriving (Show, Eq)
+
+newtype Duration = Duration Word32 deriving (Num, FromJSON, ToJSON)
 
 instance Functor TermCount where
   fmap f (TermCount {..}) = TermCount tcTerm (f tcCount)
@@ -1049,6 +1054,25 @@ toPBTermsCountFloat (TermsCount {..}) =
     let termCountFloatCount = tcCount
         termCountFloatTerm = from tcTerm
      in MetricPB.TermCountFloat {..}
+
+toPBHistoDuration :: Histo Duration -> MetricPB.HistoDuration
+toPBHistoDuration (Histo {..}) =
+  let histoDurationDate = from hDate
+      histoDurationCount = getDuration hValue
+   in MetricPB.HistoDuration {..}
+ where
+  getDuration (Duration v) = v
+
+toPBTermsCountDuration :: TermsCount Duration -> MetricPB.TermsCountDuration
+toPBTermsCountDuration (TermsCount {..}) =
+  let termsCountDurationTermcount = fmap toPBTermCountDuration tscData
+      termsCountDurationTotalHits = tscTotalHits
+   in MetricPB.TermsCountDuration {..}
+ where
+  toPBTermCountDuration (TermCount term (Duration count)) =
+    let termCountDurationCount = count
+        termCountDurationTerm = from term
+     in MetricPB.TermCountDuration {..}
 
 runMetricTrendIntPB :: QueryMonad m => Metric m Word32 -> m (V.Vector MetricPB.HistoInt)
 runMetricTrendIntPB m = fmap toPBHistoInt <$> runMetricTrend m Nothing
@@ -1488,7 +1512,7 @@ metricChangeAuthors = Metric mi compute computeTrend computeTop
   qf = QueryFlavor Author CreatedAt
 
 -- | The average duration for an open change to be merged
-metricTimeToMerge :: QueryMonad m => Metric m Float
+metricTimeToMerge :: QueryMonad m => Metric m Duration
 metricTimeToMerge =
   Metric
     ( MetricInfo
@@ -1503,12 +1527,12 @@ metricTimeToMerge =
     topNotSupported
  where
   compute =
-    double2Float
+    Duration . truncate . double2Float
       <$> withFilter (changeState EChangeMerged) (averageDuration $ QueryFlavor Author CreatedAt)
   computeTrend = flip monoHisto compute
 
 -- | The variance of the duration for an open change to be merged
-metricTimeToMergeVariance :: QueryMonad m => Metric m Float
+metricTimeToMergeVariance :: QueryMonad m => Metric m Duration
 metricTimeToMergeVariance =
   Metric
     ( MetricInfo
@@ -1523,12 +1547,12 @@ metricTimeToMergeVariance =
     topNotSupported
  where
   compute =
-    double2Float
+    Duration . truncate . double2Float
       <$> withFilter (changeState EChangeMerged) (medianDeviationDuration $ QueryFlavor Author CreatedAt)
   computeTrend = flip monoHisto compute
 
 -- | The average duration until a change gets a first review event
-metricFirstReviewMeanTime :: QueryMonad m => Metric m Word32
+metricFirstReviewMeanTime :: QueryMonad m => Metric m Duration
 metricFirstReviewMeanTime =
   Metric
     ( MetricInfo
@@ -1543,13 +1567,13 @@ metricFirstReviewMeanTime =
     topNotSupported
  where
   compute =
-    firstEventAverageDuration
+    Duration . firstEventAverageDuration
       <$> withEvents [documentType EChangeReviewedEvent] (withFlavor' firstEventOnChanges)
   withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
   computeTrend = flip monoHisto compute
 
 -- | The average delay until a change gets a comment event
-metricFirstCommentMeanTime :: QueryMonad m => Metric m Word32
+metricFirstCommentMeanTime :: QueryMonad m => Metric m Duration
 metricFirstCommentMeanTime =
   Metric
     ( MetricInfo
@@ -1564,7 +1588,7 @@ metricFirstCommentMeanTime =
     topNotSupported
  where
   compute =
-    firstEventAverageDuration
+    Duration . firstEventAverageDuration
       <$> withEvents [documentType EChangeCommentedEvent] (withFlavor' firstEventOnChanges)
   withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
   computeTrend = flip monoHisto compute

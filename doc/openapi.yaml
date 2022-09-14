@@ -726,6 +726,11 @@ components:
             properties:
                 void:
                     type: string
+        monocle_metric_Duration:
+            properties:
+                value:
+                    type: integer
+                    format: uint32
         monocle_metric_GetRequest:
             properties:
                 index:
@@ -760,6 +765,25 @@ components:
                     $ref: '#/components/schemas/monocle_metric_TermsCountInt'
                 top_float:
                     $ref: '#/components/schemas/monocle_metric_TermsCountFloat'
+                duration_value:
+                    $ref: '#/components/schemas/monocle_metric_Duration'
+                histo_duration:
+                    $ref: '#/components/schemas/monocle_metric_HistoDurationStat'
+                top_duration:
+                    $ref: '#/components/schemas/monocle_metric_TermsCountDuration'
+        monocle_metric_HistoDuration:
+            properties:
+                date:
+                    type: string
+                count:
+                    type: integer
+                    format: uint32
+        monocle_metric_HistoDurationStat:
+            properties:
+                histo:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_metric_HistoDuration'
         monocle_metric_HistoFloat:
             properties:
                 date:
@@ -816,6 +840,13 @@ components:
                     type: string
                 metric:
                     type: string
+        monocle_metric_TermCountDuration:
+            properties:
+                term:
+                    type: string
+                count:
+                    type: integer
+                    format: uint32
         monocle_metric_TermCountFloat:
             properties:
                 term:
@@ -828,6 +859,15 @@ components:
                 term:
                     type: string
                 count:
+                    type: integer
+                    format: uint32
+        monocle_metric_TermsCountDuration:
+            properties:
+                termcount:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_metric_TermCountDuration'
+                total_hits:
                     type: integer
                     format: uint32
         monocle_metric_TermsCountFloat:

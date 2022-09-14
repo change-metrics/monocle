@@ -83,6 +83,29 @@ type terms_count_float = {
   total_hits : int32;
 }
 
+type duration = {
+  value : int32;
+}
+
+type histo_duration = {
+  date : string;
+  count : int32;
+}
+
+type histo_duration_stat = {
+  histo : histo_duration list;
+}
+
+type term_count_duration = {
+  term : string;
+  count : int32;
+}
+
+type terms_count_duration = {
+  termcount : term_count_duration list;
+  total_hits : int32;
+}
+
 type get_response =
   | Error of string
   | Float_value of float
@@ -91,6 +114,9 @@ type get_response =
   | Histo_float of histo_float_stat
   | Top_int of terms_count_int
   | Top_float of terms_count_float
+  | Duration_value of duration
+  | Histo_duration of histo_duration_stat
+  | Top_duration of terms_count_duration
 
 type info_response =
   | Error of string
@@ -216,6 +242,42 @@ let rec default_terms_count_float
   ?termcount:((termcount:term_count_float list) = [])
   ?total_hits:((total_hits:int32) = 0l)
   () : terms_count_float  = {
+  termcount;
+  total_hits;
+}
+
+let rec default_duration 
+  ?value:((value:int32) = 0l)
+  () : duration  = {
+  value;
+}
+
+let rec default_histo_duration 
+  ?date:((date:string) = "")
+  ?count:((count:int32) = 0l)
+  () : histo_duration  = {
+  date;
+  count;
+}
+
+let rec default_histo_duration_stat 
+  ?histo:((histo:histo_duration list) = [])
+  () : histo_duration_stat  = {
+  histo;
+}
+
+let rec default_term_count_duration 
+  ?term:((term:string) = "")
+  ?count:((count:int32) = 0l)
+  () : term_count_duration  = {
+  term;
+  count;
+}
+
+let rec default_terms_count_duration 
+  ?termcount:((termcount:term_count_duration list) = [])
+  ?total_hits:((total_hits:int32) = 0l)
+  () : terms_count_duration  = {
   termcount;
   total_hits;
 }
