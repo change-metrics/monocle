@@ -3,6 +3,7 @@ module Monocle.Logging where
 
 import Data.Text qualified as T
 import Monocle.Config qualified as Config
+import Monocle.Entity
 import Monocle.Prelude
 import Monocle.Protob.Search (QueryRequest_QueryType (..))
 import Monocle.Search.Query qualified as Q
@@ -15,24 +16,6 @@ data LogCrawlerContext = LogCrawlerContext
 
 noContext :: LogCrawlerContext
 noContext = LogCrawlerContext "<direct>" "CLI" Nothing
-
-data Entity = Project Text | Organization Text | TaskDataEntity Text
-  deriving (Eq, Show)
-
-instance From Entity Text where
-  from = \case
-    Project _ -> "project"
-    Organization _ -> "organization"
-    TaskDataEntity _ -> "taskdata"
-
-instance From Entity LText where
-  from = via @Text
-
-getEntityName :: Entity -> Text
-getEntityName = \case
-  Project n -> n
-  Organization n -> n
-  TaskDataEntity n -> n
 
 data LogEvent
   = LogMacroStart

@@ -15,11 +15,6 @@ module Macroscope.Worker (
 import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Lentille
-import Monocle.Backend.Index (
-  entityRequestOrganization,
-  entityRequestProject,
-  entityRequestTaskData,
- )
 import Monocle.Prelude
 import Monocle.Protob.Change (Change, ChangeEvent)
 import Monocle.Protob.Crawler
@@ -244,7 +239,7 @@ runStream' startTime apiKey indexName crawlerName documentStream = drainEntities
         ( CommitInfoRequest
             indexName
             crawlerName
-            (Just $ Entity $ Just entityType)
+            (toPBEnum entityType)
             offset
         )
     case resp of
@@ -254,9 +249,9 @@ runStream' startTime apiKey indexName crawlerName documentStream = drainEntities
    where
     -- The type of the oldest entity for a given document stream
     entityType = case documentStream of
-      Projects _ -> entityRequestOrganization
-      Changes _ -> entityRequestProject
-      TaskDatas _ -> entityRequestTaskData
+      Projects _ -> EntityTypeENTITY_TYPE_ORGANIZATION
+      Changes _ -> EntityTypeENTITY_TYPE_PROJECT
+      TaskDatas _ -> EntityTypeENTITY_TYPE_TASK_DATA
 
   addDoc :: MonadCrawlerE m => OldestEntity -> [DocumentType] -> m AddDocResponse
   addDoc entity xs = do

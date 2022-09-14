@@ -9,7 +9,8 @@ import Data.Morpheus.Client
 import Lentille (LogAuthor (Macroscope), MonadGraphQLE)
 import Lentille.GitHub.RateLimit (getRateLimit, retryCheck)
 import Lentille.GraphQL
-import Monocle.Logging (Entity (Organization), LogCrawlerContext)
+import Monocle.Entity (Entity (Organization))
+import Monocle.Logging (LogCrawlerContext)
 import Monocle.Prelude
 import Monocle.Protob.Crawler (Project (..))
 

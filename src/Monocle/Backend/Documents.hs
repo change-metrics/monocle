@@ -13,12 +13,14 @@
 -- This module provides From instance to help converting the data types.
 module Monocle.Backend.Documents where
 
-import Data.Aeson (Value (String), defaultOptions, genericParseJSON, genericToJSON, withText)
+import Data.Aeson (Value (String), defaultOptions, genericParseJSON, genericToJSON, object, withObject, withText, (.:))
 import Data.Aeson.Casing (aesonPrefix, snakeCase)
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import Data.Vector qualified as V
+import Monocle.Entity
 import Monocle.Prelude
 import Monocle.Protob.Change qualified as ChangePB
+import Monocle.Protob.Crawler qualified as CrawlerPB
 import Monocle.Protob.Search qualified as SearchPB
 
 data Author = Author
@@ -487,18 +489,45 @@ instance From EChangeEvent SearchPB.ChangeEvent where
      in SearchPB.ChangeEvent {..}
 
 data ECrawlerMetadataObject = ECrawlerMetadataObject
-  { ecmCrawlerName :: LText
-  , ecmCrawlerType :: LText
-  , ecmCrawlerTypeValue :: LText
+  { ecmCrawlerName :: Text
+  , ecmCrawlerEntity :: Entity
   , ecmLastCommitAt :: UTCTime
   }
   deriving (Show, Eq, Generic)
 
+-- Note: [Crawler Metadata]
+--
+-- A better name for "crawler_type" and "crawler_type_value" is
+-- "entity_type" and "entity_value". Though changing the names requires a data
+-- migration procedure. Moreover, these names are not exposed,
+-- only the matching Monocle.Entity value is available.
 instance ToJSON ECrawlerMetadataObject where
-  toJSON = genericToJSON $ aesonPrefix snakeCase
+  toJSON e =
+    object
+      [ ("crawler_name", toJSON (ecmCrawlerName e))
+      , ("last_commit_at", toJSON (ecmLastCommitAt e))
+      , ("crawler_type", String (entityTypeName (from $ ecmCrawlerEntity e)))
+      , ("crawler_type_value", String entityValue)
+      ]
+   where
+    -- WARNING: don't forget to update the FromJSON implementation below when changing the entity document encoding
+    entityValue = case ecmCrawlerEntity e of
+      Organization n -> n
+      Project n -> n
+      TaskDataEntity n -> n
 
 instance FromJSON ECrawlerMetadataObject where
-  parseJSON = genericParseJSON $ aesonPrefix snakeCase
+  parseJSON = withObject "CrawlerMetadataObject" $ \v -> do
+    ecmCrawlerName <- v .: "crawler_name"
+    ecmLastCommitAt <- v .: "last_commit_at"
+    (etype :: Text) <- v .: "crawler_type"
+    evalue <- v .: "crawler_type_value"
+    ecmCrawlerEntity <- case etype of
+      "organization" -> pure $ Organization evalue
+      "project" -> pure $ Project evalue
+      "taskdata" -> pure $ TaskDataEntity evalue
+      _ -> fail $ "Unknown crawler entity type name: " <> from etype
+    pure ECrawlerMetadataObject {..}
 
 newtype ECrawlerMetadata = ECrawlerMetadata
   { ecmCrawlerMetadata :: ECrawlerMetadataObject
@@ -510,3 +539,9 @@ instance ToJSON ECrawlerMetadata where
 
 instance FromJSON ECrawlerMetadata where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
+
+-- TODO: rename OldestEntity into crawler-metadata
+instance From ECrawlerMetadataObject CrawlerPB.CommitInfoResponse_OldestEntity where
+  from ecm = CrawlerPB.CommitInfoResponse_OldestEntity (Just (from $ ecmCrawlerEntity ecm)) (Just ts)
+   where
+    ts = from (ecmLastCommitAt ecm)

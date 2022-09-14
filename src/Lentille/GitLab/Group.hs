@@ -13,7 +13,8 @@ import Data.Time.Clock
 import Lentille
 import Lentille.GitLab.Adapter
 import Lentille.GraphQL
-import Monocle.Logging (Entity (Organization), LogCrawlerContext, noContext)
+import Monocle.Entity (Entity (Organization))
+import Monocle.Logging (LogCrawlerContext, noContext)
 import Monocle.Prelude hiding (break)
 import Monocle.Protob.Crawler (Project (..))
 import Streaming.Prelude qualified as S

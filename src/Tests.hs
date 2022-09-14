@@ -21,6 +21,7 @@ import Monocle.Protob.Config (
   GroupDefinition (GroupDefinition),
  )
 import Monocle.Protob.Crawler
+import Monocle.Protob.Crawler qualified as CrawlerPB
 import Monocle.Search.Lexer qualified as L
 import Monocle.Search.Parser qualified as P
 import Monocle.Search.Query qualified as Q
@@ -229,7 +230,7 @@ monocleApiTests =
     mkReq wsName offset =
       let commitInfoRequestIndex = from wsName
           commitInfoRequestCrawler = from crawlerName
-          commitInfoRequestEntity = Just . Entity . Just $ EntityEntityProjectName ""
+          commitInfoRequestEntity = toPBEnum CrawlerPB.EntityTypeENTITY_TYPE_PROJECT
           commitInfoRequestOffset = offset
        in CommitInfoRequest {..}
     makeFakeWS wsName repositories =

@@ -192,6 +192,7 @@ library
                      , Tests
 
                      -- monocle api
+                     , Monocle.Entity
                      , Monocle.Main
                      , Monocle.Api.Server
                      , Monocle.Api.Test

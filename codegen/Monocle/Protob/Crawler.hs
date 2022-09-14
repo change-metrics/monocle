@@ -176,6 +176,58 @@ data EntityEntity
 instance HsProtobuf.Named EntityEntity where
   nameOf _ = (Hs.fromString "EntityEntity")
 
+data EntityType
+  = EntityTypeENTITY_TYPE_ORGANIZATION
+  | EntityTypeENTITY_TYPE_PROJECT
+  | EntityTypeENTITY_TYPE_TASK_DATA
+  deriving (Hs.Show, Hs.Eq, Hs.Generic, Hs.NFData)
+
+instance HsProtobuf.Named EntityType where
+  nameOf _ = (Hs.fromString "EntityType")
+
+instance HsProtobuf.HasDefault EntityType
+
+instance Hs.Bounded EntityType where
+  minBound = EntityTypeENTITY_TYPE_ORGANIZATION
+  maxBound = EntityTypeENTITY_TYPE_TASK_DATA
+
+instance Hs.Ord EntityType where
+  compare x y =
+    Hs.compare
+      (HsProtobuf.fromProtoEnum x)
+      (HsProtobuf.fromProtoEnum y)
+
+instance HsProtobuf.ProtoEnum EntityType where
+  toProtoEnumMay 0 = Hs.Just EntityTypeENTITY_TYPE_ORGANIZATION
+  toProtoEnumMay 1 = Hs.Just EntityTypeENTITY_TYPE_PROJECT
+  toProtoEnumMay 2 = Hs.Just EntityTypeENTITY_TYPE_TASK_DATA
+  toProtoEnumMay _ = Hs.Nothing
+  fromProtoEnum (EntityTypeENTITY_TYPE_ORGANIZATION) = 0
+  fromProtoEnum (EntityTypeENTITY_TYPE_PROJECT) = 1
+  fromProtoEnum (EntityTypeENTITY_TYPE_TASK_DATA) = 2
+
+instance HsJSONPB.ToJSONPB EntityType where
+  toJSONPB x _ = HsJSONPB.enumFieldString x
+  toEncodingPB x _ = HsJSONPB.enumFieldEncoding x
+
+instance HsJSONPB.FromJSONPB EntityType where
+  parseJSONPB (HsJSONPB.String "ENTITY_TYPE_ORGANIZATION") =
+    Hs.pure EntityTypeENTITY_TYPE_ORGANIZATION
+  parseJSONPB (HsJSONPB.String "ENTITY_TYPE_PROJECT") =
+    Hs.pure EntityTypeENTITY_TYPE_PROJECT
+  parseJSONPB (HsJSONPB.String "ENTITY_TYPE_TASK_DATA") =
+    Hs.pure EntityTypeENTITY_TYPE_TASK_DATA
+  parseJSONPB v = (HsJSONPB.typeMismatch "EntityType" v)
+
+instance HsJSONPB.ToJSON EntityType where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON EntityType where
+  parseJSON = HsJSONPB.parseJSONPB
+
+instance HsProtobuf.Finite EntityType
+
 data AddDocRequest = AddDocRequest
   { addDocRequestIndex :: Hs.Text
   , addDocRequestCrawler :: Hs.Text
@@ -979,7 +1031,7 @@ data CommitInfoRequest = CommitInfoRequest
       Hs.Text
   , commitInfoRequestCrawler :: Hs.Text
   , commitInfoRequestEntity ::
-      Hs.Maybe Monocle.Protob.Crawler.Entity
+      HsProtobuf.Enumerated Monocle.Protob.Crawler.EntityType
   , commitInfoRequestOffset :: Hs.Word32
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
@@ -1009,10 +1061,7 @@ instance HsProtobuf.Message CommitInfoRequest where
             )
           , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 3)
-                ( Hs.coerce @(Hs.Maybe Monocle.Protob.Crawler.Entity)
-                    @(HsProtobuf.Nested Monocle.Protob.Crawler.Entity)
-                    commitInfoRequestEntity
-                )
+                commitInfoRequestEntity
             )
           , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 4)
@@ -1030,12 +1079,9 @@ instance HsProtobuf.Message CommitInfoRequest where
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 2)
           )
-      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Protob.Crawler.Entity))
-              @(_ (Hs.Maybe Monocle.Protob.Crawler.Entity))
-              ( HsProtobuf.at
-                  HsProtobuf.decodeMessageField
-                  (HsProtobuf.FieldNumber 3)
-              )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 3)
           )
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
@@ -1058,7 +1104,9 @@ instance HsProtobuf.Message CommitInfoRequest where
       )
     , ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 3)
-          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Entity")))
+          ( HsProtobuf.Prim
+              (HsProtobuf.Named (HsProtobuf.Single "EntityType"))
+          )
           (HsProtobuf.Single "entity")
           []
           ""

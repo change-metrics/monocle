@@ -159,6 +159,7 @@ module Monocle.Prelude (
 
   -- * proto3
   fromPBEnum,
+  toPBEnum,
 
   -- * prometheus re-exports
   Prometheus.MonadMonitor (..),
@@ -290,7 +291,7 @@ encodePretty :: ToJSON a => a -> LByteString
 encodePretty = encodePrettyWithSpace 0
 
 -- | A lifted version of assertEqual
-assertEqual' :: (Eq a, Show a, MonadIO m) => String -> a -> a -> m ()
+assertEqual' :: HasCallStack => (Eq a, Show a, MonadIO m) => String -> a -> a -> m ()
 assertEqual' n a b = liftIO $ assertEqual n a b
 
 encodePrettyWithSpace :: ToJSON a => Int -> a -> LByteString
@@ -477,6 +478,9 @@ fromPBEnum :: Enumerated a -> a
 fromPBEnum (Enumerated (Left x)) = error $ "Unknown enum value: " <> show x
 fromPBEnum (Enumerated (Right x)) = x
 
+toPBEnum :: a -> Enumerated a
+toPBEnum = Enumerated . Right
+
 -------------------------------------------------------------------------------
 -- Streaming helpers
 
@@ -569,3 +573,6 @@ data AnyJSON = AnyJSON
 
 instance FromJSON AnyJSON where
   parseJSON _ = pure AnyJSON
+
+instance From Text Value where
+  from = String

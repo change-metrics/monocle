@@ -17,7 +17,8 @@ import Google.Protobuf.Timestamp qualified as T
 import Lentille
 import Lentille.GitLab.Adapter
 import Lentille.GraphQL
-import Monocle.Logging (Entity (Project), LogCrawlerContext, noContext)
+import Monocle.Entity
+import Monocle.Logging (LogCrawlerContext, noContext)
 import Monocle.Prelude hiding (id, state)
 import Monocle.Protob.Change
 import Streaming.Prelude qualified as S

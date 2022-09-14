@@ -34,7 +34,7 @@ import Lentille.GraphQL
 import Macroscope.Worker (DocumentStream (..), runStream)
 import Monocle.Client
 import Monocle.Config qualified as Config
-import Monocle.Logging (Entity)
+import Monocle.Entity (Entity)
 import Monocle.Prelude
 import Network.HTTP.Types.Status qualified as HTTP
 import Network.Wai qualified as Wai

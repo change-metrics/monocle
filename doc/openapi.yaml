@@ -668,10 +668,13 @@ components:
                 crawler:
                     type: string
                 entity:
-                    $ref: '#/components/schemas/monocle_crawler_Entity'
+                    type: integer
+                    description: The type of the entity to get the last update date from
+                    format: enum
                 offset:
                     type: integer
                     format: uint32
+            description: Crawler request to get the last update date for a given entity
         monocle_crawler_CommitInfoResponse:
             properties:
                 error:

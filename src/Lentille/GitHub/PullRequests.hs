@@ -14,7 +14,7 @@ import Google.Protobuf.Timestamp qualified as T
 import Lentille
 import Lentille.GitHub.RateLimit (getRateLimit, retryCheck)
 import Lentille.GraphQL
-import Monocle.Logging
+import Monocle.Entity
 import Monocle.Prelude hiding (id, state)
 import Monocle.Protob.Change
 import Proto3.Suite (Enumerated (Enumerated))

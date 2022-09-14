@@ -14,13 +14,14 @@ import Data.Aeson.Casing (aesonPrefix, snakeCase)
 import Data.Text qualified as T
 import Database.Bloodhound qualified as BH
 import Monocle.Backend.Documents as D
-import Monocle.Backend.Index (crawlerMDQuery, getCrawlerTypeAsText)
+import Monocle.Backend.Index (crawlerMDQuery)
 import Monocle.Backend.Index qualified as I
 import Monocle.Backend.Queries as Q
 import Monocle.Config qualified as Config
+import Monocle.Entity (Entity (Project), entityTypeName)
 import Monocle.Env
 import Monocle.Prelude
-import Monocle.Protob.Crawler (EntityEntity (EntityEntityProjectName))
+import Monocle.Protob.Crawler qualified as CrawlerPB
 import Streaming.Prelude qualified as Streaming
 
 updateAuthor :: Config.Index -> D.Author -> D.Author
@@ -200,15 +201,17 @@ wipeCrawlerData crawlerName = do
   getProjectsCrawler :: QueryM [Text]
   getProjectsCrawler = do
     projectCrawlerMDs <- withQuery sQuery Q.scanSearchSimple
-    pure $ from . getValue <$> projectCrawlerMDs
+    pure $ mapMaybe getValue projectCrawlerMDs
    where
     sQuery =
       mkQuery
         [ mkTerm "crawler_metadata.crawler_name" crawlerName
         , mkTerm "crawler_metadata.crawler_type" "project"
         ]
-    getValue :: ECrawlerMetadata -> LText
-    getValue (ECrawlerMetadata ECrawlerMetadataObject {..}) = ecmCrawlerTypeValue
+    getValue :: ECrawlerMetadata -> Maybe Text
+    getValue (ECrawlerMetadata ECrawlerMetadataObject {ecmCrawlerEntity}) = case ecmCrawlerEntity of
+      Project n -> Just n
+      _ -> Nothing
   deleteDocsByRepoName :: Text -> QueryM ()
   deleteDocsByRepoName fullname = do
     logText $ "Deleting " <> fullname <> " ..."
@@ -288,11 +291,11 @@ removeTDCrawlerData crawlerName = do
         ]
 
 removeProjectMD :: Text -> QueryM ()
-removeProjectMD = removeMD (EntityEntityProjectName "")
+removeProjectMD = removeMD CrawlerPB.EntityTypeENTITY_TYPE_PROJECT
 
-removeMD :: EntityEntity -> Text -> QueryM ()
+removeMD :: CrawlerPB.EntityType -> Text -> QueryM ()
 removeMD entity crawlerName = do
-  logText $ "Will delete " <> getCrawlerTypeAsText entity <> " crawler metadata for " <> crawlerName
+  logText $ "Will delete " <> entityTypeName entity <> " crawler metadata for " <> crawlerName
   index <- getIndexName
   deletedCount <-
     withFilter [crawlerMDQuery entity crawlerName] $
