@@ -12,9 +12,9 @@ import Monocle.Backend.Queries qualified as Q
 import Monocle.Backend.Test qualified as BT (fakeChange, fakeDate, fakeDateAlt)
 import Monocle.Client
 import Monocle.Config qualified as Config
+import Monocle.Entity (CrawlerName (..))
 import Monocle.Env
 import Monocle.Prelude
-import Monocle.Entity (CrawlerName (..))
 import Streaming.Prelude qualified as Streaming
 import Test.Tasty
 import Test.Tasty.HUnit
