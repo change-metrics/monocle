@@ -149,6 +149,8 @@ firefox http://localhost:13000
 
 If the command fails with `Error: package bs-parse not found or built`, you can try running this command: `rm -Rf web/lib web/node_modules`
 
+If the API is not running locally, sets the `MONOCLE_PUBLIC_URL=http://monocle-api:8080` environment before running `monocle-web-start`
+
 #### API
 
 ```ShellSession

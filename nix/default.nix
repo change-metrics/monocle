@@ -306,7 +306,11 @@ in rec {
     fi
 
     export WEB_PORT=${toString web-port}
-    export REACT_APP_API_URL=http://localhost:${toString monocle-port}
+    if [ "$MONOCLE_PUBLIC_URL" -eq "" ]; then
+      export REACT_APP_API_URL="http://localhost:${toString monocle-port}"
+    else
+      export REACT_APP_API_URL=$MONOCLE_PUBLIC_URL
+    fi
     export REACT_APP_TITLE="Monocle Dev"
     exec ${pkgs.nodejs}/bin/npm start
   '';
