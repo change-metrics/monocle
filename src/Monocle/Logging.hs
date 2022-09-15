@@ -29,8 +29,8 @@ data LogEvent
   | LogMacroRequestOldestEntity LogCrawlerContext Text
   | LogMacroGotOldestEntity LogCrawlerContext Entity UTCTime
   | LogMacroNoOldestEnity LogCrawlerContext
-  | LogMacroEnded LogCrawlerContext
-  | LogMacroCommitFailed LogCrawlerContext
+  | LogMacroEnded LogCrawlerContext Entity UTCTime
+  | LogMacroCommitFailed LogCrawlerContext Text
   | LogMacroPostDataFailed LogCrawlerContext [Text]
   | LogMacroStreamError LogCrawlerContext Text
   | LogMacroGroupStart Text
@@ -68,8 +68,8 @@ instance From LogEvent Text where
     LogMacroGotOldestEntity lc entity date ->
       prefix lc <> " - Got entity: " <> show entity <> " last updated at " <> show date
     LogMacroNoOldestEnity lc -> prefix lc <> " - Unable to find entity to update"
-    LogMacroEnded lc -> prefix lc <> " - Crawling entities completed"
-    LogMacroCommitFailed lc -> prefix lc <> " - Commit date failed"
+    LogMacroEnded lc entity date -> prefix lc <> " - Crawling entities completed, oldest " <> show entity <> " last updated at " <> show date
+    LogMacroCommitFailed lc msg -> prefix lc <> " - Commit date failed: " <> msg
     LogMacroPostDataFailed lc errors -> prefix lc <> " - Post documents failed: " <> T.intercalate " | " errors
     LogMacroStreamError lc error' -> prefix lc <> " - Error occured when consuming the document stream: " <> error'
     LogNetworkFailure msg -> "Network error: " <> msg

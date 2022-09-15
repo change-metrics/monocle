@@ -55,7 +55,6 @@ isTDStream = \case
 -------------------------------------------------------------------------------
 -- Adapter between protobuf api and crawler stream
 -------------------------------------------------------------------------------
-
 type ApiKey = LText
 
 type IndexName = LText
@@ -142,14 +141,14 @@ runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream =
     oldestEntityM <- retryHttp $ getStreamOldestEntity indexName (from crawlerName) (streamEntity documentStream) offset
     case oldestEntityM of
       Nothing -> wLog $ LogMacroNoOldestEnity lc
-      Just (oldestAge, entity) -> do
-        let processLogFunc c = Log Macroscope $ LogMacroPostData lc entity c
-        wLog $ LogMacroGotOldestEntity lc entity oldestAge
+      Just (oldestAge, entity)
+        | -- add a 1 second delta to avoid Hysteresis
+          addUTCTime 1 oldestAge >= startTime ->
+            wLog $ LogMacroEnded lc entity oldestAge
+        | otherwise -> do
+            let processLogFunc c = Log Macroscope $ LogMacroPostData lc entity c
+            wLog $ LogMacroGotOldestEntity lc entity oldestAge
 
-        -- add a 1 second delta to avoid Hysteresis
-        if addUTCTime 1 oldestAge >= startTime
-          then wLog $ LogMacroEnded lc
-          else do
             -- Run the document stream for that entity
             postResult <-
               process
@@ -160,11 +159,12 @@ runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream =
               [] -> do
                 -- Post the commit date
                 res <- retryHttp $ commitTimestamp entity
-                if not res
-                  then wLog $ LogMacroCommitFailed lc
-                  else do
+                case res of
+                  Nothing -> do
                     wLog $ LogMacroContinue lc
                     drainEntities offset
+                  Just err -> do
+                    wLog $ LogMacroCommitFailed lc err
               xs -> wLog $ LogMacroPostDataFailed lc xs
 
   handleStreamError offset err = do
@@ -237,14 +237,10 @@ runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream =
             (Just $ from entity)
             (Just $ Timestamp.fromUTCTime startTime)
         )
-    case commitResp of
-      (CommitResponse (Just (CommitResponseResultTimestamp _))) -> pure True
-      (CommitResponse (Just (CommitResponseResultError err))) -> do
-        logRaw ("Commit failed: " <> show err)
-        pure False
-      _ -> do
-        logRaw "Empty commit response"
-        pure False
+    pure $ case commitResp of
+      (CommitResponse (Just (CommitResponseResultTimestamp _))) -> Nothing
+      (CommitResponse (Just (CommitResponseResultError err))) -> Just (show err)
+      _ -> Just "Empty commit response"
 
 -- | Adapt the API response
 getStreamOldestEntity ::
