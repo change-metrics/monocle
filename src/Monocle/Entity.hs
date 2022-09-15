@@ -1,12 +1,20 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Monocle.Entity (
   CrawlerName (..),
   Entity (..),
   entityTypeName,
   entityDocID,
+
+  -- * prims
+  _Project,
+  _Organization,
+  _TaskDataEntity,
 ) where
 
 import Data.Text qualified
 
+import Control.Lens (makePrisms)
 import Database.Bloodhound qualified as BH
 import Monocle.Prelude
 import Monocle.Protob.Crawler qualified as CrawlerPB
@@ -17,6 +25,8 @@ data Entity
   | Organization Text
   | TaskDataEntity Text
   deriving (Eq, Show)
+
+makePrisms ''Entity
 
 newtype CrawlerName = CrawlerName Text
 
@@ -45,6 +55,14 @@ instance From Entity CrawlerPB.Entity where
       Project n -> CrawlerPB.EntityEntityProjectName (from n)
       Organization n -> CrawlerPB.EntityEntityOrganizationName (from n)
       TaskDataEntity n -> CrawlerPB.EntityEntityTdName (from n)
+
+instance From CrawlerPB.Entity Entity where
+  from = \case
+    CrawlerPB.Entity (Just pbe) -> case pbe of
+      CrawlerPB.EntityEntityProjectName n -> Project (from n)
+      CrawlerPB.EntityEntityOrganizationName n -> Organization (from n)
+      CrawlerPB.EntityEntityTdName n -> TaskDataEntity (from n)
+    CrawlerPB.Entity Nothing -> error "Missing CrawlerPB.Entity value"
 
 instance From Entity CrawlerPB.EntityType where
   from = \case

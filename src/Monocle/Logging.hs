@@ -25,9 +25,9 @@ data LogEvent
   | LogMacroContinue LogCrawlerContext
   | LogMacroSkipCrawler LogCrawlerContext Text
   | LogMacroStartCrawler LogCrawlerContext
-  | LogMacroPostData LogCrawlerContext Text Int
+  | LogMacroPostData LogCrawlerContext Entity Int
   | LogMacroRequestOldestEntity LogCrawlerContext Text
-  | LogMacroGotOldestEntity LogCrawlerContext (Text, Text) UTCTime
+  | LogMacroGotOldestEntity LogCrawlerContext Entity UTCTime
   | LogMacroNoOldestEnity LogCrawlerContext
   | LogMacroEnded LogCrawlerContext
   | LogMacroCommitFailed LogCrawlerContext
@@ -63,10 +63,10 @@ instance From LogEvent Text where
     LogMacroContinue lc -> prefix lc <> " - Continuing on next entity"
     LogMacroSkipCrawler lc err -> prefix lc <> " - Skipping due to an unexpected exception catched: " <> err
     LogMacroStartCrawler lc -> prefix lc <> " - Start crawling entities"
-    LogMacroPostData lc eName count -> prefix lc <> " - Posting " <> show count <> " documents to: " <> eName
+    LogMacroPostData lc entity count -> prefix lc <> " - Posting " <> show count <> " documents to: " <> show entity
     LogMacroRequestOldestEntity lc entity -> prefix lc <> " - Looking for oldest refreshed " <> entity <> " entity"
-    LogMacroGotOldestEntity lc (etype, name) date ->
-      prefix lc <> " - Got entity of type: " <> etype <> " named: " <> name <> " last updated at " <> show date
+    LogMacroGotOldestEntity lc entity date ->
+      prefix lc <> " - Got entity: " <> show entity <> " last updated at " <> show date
     LogMacroNoOldestEnity lc -> prefix lc <> " - Unable to find entity to update"
     LogMacroEnded lc -> prefix lc <> " - Crawling entities completed"
     LogMacroCommitFailed lc -> prefix lc <> " - Commit date failed"

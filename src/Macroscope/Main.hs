@@ -34,7 +34,7 @@ import Lentille.GraphQL
 import Macroscope.Worker (DocumentStream (..), runStream)
 import Monocle.Client
 import Monocle.Config qualified as Config
-import Monocle.Entity (Entity)
+import Monocle.Entity (Entity, CrawlerName (..))
 import Monocle.Prelude
 import Network.HTTP.Types.Status qualified as HTTP
 import Network.Wai qualified as Wai
@@ -288,7 +288,7 @@ runCrawler = safeCrawl
   crawl (InfoCrawler index key crawler _, docStreams) = do
     mLog $ Log Macroscope $ LogMacroStartCrawler $ LogCrawlerContext index (crawlerName crawler) Nothing
 
-    let runner = runStream (from key) (from index) (from $ crawlerName crawler)
+    let runner = runStream (from key) (from index) (CrawlerName $ crawlerName crawler)
     traverse_ runner docStreams
 
 -- | 'getCrawler' converts a crawler configuration into a (ClientKey, streams)
