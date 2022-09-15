@@ -1,4 +1,5 @@
 module Monocle.Entity (
+  CrawlerName (..),
   Entity (..),
   entityTypeName,
   entityDocID,
@@ -6,6 +7,7 @@ module Monocle.Entity (
 
 import Data.Text qualified
 
+import Database.Bloodhound qualified as BH
 import Monocle.Prelude
 import Monocle.Protob.Crawler qualified as CrawlerPB
 
@@ -16,6 +18,8 @@ data Entity
   | TaskDataEntity Text
   deriving (Eq, Show)
 
+newtype CrawlerName = CrawlerName Text
+
 entityTypeName :: CrawlerPB.EntityType -> Text
 entityTypeName = \case
   CrawlerPB.EntityTypeENTITY_TYPE_PROJECT -> "project"
@@ -23,10 +27,12 @@ entityTypeName = \case
   CrawlerPB.EntityTypeENTITY_TYPE_TASK_DATA -> "taskdata"
 
 -- TODO: check if the value needs to be hashed to prevent escape issue
-entityDocID :: Entity -> Text
-entityDocID e = entityTypeName (from e) <> "-" <> cleanName
+entityDocID :: CrawlerName -> Entity -> BH.DocId
+entityDocID (CrawlerName name) e =
+  BH.DocId $ escapeID name <> "-" <> entityTypeName (from e) <> "-" <> escapeID entityName
  where
-  cleanName = Data.Text.replace "/" "@" $
+  escapeID = Data.Text.replace "/" "@"
+  entityName =
     case e of
       Project n -> n
       Organization n -> n

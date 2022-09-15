@@ -357,7 +357,7 @@ crawlerCommit _auth request = do
       let date = Timestamp.toUTCTime ts
       logEvent $ UpdatingEntity crawlerName entity date
       -- TODO: check for CommitDateInferiorThanPrevious
-      _ <- I.setLastUpdated (from crawlerName) date entity
+      _ <- I.setLastUpdated (CrawlerName $ from crawlerName) date entity
 
       pure . CrawlerPB.CommitResponse . Just $
         CrawlerPB.CommitResponseResultTimestamp ts

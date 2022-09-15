@@ -280,7 +280,7 @@ upgradeConfigV1 = do
             Nothing -> pure ()
             Just lastUpdatedAt ->
               setLastUpdated
-                (from ecmCrawlerName)
+                (CrawlerName $ from ecmCrawlerName)
                 lastUpdatedAt
                 ecmCrawlerEntity
         otherEntity -> do
@@ -631,10 +631,6 @@ getChangeById = getDocumentById
 getChangeEventById :: BH.DocId -> QueryM (Maybe EChangeEvent)
 getChangeEventById = getDocumentById
 
-getCrawlerMetadataDocId :: Text -> Entity -> BH.DocId
-getCrawlerMetadataDocId crawlerName entity =
-  BH.DocId $ crawlerName <> "-" <> entityDocID entity
-
 getChangesByURL ::
   -- | List of URLs
   [Text] ->
@@ -862,7 +858,7 @@ getLastUpdated crawler entity offset = do
 -- | The following entityRequest are a bit bizarre, this is because we are re-using
 -- the entity info response defined in protobuf. When requesting the last updated, we provide
 -- an empty entity.
-ensureCrawlerMetadata :: Text -> QueryM UTCTime -> Entity -> QueryM ()
+ensureCrawlerMetadata :: CrawlerName -> QueryM UTCTime -> Entity -> QueryM ()
 ensureCrawlerMetadata crawlerName getDate entity = do
   index <- getIndexName
   exists <- BH.documentExists index getId
@@ -873,9 +869,9 @@ ensureCrawlerMetadata crawlerName getDate entity = do
   cm lastUpdatedDate =
     ECrawlerMetadata
       { ecmCrawlerMetadata =
-          ECrawlerMetadataObject (from crawlerName) entity lastUpdatedDate
+          ECrawlerMetadataObject (coerce crawlerName) entity lastUpdatedDate
       }
-  getId = getCrawlerMetadataDocId crawlerName entity
+  getId = entityDocID crawlerName entity
 
 getMostRecentUpdatedChange :: QueryMonad m => Text -> m [EChange]
 getMostRecentUpdatedChange fullname = do
@@ -895,16 +891,16 @@ getLastUpdatedDate fullname = do
     [] -> Nothing
     (c : _) -> Just $ c & echangeUpdatedAt
 
-setLastUpdated :: Text -> UTCTime -> Entity -> QueryM ()
+setLastUpdated :: CrawlerName -> UTCTime -> Entity -> QueryM ()
 setLastUpdated crawlerName lastUpdatedDate entity = do
   index <- getIndexName
   withRefresh $ BH.updateDocument index BH.defaultIndexDocumentSettings cm getId
  where
-  getId = getCrawlerMetadataDocId crawlerName entity
+  getId = entityDocID crawlerName entity
   cm =
     ECrawlerMetadata
       { ecmCrawlerMetadata =
-          ECrawlerMetadataObject (from crawlerName) entity lastUpdatedDate
+          ECrawlerMetadataObject (coerce crawlerName) entity lastUpdatedDate
       }
 
 initCrawlerEntities :: [Entity] -> Config.Crawler -> QueryM ()
@@ -916,7 +912,7 @@ initCrawlerEntities entities worker = traverse_ run entities
           fromMaybe defaultUpdatedSince <$> case entity of
             Project name -> getLastUpdatedDate $ fromMaybe "" (Config.getPrefix worker) <> name
             _ -> pure Nothing
-    ensureCrawlerMetadata (getWorkerName worker) updated_since entity
+    ensureCrawlerMetadata (CrawlerName $ getWorkerName worker) updated_since entity
   defaultUpdatedSince = getWorkerUpdatedSince worker
 
 getProjectEntityFromCrawler :: Config.Crawler -> [Entity]

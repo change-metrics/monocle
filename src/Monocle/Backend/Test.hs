@@ -183,13 +183,13 @@ testProjectCrawlerMetadata = withTenant doTest
     assertEqual' "check got oldest updated entity" (Just fakeDefaultDate) $ ecmLastCommitAt <$> lastUpdated
 
     -- Update some crawler metadata and ensure we get the oldest (name, last_commit_at)
-    I.setLastUpdated crawlerGitlab fakeDateB entity
-    I.setLastUpdated crawlerGitlab fakeDateA entityAlt
+    I.setLastUpdated (CrawlerName crawlerGitlab) fakeDateB entity
+    I.setLastUpdated (CrawlerName crawlerGitlab) fakeDateA entityAlt
     lastUpdated' <- I.getLastUpdated workerGitlab entityType 0
     assertEqual' "check got oldest updated entity" (mkMD (Project "centos/nova") fakeDateB) lastUpdated'
 
     -- Update one crawler and ensure we get the right oldest
-    I.setLastUpdated crawlerGitlab fakeDateC entity
+    I.setLastUpdated (CrawlerName crawlerGitlab) fakeDateC entity
     lastUpdated'' <- I.getLastUpdated workerGitlab entityType 0
     assertEqual' "check got oldest updated entity" (mkMD (Project "centos/neutron") fakeDateA) lastUpdated''
 
@@ -268,7 +268,7 @@ testOrganizationCrawlerMetadata = withTenant doTest
     assertEqual' "Check crawler metadata for projectB present" True projectB
 
     -- Update the crawler metadata
-    I.setLastUpdated crawlerName fakeDateA $ Organization "gitlab-org"
+    I.setLastUpdated (CrawlerName crawlerName) fakeDateA $ Organization "gitlab-org"
     lastUpdated' <- I.getLastUpdated worker entityType 0
     liftIO $
       lastUpdated' @?= Just (ECrawlerMetadataObject crawlerName (Organization "gitlab-org") fakeDateA)
@@ -277,7 +277,7 @@ testOrganizationCrawlerMetadata = withTenant doTest
     fakeDefaultDate = [utctime|2020-01-01 00:00:00|]
     fakeDateA = [utctime|2021-06-01 20:00:00|]
     crawlerName = "test-crawler"
-    getProjectCrawlerDocId = I.getCrawlerMetadataDocId crawlerName . Project
+    getProjectCrawlerDocId = entityDocID (CrawlerName crawlerName) . Project
     worker =
       let name = crawlerName
           update_since = show fakeDefaultDate
@@ -300,7 +300,7 @@ testTaskDataCrawlerMetadata = withTenant doTest
     assertEqual' "check got oldest updated entity" (Just fakeDefaultDate) $ ecmLastCommitAt <$> lastUpdated
 
     -- Update some crawler metadata and ensure we get the oldest (name, last_commit_at)
-    I.setLastUpdated crawlerGithub fakeDateB entity
+    I.setLastUpdated (CrawlerName crawlerGithub) fakeDateB entity
     lastUpdated' <- I.getLastUpdated workerGithub entityType 0
     assertEqual' "check got oldest updated entity" (mkMD "opendev/nova" fakeDateB) lastUpdated'
 
@@ -423,7 +423,7 @@ testUpgradeConfigV1 = do
    where
     getCrawlerProjectMDDocID =
       let entity = Project repoName
-       in I.getCrawlerMetadataDocId crawlerName entity
+       in entityDocID (CrawlerName crawlerName) entity
   setDocs :: Config.Crawler -> Text -> Text -> Text -> QueryM ()
   setDocs crawler crawlerName repo1 repo2 = do
     -- Init crawler metadata
@@ -442,7 +442,7 @@ testUpgradeConfigV1 = do
           }
       ]
     -- Set crawler metadata (lastCommitAt) (for project entity) to a correct date
-    I.setLastUpdated crawlerName createdAtDate (Project repo1)
+    I.setLastUpdated (CrawlerName crawlerName) createdAtDate (Project repo1)
   createdAtDate = [utctime|2020-01-02 00:00:00|]
   defaultCrawlerDate = [utctime|2020-01-01 00:00:00|]
   crawlerGHName = "crawlerGH"
