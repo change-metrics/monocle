@@ -51,8 +51,8 @@ import Text.Read.Lex qualified (readDecP)
 data AuthorFlavor = Author | OnAuthor deriving (Show, Eq)
 
 -- | Handle date filter:
--- Change document has both createdAt and updatedAt.
--- Event document only have createdAt.
+-- Change document has both CreatedAt and UpdatedAt.
+-- Event document has both CreatedAt (the event creation date) and OnCreatedAt (the change event creation date).
 --
 -- In other words, to get all the change updated recently, use UpdatedAt.
 -- But to get all the event (such as review event), use CreatedAt.
