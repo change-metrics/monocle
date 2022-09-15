@@ -1580,7 +1580,7 @@ metricFirstReviewMeanTime =
   compute =
     Duration . firstEventAverageDuration
       <$> withEvents [documentType EChangeReviewedEvent] (withFlavor' firstEventOnChanges)
-  withFlavor' = withFlavor (QueryFlavor Author OnCreatedAt)
+  withFlavor' = withFlavor (QueryFlavor OnAuthor OnCreatedAt)
   computeTrend = flip monoHisto compute
 
 -- | The average delay until a change gets a comment event
@@ -1601,7 +1601,7 @@ metricFirstCommentMeanTime =
   compute =
     Duration . firstEventAverageDuration
       <$> withEvents [documentType EChangeCommentedEvent] (withFlavor' firstEventOnChanges)
-  withFlavor' = withFlavor (QueryFlavor Author OnCreatedAt)
+  withFlavor' = withFlavor (QueryFlavor OnAuthor OnCreatedAt)
   computeTrend = flip monoHisto compute
 
 -- | The average commit count for per change
