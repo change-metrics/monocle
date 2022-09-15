@@ -1130,16 +1130,19 @@ monoHisto intervalM metric = do
          in mkSliceBounds maxDate interval newAcc
   runMetricOnSlice :: Q.TimeRange -> (UTCTime, UTCTime) -> m (Histo a)
   runMetricOnSlice interval bounds =
-    toHisto <$> withModified Q.dropDate (withFilter boundsBH $ runMetric' metric)
+    toHisto <$> withModified Q.dropDate (withFilterFlavor boundsBH $ runMetric' metric)
    where
     toHisto :: a -> Histo a
     toHisto = Histo (from $ dateInterval interval $ fst bounds)
-    boundsBH :: [BH.Query]
-    boundsBH =
-      let rq c = BH.QueryRangeQuery $ BH.mkRangeQuery (BH.FieldName "created_at") c
+
+    boundsBH :: Maybe QueryFlavor -> [BH.Query]
+    boundsBH qfM =
+      let rangeFieldName = fromMaybe "created_at" (rangeField . qfRange =<< qfM)
+          rq c = BH.QueryRangeQuery $ BH.mkRangeQuery (BH.FieldName rangeFieldName) c
        in [ rq $ BH.RangeDateGte (BH.GreaterThanEqD (fst bounds))
           , rq $ BH.RangeDateLt (BH.LessThanD (snd bounds))
           ]
+
     runMetric' :: m a -> m a
     runMetric' = local overrideQueryEnvBound
      where
@@ -1577,7 +1580,7 @@ metricFirstReviewMeanTime =
   compute =
     Duration . firstEventAverageDuration
       <$> withEvents [documentType EChangeReviewedEvent] (withFlavor' firstEventOnChanges)
-  withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
+  withFlavor' = withFlavor (QueryFlavor Author OnCreatedAt)
   computeTrend = flip monoHisto compute
 
 -- | The average delay until a change gets a comment event
@@ -1598,7 +1601,7 @@ metricFirstCommentMeanTime =
   compute =
     Duration . firstEventAverageDuration
       <$> withEvents [documentType EChangeCommentedEvent] (withFlavor' firstEventOnChanges)
-  withFlavor' = withFlavor (QueryFlavor Author CreatedAt)
+  withFlavor' = withFlavor (QueryFlavor Author OnCreatedAt)
   computeTrend = flip monoHisto compute
 
 -- | The average commit count for per change

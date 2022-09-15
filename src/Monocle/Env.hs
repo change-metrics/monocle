@@ -245,6 +245,16 @@ withModified modifier = local addModifier
     let newQueryGet oldModifier = Q.queryGet query (modifier . oldModifier)
      in QueryEnv tenant tEnv (query {Q.queryGet = newQueryGet}) context
 
+-- | 'withFilterFlavor' run a queryM with extra queries provided based on the current query flavor.
+-- This is used in monoHisto where the extra bounds need to take into account the query flavor,
+-- e.g. firstComment metrics uses
+withFilterFlavor :: QueryMonad m => (Maybe Q.QueryFlavor -> [BH.Query]) -> m a -> m a
+withFilterFlavor extraQueries = local addModifier
+ where
+  addModifier (QueryEnv tenant tEnv query context) =
+    let newQueryGet modifier qf = extraQueries qf <> Q.queryGet query modifier qf
+     in QueryEnv tenant tEnv (query {Q.queryGet = newQueryGet}) context
+
 -- | 'withFilter' run a queryM with extra queries.
 -- Use it to mappend bloodhound expression to the final result
 withFilter :: QueryMonad m => [BH.Query] -> m a -> m a
