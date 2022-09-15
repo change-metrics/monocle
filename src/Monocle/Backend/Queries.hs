@@ -1130,7 +1130,7 @@ monoHisto intervalM metric = do
          in mkSliceBounds maxDate interval newAcc
   runMetricOnSlice :: Q.TimeRange -> (UTCTime, UTCTime) -> m (Histo a)
   runMetricOnSlice interval bounds =
-    toHisto <$> withModified Q.dropDate (withFilter boundsBH metric)
+    toHisto <$> withModified Q.dropDate (withFilter boundsBH $ runMetric' metric)
    where
     toHisto :: a -> Histo a
     toHisto = Histo (from $ dateInterval interval $ fst bounds)
@@ -1140,6 +1140,14 @@ monoHisto intervalM metric = do
        in [ rq $ BH.RangeDateGte (BH.GreaterThanEqD (fst bounds))
           , rq $ BH.RangeDateLt (BH.LessThanD (snd bounds))
           ]
+    runMetric' :: m a -> m a
+    runMetric' = local overrideQueryEnvBound
+     where
+      overrideQueryEnvBound :: QueryEnv -> QueryEnv
+      overrideQueryEnvBound q =
+        q
+          { tQuery = (tQuery q) {Q.queryBounds = bounds}
+          }
 
 countHisto :: forall m. QueryMonad m => RangeFlavor -> Maybe Q.TimeRange -> m (V.Vector (Histo Word32))
 countHisto rf intervalM = fmap toHisto <$> getCountHisto
