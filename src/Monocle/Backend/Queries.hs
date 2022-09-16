@@ -1093,6 +1093,9 @@ rangeFlavorToDesc = \case
     "Both, the event and change's creation date is matched in "
       <> "case of any date query filter."
 
+queryFlavorToDesc :: QueryFlavor -> Text
+queryFlavorToDesc qf = [i|#{authorFlavorToDesc $ qfAuthor qf} #{rangeFlavorToDesc $ qfRange qf}|]
+
 queryToHistoBounds :: QueryMonad m => Maybe Q.TimeRange -> m (UTCTime, UTCTime, Q.TimeRange)
 queryToHistoBounds intervalM = do
   query <- getQuery
@@ -1564,44 +1567,70 @@ metricTimeToMergeVariance =
 
 -- | The average duration until a change gets a first review event
 metricFirstReviewMeanTime :: QueryMonad m => Metric m Duration
-metricFirstReviewMeanTime =
-  Metric
-    ( MetricInfo
-        "first_review_mean_time"
-        "1st review mean time"
-        "The average duration until a change gets a first review event"
-        [iii|The metric is the average duration for changes to get their first review. #{authorFlavorToDesc Author}
-          #{rangeFlavorToDesc CreatedAt}|]
-    )
-    (Num <$> compute)
-    computeTrend
-    topNotSupported
+metricFirstReviewMeanTime = baseMetricFirstEventMeanTime info flavor EChangeReviewedEvent
  where
-  compute =
-    Duration . firstEventAverageDuration
-      <$> withEvents [documentType EChangeReviewedEvent] (withFlavor' firstEventOnChanges)
-  withFlavor' = withFlavor (QueryFlavor OnAuthor OnCreatedAt)
-  computeTrend = flip monoHisto compute
+  flavor = QueryFlavor Author OnCreatedAt
+  info =
+    MetricInfo
+      "first_review_mean_time"
+      "1st review mean time"
+      "The average duration until a change gets a first review event."
+      [iii|The metric is the average duration for changes to get their first review. #{queryFlavorToDesc flavor}.
+       When an author/group is set in the query, then this metric computes the average duration for an author/group
+       to give a first review on a change.|]
 
--- | The average delay until a change gets a comment event
+metricFirstReviewerMeanTime :: QueryMonad m => Metric m Duration
+metricFirstReviewerMeanTime = baseMetricFirstEventMeanTime info flavor EChangeReviewedEvent
+ where
+  flavor = QueryFlavor OnAuthor OnCreatedAt
+  info =
+    MetricInfo
+      "first_reviewer_mean_time"
+      "1st reviewer mean time"
+      "The average duration until a change gets a first review event."
+      [iii|The metric is the average duration for changes to get their first review. #{queryFlavorToDesc flavor}
+       When an author/group is set in the query, then this metric computes the average duration for an author/group
+       to get its first review on a change.|]
+
+-- | The average duration until a change gets a first comment event
 metricFirstCommentMeanTime :: QueryMonad m => Metric m Duration
-metricFirstCommentMeanTime =
-  Metric
-    ( MetricInfo
-        "first_comment_mean_time"
-        "1st comment mean time"
-        "The average delay until a change gets a comment event"
-        [iii|The metric is the average duration for changes to get their first comment. #{authorFlavorToDesc Author}
-         #{rangeFlavorToDesc CreatedAt}|]
-    )
-    (Num <$> compute)
-    computeTrend
-    topNotSupported
+metricFirstCommentMeanTime = baseMetricFirstEventMeanTime info flavor EChangeCommentedEvent
+ where
+  flavor = QueryFlavor Author OnCreatedAt
+  info =
+    MetricInfo
+      "first_comment_mean_time"
+      "1st comment mean time"
+      "The average duration until a change gets a first comment event."
+      [iii|The metric is the average duration for changes to get their first comment. #{queryFlavorToDesc flavor}
+       When an author/group is set in the query, then this metric computes the average duration for an author/group
+       to give a first comment on a change.|]
+
+metricFirstCommenterMeanTime :: QueryMonad m => Metric m Duration
+metricFirstCommenterMeanTime = baseMetricFirstEventMeanTime info flavor EChangeCommentedEvent
+ where
+  flavor = QueryFlavor OnAuthor OnCreatedAt
+  info =
+    MetricInfo
+      "first_commenter_mean_time"
+      "1st commenter mean time"
+      "The average duration until a change gets a first comment event."
+      [iii|The metric is the average duration for changes to get their first comment. #{queryFlavorToDesc flavor}
+       When an author/group is set in the query, then this metric computes the average duration for an author/group
+       to get its first comment on a change.|]
+
+baseMetricFirstEventMeanTime ::
+  QueryMonad m =>
+  MetricInfo ->
+  QueryFlavor ->
+  EDocType ->
+  Metric m Duration
+baseMetricFirstEventMeanTime mi qf dt = do
+  Metric mi (Num <$> compute) computeTrend topNotSupported
  where
   compute =
     Duration . firstEventAverageDuration
-      <$> withEvents [documentType EChangeCommentedEvent] (withFlavor' firstEventOnChanges)
-  withFlavor' = withFlavor (QueryFlavor OnAuthor OnCreatedAt)
+      <$> withEvents [documentType dt] (withFlavor qf $ firstEventOnChanges)
   computeTrend = flip monoHisto compute
 
 -- | The average commit count for per change
@@ -1646,6 +1675,8 @@ allMetrics =
     , toJSON <$> metricTimeToMergeVariance
     , toJSON <$> metricFirstCommentMeanTime
     , toJSON <$> metricFirstReviewMeanTime
+    , toJSON <$> metricFirstCommenterMeanTime
+    , toJSON <$> metricFirstReviewerMeanTime
     , toJSON <$> metricCommitsPerChange
     ]
 
