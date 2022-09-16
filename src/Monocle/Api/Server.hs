@@ -835,6 +835,8 @@ metricGet auth request = checkAuth auth response
       "time_to_merge_variance" -> runMetric Q.metricTimeToMergeVariance
       "first_review_mean_time" -> runMetric Q.metricFirstReviewMeanTime
       "first_comment_mean_time" -> runMetric Q.metricFirstCommentMeanTime
+      "first_reviewer_mean_time" -> runMetric Q.metricFirstReviewerMeanTime
+      "first_commenter_mean_time" -> runMetric Q.metricFirstCommenterMeanTime
       "commits_per_change" -> runMetric Q.metricCommitsPerChange
       -- Unknown query
       _ -> handleError $ "Unknown metric: " <> from getRequestMetric
