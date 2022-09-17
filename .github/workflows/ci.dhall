@@ -72,14 +72,12 @@ in  { Nix =
                 }
               , mk.GithubActions.Step::{
                 , name = Some "Display tag name"
-                , run = Some "echo \"tag_name: \$TAG_NAME\""
-                , env = Some
-                    (toMap { TAG_NAME = "\${{ steps.tagName.outputs.tag }}" })
+                , run = Some "echo \"Discovered tag: \$GIT_TAG_NAME\""
                 }
               , mk.GithubActions.Step::{
                 , name = Some "Tag the container image"
                 , run = Some
-                    "docker tag quay.io/change-metrics/monocle:latest quay.io/change-metrics/monocle:\$TAG_NAME"
+                    "docker tag quay.io/change-metrics/monocle:latest quay.io/change-metrics/monocle:\$GIT_TAG_NAME"
                 }
               , mk.GithubActions.Step::{
                 , name = Some "Login on quay.io"
@@ -89,7 +87,7 @@ in  { Nix =
               , mk.GithubActions.Step::{
                 , name = Some "Publish image to quay.io"
                 , run = Some
-                    "docker push quay.io/change-metrics/monocle:\$TAG_NAME"
+                    "docker push quay.io/change-metrics/monocle:\$GIT_TAG_NAME"
                 }
               ]
           )
