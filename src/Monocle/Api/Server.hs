@@ -28,6 +28,7 @@ import Monocle.Backend.Index as I
 import Monocle.Backend.Queries qualified as Q
 import Monocle.Config (Config, OIDCProviderConfig (..))
 import Monocle.Config qualified as Config
+import Monocle.Entity
 import Monocle.Env
 import Monocle.Logging
 import Monocle.Prelude
@@ -354,7 +355,7 @@ crawlerCommit _auth request = do
       let date = Timestamp.toUTCTime ts
       logEvent $ UpdatingEntity crawlerName entity date
       -- TODO: check for CommitDateInferiorThanPrevious
-      _ <- I.setLastUpdated (from crawlerName) date entity
+      _ <- I.setLastUpdated (CrawlerName $ from crawlerName) date entity
 
       pure . CrawlerPB.CommitResponse . Just $
         CrawlerPB.CommitResponseResultTimestamp ts
@@ -387,29 +388,21 @@ crawlerCommitInfo _auth request = do
         pure (index, worker, entityM)
 
   case requestE of
-    Right (index, worker, Just (CrawlerPB.Entity (Just entity))) -> do
+    Right (index, worker, entityType) -> do
       updateIndex index wsStatus
       runEmptyQueryM index $ do
-        toUpdateEntityM <- I.getLastUpdated worker entity offset
+        toUpdateEntityM <- I.getLastUpdated worker (fromPBEnum entityType) offset
         case toUpdateEntityM of
-          Just (name, ts) ->
+          Just crawlerMetadata ->
             pure
               . CrawlerPB.CommitInfoResponse
               . Just
               . CrawlerPB.CommitInfoResponseResultEntity
-              . CrawlerPB.CommitInfoResponse_OldestEntity (Just $ fromEntityType entity (from name))
-              $ Just (Timestamp.fromUTCTime ts)
+              $ from crawlerMetadata
           Nothing -> pure . toErrorResponse $ CrawlerPB.CommitInfoErrorCommitGetNoEntity
-    Right _ -> error $ "Unknown entity request: " <> show entityM
     Left err ->
       pure $ toErrorResponse err
  where
-  fromEntityType :: CrawlerPB.EntityEntity -> LText -> CrawlerPB.Entity
-  fromEntityType enum value = CrawlerPB.Entity . Just $ case enum of
-    CrawlerPB.EntityEntityOrganizationName _ -> CrawlerPB.EntityEntityOrganizationName value
-    CrawlerPB.EntityEntityProjectName _ -> CrawlerPB.EntityEntityProjectName value
-    CrawlerPB.EntityEntityTdName _ -> CrawlerPB.EntityEntityTdName value
-
   toErrorResponse :: CrawlerPB.CommitInfoError -> CrawlerPB.CommitInfoResponse
   toErrorResponse err =
     CrawlerPB.CommitInfoResponse

@@ -11,6 +11,7 @@ import Data.Morpheus.Client qualified
 import Lentille qualified
 import Lentille.GitHub.RateLimit qualified
 import Lentille.GraphQL qualified
+import Monocle.Entity
 import Monocle.Logging qualified
 import Monocle.Prelude
 import Monocle.Protob.Crawler qualified
@@ -78,13 +79,13 @@ transformResponse result = do
 streamWatchedProjects ::
   Lentille.MonadGraphQLE m =>
   Lentille.GraphQL.GraphClient ->
-  (Monocle.Logging.Entity -> Monocle.Logging.LogCrawlerContext) ->
+  (Entity -> Monocle.Logging.LogCrawlerContext) ->
   Text ->
   Stream (Of Monocle.Protob.Crawler.Project) m ()
 streamWatchedProjects client mkLC login =
   Lentille.GraphQL.streamFetch client lc mkArgs optParams transformResponse
  where
-  lc = mkLC $ Monocle.Logging.Organization login
+  lc = mkLC $ Organization login
   mkArgs _ = GetWatchedArgs login
   optParams =
     Lentille.GraphQL.defaultStreamFetchOptParams

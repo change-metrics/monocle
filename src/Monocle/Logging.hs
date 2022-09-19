@@ -3,6 +3,7 @@ module Monocle.Logging where
 
 import Data.Text qualified as T
 import Monocle.Config qualified as Config
+import Monocle.Entity
 import Monocle.Prelude
 import Monocle.Protob.Search (QueryRequest_QueryType (..))
 import Monocle.Search.Query qualified as Q
@@ -16,24 +17,6 @@ data LogCrawlerContext = LogCrawlerContext
 noContext :: LogCrawlerContext
 noContext = LogCrawlerContext "<direct>" "CLI" Nothing
 
-data Entity = Project Text | Organization Text | TaskDataEntity Text
-  deriving (Eq, Show)
-
-instance From Entity Text where
-  from = \case
-    Project _ -> "project"
-    Organization _ -> "organization"
-    TaskDataEntity _ -> "taskdata"
-
-instance From Entity LText where
-  from = via @Text
-
-getEntityName :: Entity -> Text
-getEntityName = \case
-  Project n -> n
-  Organization n -> n
-  TaskDataEntity n -> n
-
 data LogEvent
   = LogMacroStart
   | LogStartingMonitoring Int
@@ -42,12 +25,12 @@ data LogEvent
   | LogMacroContinue LogCrawlerContext
   | LogMacroSkipCrawler LogCrawlerContext Text
   | LogMacroStartCrawler LogCrawlerContext
-  | LogMacroPostData LogCrawlerContext Text Int
+  | LogMacroPostData LogCrawlerContext Entity Int
   | LogMacroRequestOldestEntity LogCrawlerContext Text
-  | LogMacroGotOldestEntity LogCrawlerContext (Text, Text) UTCTime
+  | LogMacroGotOldestEntity LogCrawlerContext Entity UTCTime
   | LogMacroNoOldestEnity LogCrawlerContext
-  | LogMacroEnded LogCrawlerContext
-  | LogMacroCommitFailed LogCrawlerContext
+  | LogMacroEnded LogCrawlerContext Entity UTCTime
+  | LogMacroCommitFailed LogCrawlerContext Text
   | LogMacroPostDataFailed LogCrawlerContext [Text]
   | LogMacroStreamError LogCrawlerContext Text
   | LogMacroGroupStart Text
@@ -80,13 +63,13 @@ instance From LogEvent Text where
     LogMacroContinue lc -> prefix lc <> " - Continuing on next entity"
     LogMacroSkipCrawler lc err -> prefix lc <> " - Skipping due to an unexpected exception catched: " <> err
     LogMacroStartCrawler lc -> prefix lc <> " - Start crawling entities"
-    LogMacroPostData lc eName count -> prefix lc <> " - Posting " <> show count <> " documents to: " <> eName
+    LogMacroPostData lc entity count -> prefix lc <> " - Posting " <> show count <> " documents to: " <> show entity
     LogMacroRequestOldestEntity lc entity -> prefix lc <> " - Looking for oldest refreshed " <> entity <> " entity"
-    LogMacroGotOldestEntity lc (etype, name) date ->
-      prefix lc <> " - Got entity of type: " <> etype <> " named: " <> name <> " last updated at " <> show date
+    LogMacroGotOldestEntity lc entity date ->
+      prefix lc <> " - Got entity: " <> show entity <> " last updated at " <> show date
     LogMacroNoOldestEnity lc -> prefix lc <> " - Unable to find entity to update"
-    LogMacroEnded lc -> prefix lc <> " - Crawling entities completed"
-    LogMacroCommitFailed lc -> prefix lc <> " - Commit date failed"
+    LogMacroEnded lc entity date -> prefix lc <> " - Crawling entities completed, oldest " <> show entity <> " last updated at " <> show date
+    LogMacroCommitFailed lc msg -> prefix lc <> " - Commit date failed: " <> msg
     LogMacroPostDataFailed lc errors -> prefix lc <> " - Post documents failed: " <> T.intercalate " | " errors
     LogMacroStreamError lc error' -> prefix lc <> " - Error occured when consuming the document stream: " <> error'
     LogNetworkFailure msg -> "Network error: " <> msg

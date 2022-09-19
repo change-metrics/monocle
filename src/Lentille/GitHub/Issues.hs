@@ -20,7 +20,8 @@ import Google.Protobuf.Timestamp as Timestamp
 import Lentille (MonadGraphQLE)
 import Lentille.GitHub.RateLimit (getRateLimit)
 import Lentille.GraphQL
-import Monocle.Logging (Entity (TaskDataEntity), LogCrawlerContext)
+import Monocle.Entity (Entity (TaskDataEntity))
+import Monocle.Logging (LogCrawlerContext)
 import Monocle.Prelude
 import Monocle.Protob.Search (TaskData (..))
 

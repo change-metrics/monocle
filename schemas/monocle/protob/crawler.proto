@@ -18,6 +18,12 @@ message Entity {
   }
 }
 
+enum EntityType {
+  ENTITY_TYPE_ORGANIZATION = 0;
+  ENTITY_TYPE_PROJECT = 1;
+  ENTITY_TYPE_TASK_DATA = 2;
+}
+
 message AddDocRequest {
   string index = 1;
   string crawler = 2;
@@ -67,11 +73,12 @@ message CommitResponse {
   }
 }
 
+// Crawler request to get the last update date for a given entity
 message CommitInfoRequest {
   string index = 1;
   string crawler = 2;
-  // the entity value is ignored
-  Entity entity = 3;
+  // The type of the entity to get the last update date from
+  EntityType entity = 3;
   uint32 offset = 4;
 }
 

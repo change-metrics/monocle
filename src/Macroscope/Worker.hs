@@ -15,14 +15,10 @@ module Macroscope.Worker (
 import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Lentille
-import Monocle.Backend.Index (
-  entityRequestOrganization,
-  entityRequestProject,
-  entityRequestTaskData,
- )
+import Monocle.Entity
 import Monocle.Prelude
 import Monocle.Protob.Change (Change, ChangeEvent)
-import Monocle.Protob.Crawler
+import Monocle.Protob.Crawler as CrawlerPB hiding (Entity)
 import Monocle.Protob.Search (TaskData)
 import Proto3.Suite (Enumerated (Enumerated))
 import Streaming qualified as S
@@ -37,6 +33,20 @@ data DocumentStream m
   | -- | Fetch recent task data
     TaskDatas (UTCTime -> Text -> LentilleStream m TaskData)
 
+-- | Get the entity type managed by a given stream
+streamEntity :: DocumentStream m -> CrawlerPB.EntityType
+streamEntity = \case
+  Projects _ -> EntityTypeENTITY_TYPE_ORGANIZATION
+  Changes _ -> EntityTypeENTITY_TYPE_PROJECT
+  TaskDatas _ -> EntityTypeENTITY_TYPE_TASK_DATA
+
+-- | Get a text representation of a stream type
+streamName :: DocumentStream m -> Text
+streamName = \case
+  Projects _ -> "Projects"
+  Changes _ -> "Changes"
+  TaskDatas _ -> "TaskDatas"
+
 isTDStream :: DocumentStream m -> Bool
 isTDStream = \case
   TaskDatas _ -> True
@@ -45,46 +55,9 @@ isTDStream = \case
 -------------------------------------------------------------------------------
 -- Adapter between protobuf api and crawler stream
 -------------------------------------------------------------------------------
-
 type ApiKey = LText
 
 type IndexName = LText
-
-type CrawlerName = LText
-
--- | 'getDate' gets the updated time of an 'OldestEntity'
-getDate :: OldestEntity -> UTCTime
-getDate oe =
-  toUTCTime
-    . fromMaybe (error "missing TS")
-    $ commitInfoResponse_OldestEntityLastCommitAt oe
-
--- | 'getTaskdata' gets the updated time and project name from an 'OldestEntity'
-getTaskdata :: OldestEntity -> (UTCTime, Text)
-getTaskdata oe = (getDate oe, from taskdata)
- where
-  taskdata =
-    case commitInfoResponse_OldestEntityEntity oe of
-      Just (Entity (Just (EntityEntityTdName name))) -> name
-      _ -> error $ "Not a task data: " <> show oe
-
--- | 'getProject' gets the updated time and project name from an 'OldestEntity'
-getProject :: OldestEntity -> (UTCTime, Text)
-getProject oe = (getDate oe, from project)
- where
-  project =
-    case commitInfoResponse_OldestEntityEntity oe of
-      Just (Entity (Just (EntityEntityProjectName name))) -> name
-      _ -> error $ "Not a project: " <> show oe
-
--- | 'getOrganization' gets the updated time and organization name from an 'OldestEntity'
-getOrganization :: OldestEntity -> (UTCTime, Text)
-getOrganization oe = (getDate oe, from organization)
- where
-  organization =
-    case commitInfoResponse_OldestEntityEntity oe of
-      Just (Entity (Just (EntityEntityOrganizationName name))) -> name
-      _ -> error $ "Not an organization: " <> show oe
 
 -------------------------------------------------------------------------------
 -- Worker implementation
@@ -142,6 +115,7 @@ runStream apiKey indexName crawlerName documentStream = do
   runStream' startTime apiKey indexName crawlerName documentStream
 
 runStream' ::
+  forall m.
   (MonadCatch m, MonadLog m, MonadRetry m, MonadMonitor m, MonadCrawlerE m) =>
   UTCTime ->
   ApiKey ->
@@ -149,7 +123,7 @@ runStream' ::
   CrawlerName ->
   DocumentStream m ->
   m ()
-runStream' startTime apiKey indexName crawlerName documentStream = drainEntities (0 :: Word32)
+runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream = drainEntities (0 :: Word32)
  where
   lc = LogCrawlerContext (from indexName) (from crawlerName) Nothing
   wLog event = mLog $ Log Macroscope event
@@ -158,38 +132,39 @@ runStream' startTime apiKey indexName crawlerName documentStream = drainEntities
       safeDrainEntities offset `catch` handleStreamError offset
 
   safeDrainEntities offset = do
-    wLog $ LogMacroRequestOldestEntity lc (streamType documentStream)
+    wLog $ LogMacroRequestOldestEntity lc (streamName documentStream)
     monocleBaseUrl <- getClientBaseUrl
-    let ident = "api-client"
+    let retryHttp :: m a -> m a
+        retryHttp = httpRetry ("api-client", monocleBaseUrl, "internal")
 
     -- Query the monocle api for the oldest entity to be updated.
-    entityM <- httpRetry (ident, monocleBaseUrl, "internal") $ getOldestEntity offset
-    case entityM of
+    oldestEntityM <- retryHttp $ getStreamOldestEntity indexName (from crawlerName) (streamEntity documentStream) offset
+    case oldestEntityM of
       Nothing -> wLog $ LogMacroNoOldestEnity lc
-      Just entity -> do
-        let (eType, eName) = oldestEntityEntityToText entity
-            processLogFunc c = Log Macroscope $ LogMacroPostData lc eName c
-        wLog $ LogMacroGotOldestEntity lc (eType, eName) (oldestEntityDate entity)
+      Just (oldestAge, entity)
+        | -- add a 1 second delta to avoid Hysteresis
+          addUTCTime 1 oldestAge >= startTime ->
+            wLog $ LogMacroEnded lc entity oldestAge
+        | otherwise -> do
+            let processLogFunc c = Log Macroscope $ LogMacroPostData lc entity c
+            wLog $ LogMacroGotOldestEntity lc entity oldestAge
 
-        -- add a 1 second delta to avoid Hysteresis
-        if addUTCTime 1 (oldestEntityDate entity) >= startTime
-          then wLog $ LogMacroEnded lc
-          else do
             -- Run the document stream for that entity
             postResult <-
               process
                 processLogFunc
-                (httpRetry (ident, monocleBaseUrl, "internal") . addDoc entity)
-                (getStream entity)
+                (retryHttp . addDoc entity)
+                (getStream oldestAge entity)
             case foldr collectPostFailure [] postResult of
               [] -> do
                 -- Post the commit date
-                res <- httpRetry (ident, monocleBaseUrl, "internal") $ commitTimestamp entity
-                if not res
-                  then wLog $ LogMacroCommitFailed lc
-                  else do
+                res <- retryHttp $ commitTimestamp entity
+                case res of
+                  Nothing -> do
                     wLog $ LogMacroContinue lc
                     drainEntities offset
+                  Just err -> do
+                    wLog $ LogMacroCommitFailed lc err
               xs -> wLog $ LogMacroPostDataFailed lc xs
 
   handleStreamError offset err = do
@@ -202,74 +177,34 @@ runStream' startTime apiKey indexName crawlerName documentStream = drainEntities
     AddOk -> acc
     AddError err -> err : acc
 
-  oldestEntityDate oe = case oe of
-    CommitInfoResponse_OldestEntity _ (Just tc) -> Timestamp.toUTCTime tc
-    _ -> error "Timestamp missing"
-
-  oldestEntityEntityToText :: CommitInfoResponse_OldestEntity -> (Text, Text)
-  oldestEntityEntityToText oe = case oe of
-    CommitInfoResponse_OldestEntity (Just entity) _ -> eToText entity
-    _ -> error "Entity missing"
-   where
-    eToText (Entity e) = case e of
-      Just (EntityEntityOrganizationName v) -> ("Organization", from v)
-      Just (EntityEntityProjectName v) -> ("Project", from v)
-      Just (EntityEntityTdName v) -> ("TaskData", from v)
-      _ -> error "EntityEntity missing"
-
   -- Adapt the document stream to intermediate representation
-  getStream oldestEntity = case documentStream of
+  getStream oldestAge entity = case documentStream of
     Changes s ->
-      let (untilDate, project) = getProject oldestEntity
-       in S.map DTChanges (s untilDate project)
+      let project = extractEntityValue _Project
+       in S.map DTChanges (s oldestAge project)
     Projects s ->
-      let (_, organization) = getOrganization oldestEntity
+      let organization = extractEntityValue _Organization
        in S.map DTProject (s organization)
     TaskDatas s ->
-      let (untilDate, td) = getTaskdata oldestEntity
-       in S.map DTTaskData (s untilDate td)
-
-  -- Get a stream representation of a stream type
-  streamType = \case
-    Projects _ -> "Projects"
-    Changes _ -> "Changes"
-    TaskDatas _ -> "TaskDatas"
-
-  getOldestEntity :: MonadCrawlerE m => Word32 -> m (Maybe CommitInfoResponse_OldestEntity)
-  getOldestEntity offset = do
-    client <- asks crawlerClient
-    resp <-
-      mCrawlerCommitInfo
-        client
-        ( CommitInfoRequest
-            indexName
-            crawlerName
-            (Just $ Entity $ Just entityType)
-            offset
-        )
-    case resp of
-      CommitInfoResponse (Just (CommitInfoResponseResultEntity entity)) -> pure $ Just entity
-      CommitInfoResponse (Just (CommitInfoResponseResultError (Enumerated (Right CommitInfoErrorCommitGetNoEntity)))) -> pure Nothing
-      _ -> error $ "Could not get initial timestamp: " <> show resp
+      let td = extractEntityValue _TaskDataEntity
+       in S.map DTTaskData (s oldestAge td)
    where
-    -- The type of the oldest entity for a given document stream
-    entityType = case documentStream of
-      Projects _ -> entityRequestOrganization
-      Changes _ -> entityRequestProject
-      TaskDatas _ -> entityRequestTaskData
+    extractEntityValue prism =
+      fromMaybe (error $ "Entity is not the right shape: " <> show entity) $
+        preview prism entity
 
-  addDoc :: MonadCrawlerE m => OldestEntity -> [DocumentType] -> m AddDocResponse
+  addDoc :: Entity -> [DocumentType] -> m AddDocResponse
   addDoc entity xs = do
     client <- asks crawlerClient
     mCrawlerAddDoc client $ mkRequest entity xs
   -- 'mkRequest' creates the 'AddDocRequests' for a given oldest entity and a list of documenttype
   -- this is used by the processBatch function.
-  mkRequest :: OldestEntity -> [DocumentType] -> AddDocRequest
-  mkRequest oe xs =
+  mkRequest :: Entity -> [DocumentType] -> AddDocRequest
+  mkRequest entity xs =
     let addDocRequestIndex = indexName
-        addDocRequestCrawler = crawlerName
+        addDocRequestCrawler = from crawlerName
         addDocRequestApikey = apiKey
-        addDocRequestEntity = commitInfoResponse_OldestEntityEntity oe
+        addDocRequestEntity = Just (from entity)
         addDocRequestChanges = V.fromList $ mapMaybe getChanges xs
         addDocRequestEvents = V.fromList $ concat $ mapMaybe getEvents xs
         addDocRequestProjects = V.fromList $ mapMaybe getProject' xs
@@ -290,23 +225,54 @@ runStream' startTime apiKey indexName crawlerName documentStream = drainEntities
       _ -> Nothing
 
   -- 'commitTimestamp' post the commit date.
-  commitTimestamp oe = do
+  commitTimestamp entity = do
     client <- asks crawlerClient
     commitResp <-
       mCrawlerCommit
         client
         ( CommitRequest
             indexName
-            crawlerName
+            (from crawlerName)
             apiKey
-            (commitInfoResponse_OldestEntityEntity oe)
+            (Just $ from entity)
             (Just $ Timestamp.fromUTCTime startTime)
         )
-    case commitResp of
-      (CommitResponse (Just (CommitResponseResultTimestamp _))) -> pure True
-      (CommitResponse (Just (CommitResponseResultError err))) -> do
-        logRaw ("Commit failed: " <> show err)
-        pure False
-      _ -> do
-        logRaw "Empty commit response"
-        pure False
+    pure $ case commitResp of
+      (CommitResponse (Just (CommitResponseResultTimestamp _))) -> Nothing
+      (CommitResponse (Just (CommitResponseResultError err))) -> Just (show err)
+      _ -> Just "Empty commit response"
+
+-- | Adapt the API response
+getStreamOldestEntity ::
+  (MonadCrawler m, MonadReader CrawlerEnv m) =>
+  LText ->
+  LText ->
+  CrawlerPB.EntityType ->
+  Word32 ->
+  m (Maybe (UTCTime, Monocle.Entity.Entity))
+getStreamOldestEntity indexName crawlerName entityType offset = do
+  client <- asks crawlerClient
+  resp <-
+    mCrawlerCommitInfo
+      client
+      ( CommitInfoRequest
+          indexName
+          crawlerName
+          (toPBEnum entityType)
+          offset
+      )
+  case resp of
+    CommitInfoResponse
+      ( Just
+          ( CommitInfoResponseResultEntity
+              (CommitInfoResponse_OldestEntity (Just entity) (Just ts))
+            )
+        ) ->
+        pure $ Just (from ts, from entity)
+    CommitInfoResponse
+      ( Just
+          ( CommitInfoResponseResultError
+              (Enumerated (Right CommitInfoErrorCommitGetNoEntity))
+            )
+        ) -> pure Nothing
+    _ -> error $ "Could not get initial timestamp: " <> show resp

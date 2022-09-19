@@ -12,6 +12,7 @@ import Monocle.Backend.Queries qualified as Q
 import Monocle.Backend.Test qualified as BT (fakeChange, fakeDate, fakeDateAlt)
 import Monocle.Client
 import Monocle.Config qualified as Config
+import Monocle.Entity (CrawlerName (..))
 import Monocle.Env
 import Monocle.Prelude
 import Streaming.Prelude qualified as Streaming
@@ -34,7 +35,7 @@ testCrawlingPoint = do
     let stream date name
           | date == BT.fakeDateAlt && name == "opendev/neutron" = pure mempty
           | otherwise = error "Bad crawling point"
-    void $ runLentilleM logger client $ Macroscope.runStream apiKey indexName crawlerName (Macroscope.Changes stream)
+    void $ runLentilleM logger client $ Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.Changes stream)
     assertEqual "Fetched at expected crawling point" True True
  where
   fakeConfig =
@@ -67,7 +68,7 @@ testTaskDataMacroscope = withTestApi appEnv $ \logger client -> do
   let stream _untilDate project
         | project == "fake_product" = Streaming.each [td]
         | otherwise = error $ "Unexpected product entity: " <> show project
-  void $ runLentilleM logger client $ Macroscope.runStream apiKey indexName crawlerName (Macroscope.TaskDatas stream)
+  void $ runLentilleM logger client $ Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.TaskDatas stream)
   -- Check task data got indexed
   count <- testQueryM fakeConfig $ withQuery taskDataQuery $ Streaming.length_ Q.scanSearchId
   assertEqual "Task data got indexed by macroscope" count 1

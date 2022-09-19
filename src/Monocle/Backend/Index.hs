@@ -1,3 +1,6 @@
+-- witch instance for CrawlerPB
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 -- | Index management functions such as document mapping and ingest
 module Monocle.Backend.Index where
 
@@ -7,7 +10,6 @@ import Data.Aeson.Types (Pair)
 import Data.ByteString.Base64 qualified as B64
 import Data.HashTable.IO qualified as H
 import Data.Map qualified as Map
-import Data.Text qualified as Text
 import Data.Time
 import Data.Vector qualified as V
 import Database.Bloodhound qualified as BH
@@ -16,8 +18,8 @@ import Google.Protobuf.Timestamp as T
 import Monocle.Backend.Documents
 import Monocle.Backend.Queries qualified as Q
 import Monocle.Config qualified as Config
+import Monocle.Entity
 import Monocle.Env
-import Monocle.Logging (Entity (..), getEntityName)
 import Monocle.Prelude
 import Monocle.Protob.Change qualified as ChangePB
 import Monocle.Protob.Crawler qualified as CrawlerPB
@@ -254,7 +256,7 @@ upgradeConfigV1 = do
           <$> filter isGHProvider (Config.crawlers ws)
   getProjectCrawlerMDByName :: Text -> QueryM [ECrawlerMetadata]
   getProjectCrawlerMDByName crawlerName = do
-    let entity = CrawlerPB.EntityEntityProjectName ""
+    let entity = CrawlerPB.EntityTypeENTITY_TYPE_PROJECT
         search = BH.mkSearch (Just $ crawlerMDQuery entity crawlerName) Nothing
     index <- getIndexName
     resp <- fmap BH.hitSource <$> simpleSearch index search
@@ -270,16 +272,19 @@ upgradeConfigV1 = do
         Just crawler -> getWorkerUpdatedSince crawler == ecmLastCommitAt
   setLastUpdatedDate :: ECrawlerMetadata -> QueryM ()
   setLastUpdatedDate
-    (ECrawlerMetadata ECrawlerMetadataObject {ecmCrawlerName, ecmCrawlerTypeValue}) = do
-      lastUpdatedDateM <- getLastUpdatedDate $ from ecmCrawlerTypeValue
-      case lastUpdatedDateM of
-        Nothing -> pure ()
-        Just lastUpdatedAt ->
-          setLastUpdated
-            (from ecmCrawlerName)
-            lastUpdatedAt
-            $ Project . from
-            $ ecmCrawlerTypeValue
+    (ECrawlerMetadata ECrawlerMetadataObject {ecmCrawlerName, ecmCrawlerEntity}) = do
+      case ecmCrawlerEntity of
+        Project projectName -> do
+          lastUpdatedDateM <- getLastUpdatedDate projectName
+          case lastUpdatedDateM of
+            Nothing -> pure ()
+            Just lastUpdatedAt ->
+              setLastUpdated
+                (CrawlerName $ from ecmCrawlerName)
+                lastUpdatedAt
+                ecmCrawlerEntity
+        otherEntity -> do
+          putTextLn $ "Unexpected entity: " <> show otherEntity
 
 upgradeConfigV2 :: QueryM ()
 upgradeConfigV2 = do
@@ -626,16 +631,6 @@ getChangeById = getDocumentById
 getChangeEventById :: BH.DocId -> QueryM (Maybe EChangeEvent)
 getChangeEventById = getDocumentById
 
-getCrawlerMetadataDocId :: Text -> Text -> Text -> BH.DocId
-getCrawlerMetadataDocId crawlerName crawlerType crawlerTypeValue =
-  BH.DocId . Text.replace "/" "@" $
-    Text.intercalate
-      "-"
-      [ crawlerName
-      , crawlerType
-      , crawlerTypeValue
-      ]
-
 getChangesByURL ::
   -- | List of URLs
   [Text] ->
@@ -831,14 +826,14 @@ getWorkerUpdatedSince Config.Crawler {..} =
     (error "Invalid date format: Expected format YYYY-mm-dd or YYYY-mm-dd hh:mm:ss UTC")
     $ parseDateValue (from update_since)
 
-crawlerMDQuery :: EntityType -> Text -> BH.Query
+crawlerMDQuery :: CrawlerPB.EntityType -> Text -> BH.Query
 crawlerMDQuery entity crawlerName =
   mkAnd
     [ BH.TermQuery (BH.Term "crawler_metadata.crawler_name" crawlerName) Nothing
-    , BH.TermQuery (BH.Term "crawler_metadata.crawler_type" (getCrawlerTypeAsText entity)) Nothing
+    , BH.TermQuery (BH.Term "crawler_metadata.crawler_type" (entityTypeName entity)) Nothing
     ]
 
-getLastUpdated :: Config.Crawler -> EntityType -> Word32 -> QueryM (Maybe (Text, UTCTime))
+getLastUpdated :: Config.Crawler -> CrawlerPB.EntityType -> Word32 -> QueryM (Maybe ECrawlerMetadataObject)
 getLastUpdated crawler entity offset = do
   index <- getIndexName
   resp <- fmap BH.hitSource <$> simpleSearch index search
@@ -857,25 +852,13 @@ getLastUpdated crawler entity offset = do
       }
 
   bhSort = BH.DefaultSort (BH.FieldName "crawler_metadata.last_commit_at") BH.Ascending Nothing Nothing Nothing Nothing
-  getRespFromMetadata (ECrawlerMetadata ECrawlerMetadataObject {..}) =
-    (from ecmCrawlerTypeValue, ecmLastCommitAt)
+  getRespFromMetadata (ECrawlerMetadata e) = e
   crawlerName = getWorkerName crawler
 
 -- | The following entityRequest are a bit bizarre, this is because we are re-using
 -- the entity info response defined in protobuf. When requesting the last updated, we provide
 -- an empty entity.
-entityRequestProject, entityRequestOrganization, entityRequestTaskData :: CrawlerPB.EntityEntity
-entityRequestProject = CrawlerPB.EntityEntityProjectName ""
-entityRequestOrganization = CrawlerPB.EntityEntityOrganizationName ""
-entityRequestTaskData = CrawlerPB.EntityEntityTdName ""
-
-getCrawlerTypeAsText :: EntityType -> Text
-getCrawlerTypeAsText entity' = case entity' of
-  CrawlerPB.EntityEntityProjectName _ -> "project"
-  CrawlerPB.EntityEntityOrganizationName _ -> "organization"
-  CrawlerPB.EntityEntityTdName _ -> "taskdata"
-
-ensureCrawlerMetadata :: Text -> QueryM UTCTime -> Entity -> QueryM ()
+ensureCrawlerMetadata :: CrawlerName -> QueryM UTCTime -> Entity -> QueryM ()
 ensureCrawlerMetadata crawlerName getDate entity = do
   index <- getIndexName
   exists <- BH.documentExists index getId
@@ -886,13 +869,9 @@ ensureCrawlerMetadata crawlerName getDate entity = do
   cm lastUpdatedDate =
     ECrawlerMetadata
       { ecmCrawlerMetadata =
-          ECrawlerMetadataObject
-            (from crawlerName)
-            (from entity)
-            (from $ getEntityName entity)
-            lastUpdatedDate
+          ECrawlerMetadataObject (coerce crawlerName) entity lastUpdatedDate
       }
-  getId = getCrawlerMetadataDocId crawlerName (from entity) (getEntityName entity)
+  getId = entityDocID crawlerName entity
 
 getMostRecentUpdatedChange :: QueryMonad m => Text -> m [EChange]
 getMostRecentUpdatedChange fullname = do
@@ -912,20 +891,16 @@ getLastUpdatedDate fullname = do
     [] -> Nothing
     (c : _) -> Just $ c & echangeUpdatedAt
 
-setLastUpdated :: Text -> UTCTime -> Entity -> QueryM ()
+setLastUpdated :: CrawlerName -> UTCTime -> Entity -> QueryM ()
 setLastUpdated crawlerName lastUpdatedDate entity = do
   index <- getIndexName
   withRefresh $ BH.updateDocument index BH.defaultIndexDocumentSettings cm getId
  where
-  getId = getCrawlerMetadataDocId crawlerName (from entity) (getEntityName entity)
+  getId = entityDocID crawlerName entity
   cm =
     ECrawlerMetadata
       { ecmCrawlerMetadata =
-          ECrawlerMetadataObject
-            (from crawlerName)
-            (from entity)
-            (from $ getEntityName entity)
-            lastUpdatedDate
+          ECrawlerMetadataObject (coerce crawlerName) entity lastUpdatedDate
       }
 
 initCrawlerEntities :: [Entity] -> Config.Crawler -> QueryM ()
@@ -937,7 +912,7 @@ initCrawlerEntities entities worker = traverse_ run entities
           fromMaybe defaultUpdatedSince <$> case entity of
             Project name -> getLastUpdatedDate $ fromMaybe "" (Config.getPrefix worker) <> name
             _ -> pure Nothing
-    ensureCrawlerMetadata (getWorkerName worker) updated_since entity
+    ensureCrawlerMetadata (CrawlerName $ getWorkerName worker) updated_since entity
   defaultUpdatedSince = getWorkerUpdatedSince worker
 
 getProjectEntityFromCrawler :: Config.Crawler -> [Entity]
