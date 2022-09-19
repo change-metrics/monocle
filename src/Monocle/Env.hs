@@ -41,6 +41,10 @@ newtype AppM a = AppM {unApp :: ReaderT AppEnv Servant.Handler a}
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadError ServerError)
   deriving newtype (MonadReader AppEnv)
 
+instance HasLogger AppM where
+  getLogger = glLogger <$> asks aEnv
+  logIO = liftIO
+
 instance MonadMonitor AppM where
   doIO = liftIO
 
@@ -80,6 +84,10 @@ newtype QueryM a = QueryM {unTenant :: ReaderT QueryEnv IO a}
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadFail, MonadThrow)
   deriving newtype (MonadReader QueryEnv)
   deriving newtype (MonadUnliftIO, MonadMonitor)
+
+instance HasLogger QueryM where
+  getLogger = glLogger <$> asks tEnv
+  logIO = liftIO
 
 -- | We can derive a MonadBH from QueryM, we just needs to read the BHEnv from the tEnv
 instance BH.MonadBH QueryM where

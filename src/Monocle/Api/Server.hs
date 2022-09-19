@@ -521,7 +521,12 @@ searchQuery auth request = checkAuth auth response
     case requestE of
       Right (tenant, query) -> runQueryM tenant (Q.ensureMinBound query) $ do
         let queryType = fromPBEnum queryRequestQueryType
-        logEvent $ Searching queryType queryRequestQuery query
+        logInfo
+          "Searching"
+          [ "querytype" .= queryType
+          , "request" .= queryRequestQuery
+          , "query" .= Q.queryGet query id Nothing
+          ]
 
         case queryType of
           SearchPB.QueryRequest_QueryTypeQUERY_CHANGE ->

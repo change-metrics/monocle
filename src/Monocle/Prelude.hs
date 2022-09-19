@@ -43,7 +43,16 @@ module Monocle.Prelude (
   toVector,
 
   -- * fast-logger
+  HasLogger (..),
+  runLogger,
+  logInfo,
+  logInfo_,
+  logWarn,
+  logWarn_,
+  logDebug,
+  logDebug_,
   Logger,
+  LoggerT,
   withLogger,
   doLog,
   logMessage,
@@ -136,10 +145,12 @@ module Monocle.Prelude (
   FromJSON (..),
   ToJSON (..),
   Value (Number),
+  Pair,
   encode,
   encodePretty,
   encodePrettyWithSpace,
   (.=),
+  object,
 
   -- * http-client-openssl
   withOpenSSL,
@@ -193,10 +204,13 @@ import Control.Monad.Except (MonadError, catchError, throwError)
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Morph (hoist)
 import Control.Monad.Writer (MonadWriter, WriterT, runWriterT, tell)
-import Data.Aeson (FromJSON (..), ToJSON (..), Value (Number, String), encode, withText, (.=))
+import Data.Aeson (FromJSON (..), ToJSON (..), Value (Number, String), encode, object, withText, (.=))
 import Data.Aeson.Encode.Pretty qualified as Aeson
 import Data.Aeson.Key qualified as AesonKey
+import Data.Aeson.KeyMap qualified as KM
 import Data.Aeson.Lens (_Integer, _Object)
+import Data.Aeson.OneLine qualified
+import Data.Aeson.Types (Pair)
 import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)
 import Data.Map qualified as Map
 import Data.Text qualified as T
@@ -207,6 +221,7 @@ import Data.Vector (Vector)
 import Database.Bloodhound qualified as BH
 import GHC.Float (double2Float)
 import GHC.Generics (C, D, K1, M1, R, Rep, S, Selector, U1, selName, (:*:), (:+:))
+import GHC.Stack
 import Google.Protobuf.Timestamp qualified
 import Language.Haskell.TH.Quote (QuasiQuoter)
 import Network.HTTP.Client.OpenSSL (newOpenSSLManager, withOpenSSL)
@@ -355,6 +370,62 @@ headMaybe xs = head <$> nonEmpty xs
 -- Logging facilities
 
 type Logger = FastLogger.TimedFastLogger
+
+class Monad m => HasLogger m where
+  getLogger :: m Logger
+  logIO :: IO () -> m ()
+
+newtype LoggerT a = LoggerT (ReaderT Logger IO a)
+  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadReader Logger, MonadMask, MonadCatch, MonadThrow, Prometheus.MonadMonitor)
+
+runLogger :: MonadIO m => Logger -> LoggerT a -> m a
+runLogger logger (LoggerT action) = liftIO $ runReaderT action logger
+
+instance HasLogger LoggerT where
+  getLogger = ask
+  logIO = liftIO
+
+data LogLevel = LogWarning | LogInfo | LogDebug
+
+instance From LogLevel Text where
+  from = \case
+    LogWarning -> "WARNING "
+    LogInfo -> "INFO    "
+    LogDebug -> "DEBUG   "
+
+goLog :: HasLogger m => LogLevel -> Text -> Text -> [Pair] -> m ()
+goLog lvl loc msg attrs = do
+  logger <- getLogger
+  logIO $ logger (\time -> FastLogger.toLogStr $ time <> from msgText <> "\n")
+ where
+  msgText :: Text
+  msgText =
+    from lvl <> loc <> ": " <> msg <> case attrs of
+      [] -> mempty
+      _ -> " " <> Data.Aeson.OneLine.renderObject (KM.fromList attrs)
+
+getLocName :: HasCallStack => Text
+getLocName = case getCallStack callStack of
+  (_ : (_, srcLoc) : _) -> from $ srcLocModule srcLoc <> ":" <> show (srcLocStartLine srcLoc)
+  _ -> "N/C"
+
+logInfo :: (HasCallStack, HasLogger m) => Text -> [Pair] -> m ()
+logInfo = goLog LogInfo getLocName
+
+logInfo_ :: (HasCallStack, HasLogger m) => Text -> m ()
+logInfo_ msg = goLog LogInfo getLocName msg []
+
+logWarn :: (HasCallStack, HasLogger m) => Text -> [Pair] -> m ()
+logWarn = goLog LogWarning getLocName
+
+logWarn_ :: (HasCallStack, HasLogger m) => Text -> m ()
+logWarn_ msg = goLog LogWarning getLocName msg []
+
+logDebug :: (HasCallStack, HasLogger m) => Text -> [Pair] -> m ()
+logDebug = goLog LogDebug getLocName
+
+logDebug_ :: (HasCallStack, HasLogger m) => Text -> m ()
+logDebug_ msg = goLog LogDebug getLocName msg []
 
 -- | withLogger create the logger
 withLogger :: (Logger -> IO a) -> IO a

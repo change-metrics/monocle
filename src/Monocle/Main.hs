@@ -11,7 +11,6 @@ import Monocle.Backend.Index qualified as I
 import Monocle.Config (getAuthProvider, opName)
 import Monocle.Config qualified as Config
 import Monocle.Env
-import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Search.Query (loadAliases)
 import Monocle.Servant.HTTP (MonocleAPI, server)
@@ -159,7 +158,7 @@ run ApiConfig {..} = withLogger $ \glLogger -> do
   -- Initialize env to talk with OIDC provider
   oidcEnv <- case providerM of
     Just provider -> do
-      doLog glLogger $ via @Text $ AuthSystemReady $ opName provider
+      runLogger glLogger $ logInfo "AuthSystemReady" ["provider" .= opName provider]
       pure <$> initOIDCEnv provider
     _ -> pure Nothing
   let aOIDC = OIDC {..}
@@ -175,14 +174,14 @@ run ApiConfig {..} = withLogger $ \glLogger -> do
   liftIO $
     withStdoutLogger $ \aplogger -> do
       let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
-      doLog glLogger $ via @Text $ SystemReady (length workspaces) port elasticUrl
+      runLogger glLogger $ logInfo "SystemReady" ["workspace" .= length workspaces, "port" .= port, "elastic" .= elasticUrl]
       Warp.runSettings
         settings
         . cors (const $ Just policy)
         . monitoringMiddleware
         . healthMiddleware
         . staticMiddleware
-        $ app (AppEnv {..})
+        $ app AppEnv {..}
  where
   policy =
     simpleCorsResourcePolicy {corsRequestHeaders = ["content-type"]}

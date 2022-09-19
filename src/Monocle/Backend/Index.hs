@@ -5,8 +5,6 @@
 module Monocle.Backend.Index where
 
 import Crypto.Hash.SHA256 (hash)
-import Data.Aeson (object)
-import Data.Aeson.Types (Pair)
 import Data.ByteString.Base64 qualified as B64
 import Data.HashTable.IO qualified as H
 import Data.Map qualified as Map
@@ -289,7 +287,7 @@ upgradeConfigV1 = do
 upgradeConfigV2 :: QueryM ()
 upgradeConfigV2 = do
   indexName <- getIndexName
-  logMessage $ "Applying migration to schema V2 on workspace " <> show indexName
+  logInfo "Applying migration to schema V2 on workspace" [("index" .= indexName)]
   void $ BH.putMapping indexName CachedAuthorIndexMapping
   added <- populateAuthorCache
   logMessage $ "Authors cache populated with " <> show added <> " Monocle uids"
