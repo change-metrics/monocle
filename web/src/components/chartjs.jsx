@@ -47,13 +47,24 @@ class InterweaveContent extends React.Component {
 }
 
 class SingleLineHisto extends React.Component {
-  prepareData(histo, label) {
+  prepareData(histo, label, isDuration) {
+    var display_label
+    var display_data
+    if (isDuration) {
+      // Add annotation
+      display_label = label + " (in days)"
+      // Duration is a value in second (here ensure days to ease readability)
+      display_data = histo.map(bucket => bucket.count / (24 * 3600))
+    } else {
+      display_label = label
+      display_data = histo.map(bucket => bucket.count)
+    }
     const data = {
       labels: histo.map(bucket => bucket.date),
       datasets: [
         {
-          label: label,
-          data: histo.map(bucket => bucket.count),
+          label: display_label,
+          data: display_data,
           lineTension: 0.5,
           pointBorderColor: 'rgba(247,242,141,1)',
           pointBackgroundColor: '#fff',
@@ -67,7 +78,7 @@ class SingleLineHisto extends React.Component {
   }
 
   render() {
-    const data = this.prepareData(this.props.data.histo, this.props.data.label)
+    const data = this.prepareData(this.props.data.histo, this.props.data.label, this.props.data.isDuration)
     return (
       <Line
         data={data}

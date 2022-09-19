@@ -86,6 +86,29 @@ type terms_count_float = {
   total_hits : int32;
 }
 
+type duration = {
+  value : int32;
+}
+
+type histo_duration = {
+  date : string;
+  count : int32;
+}
+
+type histo_duration_stat = {
+  histo : histo_duration list;
+}
+
+type term_count_duration = {
+  term : string;
+  count : int32;
+}
+
+type terms_count_duration = {
+  termcount : term_count_duration list;
+  total_hits : int32;
+}
+
 type get_response =
   | Error of string
   | Float_value of float
@@ -94,6 +117,9 @@ type get_response =
   | Histo_float of histo_float_stat
   | Top_int of terms_count_int
   | Top_float of terms_count_float
+  | Duration_value of duration
+  | Histo_duration of histo_duration_stat
+  | Top_duration of terms_count_duration
 
 type info_response =
   | Error of string
@@ -213,6 +239,39 @@ val default_terms_count_float :
   unit ->
   terms_count_float
 (** [default_terms_count_float ()] is the default value for type [terms_count_float] *)
+
+val default_duration : 
+  ?value:int32 ->
+  unit ->
+  duration
+(** [default_duration ()] is the default value for type [duration] *)
+
+val default_histo_duration : 
+  ?date:string ->
+  ?count:int32 ->
+  unit ->
+  histo_duration
+(** [default_histo_duration ()] is the default value for type [histo_duration] *)
+
+val default_histo_duration_stat : 
+  ?histo:histo_duration list ->
+  unit ->
+  histo_duration_stat
+(** [default_histo_duration_stat ()] is the default value for type [histo_duration_stat] *)
+
+val default_term_count_duration : 
+  ?term:string ->
+  ?count:int32 ->
+  unit ->
+  term_count_duration
+(** [default_term_count_duration ()] is the default value for type [term_count_duration] *)
+
+val default_terms_count_duration : 
+  ?termcount:term_count_duration list ->
+  ?total_hits:int32 ->
+  unit ->
+  terms_count_duration
+(** [default_terms_count_duration ()] is the default value for type [terms_count_duration] *)
 
 val default_get_response : unit -> get_response
 (** [default_get_response ()] is the default value for type [get_response] *)

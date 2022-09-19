@@ -72,6 +72,8 @@ module MetricCompute = {
           switch resp {
           | MetricTypes.Int_value(v) => <Count value={v->int32_str} />
           | MetricTypes.Float_value(v) => <Count value={v->Belt.Float.toString} />
+          | MetricTypes.Duration_value({value: v}) =>
+            <Count value={v->int32_str->momentHumanizeDuration} />
           | _ => <p> {"Not supported"->str} </p>
           }
         }}
@@ -126,8 +128,11 @@ module MetricTop = {
 module MetricTrend = {
   module SimpleHisto = {
     @react.component @module("./chartjs.jsx")
-    external make: (~histo: array<MetricTypes.histo_float>, ~label: string) => React.element =
-      "SimpleHisto"
+    external make: (
+      ~histo: array<MetricTypes.histo_float>,
+      ~label: string,
+      ~isDuration: bool,
+    ) => React.element = "SimpleHisto"
   }
   type intervals = {
     auto: bool,
@@ -169,6 +174,13 @@ module MetricTrend = {
     let trigger = state.query ++ getInterval()
     let trend: MetricTypes.trend = {interval: getInterval()}
     let toHistoFloat = (histo_int: list<MetricTypes.histo_int>): list<MetricTypes.histo_float> =>
+      histo_int->Belt.List.map(b => {
+        let nb: MetricTypes.histo_float = {date: b.date, count: b.count->Int32.to_float}
+        nb
+      })
+    let toHistoFloat' = (histo_int: list<MetricTypes.histo_duration>): list<
+      MetricTypes.histo_float,
+    > =>
       histo_int->Belt.List.map(b => {
         let nb: MetricTypes.histo_float = {date: b.date, count: b.count->Int32.to_float}
         nb
@@ -236,9 +248,15 @@ module MetricTrend = {
               </FormGroup>
               {switch resp {
               | MetricTypes.Histo_int(v) =>
-                <SimpleHisto histo={v.histo->toHistoFloat->Belt.List.toArray} label=metric />
+                <SimpleHisto
+                  histo={v.histo->toHistoFloat->Belt.List.toArray} label=metric isDuration=false
+                />
               | MetricTypes.Histo_float(v) =>
-                <SimpleHisto histo={v.histo->Belt.List.toArray} label=metric />
+                <SimpleHisto histo={v.histo->Belt.List.toArray} label=metric isDuration=false />
+              | MetricTypes.Histo_duration(v) =>
+                <SimpleHisto
+                  histo={v.histo->toHistoFloat'->Belt.List.toArray} label=metric isDuration=true
+                />
               | _ => <p> {"Not supported"->str} </p>
               }}
             </Form>
