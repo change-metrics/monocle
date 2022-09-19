@@ -14,6 +14,7 @@ import Monocle.Client
 import Monocle.Config qualified as Config
 import Monocle.Entity (CrawlerName (..))
 import Monocle.Env
+import Monocle.Logging
 import Monocle.Prelude
 import Streaming.Prelude qualified as Streaming
 import Test.Tasty

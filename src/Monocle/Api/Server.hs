@@ -30,6 +30,7 @@ import Monocle.Config (Config, OIDCProviderConfig (..))
 import Monocle.Config qualified as Config
 import Monocle.Entity
 import Monocle.Env
+import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Auth qualified as AuthPB
 import Monocle.Protob.Config qualified as ConfigPB

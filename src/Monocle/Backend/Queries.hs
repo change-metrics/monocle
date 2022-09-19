@@ -19,12 +19,31 @@ import Json.Extras qualified as Json
 import Monocle.Backend.Documents (EChange (..), EChangeEvent (..), EChangeState (..), EDocType (..), allEventTypes)
 import Monocle.Config qualified as Config
 import Monocle.Env
-import Monocle.Prelude hiding (doSearch)
+import Monocle.Logging
+import Monocle.Prelude
 import Monocle.Protob.Metric qualified as MetricPB
 import Monocle.Protob.Search qualified as SearchPB
 import Monocle.Search.Query (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), rangeField)
 import Monocle.Search.Query qualified as Q
 import Streaming.Prelude qualified as Streaming
+
+-- Legacy wrappers
+doSearchLegacy :: (HasLogger m, FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m (BH.SearchResult a)
+doSearchLegacy indexName search = do
+  -- logText . decodeUtf8 . encode $ search
+  rawResp <- BH.searchByIndex indexName search
+  -- logText $ show rawResp
+  resp <- BH.parseEsResponse rawResp
+  case resp of
+    Left e -> handleError e rawResp
+    Right x -> pure x
+ where
+  handleError resp rawResp = do
+    logWarn "Elastic response failed" ["status" .= BH.errorStatus resp, "message" .= BH.errorMessage resp]
+    error $ "Elastic response failed: " <> show rawResp
+
+simpleSearchLegacy :: (FromJSON a, HasLogger m, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m [BH.Hit a]
+simpleSearchLegacy indexName search = BH.hits . BH.searchHits <$> doSearchLegacy indexName search
 
 -------------------------------------------------------------------------------
 -- Low level wrappers for bloodhound.

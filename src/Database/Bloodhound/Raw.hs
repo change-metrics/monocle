@@ -24,6 +24,7 @@ import Data.Text qualified as Text
 import Data.Vector qualified as V
 import Database.Bloodhound qualified as BH
 import Json.Extras qualified as Json
+import Monocle.Logging
 import Monocle.Prelude
 import Network.HTTP.Client qualified as HTTP
 import Network.HTTP.Types.Method qualified as HTTP

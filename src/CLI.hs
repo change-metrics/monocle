@@ -18,7 +18,7 @@ import Monocle.Backend.Janitor qualified as J
 import Monocle.Client (withClient)
 import Monocle.Config qualified as Config
 import Monocle.Env (mkEnv, runQueryM')
-import Monocle.Logging (LogCrawlerContext (..))
+import Monocle.Logging
 import Monocle.Main (ApiConfig (..))
 import Monocle.Main qualified
 import Monocle.Prelude hiding ((:::))

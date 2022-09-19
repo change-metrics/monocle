@@ -13,7 +13,7 @@ import Lentille (
   RequestLog (..),
  )
 import Lentille.GraphQL
-import Monocle.Logging (LogCrawlerContext)
+import Monocle.Logging
 import Monocle.Prelude
 import Network.HTTP.Client (Response, responseBody, responseStatus)
 import Network.HTTP.Types (Status, badGateway502, forbidden403, ok200)

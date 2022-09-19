@@ -6,6 +6,7 @@ import Monocle.Backend.Index qualified as I
 import Monocle.Client
 import Monocle.Config qualified as Config
 import Monocle.Env
+import Monocle.Logging
 import Monocle.Main
 import Monocle.Prelude
 import Network.HTTP.Mock (withMockedManager)

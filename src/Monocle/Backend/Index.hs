@@ -18,6 +18,7 @@ import Monocle.Backend.Queries qualified as Q
 import Monocle.Config qualified as Config
 import Monocle.Entity
 import Monocle.Env
+import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Change qualified as ChangePB
 import Monocle.Protob.Crawler qualified as CrawlerPB
@@ -257,7 +258,7 @@ upgradeConfigV1 = do
     let entity = CrawlerPB.EntityTypeENTITY_TYPE_PROJECT
         search = BH.mkSearch (Just $ crawlerMDQuery entity crawlerName) Nothing
     index <- getIndexName
-    resp <- fmap BH.hitSource <$> simpleSearch index search
+    resp <- fmap BH.hitSource <$> Q.simpleSearchLegacy index search
     pure $ catMaybes resp
   isCrawlerLastCommitAtIsDefault :: Config.Index -> ECrawlerMetadata -> Bool
   isCrawlerLastCommitAtIsDefault
@@ -836,7 +837,7 @@ crawlerMDQuery entity crawlerName =
 getLastUpdated :: Config.Crawler -> CrawlerPB.EntityType -> Word32 -> QueryM (Maybe ECrawlerMetadataObject)
 getLastUpdated crawler entity offset = do
   index <- getIndexName
-  resp <- fmap BH.hitSource <$> simpleSearch index search
+  resp <- fmap BH.hitSource <$> Q.simpleSearchLegacy index search
   case nonEmpty (catMaybes resp) of
     Nothing -> pure Nothing
     Just xs ->

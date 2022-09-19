@@ -20,6 +20,7 @@ import Monocle.Backend.Queries as Q
 import Monocle.Config qualified as Config
 import Monocle.Entity (Entity (Project))
 import Monocle.Env
+import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Crawler qualified as CrawlerPB
 import Streaming.Prelude qualified as Streaming

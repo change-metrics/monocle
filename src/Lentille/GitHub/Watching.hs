@@ -12,7 +12,7 @@ import Lentille qualified
 import Lentille.GitHub.RateLimit qualified
 import Lentille.GraphQL qualified
 import Monocle.Entity
-import Monocle.Logging qualified
+import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Crawler qualified
 

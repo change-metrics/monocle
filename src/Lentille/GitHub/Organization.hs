@@ -10,7 +10,7 @@ import Lentille (MonadGraphQLE)
 import Lentille.GitHub.RateLimit (getRateLimit, retryCheck)
 import Lentille.GraphQL
 import Monocle.Entity (Entity (Organization))
-import Monocle.Logging (LogCrawlerContext)
+import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Crawler (Project (..))
 

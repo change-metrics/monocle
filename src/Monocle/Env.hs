@@ -7,6 +7,7 @@ import GHC.Stack (srcLocFile, srcLocStartLine)
 import Json.Extras qualified as Json
 import Monocle.Api.Jwt (OIDCEnv)
 import Monocle.Config qualified as Config
+import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Search.Query qualified as Q
 import Monocle.Search.Syntax (Expr)

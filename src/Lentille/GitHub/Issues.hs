@@ -21,7 +21,7 @@ import Lentille (MonadGraphQLE)
 import Lentille.GitHub.RateLimit (getRateLimit)
 import Lentille.GraphQL
 import Monocle.Entity (Entity (TaskDataEntity))
-import Monocle.Logging (LogCrawlerContext)
+import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Search (TaskData (..))
 

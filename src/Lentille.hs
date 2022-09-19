@@ -29,6 +29,7 @@ module Lentille (
 
   -- * Re-export
   module Monocle.Class,
+  module Monocle.Logging,
 ) where
 
 import Data.Text qualified as T

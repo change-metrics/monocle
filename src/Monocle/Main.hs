@@ -11,6 +11,7 @@ import Monocle.Backend.Index qualified as I
 import Monocle.Config (getAuthProvider, opName)
 import Monocle.Config qualified as Config
 import Monocle.Env
+import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Search.Query (loadAliases)
 import Monocle.Servant.HTTP (MonocleAPI, server)

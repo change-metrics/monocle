@@ -7,6 +7,7 @@ import Control.Retry qualified as Retry
 import Data.Time.Clock qualified (getCurrentTime)
 import Monocle.Client (MonocleClient, mkManager)
 import Monocle.Client.Api (crawlerAddDoc, crawlerCommit, crawlerCommitInfo)
+import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Crawler (
   AddDocRequest,
