@@ -30,7 +30,6 @@ import Monocle.Config (Config, OIDCProviderConfig (..))
 import Monocle.Config qualified as Config
 import Monocle.Entity
 import Monocle.Env
-import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Auth qualified as AuthPB
 import Monocle.Protob.Config qualified as ConfigPB
@@ -77,7 +76,7 @@ updateIndex index wsRef = runEmptyQueryM index $ modifyMVar_ wsRef doUpdateIfNee
 
   refreshIndex :: QueryM ()
   refreshIndex = do
-    logEvent $ RefreshIndex index
+    logInfo "RefreshIndex" ["index" .= Config.getWorkspaceName index]
     I.ensureIndexSetup
     traverse_ I.initCrawlerMetadata $ Config.crawlers index
 
@@ -294,11 +293,11 @@ crawlerAddDoc _auth request = do
     Left err -> pure $ toErrorResponse err
  where
   addTDs crawlerName taskDatas = do
-    logEvent $ AddingTaskData crawlerName (length taskDatas)
+    logInfo "AddingTaskData" ["crawler" .= crawlerName, "tds" .= length taskDatas]
     I.taskDataAdd (from crawlerName) $ toList taskDatas
     pure $ CrawlerPB.AddDocResponse Nothing
   addChanges crawlerName changes events = do
-    logEvent $ AddingChange crawlerName (length changes) (length events)
+    logInfo "AddingChange" ["crawler" .= crawlerName, "changes" .= length changes, "events" .= length events]
     let changes' = map from $ toList changes
         events' = map I.toEChangeEvent $ toList events
     I.indexChanges changes'
@@ -307,7 +306,7 @@ crawlerAddDoc _auth request = do
     I.addCachedAuthors events'
     pure $ CrawlerPB.AddDocResponse Nothing
   addProjects crawler organizationName projects = do
-    logEvent $ AddingProject (getWorkerName crawler) organizationName (length projects)
+    logInfo "AddingProject" ["crawler" .= getWorkerName crawler, "org" .= organizationName, "projects" .= length projects]
     let names = projectNames projects
         -- TODO(fbo) Enable crawl github issues by default for an organization.
         -- We might need to re-think some data fetching like priority/severity.
@@ -353,7 +352,7 @@ crawlerCommit _auth request = do
   case requestE of
     Right (index, ts, entity) -> runEmptyQueryM index $ do
       let date = Timestamp.toUTCTime ts
-      logEvent $ UpdatingEntity crawlerName entity date
+      logInfo "UpdatingEntity" ["crawler" .= crawlerName, "entity" .= entity, "date" .= date]
       -- TODO: check for CommitDateInferiorThanPrevious
       _ <- I.setLastUpdated (CrawlerName $ from crawlerName) date entity
 
@@ -908,7 +907,7 @@ handleLoggedIn ::
 handleLoggedIn err codeM stateM = do
   aOIDC <- asks aOIDC
   GetConfig config <- getConfig
-  log $ OIDCCallbackCall err codeM stateM
+  logInfo "OIDCCallbackCall" ["err" .= err, "code" .= codeM, "state" .= stateM]
   case (oidcEnv aOIDC, err, codeM, stateM) of
     (_, Just errorMsg, _, _) -> forbidden $ "Error from remote provider: " <> errorMsg
     (_, _, Nothing, _) -> forbidden "No code parameter given"
@@ -928,19 +927,19 @@ handleLoggedIn err codeM stateM = do
           expiry = addUTCTime (24 * 3600) now
           userId = aUserId oidcEnv idToken
           mUidMap = getIdents config $ "AuthProviderUID:" <> userId
-      log . OIDCProviderTokenRequested $ show idToken
+      logInfo "OIDCProviderTokenRequested" ["id" .= show @Text idToken]
       jwtE <- liftIO $ mkJwt (localJWTSettings aOIDC) mUidMap userId (Just expiry)
       case jwtE of
         Right jwt -> do
           incCounter monocleAuthSuccessCounter
-          log $ JWTCreated (show mUidMap) (decodeUtf8 $ redirectUri oidcEnv)
+          logInfo "JWTCreated" ["uid" .= mUidMap, "redir" .= unsafeInto @Text (redirectUri oidcEnv)]
           let liJWT = decodeUtf8 jwt
               liRedirectURI = case decodeOIDCState $ encodeUtf8 oauthState of
                 Just (OIDCState _ (Just uri)) -> uri
                 _ -> "/"
           pure $ LoginInUser {..}
         Left err' -> do
-          log $ JWTCreateFailed (show mUidMap) (show err')
+          logInfo "JWTCreateFailed" ["uid" .= mUidMap, "err" .= show @Text err']
           forbidden $ "Unable to generate user JWT due to: " <> show err'
  where
   -- Get the Token's claim that identify an unique user
@@ -954,9 +953,7 @@ handleLoggedIn err codeM stateM = do
     Nothing -> defaultUserId
    where
     defaultUserId = sub idToken
-  log ev = do
-    aEnv <- asks aEnv
-    liftIO $ doLog (glLogger aEnv) $ via @Text $ ev
+
   -- Given a Claim, get a mapping of index (workspace) name to Monocle UID (mUid)
   getIdents :: Config -> Text -> Map.Map Text Text
   getIdents config auid = foldr go Map.empty $ Config.getWorkspaces config

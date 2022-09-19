@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Monocle.Entity (
@@ -24,7 +25,7 @@ data Entity
   = Project Text
   | Organization Text
   | TaskDataEntity Text
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, ToJSON)
 
 makePrisms ''Entity
 

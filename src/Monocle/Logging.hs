@@ -2,11 +2,8 @@
 module Monocle.Logging where
 
 import Data.Text qualified as T
-import Monocle.Config qualified as Config
 import Monocle.Entity
 import Monocle.Prelude
-import Monocle.Protob.Search (QueryRequest_QueryType (..))
-import Monocle.Search.Query qualified as Q
 
 data LogCrawlerContext = LogCrawlerContext
   { lccIndex :: Text
@@ -40,16 +37,6 @@ data LogEvent
   | LogGetBugs UTCTime Int Int
   | LogGraphQL LogCrawlerContext Text
   | LogRaw Text
-  | AddingChange LText Int Int
-  | AddingProject Text Text Int
-  | AddingTaskData LText Int
-  | UpdatingEntity LText Entity UTCTime
-  | Searching QueryRequest_QueryType LText Q.Query
-  | RefreshIndex Config.Index
-  | OIDCCallbackCall (Maybe Text) (Maybe Text) (Maybe Text)
-  | OIDCProviderTokenRequested Text
-  | JWTCreated Text Text
-  | JWTCreateFailed Text Text
 
 instance From LogEvent Text where
   from = \case
@@ -77,24 +64,5 @@ instance From LogEvent Text where
     LogMacroReloadingStart -> "Macroscope reloading beging"
     LogGraphQL lc text -> prefix lc <> " - " <> text
     LogRaw t -> t
-    AddingChange crawler changes events ->
-      from crawler <> " adding " <> show changes <> " changes with " <> show events <> " events"
-    AddingProject crawler organizationName projects ->
-      crawler <> " adding " <> show projects <> " changes for organization: " <> organizationName
-    AddingTaskData crawler tds ->
-      from crawler <> " adding " <> show tds
-    UpdatingEntity crawler entity ts ->
-      from crawler <> " updating " <> show entity <> " to " <> show ts
-    Searching queryType queryText query ->
-      let jsonQuery = decodeUtf8 . encode $ Q.queryGet query id Nothing
-       in "searching " <> show queryType <> " with `" <> from queryText <> "`: " <> jsonQuery
-    RefreshIndex index ->
-      "Ensure workspace: " <> Config.getWorkspaceName index <> " exists and refresh crawlers metadata"
-    OIDCCallbackCall errM codeM stateM ->
-      "Received OIDC Callback: (err: " <> show errM <> " code: " <> show codeM <> " state: " <> show stateM <> ")"
-    OIDCProviderTokenRequested content ->
-      "Requested OIDC IdToken: " <> content
-    JWTCreated mUid redirectUri -> "JSON Web Token created for mUid: " <> mUid <> ". Redirecting user to: " <> redirectUri
-    JWTCreateFailed mUid err -> "JSON Web Token created failed for mUid: " <> mUid <> " due to: " <> err
    where
     prefix LogCrawlerContext {..} = "[" <> lccIndex <> "] " <> "Crawler: " <> lccName
