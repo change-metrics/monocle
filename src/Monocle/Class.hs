@@ -55,7 +55,7 @@ instance MonadSync IO where
 
 instance MonadSync LoggerT where
   mNewMVar = liftIO . mNewMVar
-  mModifyMVar a = UnliftIO.modifyMVar a
+  mModifyMVar = UnliftIO.modifyMVar
 
 -------------------------------------------------------------------------------
 -- A GraphQL client system

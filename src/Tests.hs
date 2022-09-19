@@ -11,6 +11,7 @@ import Monocle.Client (MonocleClient (tokenM))
 import Monocle.Client.Api (authGetMagicJwt, authWhoAmi, configGetGroupMembers, configGetGroups, crawlerCommitInfo)
 import Monocle.Config qualified as Config
 import Monocle.Env
+import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Auth
 import Monocle.Protob.Config (
@@ -66,14 +67,13 @@ main = withOpenSSL $ do
 
 -- Create an AppEnv where the supply of a new config can be controled
 mkAppEnvWithSideEffect :: Config.Config -> Config.Config -> TVar Bool -> IO AppEnv
-mkAppEnvWithSideEffect config' newConfig reloadedRef = do
+mkAppEnvWithSideEffect config' newConfig reloadedRef = withLogger \glLogger -> do
   bhEnv <- mkEnv'
   ws <- newMVar $ Config.mkWorkspaceStatus config'
   newWs <- newMVar $ Config.mkWorkspaceStatus newConfig
   jwk <- generateKey
   Config.setWorkspaceStatus Config.Ready ws
-  let glLogger _ = pure ()
-      config = configSE (config', ws) (newConfig, newWs)
+  let config = configSE (config', ws) (newConfig, newWs)
       aOIDC = OIDC Nothing (defaultJWTSettings jwk)
       aEnv = Env {..}
   pure $ AppEnv {..}

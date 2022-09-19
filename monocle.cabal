@@ -87,7 +87,9 @@ common common-options
                        StrictData,
                        TypeApplications,
                        TypeOperators,
-                       ViewPatterns
+                       ViewPatterns,
+                       -- BlockArguments enables omiting `$` before do block
+                       BlockArguments
 
 common codegen
   default-language:    Haskell2010
