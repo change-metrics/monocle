@@ -112,7 +112,8 @@ runStream ::
   m ()
 runStream apiKey indexName crawlerName documentStream = do
   startTime <- mGetCurrentTime
-  runStream' startTime apiKey indexName crawlerName documentStream
+  withContext ("index" .= indexName <> "crawler" .= crawlerName <> "stream" .= streamName documentStream) do
+    runStream' startTime apiKey indexName crawlerName documentStream
 
 runStream' ::
   forall m.
@@ -125,13 +126,12 @@ runStream' ::
   m ()
 runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream = drainEntities (0 :: Word32)
  where
-  baseCtx = ["index" .= indexName, "crawler" .= crawlerName, "stream" .= streamName documentStream]
   drainEntities offset =
     unlessStopped $
       safeDrainEntities offset `catch` handleStreamError offset
 
   safeDrainEntities offset = do
-    logInfo "Looking for oldest entity" $ baseCtx <> ["offset" .= offset]
+    logInfo "Looking for oldest entity" ["offset" .= offset]
     monocleBaseUrl <- getClientBaseUrl
     let retryHttp :: m a -> m a
         retryHttp = httpRetry ("api-client", monocleBaseUrl, "internal")
@@ -139,14 +139,14 @@ runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream =
     -- Query the monocle api for the oldest entity to be updated.
     oldestEntityM <- retryHttp $ getStreamOldestEntity indexName (from crawlerName) (streamEntity documentStream) offset
     case oldestEntityM of
-      Nothing -> logInfo "Unable to find entity to update" baseCtx
+      Nothing -> logInfo_ "Unable to find entity to update"
       Just (oldestAge, entity)
         | -- add a 1 second delta to avoid Hysteresis
           addUTCTime 1 oldestAge >= startTime ->
-            logInfo "Crawling entities completed" $ baseCtx <> ["entity" .= entity, "age" .= oldestAge]
+            logInfo "Crawling entities completed" ["entity" .= entity, "age" .= oldestAge]
         | otherwise -> do
-            let processLogFunc c = logInfo "Posting documents" (baseCtx <> ["count" .= c])
-            logInfo "Processing" $ baseCtx <> ["entity" .= entity, "age" .= oldestAge]
+            let processLogFunc c = logInfo "Posting documents" ["count" .= c]
+            logInfo "Processing" ["entity" .= entity, "age" .= oldestAge]
 
             -- Run the document stream for that entity
             postResult <-
@@ -160,15 +160,15 @@ runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream =
                 res <- retryHttp $ commitTimestamp entity
                 case res of
                   Nothing -> do
-                    logInfo "Continuing on next entity" baseCtx
+                    logInfo_ "Continuing on next entity"
                     drainEntities offset
                   Just (err :: Text) -> do
-                    logWarn "Commit date failed" $ baseCtx <> ["err" .= err]
-              xs -> logWarn "Postt documents tailed" $ baseCtx <> ["errors" .= xs]
+                    logWarn "Commit date failed" ["err" .= err]
+              xs -> logWarn "Postt documents tailed" ["errors" .= xs]
 
   handleStreamError :: Word32 -> LentilleError -> m ()
   handleStreamError offset err = do
-    logWarn "Error occured when consuming the document stream" $ baseCtx <> ["err" .= show @Text err]
+    logWarn "Error occured when consuming the document stream" ["err" .= show @Text err]
     -- TODO: log a structured error on filesystem or audit index in elastic
     unless (isTDStream documentStream) $ drainEntities (offset + 1)
 

@@ -30,6 +30,7 @@ data Entity
 makePrisms ''Entity
 
 newtype CrawlerName = CrawlerName Text
+  deriving newtype (ToJSON)
 
 entityTypeName :: CrawlerPB.EntityType -> Text
 entityTypeName = \case

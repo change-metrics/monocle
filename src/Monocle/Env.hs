@@ -43,6 +43,7 @@ newtype AppM a = AppM {unApp :: ReaderT AppEnv Servant.Handler a}
 
 instance HasLogger AppM where
   getLogger = glLogger <$> asks aEnv
+  withContext ctx = local (\env -> env {aEnv = (aEnv env) {glLogger = addCtx ctx (glLogger (aEnv env))}})
   logIO = liftIO
 
 instance MonadMonitor AppM where
@@ -87,6 +88,7 @@ newtype QueryM a = QueryM {unTenant :: ReaderT QueryEnv IO a}
 
 instance HasLogger QueryM where
   getLogger = glLogger <$> asks tEnv
+  withContext ctx = local (\env -> env {tEnv = (tEnv env) {glLogger = addCtx ctx (glLogger (tEnv env))}})
   logIO = liftIO
 
 -- | We can derive a MonadBH from QueryM, we just needs to read the BHEnv from the tEnv

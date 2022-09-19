@@ -18,6 +18,7 @@ module Monocle.Logging (
 
   -- * The logger object
   Logger,
+  addCtx,
   withLogger,
 
   -- * Standalone logging implementation (for use outside of Monocle.Env or LentilleM)
@@ -42,6 +43,7 @@ import Monocle.Prelude
 -- | The logger effect definition, to be implemented by custom monad such as LentilleM
 class Monad m => HasLogger m where
   getLogger :: m Logger
+  withContext :: Series -> m () -> m ()
   logIO :: IO () -> m ()
 
 data LogLevel = LogWarning | LogInfo | LogDebug
@@ -55,16 +57,15 @@ instance From LogLevel ByteString where
 -- | doLog outputs a oneliner text message
 doLog :: HasLogger m => LogLevel -> ByteString -> Text -> [Series] -> m ()
 doLog lvl loc msg attrs = do
-  Logger logger <- getLogger
-  logIO $ logger (\time -> FastLogger.toLogStr $ time <> msgText <> "\n")
+  Logger ctx logger <- getLogger
+  let body :: ByteString
+      body = case from . encodingToLazyByteString . pairs . mappend ctx . mconcat $ attrs of
+        "{}" -> mempty
+        x -> " " <> x
+  logIO $ logger (\time -> FastLogger.toLogStr $ time <> msgText <> body <> "\n")
  where
-  body :: ByteString
-  body = from . encodingToLazyByteString . pairs . mconcat $ attrs
   msgText :: ByteString
-  msgText =
-    from lvl <> loc <> ": " <> encodeUtf8 msg <> case body of
-      "{}" -> mempty
-      _ -> " " <> body
+  msgText = from lvl <> loc <> ": " <> encodeUtf8 msg
 
 -- | Get the `Module.Name:LINE` from the log* caller, jumping over the log* stack
 getLocName :: HasCallStack => ByteString
@@ -97,13 +98,19 @@ logDebug_ :: (HasCallStack, HasLogger m) => Text -> m ()
 logDebug_ msg = doLog LogDebug getLocName msg []
 
 -- | The logger representation, it is opaque for users.
-newtype Logger = Logger FastLogger.TimedFastLogger
+data Logger = Logger
+  { _ctx :: Series
+  , _logger :: FastLogger.TimedFastLogger
+  }
+
+addCtx :: Series -> Logger -> Logger
+addCtx ctx (Logger prev logger) = Logger (ctx <> prev) logger
 
 -- | withLogger create the logger
 withLogger :: (Logger -> IO a) -> IO a
 withLogger cb = do
   tc <- liftIO $ FastLogger.newTimeCache "%F %T "
-  FastLogger.withTimedFastLogger tc logger (cb . Logger)
+  FastLogger.withTimedFastLogger tc logger (cb . Logger mempty)
  where
   logger = FastLogger.LogStderr 1024
 
@@ -113,6 +120,7 @@ newtype LoggerT a = LoggerT (ReaderT Logger IO a)
 
 instance HasLogger LoggerT where
   getLogger = ask
+  withContext series = local (addCtx series)
   logIO = liftIO
 
 runLogger :: MonadIO m => Logger -> LoggerT a -> m a
