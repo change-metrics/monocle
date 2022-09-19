@@ -39,6 +39,12 @@ let
       sha256 = "sha256-QEN1wOLLUEsDKAbgz8ex0wfK/duNytvRYclwkBj/1G0=";
     };
 
+    # upgrade to envparse 0.5 to persist env var for ghcid hot reload
+    envparse = pkgs.haskell.lib.overrideCabal hpPrev.envparse {
+      version = "0.5.0";
+      sha256 = "sha256-rbVK5O9IyM0STncLv3dGMv+Tgtwgju0z49pE0g/A2x0=";
+    };
+
     # upgrade to latest morpheus needs some work
     morpheus-graphql-tests = mk-morpheus-lib hpPrev "tests";
     morpheus-graphql-core = mk-morpheus-lib hpPrev "core";
