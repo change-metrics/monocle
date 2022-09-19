@@ -107,6 +107,9 @@ class Monad m => MonadRetry m where
 instance MonadRetry IO where
   retry = retry'
 
+instance MonadRetry LoggerT where
+  retry = retry'
+
 retryLimit :: Int
 retryLimit = 7
 
@@ -124,7 +127,7 @@ retry' policy handler baseAction =
   action (RetryStatus num _ _) = baseAction num
 
 -- | Retry HTTP network action, doubling backoff each time
-httpRetry :: (MonadLog m, MonadMonitor m, MonadRetry m) => (Text, Text, Text) -> m a -> m a
+httpRetry :: (HasLogger m, MonadMonitor m, MonadRetry m) => (Text, Text, Text) -> m a -> m a
 httpRetry label baseAction = retry policy httpHandler (const action)
  where
   backoff = 500000 -- 500ms
@@ -135,15 +138,10 @@ httpRetry label baseAction = retry policy httpHandler (const action)
     pure res
   httpHandler (RetryStatus num _ _) = Handler $ \case
     HttpExceptionRequest req ctx -> do
-      let url = decodeUtf8 $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
+      let url = decodeUtf8 @Text $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
           arg = decodeUtf8 $ HTTP.queryString req
           loc = if num == 0 then url <> arg else url
-      mLog . Log Unspecified . LogNetworkFailure $
-        counterT num retryLimit
-          <> " "
-          <> loc
-          <> " failed: "
-          <> show ctx
+      logWarn "network error" ["count" .= num, "limit" .= retryLimit, "loc" .= loc, "failed" .= show @Text ctx]
       incrementCounter httpFailureCounter label
       pure True
     InvalidUrlException _ _ -> pure False

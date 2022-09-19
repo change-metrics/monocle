@@ -165,12 +165,13 @@ run ApiConfig {..} = withLogger $ \glLogger -> do
 
   bhEnv <- mkEnv elasticUrl
   let aEnv = Env {..}
-  httpRetry ("elastic-client", elasticUrl, "internal") $
-    liftIO $
-      traverse_ (\tenant -> runQueryM' bhEnv tenant I.ensureIndex) workspaces
-  httpRetry ("elastic-client", elasticUrl, "internal") $
-    liftIO $
-      runQueryTarget bhEnv (QueryConfig conf) I.ensureConfigIndex
+  runLogger glLogger $ do
+    httpRetry ("elastic-client", elasticUrl, "internal") $
+      liftIO $
+        traverse_ (\tenant -> runQueryM' bhEnv tenant I.ensureIndex) workspaces
+    httpRetry ("elastic-client", elasticUrl, "internal") $
+      liftIO $
+        runQueryTarget bhEnv (QueryConfig conf) I.ensureConfigIndex
   liftIO $
     withStdoutLogger $ \aplogger -> do
       let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
