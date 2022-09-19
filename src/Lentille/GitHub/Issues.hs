@@ -84,7 +84,7 @@ defineByDocumentFile
   |]
 
 streamLinkedIssue ::
-  MonadGraphQLE m =>
+  (HasLogger m, MonadGraphQLE m) =>
   GraphClient ->
   (Entity -> LogCrawlerContext) ->
   UTCTime ->

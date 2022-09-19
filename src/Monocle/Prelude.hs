@@ -45,6 +45,7 @@ module Monocle.Prelude (
   -- * fast-logger
   HasLogger (..),
   runLogger,
+  runLogger',
   logInfo,
   logInfo_,
   logWarn,
@@ -54,9 +55,6 @@ module Monocle.Prelude (
   Logger,
   LoggerT,
   withLogger,
-  doLog,
-  logMessage,
-  logText,
 
   -- * unliftio
   MonadUnliftIO,
@@ -376,10 +374,13 @@ class Monad m => HasLogger m where
   logIO :: IO () -> m ()
 
 newtype LoggerT a = LoggerT (ReaderT Logger IO a)
-  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadReader Logger, MonadMask, MonadCatch, MonadThrow, Prometheus.MonadMonitor)
+  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadReader Logger, MonadMask, MonadCatch, MonadThrow, MonadUnliftIO, Prometheus.MonadMonitor)
 
 runLogger :: MonadIO m => Logger -> LoggerT a -> m a
 runLogger logger (LoggerT action) = liftIO $ runReaderT action logger
+
+runLogger' :: MonadIO m => LoggerT a -> m a
+runLogger' (LoggerT action) = liftIO $ withLogger (runReaderT action)
 
 instance HasLogger LoggerT where
   getLogger = ask
@@ -434,17 +435,6 @@ withLogger cb = do
   FastLogger.withTimedFastLogger tc logger cb
  where
   logger = FastLogger.LogStderr 1024
-
-doLog :: Logger -> ByteString -> IO ()
-doLog logger message = logger (\time -> FastLogger.toLogStr $ time <> message <> "\n")
-
--- | Print a message to the stderr with a timestamp
-logMessage :: MonadIO m => ByteString -> m ()
-logMessage msg = liftIO $ withLogger (`doLog` msg)
-
--- | Print a text message to the stderr with a timestamp
-logText :: MonadIO m => Text -> m ()
-logText = logMessage . from
 
 getEnv' :: Text -> IO Text
 getEnv' var = do

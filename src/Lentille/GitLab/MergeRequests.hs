@@ -105,12 +105,12 @@ defineByDocumentFile
 
 type Changes = (Change, [ChangeEvent])
 
-fetchMergeRequest :: MonadGraphQL m => GraphClient -> Text -> Text -> m (Either (FetchError GetProjectMergeRequests) GetProjectMergeRequests, [RequestLog])
+fetchMergeRequest :: (HasLogger m, MonadGraphQL m) => GraphClient -> Text -> Text -> m (Either (FetchError GetProjectMergeRequests) GetProjectMergeRequests, [RequestLog])
 fetchMergeRequest client project mrID =
   fetchWithLog (doGraphRequest noContext client) (GetProjectMergeRequestsArgs (ID project) (Just [mrID]) Nothing)
 
 streamMergeRequests ::
-  MonadGraphQLE m =>
+  (HasLogger m, MonadGraphQLE m) =>
   GraphClient ->
   (Entity -> LogCrawlerContext) ->
   -- A callback to get Ident ID from an alias

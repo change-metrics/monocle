@@ -77,7 +77,7 @@ transformResponse result = do
   getRepos r = Monocle.Protob.Crawler.Project . from . unURI . url <$> catMaybes r
 
 streamWatchedProjects ::
-  Lentille.MonadGraphQLE m =>
+  (HasLogger m, Lentille.MonadGraphQLE m) =>
   Lentille.GraphQL.GraphClient ->
   (Entity -> Monocle.Logging.LogCrawlerContext) ->
   Text ->
@@ -89,6 +89,6 @@ streamWatchedProjects client mkLC login =
   mkArgs _ = GetWatchedArgs login
   optParams =
     Lentille.GraphQL.defaultStreamFetchOptParams
-      { Lentille.GraphQL.fpRetryCheck = Just $ Lentille.GitHub.RateLimit.retryCheck Lentille.Macroscope
+      { Lentille.GraphQL.fpRetryCheck = Just Lentille.GitHub.RateLimit.retryCheck
       , Lentille.GraphQL.fpGetRatelimit = Just $ Lentille.GitHub.RateLimit.getRateLimit lc
       }

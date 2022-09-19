@@ -44,10 +44,15 @@ import Prelude (init, last)
 -- Gerrit context
 -------------------------------------------------------------------------------
 
-class (MonadRetry m, MonadLog m, MonadMonitor m) => MonadGerrit m where
+class (MonadRetry m, MonadMonitor m) => MonadGerrit m where
   getGerritClient :: Text -> Maybe (Text, Secret) -> m G.GerritClient
   getProjects :: GerritEnv -> Int -> G.GerritProjectQuery -> Maybe Int -> m GerritProjectsMessage
   queryChanges :: GerritEnv -> Int -> [GerritQuery] -> Maybe Int -> m [GerritChange]
+
+instance MonadGerrit LoggerT where
+  getGerritClient url = liftIO . getGerritClient url
+  getProjects env count query = liftIO . getProjects env count query
+  queryChanges env count queries = liftIO . queryChanges env count queries
 
 instance MonadGerrit LentilleM where
   getGerritClient url = liftIO . getGerritClient url
@@ -81,14 +86,14 @@ data GerritEnv = GerritEnv
 -------------------------------------------------------------------------------
 
 getProjectsStream ::
-  MonadGerrit m =>
+  (HasLogger m, MonadGerrit m) =>
   GerritEnv ->
   Text ->
   S.Stream (S.Of CrawlerPB.Project) m ()
 getProjectsStream env reProject = streamProject env (G.Regexp reProject)
 
 getChangesStream ::
-  MonadGerrit m =>
+  (HasLogger m, MonadGerrit m) =>
   GerritEnv ->
   UTCTime ->
   Text ->
@@ -174,7 +179,7 @@ getPrefix prefixM project =
    in from $ T.dropWhileEnd (== '/') $ prefix <> T.intercalate "/" parts'
 
 streamProject ::
-  MonadGerrit m =>
+  (HasLogger m, MonadGerrit m) =>
   GerritEnv ->
   G.GerritProjectQuery ->
   S.Stream (S.Of CrawlerPB.Project) m ()
@@ -189,7 +194,7 @@ streamProject env query = go 0
     when (length pNames == size) $ go (offset + size)
 
 streamChange ::
-  MonadGerrit m =>
+  (HasLogger m, MonadGerrit m) =>
   GerritEnv ->
   [GerritQuery] ->
   S.Stream (S.Of (ChangePB.Change, [ChangePB.ChangeEvent])) m ()
@@ -197,7 +202,7 @@ streamChange env query =
   streamChange' env (identAliasCB env) (G.serverUrl $ client env) query (prefix env)
 
 streamChange' ::
-  MonadGerrit m =>
+  (HasLogger m, MonadGerrit m) =>
   GerritEnv ->
   -- A callback to get Ident ID from an alias
   (Text -> Maybe Text) ->

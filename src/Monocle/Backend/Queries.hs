@@ -36,7 +36,7 @@ measureQueryM body action = do
   ctxM <- getContext
   case ctxM of
     Just ctx ->
-      trace' $ ctx <> " " <> decodeUtf8 (encode body) <> " took " <> show (elapsedSeconds prev after)
+      logDebug ctx ["body" .= body, "elapsed" .= elapsedSeconds prev after]
     Nothing -> pure ()
   pure res
 

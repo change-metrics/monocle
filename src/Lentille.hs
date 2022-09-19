@@ -5,7 +5,6 @@ module Lentille (
   CrawlerEnv (..),
   LentilleStream,
   LentilleMonad,
-  MonadLog (..),
   runLentilleM,
   stopLentille,
   unlessStopped,
@@ -14,14 +13,7 @@ module Lentille (
   MonadGraphQLE,
   LentilleError (..),
   RequestLog (..),
-
-  -- * Log context
-  LogEvent (..),
-  LogAuthor (..),
-  Log (..),
   LogCrawlerContext (..),
-  logEvent,
-  logRaw,
 
   -- * Facilities
   getClientBaseUrl,
@@ -64,6 +56,10 @@ newtype LentilleM a = LentilleM {unLentille :: ReaderT CrawlerEnv IO a}
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadMask)
   deriving newtype (MonadReader CrawlerEnv)
   deriving newtype (MonadUnliftIO, MonadMonitor)
+
+instance HasLogger LentilleM where
+  getLogger = asks crawlerLogger
+  logIO = liftIO
 
 data CrawlerEnv = CrawlerEnv
   { crawlerClient :: MonocleClient
@@ -120,9 +116,6 @@ instance MonadSync LentilleM where
   mNewMVar = newMVar
   mModifyMVar = modifyMVar
 
-instance MonadLog LentilleM where
-  mLog = logEvent
-
 instance MonadRetry LentilleM where
   retry = retry'
 
@@ -148,24 +141,9 @@ type LentilleStream m a = Stream (Of a) m ()
 
 type LentilleMonad m =
   ( MonadTime m
-  , MonadLog m -- log is the monocle log facility
   , MonadCrawler m -- for monocle crawler http api
   , Config.MonadConfig m
   )
-
--------------------------------------------------------------------------------
--- Log system
--------------------------------------------------------------------------------
-
-logEvent :: Log -> LentilleM ()
-logEvent x = do
-  logger <- asks crawlerLogger
-  liftIO $ doLog logger message
- where
-  message = encodeUtf8 @Text @ByteString . from $ x
-
-logRaw :: MonadLog m => Text -> m ()
-logRaw text = mLog $ Log Unspecified (LogRaw text)
 
 -------------------------------------------------------------------------------
 -- Utility functions for crawlers

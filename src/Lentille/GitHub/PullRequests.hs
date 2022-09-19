@@ -186,7 +186,7 @@ instance From DateTime ChangeOptionalClosedAt where
 type Changes = (Change, [ChangeEvent])
 
 streamPullRequests ::
-  MonadGraphQLE m =>
+  (HasLogger m, MonadGraphQLE m) =>
   GraphClient ->
   (Entity -> LogCrawlerContext) ->
   -- A callback to get Ident ID from an alias
@@ -202,7 +202,7 @@ streamPullRequests client mkLC cb untilDate repoFullname =
   repo = Data.Text.takeWhileEnd (/= '/') repoFullname
   mkArgs = GetProjectPullRequestsArgs org repo
   optParams =
-    let fpRetryCheck = Just $ retryCheck Macroscope
+    let fpRetryCheck = Just retryCheck
         fpDepth = Just defaultDepthCount
         fpGetRatelimit = Just $ getRateLimit lc
      in StreamFetchOptParams {..}

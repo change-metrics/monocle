@@ -76,7 +76,7 @@ type DoFetch m = LBS.ByteString -> WriterT [RequestLog] m LBS.ByteString
 
 -- | The morpheus-graphql-client fetch callback,
 -- doc: https://hackage.haskell.org/package/morpheus-graphql-client-0.17.0/docs/Data-Morpheus-Client.html
-doGraphRequest :: MonadGraphQL m => LogCrawlerContext -> GraphClient -> DoFetch m
+doGraphRequest :: (HasLogger m, MonadGraphQL m) => LogCrawlerContext -> GraphClient -> DoFetch m
 doGraphRequest LogCrawlerContext {..} GraphClient {..} jsonBody = do
   -- Prepare the request
   let initRequest = HTTP.parseRequest_ (from url)
@@ -122,7 +122,7 @@ instance From RateLimit Text where
 -- In case of retry the depth parameter of mkArgs is decreased (see adaptDepth)
 doRequest ::
   forall a m.
-  (MonadGraphQLE m, Fetch a, FromJSON a, Show a) =>
+  (HasLogger m, MonadGraphQLE m, Fetch a, FromJSON a, Show a) =>
   GraphClient ->
   LogCrawlerContext ->
   (Maybe Int -> Maybe Text -> Args a) ->
@@ -174,7 +174,7 @@ defaultStreamFetchOptParams :: StreamFetchOptParams m a
 defaultStreamFetchOptParams = StreamFetchOptParams Nothing Nothing Nothing
 
 streamFetch ::
-  (MonadGraphQLE m, Fetch a, FromJSON a, Show a) =>
+  (HasLogger m, MonadGraphQLE m, Fetch a, FromJSON a, Show a) =>
   GraphClient ->
   LogCrawlerContext ->
   -- | query Args constructor, the function takes a Maybe depth and a Maybe cursor
@@ -185,16 +185,16 @@ streamFetch ::
   Stream (Of b) m ()
 streamFetch client@GraphClient {..} lc mkArgs StreamFetchOptParams {..} transformResponse = go Nothing 0
  where
-  log :: MonadLog m => Text -> m ()
-  log = mLog . Log Macroscope . LogGraphQL lc
+  log :: HasLogger m => Text -> m ()
+  log msg = logInfo msg ["ctx" .= lc]
 
-  holdOnIfNeeded :: MonadLog m => Maybe RateLimit -> m ()
+  holdOnIfNeeded :: (MonadTime m, HasLogger m) => Maybe RateLimit -> m ()
   holdOnIfNeeded = mapM_ toDelay
    where
-    toDelay :: (MonadLog m) => RateLimit -> m ()
+    toDelay :: (MonadTime m, HasLogger m) => RateLimit -> m ()
     toDelay rl = when (remaining rl <= 0) $ do
       let resetAtTime = resetAt rl
-      log $ "Reached Quota limit. Waiting until reset date: " <> show resetAtTime
+      logWarn "Reached Quota limit. Waiting until reset date" ["reset" .= resetAtTime]
       holdOnUntil resetAtTime
 
   request pageInfoM storedRateLimitM = do

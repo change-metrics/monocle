@@ -167,35 +167,35 @@ usageLentille =
   gerritChangeUsage = io <$> parser
    where
     parser = (,) <$> urlOption <*> changeOption
-    io (url, change) = do
+    io (url, change) = runLogger' $ do
       env <- getGerritEnv url
       dump Nothing $ G.streamChange env [G.ChangeId $ show (change :: Int)]
 
   gerritProjectsUsage = io <$> parser
    where
     parser = (,) <$> urlOption <*> queryOption
-    io (url, query) = do
+    io (url, query) = runLogger' $ do
       env <- getGerritEnv url
       dump Nothing $ G.streamProject env $ G.Regexp query
 
   gerritChangesUsage = io <$> parser
    where
     parser = (,,,) <$> urlOption <*> projectOption <*> sinceOption <*> limitOption
-    io (url, project, since, limit) = do
+    io (url, project, since, limit) = runLogger' $ do
       env <- getGerritEnv url
       dump limit $ G.streamChange env [G.Project project, G.After (toSince since)]
 
   githubProjectsUsage = io <$> parser
    where
     parser = (,,) <$> urlOption <*> secretOption <*> orgOption
-    io (url, secret, org) = do
+    io (url, secret, org) = runLogger' $ do
       client <- getGraphClient url secret
       dump Nothing $ GH_ORG.streamOrganizationProjects client mkLC org
 
   githubWatchingUsage = io <$> parser
    where
     parser = (,,,) <$> urlOption <*> secretOption <*> userOption <*> limitOption
-    io (url, secret, user, limitM) = do
+    io (url, secret, user, limitM) = runLogger' $ do
       client <- getGraphClient url secret
       dump limitM $ Lentille.GitHub.Watching.streamWatchedProjects client mkLC user
 
@@ -208,14 +208,14 @@ usageLentille =
         <*> projectOption
         <*> sinceOption
         <*> limitOption
-    io (url, secret, repo, since, limitM) = do
+    io (url, secret, repo, since, limitM) = runLogger' $ do
       client <- getGraphClient url secret
       dump limitM $ GH_PR.streamPullRequests client mkLC (const Nothing) (toSince since) repo
 
   toSince txt = case Monocle.Search.Query.parseDateValue txt of
     Just x -> x
     Nothing -> error $ "Invalid date: " <> show txt
-  getGerritEnv url = do
+  getGerritEnv url = runLogger' $ do
     client <- G.getGerritClient url Nothing
     pure $ G.GerritEnv client Nothing (const Nothing) "cli"
   getGraphClient url secret = newGraphClient url (Secret secret)

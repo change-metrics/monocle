@@ -77,9 +77,9 @@ type OldestEntity = CommitInfoResponse_OldestEntity
 -- | 'process' read the stream of document and post to the monocle API
 process ::
   forall m.
-  MonadLog m =>
+  Monad m =>
   -- | Funtion to log about the processing
-  (Int -> Log) ->
+  (Int -> m ()) ->
   -- | Function to post on the Monocle API
   ([DocumentType] -> m AddDocResponse) ->
   -- | The stream of documents to read
@@ -94,7 +94,7 @@ process logFunc postFunc =
  where
   processBatch :: [DocumentType] -> m ProcessResult
   processBatch docs = do
-    mLog $ logFunc (length docs)
+    logFunc (length docs)
     resp <- postFunc docs
     pure $ case resp of
       AddDocResponse Nothing -> AddOk
@@ -104,7 +104,7 @@ type MonadCrawlerE m = (MonadCrawler m, MonadReader CrawlerEnv m)
 
 -- | Run is the main function used by macroscope
 runStream ::
-  (MonadCatch m, MonadLog m, MonadRetry m, MonadMonitor m, MonadCrawlerE m) =>
+  (HasLogger m, MonadTime m, MonadCatch m, MonadRetry m, MonadMonitor m, MonadCrawlerE m) =>
   ApiKey ->
   IndexName ->
   CrawlerName ->
@@ -116,7 +116,7 @@ runStream apiKey indexName crawlerName documentStream = do
 
 runStream' ::
   forall m.
-  (MonadCatch m, MonadLog m, MonadRetry m, MonadMonitor m, MonadCrawlerE m) =>
+  (HasLogger m, MonadCatch m, MonadRetry m, MonadMonitor m, MonadCrawlerE m) =>
   UTCTime ->
   ApiKey ->
   IndexName ->
@@ -125,14 +125,13 @@ runStream' ::
   m ()
 runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream = drainEntities (0 :: Word32)
  where
-  lc = LogCrawlerContext (from indexName) (from crawlerName) Nothing
-  wLog event = mLog $ Log Macroscope event
+  baseCtx = ["index" .= indexName, "crawler" .= crawlerName, "stream" .= streamName documentStream]
   drainEntities offset =
     unlessStopped $
       safeDrainEntities offset `catch` handleStreamError offset
 
   safeDrainEntities offset = do
-    wLog $ LogMacroRequestOldestEntity lc (streamName documentStream)
+    logInfo "Looking for oldest entity" $ baseCtx <> ["offset" .= offset]
     monocleBaseUrl <- getClientBaseUrl
     let retryHttp :: m a -> m a
         retryHttp = httpRetry ("api-client", monocleBaseUrl, "internal")
@@ -140,14 +139,14 @@ runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream =
     -- Query the monocle api for the oldest entity to be updated.
     oldestEntityM <- retryHttp $ getStreamOldestEntity indexName (from crawlerName) (streamEntity documentStream) offset
     case oldestEntityM of
-      Nothing -> wLog $ LogMacroNoOldestEnity lc
+      Nothing -> logInfo "Unable to find entity to update" baseCtx
       Just (oldestAge, entity)
         | -- add a 1 second delta to avoid Hysteresis
           addUTCTime 1 oldestAge >= startTime ->
-            wLog $ LogMacroEnded lc entity oldestAge
+            logInfo "Crawling entities completed" $ baseCtx <> ["entity" .= entity, "age" .= oldestAge]
         | otherwise -> do
-            let processLogFunc c = Log Macroscope $ LogMacroPostData lc entity c
-            wLog $ LogMacroGotOldestEntity lc entity oldestAge
+            let processLogFunc c = logInfo "Posting documents" (baseCtx <> ["count" .= c])
+            logInfo "Processing" $ baseCtx <> ["entity" .= entity, "age" .= oldestAge]
 
             -- Run the document stream for that entity
             postResult <-
@@ -161,14 +160,15 @@ runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream =
                 res <- retryHttp $ commitTimestamp entity
                 case res of
                   Nothing -> do
-                    wLog $ LogMacroContinue lc
+                    logInfo "Continuing on next entity" baseCtx
                     drainEntities offset
-                  Just err -> do
-                    wLog $ LogMacroCommitFailed lc err
-              xs -> wLog $ LogMacroPostDataFailed lc xs
+                  Just (err :: Text) -> do
+                    logWarn "Commit date failed" $ baseCtx <> ["err" .= err]
+              xs -> logWarn "Postt documents tailed" $ baseCtx <> ["errors" .= xs]
 
+  handleStreamError :: Word32 -> LentilleError -> m ()
   handleStreamError offset err = do
-    wLog $ LogMacroStreamError lc (show (err :: LentilleError))
+    logWarn "Error occured when consuming the document stream" $ baseCtx <> ["err" .= show @Text err]
     -- TODO: log a structured error on filesystem or audit index in elastic
     unless (isTDStream documentStream) $ drainEntities (offset + 1)
 

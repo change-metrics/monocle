@@ -35,12 +35,12 @@ defineByDocumentFile
     }
   |]
 
-fetchGroupProjects :: MonadGraphQLE m => GraphClient -> Text -> m (Either (FetchError GetGroupProjects) GetGroupProjects, [RequestLog])
+fetchGroupProjects :: (HasLogger m, MonadGraphQLE m) => GraphClient -> Text -> m (Either (FetchError GetGroupProjects) GetGroupProjects, [RequestLog])
 fetchGroupProjects client fullPath =
   fetchWithLog (doGraphRequest noContext client) (GetGroupProjectsArgs (ID fullPath) Nothing)
 
 streamGroupProjects ::
-  (MonadGraphQLE m) =>
+  (HasLogger m, MonadGraphQLE m) =>
   GraphClient ->
   (Entity -> LogCrawlerContext) ->
   Text ->
