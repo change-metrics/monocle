@@ -234,7 +234,7 @@ configDoc = BH.DocId "config"
 upgradeConfigV1 :: QueryM ()
 upgradeConfigV1 = do
   indexName <- getIndexName
-  logMessage $ "Applying migration to schema V1 on workspace " <> show indexName
+  logInfo "Applying migration to schema V1 on workspace" ["index" .= indexName]
   QueryWorkspace ws <- asks tenant
   -- Get GitHub crawler names
   let ghCrawlerNames = getGHCrawlerNames ws
@@ -287,16 +287,16 @@ upgradeConfigV1 = do
 upgradeConfigV2 :: QueryM ()
 upgradeConfigV2 = do
   indexName <- getIndexName
-  logInfo "Applying migration to schema V2 on workspace" [("index" .= indexName)]
+  logInfo "Applying migration to schema V2 on workspace" ["index" .= indexName]
   void $ BH.putMapping indexName CachedAuthorIndexMapping
   added <- populateAuthorCache
-  logMessage $ "Authors cache populated with " <> show added <> " Monocle uids"
+  logInfo "Authors cache populated monocle uid" ["added" .= added]
 
 -- | Add self_merged data to event of type ChangeMergedEvent
 upgradeConfigV3 :: QueryM Int
 upgradeConfigV3 = do
   indexName <- getIndexName
-  logMessage $ "Applying migration to schema V3 on workspace " <> show indexName
+  logInfo "Applying migration to schema V3 on workspace" ["index" .= indexName]
   count <-
     withQuery eventQuery $
       scanEvents
@@ -304,7 +304,7 @@ upgradeConfigV3 = do
               >>> Streaming.map (mkEventBulkUpdate indexName)
               >>> bulkStream
           )
-  logMessage $ "Migration to schema V3 affected " <> show count <> " documents"
+  logInfo "Migration to schema V3 affected documents" ["count" .= count]
   pure count
  where
   scanEvents :: Stream (Of EChangeEvent) QueryM ()
@@ -322,7 +322,7 @@ upgradeConfigV3 = do
 upgradeConfigV4 :: QueryM Int
 upgradeConfigV4 = do
   indexName <- getIndexName
-  logMessage $ "Applying migration to schema V4 on workspace " <> show indexName
+  logInfo "Applying migration to schema V4 on workspace " ["index" .= indexName]
   count <-
     withQuery changeQuery $
       scanChanges
@@ -330,7 +330,7 @@ upgradeConfigV4 = do
               >>> Streaming.map (mkChangeBulkUpdate indexName)
               >>> bulkStream
           )
-  logMessage $ "Migration to schema V4 affected " <> show count <> " documents"
+  logInfo "Migration to schema V4 affected documents" ["count" .= count]
   pure count
  where
   scanChanges :: Stream (Of EChange) QueryM ()
@@ -355,7 +355,9 @@ upgrades =
   , (ConfigVersion 4, void upgradeConfigV4)
   ]
 
-newtype ConfigVersion = ConfigVersion Integer deriving (Eq, Show, Ord)
+newtype ConfigVersion = ConfigVersion Integer
+  deriving (Eq, Show, Ord)
+  deriving newtype (ToJSON)
 
 -- | Extract the `version` attribute of an Aeson object value
 --
@@ -402,7 +404,7 @@ ensureConfigIndex = do
   -- Write new config version in config index
   let newConfig = setVersion configVersion currentConfig
   void $ BH.indexDocument configIndex BH.defaultIndexDocumentSettings newConfig configDoc
-  logMessage $ "Ensure schema version to " <> show configVersion
+  logInfo "Ensure schema version" ["version" .= configVersion]
  where
   -- traverseWorkspace replace the QueryEnv tenant attribute from QueryConfig to QueryWorkspace
   traverseWorkspace action conf = do
@@ -412,7 +414,7 @@ ensureConfigIndex = do
 ensureIndexSetup :: QueryM ()
 ensureIndexSetup = do
   indexName <- getIndexName
-  logMessage $ "Ensure workspace " <> show indexName
+  logInfo "Ensure workspace " ["index" .= indexName]
   createIndex indexName ChangesIndexMapping
   BHR.settings indexName (object ["index" .= object ["max_regex_length" .= (50_000 :: Int)]])
 

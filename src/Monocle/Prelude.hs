@@ -566,21 +566,21 @@ toVector s = do
 -- Bloodhound helpers
 
 -- | Helper search func that can be replaced by a scanSearch
-doSearch :: (FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m (BH.SearchResult a)
+doSearch :: (HasLogger m, FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m (BH.SearchResult a)
 doSearch indexName search = do
   -- logText . decodeUtf8 . encode $ search
   rawResp <- BH.searchByIndex indexName search
   -- logText $ show rawResp
   resp <- BH.parseEsResponse rawResp
   case resp of
-    Left _e -> handleError rawResp
+    Left e -> handleError e rawResp
     Right x -> pure x
  where
-  handleError resp = do
-    logText (show resp)
-    error "Elastic response failed"
+  handleError resp rawResp = do
+    logWarn "Elastic response failed" ["status" .= BH.errorStatus resp, "message" .= BH.errorMessage resp]
+    error $ "Elastic response failed: " <> show rawResp
 
-simpleSearch :: (FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m [BH.Hit a]
+simpleSearch :: (FromJSON a, HasLogger m, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m [BH.Hit a]
 simpleSearch indexName search = BH.hits . BH.searchHits <$> doSearch indexName search
 
 mkAnd :: [BH.Query] -> BH.Query
