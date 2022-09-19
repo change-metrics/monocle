@@ -62,7 +62,7 @@ measureQueryM body action = do
 -- | Call the search endpoint
 doScrollSearchBH :: (QueryMonad m, ToJSON body, FromJSONField resp) => BHR.ScrollRequest -> body -> m (BH.SearchResult resp)
 doScrollSearchBH scrollRequest body = do
-  measureQueryM body $ do
+  measureQueryM body do
     index <- getIndexName
     elasticSearch index body scrollRequest
 
@@ -72,19 +72,19 @@ doSearchBH = doScrollSearchBH BHR.NoScroll
 
 doAdvanceScrollBH :: (QueryMonad m, FromJSON resp) => BH.ScrollId -> m (BH.SearchResult resp)
 doAdvanceScrollBH scroll = do
-  measureQueryM (Aeson.object ["scrolling" .= ("advancing..." :: Text)]) $ do
+  measureQueryM (Aeson.object ["scrolling" .= ("advancing..." :: Text)]) do
     elasticAdvance scroll
 
 doSearchHitBH :: (QueryMonad m, ToJSON body) => body -> m [Json.Value]
 doSearchHitBH body = do
-  measureQueryM body $ do
+  measureQueryM body do
     index <- getIndexName
     elasticSearchHit index body
 
 -- | Call the count endpoint
 doCountBH :: QueryMonad m => BH.Query -> m Count
 doCountBH body = do
-  measureQueryM body $ do
+  measureQueryM body do
     index <- getIndexName
     resp <- elasticCountByIndex index (BH.CountQuery body)
     case resp of
@@ -94,7 +94,7 @@ doCountBH body = do
 -- | Call _delete_by_query endpoint
 doDeleteByQueryBH :: (QueryMonad m, BH.MonadBH m) => BH.Query -> m ()
 doDeleteByQueryBH body = do
-  measureQueryM body $ do
+  measureQueryM body do
     index <- getIndexName
     -- TODO: BH does not return parsed response - keep as is or if not enough move it to BHR.
     void $ elasticDeleteByQuery index body
@@ -106,7 +106,7 @@ doDeleteByQueryBH body = do
 -- | scan search the result using a streaming
 scanSearch :: FromJSONField resp => Stream (Of (BH.Hit resp)) QueryM ()
 scanSearch = do
-  resp <- lift $ do
+  resp <- lift do
     query <- getQueryBH
     let search = (BH.mkSearch query Nothing) {BH.size = BH.Size 5000}
     doScrollSearchBH (BHR.GetScroll "1m") search
@@ -214,7 +214,7 @@ queryAggValue search = getAggValue "agg1" <$> doAggregation search
 
 -- | Extract a single aggregation result from the map
 parseAggregationResults :: (FromJSON a) => Text -> BH.AggregationResults -> a
-parseAggregationResults key res = getExn $ do
+parseAggregationResults key res = getExn do
   value <- Map.lookup (from key) res `orDie` ("No value found for: " <> from key)
   Aeson.parseEither Aeson.parseJSON value
 
@@ -248,11 +248,11 @@ changes orderM limit =
 
 changeEvents :: QueryMonad m => LText -> Word32 -> m (EChange, [EChangeEvent])
 changeEvents changeID limit = dropQuery $
-  withFilter [mkTerm "change_id" (from changeID)] $ do
+  withFilter [mkTerm "change_id" (from changeID)] do
     change <- fromMaybe (error "Unknown change") . headMaybe <$> changes Nothing 1
 
     -- Collect all the events
-    result <- withDocTypes allEventTypes (QueryFlavor Author CreatedAt) $ do
+    result <- withDocTypes allEventTypes (QueryFlavor Author CreatedAt) do
       doSearch Nothing limit
 
     pure (change, result)
@@ -266,7 +266,7 @@ getRatio = \case
 
 -- | The base review ratio
 baseReviewsRatio :: QueryMonad m => [EDocType] -> m Float
-baseReviewsRatio events = withFlavor qf $ do
+baseReviewsRatio events = withFlavor qf do
   count <- withFilter [documentTypes $ fromList events] countDocs
   reviewCount <-
     withFilter
@@ -625,7 +625,7 @@ cntAuthors = runCount
   maxCount = Just 3000
 
 getDocTypeTopCountByField :: QueryMonad m => NonEmpty EDocType -> Text -> Maybe Word32 -> m TermsResultWTH
-getDocTypeTopCountByField doctype attr size = withFilter [documentTypes doctype] $ do
+getDocTypeTopCountByField doctype attr size = withFilter [documentTypes doctype] do
   -- Prepare the query
   query <- getQueryBH
   runTermAgg query $ getSize size
@@ -670,7 +670,7 @@ getReposSummary = do
     withModified (Q.dropField (`elem` ["repo", "project"]))
   withRepo fn = withoutRepoFilters . withFilter [mkTerm "repository_fullname" fn]
 
-  getRepoSummary fullname = withRepo fullname $ do
+  getRepoSummary fullname = withRepo fullname do
     -- Prepare the queries
     let changeQF = withFlavor (QueryFlavor Author UpdatedAt)
 
@@ -710,7 +710,7 @@ instance Ord PeerStrengthResult where
     x `compare` y
 
 getAuthorsPeersStrength :: QueryMonad m => Word32 -> m [PeerStrengthResult]
-getAuthorsPeersStrength limit = withFlavor qf $ do
+getAuthorsPeersStrength limit = withFlavor qf do
   peers <-
     getDocTypeTopCountByField
       eventTypes
@@ -728,7 +728,7 @@ getAuthorsPeersStrength limit = withFlavor qf $ do
   eventTypes = fromList [EChangeReviewedEvent, EChangeCommentedEvent]
   qf = QueryFlavor Author CreatedAt
   getAuthorPeers :: QueryMonad m => Text -> m (Text, [TermResult])
-  getAuthorPeers peer = withFilter [mkTerm "author.muid" peer] $ do
+  getAuthorPeers peer = withFilter [mkTerm "author.muid" peer] do
     change_authors <-
       getDocTypeTopCountByField
         eventTypes
@@ -834,7 +834,7 @@ getChangesTops limit = do
         }
 
 searchBody :: QueryMonad m => QueryFlavor -> Value -> m Value
-searchBody qf agg = withFlavor qf $ do
+searchBody qf agg = withFlavor qf do
   queryBH <- getQueryBH
   pure $
     Aeson.object

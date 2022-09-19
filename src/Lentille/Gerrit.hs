@@ -188,7 +188,7 @@ streamProject env query = go 0
   size = 100
   doGet offset = getProjects env size query (Just offset)
   go offset = do
-    projects <- lift $ do httpRetry (crawlerName env, G.serverUrl $ client env, "crawler") . doGet $ offset
+    projects <- lift do httpRetry (crawlerName env, G.serverUrl $ client env, "crawler") . doGet $ offset
     let pNames = M.keys projects
     S.each $ CrawlerPB.Project . from <$> pNames
     when (length pNames == size) $ go (offset + size)

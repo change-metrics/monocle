@@ -192,7 +192,7 @@ streamFetch client@GraphClient {..} lc mkArgs StreamFetchOptParams {..} transfor
   holdOnIfNeeded = mapM_ toDelay
    where
     toDelay :: (MonadTime m, HasLogger m) => RateLimit -> m ()
-    toDelay rl = when (remaining rl <= 0) $ do
+    toDelay rl = when (remaining rl <= 0) do
       let resetAtTime = resetAt rl
       logWarn "Reached Quota limit. Waiting until reset date" ["reset" .= resetAtTime]
       holdOnUntil resetAtTime
@@ -225,7 +225,7 @@ streamFetch client@GraphClient {..} lc mkArgs StreamFetchOptParams {..} transfor
     case fpGetRatelimit of
       Just getRateLimit -> lift $
         mModifyMVar rateLimitMVar $
-          const $ do
+          const do
             rl <- getRateLimit client
             -- Wait few moment to delay the next call
             mThreadDelay retryDelay

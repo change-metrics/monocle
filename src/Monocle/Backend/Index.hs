@@ -863,7 +863,7 @@ ensureCrawlerMetadata :: CrawlerName -> QueryM UTCTime -> Entity -> QueryM ()
 ensureCrawlerMetadata crawlerName getDate entity = do
   index <- getIndexName
   exists <- BH.documentExists index getId
-  unless exists $ do
+  unless exists do
     lastUpdatedDate <- getDate
     withRefresh $ BH.indexDocument index BH.defaultIndexDocumentSettings (cm lastUpdatedDate) getId
  where

@@ -166,7 +166,7 @@ run ApiConfig {..} = withLogger $ \glLogger -> do
 
   bhEnv <- mkEnv elasticUrl
   let aEnv = Env {..}
-  runLogger glLogger $ do
+  runLogger glLogger do
     httpRetry ("elastic-client", elasticUrl, "internal") $
       liftIO $
         traverse_ (\tenant -> runQueryM' bhEnv tenant I.ensureIndex) workspaces

@@ -91,7 +91,7 @@ withMonitoringServer port logger action = do
 -- | 'runMacroscope is the entrypoint of the macroscope process
 -- withClient "http://localhost:8080" Nothing $ runMacroscope 9001 "../etc/config.yaml"
 runMacroscope :: Int -> FilePath -> MonocleClient -> IO ()
-runMacroscope port confPath client = withLogger $ \logger -> withMonitoringServer port logger $ runLentilleM logger client $ do
+runMacroscope port confPath client = withLogger $ \logger -> withMonitoringServer port logger $ runLentilleM logger client do
   logInfo_ "Starting to fetch streams"
   config <- Config.mReloadConfig confPath
   loop config (from ())

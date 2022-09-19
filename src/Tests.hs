@@ -33,7 +33,7 @@ import Test.Tasty
 import Test.Tasty.HUnit
 
 main :: IO ()
-main = withOpenSSL $ do
+main = withOpenSSL do
   setEnv "API_KEY" "secret"
   setEnv "CRAWLERS_API_KEY" "secret"
   integrationTests <- do
@@ -516,45 +516,45 @@ monocleSearchLanguage =
   mkQueryM code = testQueryM testTenant . withQuery (mkCodeQuery code)
 
   testWithFlavor :: Assertion
-  testWithFlavor = mkQueryM "from:2021" $ do
-    withFlavor (Q.QueryFlavor Q.Author Q.OnCreatedAndCreated) $ do
+  testWithFlavor = mkQueryM "from:2021" do
+    withFlavor (Q.QueryFlavor Q.Author Q.OnCreatedAndCreated) do
       q <- prettyQuery
       let expected = "{\"bool\":{\"filter\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-01-01T00:00:00Z\"}}},{\"range\":{\"on_created_at\":{\"boost\":1,\"gt\":\"2021-01-01T00:00:00Z\"}}}]}}"
       liftIO $ assertEqual "OnCreatedAndCreated range flavor" (Just expected) q
-      withFlavor (Q.QueryFlavor Q.Author Q.UpdatedAt) $ do
+      withFlavor (Q.QueryFlavor Q.Author Q.UpdatedAt) do
         q' <- prettyQuery
         let expected' = "{\"range\":{\"updated_at\":{\"boost\":1,\"gt\":\"2021-01-01T00:00:00Z\"}}}"
         liftIO $ assertEqual "range flavor reset" (Just expected') q'
 
   testSimpleQueryM :: Assertion
-  testSimpleQueryM = mkQueryM "author:alice" $ do
+  testSimpleQueryM = mkQueryM "author:alice" do
     q <- prettyQuery
     liftIO $ assertEqual "simple queryM work" (Just "{\"regexp\":{\"author.muid\":{\"flags\":\"ALL\",\"value\":\"alice\"}}}") q
-    dropQuery $ do
+    dropQuery do
       emptyQ <- prettyQuery
       liftIO $ assertEqual "dropQuery work" Nothing emptyQ
-      withModified (const $ Just (S.EqExpr "author" "bob")) $ do
+      withModified (const $ Just (S.EqExpr "author" "bob")) do
         newQ <- prettyQuery
         liftIO $ assertEqual "withModified work" (Just "{\"regexp\":{\"author.muid\":{\"flags\":\"ALL\",\"value\":\"bob\"}}}") newQ
 
   testEnsureMinBound :: Assertion
   testEnsureMinBound = do
-    testQueryM testTenant $ do
-      withQuery (Q.ensureMinBound $ mkCodeQuery "author:alice") $ do
+    testQueryM testTenant do
+      withQuery (Q.ensureMinBound $ mkCodeQuery "author:alice") do
         got <- prettyQuery
         let expected = "{\"bool\":{\"must\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}},{\"regexp\":{\"author.muid\":{\"flags\":\"ALL\",\"value\":\"alice\"}}}]}}"
         liftIO $ assertEqual "bound ensured with query" (Just expected) got
-      withQuery (Q.ensureMinBound $ mkCodeQuery "") $ do
+      withQuery (Q.ensureMinBound $ mkCodeQuery "") do
         got <- prettyQuery
         let expected = "{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}}"
         liftIO $ assertEqual "match ensured without query" (Just expected) got
 
   testDropDate :: Assertion
-  testDropDate = mkQueryM "from:2020 repo:zuul" $ do
+  testDropDate = mkQueryM "from:2020 repo:zuul" do
     got <- prettyQuery
     let expected = "{\"bool\":{\"must\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2020-01-01T00:00:00Z\"}}},{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"zuul\"}}}]}}"
     liftIO $ assertEqual "match" (Just expected) got
-    withModified Q.dropDate $ do
+    withModified Q.dropDate do
       newQ <- prettyQuery
       liftIO $ assertEqual "drop date worked" (Just "{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"zuul\"}}}") newQ
 
@@ -627,11 +627,11 @@ monocleConfig =
   createIdent ident aliases groups' =
     let groups = Just groups' in Config.Ident {..}
 
-  testConfigLoad = testCase "Decode config" $ do
+  testConfigLoad = testCase "Decode config" do
     conf <- Config.loadConfig "./test/data/config.yaml"
     assertEqual "config is loaded" 1 (length $ conf & Config.workspaces)
 
-  testGetTenantGroups = testCase "Validate getTenantGroups" $ do
+  testGetTenantGroups = testCase "Validate getTenantGroups" do
     let identA = createIdent "alice" [] ["core", "ptl"]
         identB = createIdent "bob" [] ["core"]
         tenant = (Config.mkTenant "test") {Config.idents = Just [identA, identB]}
@@ -640,7 +640,7 @@ monocleConfig =
       [("core", ["bob", "alice"]), ("ptl", ["alice"])]
       (Config.getTenantGroups tenant)
 
-  testGetIdentByAlias = testCase "Validate getIdentByAliases" $ do
+  testGetIdentByAlias = testCase "Validate getIdentByAliases" do
     let identA = createIdent "alice" ["opendev.org/Alice Doe/12345", "github.com/alice89"] []
         identB = createIdent "bob" [] []
         tenant = (Config.mkTenant "test") {Config.idents = Just [identA, identB]}

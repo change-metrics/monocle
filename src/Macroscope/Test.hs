@@ -138,7 +138,7 @@ testGetStream = do
   setEnv "CRAWLERS_API_KEY" "secret"
   setEnv "GITLAB_TOKEN" "42"
   setEnv "OTHER_TOKEN" "43"
-  runLentilleStreamTest $ do
+  runLentilleStreamTest do
     (streams, clients) <- runStateT (traverse Macroscope.getCrawler (Macroscope.getCrawlers conf)) (from ())
     assertEqual' "Two streams created" 3 (length streams)
     assertEqual' "Only two gitlab clients created" 2 (length $ toList $ Macroscope.clientsGraph clients)

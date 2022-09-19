@@ -174,7 +174,7 @@ getBZData bzSession sinceTS productName = go 0
   doGet = getBugsWithScore bzSession sinceTS productName limit
   go offset = do
     -- Retrieve rhbz
-    bugs <- lift $ do
+    bugs <- lift do
       logInfo "Getting bugs" ["since" .= sinceTS, "offset" .= offset, "limit" .= limit]
       httpRetry ("bz", "https://bugzilla.redhat.com/show_bug.cgi", "crawler") . doGet $ offset
     -- Create a flat stream of tracker data
