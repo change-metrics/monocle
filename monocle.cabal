@@ -152,7 +152,6 @@ library
                      , network-uri                >= 2.5
                      , oidc-client                >= 0.6.0
                      , optparse-applicative
-                     , one-line-aeson-text
                      , parser-combinators         >= 1.2
                      , prometheus-client          >= 1.0
                      , prometheus-metrics-ghc     >= 1.0

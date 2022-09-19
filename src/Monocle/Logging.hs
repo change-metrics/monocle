@@ -1,4 +1,10 @@
 -- | Monocle log events
+-- Note: [Monocle Structured Logging]
+--
+-- Structure comes from the 'Data.Aeson.Series'. They can be created using
+--    key .= value
+-- And combined using mappend:
+--    key1 .= value1 <> key2 .= value2
 module Monocle.Logging (
   -- * Logging effect
   HasLogger (..),
@@ -24,8 +30,8 @@ module Monocle.Logging (
   noContext,
 ) where
 
-import Data.Aeson.KeyMap qualified as KM
-import Data.Aeson.OneLine qualified
+import Data.Aeson (Series, pairs)
+import Data.Aeson.Encoding (encodingToLazyByteString)
 import GHC.Stack
 import Prometheus qualified
 import System.Log.FastLogger qualified as FastLogger
@@ -47,16 +53,18 @@ instance From LogLevel ByteString where
     LogDebug -> "DEBUG   "
 
 -- | doLog outputs a oneliner text message
-doLog :: HasLogger m => LogLevel -> ByteString -> Text -> [Pair] -> m ()
+doLog :: HasLogger m => LogLevel -> ByteString -> Text -> [Series] -> m ()
 doLog lvl loc msg attrs = do
   Logger logger <- getLogger
   logIO $ logger (\time -> FastLogger.toLogStr $ time <> msgText <> "\n")
  where
+  body :: ByteString
+  body = from . encodingToLazyByteString . pairs . mconcat $ attrs
   msgText :: ByteString
   msgText =
-    from lvl <> loc <> ": " <> encodeUtf8 msg <> case attrs of
-      [] -> mempty
-      _ -> " " <> encodeUtf8 (Data.Aeson.OneLine.renderObject (KM.fromList attrs))
+    from lvl <> loc <> ": " <> encodeUtf8 msg <> case body of
+      "{}" -> mempty
+      _ -> " " <> body
 
 -- | Get the `Module.Name:LINE` from the log* caller, jumping over the log* stack
 getLocName :: HasCallStack => ByteString
@@ -67,7 +75,7 @@ getLocName = case getCallStack callStack of
 -- | Produce info log with attributes, for example:
 --
 -- logInfo "Starting" ["ip" .= addr, "port" .= 42]
-logInfo :: (HasCallStack, HasLogger m) => Text -> [Pair] -> m ()
+logInfo :: (HasCallStack, HasLogger m) => Text -> [Series] -> m ()
 logInfo = doLog LogInfo getLocName
 
 -- | Produce info log without attributes.
@@ -75,14 +83,14 @@ logInfo_ :: (HasCallStack, HasLogger m) => Text -> m ()
 logInfo_ msg = doLog LogInfo getLocName msg []
 
 -- | Produce messages that need attention.
-logWarn :: (HasCallStack, HasLogger m) => Text -> [Pair] -> m ()
+logWarn :: (HasCallStack, HasLogger m) => Text -> [Series] -> m ()
 logWarn = doLog LogWarning getLocName
 
 logWarn_ :: (HasCallStack, HasLogger m) => Text -> m ()
 logWarn_ msg = doLog LogWarning getLocName msg []
 
 -- | Produce trace logs.
-logDebug :: (HasCallStack, HasLogger m) => Text -> [Pair] -> m ()
+logDebug :: (HasCallStack, HasLogger m) => Text -> [Series] -> m ()
 logDebug = doLog LogDebug getLocName
 
 logDebug_ :: (HasCallStack, HasLogger m) => Text -> m ()
