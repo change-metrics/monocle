@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Monocle.Entity (
@@ -24,11 +25,12 @@ data Entity
   = Project Text
   | Organization Text
   | TaskDataEntity Text
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic, ToJSON)
 
 makePrisms ''Entity
 
 newtype CrawlerName = CrawlerName Text
+  deriving newtype (ToJSON)
 
 entityTypeName :: CrawlerPB.EntityType -> Text
 entityTypeName = \case

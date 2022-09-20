@@ -32,7 +32,7 @@ import Web.RedHatBugzilla qualified as BZ
 import Web.RedHatBugzilla.Search ((.&&.), (.==.))
 import Web.RedHatBugzilla.Search qualified as BZS
 
-class (MonadLog m, MonadRetry m, MonadMonitor m) => MonadBZ m where
+class (MonadRetry m, MonadMonitor m) => MonadBZ m where
   bzRequest :: FromJSON bugs => BZ.Request -> m bugs
 
 instance MonadBZ LentilleM where
@@ -166,7 +166,7 @@ toTaskData bz = map mkTaskData ebugs
       "rhbz#"
 
 -- | Stream task data from a starting date by incrementing the offset until the result count is less than the limit
-getBZData :: MonadBZ m => BugzillaSession -> UTCTime -> Text -> Stream (Of TaskData) m ()
+getBZData :: (HasLogger m, MonadBZ m) => BugzillaSession -> UTCTime -> Text -> Stream (Of TaskData) m ()
 getBZData bzSession sinceTS productName = go 0
  where
   limit = 100
@@ -174,9 +174,9 @@ getBZData bzSession sinceTS productName = go 0
   doGet = getBugsWithScore bzSession sinceTS productName limit
   go offset = do
     -- Retrieve rhbz
-    bugs <- lift $ do
-      mLog $ Log Unspecified (LogGetBugs sinceTS offset limit)
-      httpRetry ("bz", "https://bugzilla.redhat.com/show_bug.cgi", "crawler") . doGet $ offset
+    bugs <- lift do
+      logInfo "Getting bugs" ["since" .= sinceTS, "offset" .= offset, "limit" .= limit]
+      httpRetry "https://bugzilla.redhat.com/show_bug.cgi" . doGet $ offset
     -- Create a flat stream of tracker data
     S.each (concatMap toTaskData bugs)
     -- Keep on retrieving the rest

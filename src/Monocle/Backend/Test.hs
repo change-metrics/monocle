@@ -148,7 +148,7 @@ testIndexChanges = withTenant doTest
     -- Check total count of Change document in the database
     checkChangesCount 2
     -- Check scanSearch has the same count
-    withQuery (mkQuery []) $ do
+    withQuery (mkQuery []) do
       count <- Streaming.length_ Q.scanSearchId
       assertEqual' "stream count match" 2 count
    where
@@ -342,7 +342,7 @@ testEnsureConfig = bracket_ create delete doTest
   delete = do
     testQueryM tenantConfig I.removeIndex
     wrap I.removeIndex
-  doTest = wrap $ do
+  doTest = wrap do
     (currentVersion, _) <- I.getConfigVersion
     assertEqual' "Check expected Config Index" I.configVersion currentVersion
   tenantConfig = Config.mkTenant "test-index"
@@ -350,7 +350,7 @@ testEnsureConfig = bracket_ create delete doTest
 testUpgradeConfigV3 :: Assertion
 testUpgradeConfigV3 = do
   -- Index some events, run upgradeConfigV3, and check self_merged added on EChangeMergedEvent
-  withTenant $ do
+  withTenant do
     let evt1 = emptyEvent {echangeeventType = EChangeCommentedEvent, echangeeventId = "1"}
         -- emptyEvent set the same author for author and onAuthor attribute
         evt2 = emptyEvent {echangeeventType = EChangeMergedEvent, echangeeventId = "2"}
@@ -373,7 +373,7 @@ testUpgradeConfigV3 = do
 testUpgradeConfigV4 :: Assertion
 testUpgradeConfigV4 = do
   -- Index a change with negative duration, run upgradeConfigV4, and check for absolute value
-  withTenant $ do
+  withTenant do
     let change1 =
           emptyChange
             { echangeId = "change1"
@@ -395,7 +395,7 @@ testUpgradeConfigV4 = do
 testUpgradeConfigV1 :: Assertion
 testUpgradeConfigV1 = do
   -- Index docs, run upgradeConfigV1, and check project crawler MD state
-  withTenantConfig tenantConfig $ do
+  withTenantConfig tenantConfig do
     -- Index some events and set lastCommitAt for the first (repoGH1 and repoGL1) project crawler MD
     setDocs crawlerGH crawlerGHName "org/repoGH1" "org/repoGH2"
     setDocs crawlerGL crawlerGLName "org/repoGL1" "org/repoGL2"
@@ -649,7 +649,7 @@ defaultQuery =
    in Q.Query {..}
 
 testGetInfoMetric :: Assertion
-testGetInfoMetric = withTenantConfig tenant $ do
+testGetInfoMetric = withTenantConfig tenant do
   liftIO . Monocle.Api.Test.withTestApi env $ \_logger client -> do
     -- Get basic metric
     resp <- Monocle.Client.Api.metricInfo client (MetricPB.InfoRequest "time_to_merge")
@@ -666,7 +666,7 @@ testGetInfoMetric = withTenantConfig tenant $ do
     _ -> Nothing
 
 testGetMetrics :: Assertion
-testGetMetrics = withTenantConfig tenant $ do
+testGetMetrics = withTenantConfig tenant do
   -- Add data to the index
   indexScenario (nominalMerge (scenarioProject "openstack/nova") "42" fakeDate 1800)
 
@@ -751,7 +751,7 @@ testTopAuthors = withTenant doTest
     traverse_ (indexScenarioNO neutron) ["142", "143"]
 
     -- Check for expected metrics
-    withQuery defaultQuery $ do
+    withQuery defaultQuery do
       results <- fromJust <$> Q.runMetricTop Q.metricChangeAuthors 10
       assertEqual'
         "Check metricChangeAuthors Top"
@@ -801,7 +801,7 @@ testGetAuthorsPeersStrength = withTenant doTest
     traverse_ (indexScenarioNM horizon) ["242"]
 
     -- Check for expected metrics
-    withQuery defaultQuery $ do
+    withQuery defaultQuery do
       results <- Q.getAuthorsPeersStrength 10
       assertEqual'
         "Check getAuthorsPeersStrength results"
@@ -841,7 +841,7 @@ testGetNewContributors = withTenant doTest
               queryMinBoundsSet = True
            in Q.Query {..}
 
-    withQuery query $ do
+    withQuery query do
       results <- Q.getNewContributors
       assertEqual'
         "Check getNewContributors results"
@@ -863,7 +863,7 @@ testLifecycleStats = withTenant doTest
               queryMinBoundsSet = True
            in Q.Query {..}
 
-    withQuery query $ do
+    withQuery query do
       res <- Q.getLifecycleStats
       liftIO $ assertBool "stats exist" (not $ null $ SearchPB.lifecycleStatsCreatedHisto res)
 
@@ -887,7 +887,7 @@ testGetActivityStats = withTenant doTest
               queryMinBoundsSet = True
            in Q.Query {..}
 
-    withQuery query $ do
+    withQuery query do
       results <- Q.getActivityStats
       assertEqual'
         "Check getActivityStats result"
@@ -926,7 +926,7 @@ testGetChangesTops = withTenant doTest
     traverse_ (indexScenarioNM nova) ["42", "43"]
     traverse_ (indexScenarioNO neutron) ["142", "143"]
 
-    withQuery defaultQuery $ do
+    withQuery defaultQuery do
       results <- Q.getChangesTops 10
       assertEqual'
         "Check getChangesTops result"
@@ -992,7 +992,7 @@ testGetSuggestions = withTenant doTest
           QueryWorkspace x -> x
           QueryConfig _ -> error "Can't get config suggestions"
 
-    withQuery defaultQuery $ do
+    withQuery defaultQuery do
       results <- Q.getSuggestions ws
       assertEqual'
         "Check getChangesTops result"
@@ -1014,7 +1014,7 @@ testGetAllAuthorsMuid = withTenant doTest
   doTest :: QueryM ()
   doTest = do
     traverse_ (indexScenarioNM $ SProject "openstack/nova" [alice] [alice] [eve]) ["42", "43"]
-    withQuery defaultQuery $ do
+    withQuery defaultQuery do
       results <- Q.getAllAuthorsMuid'
       assertEqual' "Check getAllAuthorsMuid result" ["alice", "eve"] results
 

@@ -8,6 +8,10 @@ All notable changes to this project will be documented in this file.
 - [api] Add the `file` field to the query language to filter changes changing at least a file path that match the regex.
 
 ### Changed
+
+- [logging] The api and crawler logs changed to structured json logging.
+- [prometheus] The http_request and http_failure counter labels changed from (workspace, url, crawler) to (module, url).
+
 ### Removed
 ### Fixed
 

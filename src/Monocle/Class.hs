@@ -19,6 +19,7 @@ import Monocle.Protob.Crawler (
  )
 import Network.HTTP.Client (HttpException (..))
 import Network.HTTP.Client qualified as HTTP
+import UnliftIO qualified
 
 -------------------------------------------------------------------------------
 -- A time system
@@ -30,6 +31,10 @@ class Monad m => MonadTime m where
 instance MonadTime IO where
   mGetCurrentTime = Data.Time.Clock.getCurrentTime
   mThreadDelay = Control.Concurrent.threadDelay
+
+instance MonadTime LoggerT where
+  mGetCurrentTime = liftIO mGetCurrentTime
+  mThreadDelay = liftIO . mThreadDelay
 
 holdOnUntil :: (MonadTime m) => UTCTime -> m ()
 holdOnUntil resetTime = do
@@ -48,36 +53,24 @@ instance MonadSync IO where
   mNewMVar = Control.Concurrent.newMVar
   mModifyMVar = Control.Concurrent.modifyMVar
 
--------------------------------------------------------------------------------
--- A log system
-data LogAuthor = Macroscope | Unspecified
-
-instance From LogAuthor Text where
-  from = \case
-    Macroscope -> "Macroscope"
-    Unspecified -> "Unknown"
-
-data Log = Log {author :: LogAuthor, event :: LogEvent}
-
-instance From Log Text where
-  from Log {..} = from author <> ": " <> from event
-
-class (Monad m, MonadTime m) => MonadLog m where
-  mLog :: Log -> m ()
-
-instance MonadLog IO where
-  mLog = logText . from
+instance MonadSync LoggerT where
+  mNewMVar = liftIO . mNewMVar
+  mModifyMVar = UnliftIO.modifyMVar
 
 -------------------------------------------------------------------------------
 -- A GraphQL client system
 
-class (MonadRetry m, MonadLog m, MonadTime m, MonadSync m, MonadMonitor m) => MonadGraphQL m where
+class (MonadRetry m, MonadTime m, MonadSync m, MonadMonitor m) => MonadGraphQL m where
   httpRequest :: HTTP.Request -> HTTP.Manager -> m (HTTP.Response LByteString)
   newManager :: m HTTP.Manager
 
 instance MonadGraphQL IO where
   httpRequest = HTTP.httpLbs
   newManager = mkManager
+
+instance MonadGraphQL LoggerT where
+  httpRequest req = liftIO . httpRequest req
+  newManager = liftIO mkManager
 
 -------------------------------------------------------------------------------
 -- The Monocle Crawler system
@@ -107,6 +100,9 @@ class Monad m => MonadRetry m where
 instance MonadRetry IO where
   retry = retry'
 
+instance MonadRetry LoggerT where
+  retry = retry'
+
 retryLimit :: Int
 retryLimit = 7
 
@@ -124,9 +120,14 @@ retry' policy handler baseAction =
   action (RetryStatus num _ _) = baseAction num
 
 -- | Retry HTTP network action, doubling backoff each time
-httpRetry :: (MonadLog m, MonadMonitor m, MonadRetry m) => (Text, Text, Text) -> m a -> m a
-httpRetry label baseAction = retry policy httpHandler (const action)
+httpRetry :: (HasCallStack, HasLogger m, MonadMonitor m, MonadRetry m) => Text -> m a -> m a
+httpRetry urlLabel baseAction = retry policy httpHandler (const action)
  where
+  modName = case getCallStack callStack of
+    ((_, srcLoc) : _) -> from (srcLocModule srcLoc)
+    _ -> "N/C"
+  label = (modName, urlLabel)
+
   backoff = 500000 -- 500ms
   policy = Retry.exponentialBackoff backoff <> Retry.limitRetries retryLimit
   action = do
@@ -135,28 +136,22 @@ httpRetry label baseAction = retry policy httpHandler (const action)
     pure res
   httpHandler (RetryStatus num _ _) = Handler $ \case
     HttpExceptionRequest req ctx -> do
-      let url = decodeUtf8 $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
+      let url = decodeUtf8 @Text $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
           arg = decodeUtf8 $ HTTP.queryString req
           loc = if num == 0 then url <> arg else url
-      mLog . Log Unspecified . LogNetworkFailure $
-        counterT num retryLimit
-          <> " "
-          <> loc
-          <> " failed: "
-          <> show ctx
+      logWarn "network error" ["count" .= num, "limit" .= retryLimit, "loc" .= loc, "failed" .= show @Text ctx]
       incrementCounter httpFailureCounter label
       pure True
     InvalidUrlException _ _ -> pure False
 
 -- | A retry helper with a constant policy. This helper is in charge of low level logging
 -- and TODO: incrementCounter for graphql request and errors
-constantRetry :: (MonadRetry m, MonadLog m) => Text -> Handler m Bool -> (Int -> m a) -> m a
+constantRetry :: (HasLogger m, MonadRetry m) => Text -> Handler m Bool -> (Int -> m a) -> m a
 constantRetry msg handler baseAction = retry policy (const handler) action
  where
   delay = 1_100_000 -- 1.1 seconds
   policy = Retry.constantDelay delay <> Retry.limitRetries retryLimit
   action num = do
     when (num > 0) $
-      mLog . Log Macroscope . LogRaw $
-        counterT num retryLimit <> " failed: " <> msg
+      logWarn "Retry failed" ["num" .= num, "max" .= retryLimit, "msg" .= msg]
     baseAction num

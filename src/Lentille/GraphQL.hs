@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+
 -- | Helper module to define graphql client
 module Lentille.GraphQL (
   -- * client
@@ -76,8 +78,8 @@ type DoFetch m = LBS.ByteString -> WriterT [RequestLog] m LBS.ByteString
 
 -- | The morpheus-graphql-client fetch callback,
 -- doc: https://hackage.haskell.org/package/morpheus-graphql-client-0.17.0/docs/Data-Morpheus-Client.html
-doGraphRequest :: MonadGraphQL m => LogCrawlerContext -> GraphClient -> DoFetch m
-doGraphRequest LogCrawlerContext {..} GraphClient {..} jsonBody = do
+doGraphRequest :: (HasLogger m, MonadGraphQL m) => GraphClient -> DoFetch m
+doGraphRequest GraphClient {..} jsonBody = do
   -- Prepare the request
   let initRequest = HTTP.parseRequest_ (from url)
       request =
@@ -92,7 +94,7 @@ doGraphRequest LogCrawlerContext {..} GraphClient {..} jsonBody = do
           }
 
   -- Do the request (and retry on HttpException raised by the http-client)
-  response <- lift $ httpRetry (lccIndex, url, lccName) $ httpRequest request manager
+  response <- lift $ httpRetry url $ httpRequest request manager
 
   -- Record the event
   let responseBody = HTTP.responseBody response
@@ -109,10 +111,10 @@ fetchWithLog cb = runWriterT . fetch cb
 -- Streaming layer
 -------------------------------------------------------------------------------
 data PageInfo = PageInfo {hasNextPage :: Bool, endCursor :: Maybe Text, totalCount :: Maybe Int}
-  deriving (Show)
+  deriving (Show, Generic, ToJSON)
 
 data RateLimit = RateLimit {used :: Int, remaining :: Int, resetAt :: UTCTime}
-  deriving (Show)
+  deriving (Show, Generic, ToJSON)
 
 instance From RateLimit Text where
   from RateLimit {..} = "remains:" <> show remaining <> ", reset at: " <> show resetAt
@@ -122,15 +124,14 @@ instance From RateLimit Text where
 -- In case of retry the depth parameter of mkArgs is decreased (see adaptDepth)
 doRequest ::
   forall a m.
-  (MonadGraphQLE m, Fetch a, FromJSON a, Show a) =>
+  (HasLogger m, MonadGraphQLE m, Fetch a, FromJSON a, Show a) =>
   GraphClient ->
-  LogCrawlerContext ->
   (Maybe Int -> Maybe Text -> Args a) ->
   Maybe (Handler m Bool) ->
   Maybe Int ->
   Maybe PageInfo ->
   m a
-doRequest client lc mkArgs retryCheckM depthM pageInfoM = retryCheck runFetch
+doRequest client mkArgs retryCheckM depthM pageInfoM = retryCheck runFetch
  where
   retryCheck action = case retryCheckM of
     Just rc -> constantRetry retryMessage rc action
@@ -141,7 +142,7 @@ doRequest client lc mkArgs retryCheckM depthM pageInfoM = retryCheck runFetch
   runFetch retried = do
     resp <-
       fetchWithLog
-        (doGraphRequest lc client)
+        (doGraphRequest client)
         (mkArgs aDepthM $ (Just . fromMaybe (error "Missing endCursor from page info") . endCursor) =<< pageInfoM)
     case resp of
       (Right x, _) -> pure x
@@ -174,46 +175,34 @@ defaultStreamFetchOptParams :: StreamFetchOptParams m a
 defaultStreamFetchOptParams = StreamFetchOptParams Nothing Nothing Nothing
 
 streamFetch ::
-  (MonadGraphQLE m, Fetch a, FromJSON a, Show a) =>
+  (HasLogger m, MonadGraphQLE m, Fetch a, FromJSON a, Show a) =>
   GraphClient ->
-  LogCrawlerContext ->
   -- | query Args constructor, the function takes a Maybe depth and a Maybe cursor
   (Maybe Int -> Maybe Text -> Args a) ->
   StreamFetchOptParams m a ->
   -- | query result adapter
   (a -> (PageInfo, Maybe RateLimit, [Text], [b])) ->
   Stream (Of b) m ()
-streamFetch client@GraphClient {..} lc mkArgs StreamFetchOptParams {..} transformResponse = go Nothing 0
+streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformResponse = go Nothing 0
  where
-  log :: MonadLog m => Text -> m ()
-  log = mLog . Log Macroscope . LogGraphQL lc
-
-  holdOnIfNeeded :: MonadLog m => Maybe RateLimit -> m ()
+  holdOnIfNeeded :: (MonadTime m, HasLogger m) => Maybe RateLimit -> m ()
   holdOnIfNeeded = mapM_ toDelay
    where
-    toDelay :: (MonadLog m) => RateLimit -> m ()
-    toDelay rl = when (remaining rl <= 0) $ do
+    toDelay :: (MonadTime m, HasLogger m) => RateLimit -> m ()
+    toDelay rl = when (remaining rl <= 0) do
       let resetAtTime = resetAt rl
-      log $ "Reached Quota limit. Waiting until reset date: " <> show resetAtTime
+      logWarn "Reached Quota limit. Waiting until reset date" ["reset" .= resetAtTime]
       holdOnUntil resetAtTime
 
   request pageInfoM storedRateLimitM = do
     holdOnIfNeeded storedRateLimitM
-    resp <- doRequest client lc mkArgs fpRetryCheck fpDepth pageInfoM
+    resp <- doRequest client mkArgs fpRetryCheck fpDepth pageInfoM
     let (pageInfo, rateLimitM, decodingErrors, xs) = transformResponse resp
     pure (rateLimitM, (pageInfo, rateLimitM, decodingErrors, xs))
 
   logStep pageInfo rateLimitM xs totalFetched = do
-    lift . log $
-      show (length xs)
-        <> " doc(s)"
-        <> maybe "" (mappend " for " . show) (lccEntity lc)
-        <> " fetched from current page (total fetched: "
-        <> show (totalFetched + length xs)
-        <> ") - "
-        <> show pageInfo
-        <> " - "
-        <> maybe "no ratelimit" show rateLimitM
+    lift . logInfo "Fetched from current page" $
+      ["count" .= length xs, "total" .= (totalFetched + length xs), "pageInfo" .= pageInfo, "ratelimit" .= rateLimitM]
 
   retryDelay = 1_100_000
 
@@ -225,7 +214,7 @@ streamFetch client@GraphClient {..} lc mkArgs StreamFetchOptParams {..} transfor
     case fpGetRatelimit of
       Just getRateLimit -> lift $
         mModifyMVar rateLimitMVar $
-          const $ do
+          const do
             rl <- getRateLimit client
             -- Wait few moment to delay the next call
             mThreadDelay retryDelay

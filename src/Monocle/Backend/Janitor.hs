@@ -18,8 +18,9 @@ import Monocle.Backend.Index (crawlerMDQuery)
 import Monocle.Backend.Index qualified as I
 import Monocle.Backend.Queries as Q
 import Monocle.Config qualified as Config
-import Monocle.Entity (Entity (Project), entityTypeName)
+import Monocle.Entity (Entity (Project))
 import Monocle.Env
+import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Crawler qualified as CrawlerPB
 import Streaming.Prelude qualified as Streaming
@@ -189,10 +190,10 @@ wipeCrawlerData crawlerName = do
       crawler = fromMaybe (error "Unable to find the crawler in the configuration") crawlerM
       prefixM = Config.getPrefix crawler
       prefix = fromMaybe mempty prefixM
-  logText $ "Discovered crawler prefix: " <> (show prefixM :: Text)
+  logInfo "Discovered crawler prefix" ["prefix" .= prefixM]
   -- Get projects for this crawler from the crawler metadata objects
   projects <- getProjectsCrawler
-  logText $ "Discovered " <> (show $ length projects :: Text) <> " projects"
+  logInfo "Discovered" ["projects" .= length projects]
   -- For each projects delete related changes and events
   traverse_ deleteDocsByRepoName ((prefix <>) <$> projects)
   -- Finally remove crawler metadata objects
@@ -214,7 +215,7 @@ wipeCrawlerData crawlerName = do
       _ -> Nothing
   deleteDocsByRepoName :: Text -> QueryM ()
   deleteDocsByRepoName fullname = do
-    logText $ "Deleting " <> fullname <> " ..."
+    logInfo "Deleting" ["fullname" .= fullname]
     withQuery sQuery Q.deleteDocs
    where
     sQuery =
@@ -224,7 +225,7 @@ wipeCrawlerData crawlerName = do
         ]
   deleteCrawlerMDs :: QueryM ()
   deleteCrawlerMDs = do
-    logText $ "Deleting " <> crawlerName <> " crawling metadata objects ..."
+    logInfo "Deleting crawling metadata objects" ["crawler" .= crawlerName]
     withQuery sQuery Q.deleteDocs
    where
     sQuery = mkQuery [mkTerm "crawler_metadata.crawler_name" crawlerName]
@@ -237,8 +238,7 @@ removeTDCrawlerData crawlerName = do
   index <- getIndexName
   tdDeletedCount <- removeOrphanTaskDatas index
   tdChangesCount <- removeChangeTaskDatas index
-  logText $
-    crawlerName <> ": deleted " <> show tdDeletedCount <> " td, updated " <> show tdChangesCount <> " changes"
+  logInfo "Deleting td" ["crawler" .= crawlerName, "deleted" .= tdDeletedCount, "updated" .= tdChangesCount]
  where
   -- Note about the structure:
   --   ($)   :: (a -> b) -> a -> b
@@ -295,7 +295,7 @@ removeProjectMD = removeMD CrawlerPB.EntityTypeENTITY_TYPE_PROJECT
 
 removeMD :: CrawlerPB.EntityType -> Text -> QueryM ()
 removeMD entity crawlerName = do
-  logText $ "Will delete " <> entityTypeName entity <> " crawler metadata for " <> crawlerName
+  logInfo "Will delete crawler md" ["crawler" .= crawlerName, "entity" .= entity]
   index <- getIndexName
   deletedCount <-
     withFilter [crawlerMDQuery entity crawlerName] $
@@ -303,4 +303,4 @@ removeMD entity crawlerName = do
         & ( Streaming.map (BulkDelete index)
               >>> I.bulkStream
           )
-  logText $ crawlerName <> ": deleted " <> show deletedCount <> " project metadata"
+  logInfo "Deleted metadata" ["crawler" .= crawlerName, "count" .= deletedCount]
