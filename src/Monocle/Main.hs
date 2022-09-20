@@ -28,6 +28,8 @@ import Servant.Auth.Server (CookieSettings, JWTSettings, defaultCookieSettings, 
 import Servant.HTML.Blaze (HTML)
 import System.Directory qualified
 
+import Monocle.Effects (MonoConfigEffect, mkReloadConfig, runMonoConfig)
+
 -- | The API is served at both `/api/2/` (for backward compat with the legacy nginx proxy)
 -- and `/` (for compat with crawler client)
 type MonocleAPI' = MonocleAPI :<|> AuthAPI
@@ -127,11 +129,15 @@ defaultApiConfig port elasticUrl configFile =
 
 -- | Start the API in the foreground.
 run :: ApiConfig -> IO ()
-run cfg = withLogger $ runEff . run' cfg
+run cfg =
+  withLogger $
+    runEff
+      . runMonoConfig (configFile cfg)
+      . run' cfg
 
-run' :: '[IOE] :>> es => ApiConfig -> Logger -> Eff es ()
+run' :: '[IOE, MonoConfigEffect] :>> es => ApiConfig -> Logger -> Eff es ()
 run' ApiConfig {..} glLogger = do
-  config <- liftIO (Config.reloadConfig configFile)
+  config <- mkReloadConfig
   conf <- Config.csConfig <$> liftIO config
   let workspaces = Config.getWorkspaces conf
 

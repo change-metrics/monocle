@@ -41,6 +41,36 @@ import Effectful.Reader.Static as Eff
 
 import Monocle.Logging hiding (logInfo, withContext)
 
+import Monocle.Config (ConfigStatus, reloadConfig)
+
+------------------------------------------------------------------
+--
+
+-- | Config effect to load and reload the local config
+
+------------------------------------------------------------------
+
+-- | The effect environment
+type MonoConfigEnv = FilePath
+
+-- | The effect definition using static rep.
+data MonoConfigEffect :: Effect
+
+type instance DispatchOf MonoConfigEffect = Static WithSideEffects
+newtype instance StaticRep MonoConfigEffect = MonoConfigEffect MonoConfigEnv
+
+-- | Run the effect (e.g. removes it from the list)
+runMonoConfig :: IOE :> es => FilePath -> Eff (MonoConfigEffect : es) a -> Eff es a
+runMonoConfig fp = evalStaticRep (MonoConfigEffect fp)
+
+-- | The lifted version of Monocle.Config.reloadConfig
+mkReloadConfig :: MonoConfigEffect :> es => Eff es (IO ConfigStatus)
+mkReloadConfig = do
+  MonoConfigEffect fp <- getStaticRep
+  (mkReload :: IO ConfigStatus) <- unsafeEff_ (Monocle.Config.reloadConfig fp)
+  -- pure $ unsafeEff_ mkReload
+  pure mkReload
+
 demo :: IO ()
 demo =
   pure ()
