@@ -461,6 +461,12 @@ monocleSearchLanguage =
             "{\"range\":{\"duration\":{\"boost\":1,\"gt\":3600}}}"
         )
     , testCase
+        "Query file field"
+        ( queryMatch
+            "file:tests/*"
+            "{\"regexp\":{\"changed_files.path\":{\"flags\":\"ALL\",\"value\":\"tests/*\"}}}"
+        )
+    , testCase
         "Query project"
         ( queryMatch
             "project:zuul"
