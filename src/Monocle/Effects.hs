@@ -36,6 +36,7 @@ import Network.HTTP.Client qualified as HTTP
 
 import Effectful
 import Effectful.Dispatch.Static (SideEffects (WithSideEffects), StaticRep, evalStaticRep, getStaticRep)
+import Effectful.Dispatch.Static.Primitive (Env, cloneEnv)
 import Effectful.Reader.Static as Eff
 
 import Monocle.Logging hiding (logInfo, withContext)
@@ -43,51 +44,84 @@ import Monocle.Logging hiding (logInfo, withContext)
 import Monocle.Config (ConfigStatus)
 import Monocle.Config qualified
 
-import System.Posix.Temp (mkstemp)
 import Control.Exception (finally)
 import GHC.IO.Handle (hClose)
 import System.Directory
+import System.Posix.Temp (mkstemp)
 import Test.Tasty
 import Test.Tasty.HUnit
 
+import Network.Wai qualified as Wai
+import Network.Wai.Handler.Warp qualified as Warp
+import Servant (Get, (:<|>))
+import Servant qualified
+
+type TestApi =
+  "route1" Servant.:> Get '[Servant.JSON] Natural
+    :<|> "route2" Servant.:> Get '[Servant.JSON] Natural
+
+-- | serverEff is the effectful implementation
+serverEff :: forall es. [IOE, LoggerEffect] :>> es => Servant.ServerT TestApi (Eff es)
+serverEff = route1Handler Servant.:<|> route1Handler
+ where
+  route1Handler :: Eff es Natural
+  route1Handler = do
+    logInfo "Handling route" []
+    pure 42
+
+-- | liftServer convert the effectful implementation to the Handler context
+liftServer :: Logger -> Servant.ServerT TestApi Servant.Handler
+liftServer logger = Servant.hoistServer (Proxy @TestApi) interpretServer serverEff
+ where
+  interpretServer :: Eff '[LoggerEffect, IOE] a -> Servant.Handler a
+  interpretServer =
+    liftIO . runEff . runLoggerEffect' logger
+
 demo :: IO ()
-demo = defaultMain tests
+demo = do
+  withLogger \logger -> do
+    Warp.run 8080 $ Servant.serve (Proxy @TestApi) $ liftServer logger
+
+-- defaultMain tests
 
 tests :: TestTree
 tests =
   testGroup
     "Monocle.Effects"
-    [ testCase "MonoConfig" do
+    [ testCase "LoggerEffect" do
+        runEff $ runLoggerEffect do
+          logInfo "logInfo prints!" []
+    , testCase "MonoConfig" do
         (path, fd) <- mkstemp "/tmp/monoconfig-test"
         hClose fd
         runEff (runMonoConfig path (testMonoConfig path)) `finally` removeFile path
     ]
-    where
-      testEff a b = liftIO (a @?= b)
-      testMonoConfig :: [MonoConfigEffect, IOE] :>> es => FilePath -> Eff es ()
-      testMonoConfig fp = do
-        -- Setup the test config
-        let getNames c = Monocle.Config.getWorkspaceName <$> Monocle.Config.getWorkspaces (Monocle.Config.csConfig c)
-        liftIO do writeFile fp "workspaces: []"
-        reloadConfig <- mkReloadConfig
+ where
+  testEff a b = liftIO (a @?= b)
+  testMonoConfig :: [MonoConfigEffect, IOE] :>> es => FilePath -> Eff es ()
+  testMonoConfig fp = do
+    -- Setup the test config
+    let getNames c = Monocle.Config.getWorkspaceName <$> Monocle.Config.getWorkspaces (Monocle.Config.csConfig c)
+    liftIO do writeFile fp "workspaces: []"
+    reloadConfig <- mkReloadConfig
 
-        -- initial load
-        do
-          config <- reloadConfig
-          Monocle.Config.csReloaded config `testEff` False
-          getNames config `testEff` []
+    -- initial load
+    do
+      config <- reloadConfig
+      Monocle.Config.csReloaded config `testEff` False
+      getNames config `testEff` []
 
-        -- test reload works
-        do
-          liftIO do writeFile fp "workspaces:\n- name: test\n  crawlers: []"
-          config <- reloadConfig
-          Monocle.Config.csReloaded config `testEff` True
-          getNames config `testEff` ["test"]
+    -- test reload works
+    do
+      liftIO do writeFile fp "workspaces:\n- name: test\n  crawlers: []"
+      config <- reloadConfig
+      Monocle.Config.csReloaded config `testEff` True
+      getNames config `testEff` ["test"]
 
-        -- make sure reload is avoided when the file doesn't change
-        do
-          config <- reloadConfig
-          Monocle.Config.csReloaded config `testEff` False
+    -- make sure reload is avoided when the file doesn't change
+    do
+      config <- reloadConfig
+      Monocle.Config.csReloaded config `testEff` False
 
 ------------------------------------------------------------------
 --
@@ -175,6 +209,9 @@ runLoggerEffect action =
   withEffToIO $ \runInIO ->
     withLogger \logger ->
       runInIO $ Eff.runReader logger action
+
+runLoggerEffect' :: Logger -> Eff (LoggerEffect : es) a -> Eff es a
+runLoggerEffect' logger = Eff.runReader logger
 
 withContext :: LoggerEffect :> es => Series -> Eff es a -> Eff es a
 withContext ctx = local $ \(Logger prevCtx logger) -> Logger (ctx <> prevCtx) logger
