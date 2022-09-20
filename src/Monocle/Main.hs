@@ -127,9 +127,9 @@ defaultApiConfig port elasticUrl configFile =
 
 -- | Start the API in the foreground.
 run :: ApiConfig -> IO ()
-run cfg = withLogger $ run' cfg
+run cfg = withLogger $ runEff . run' cfg
 
-run' :: MonadIO m => ApiConfig -> Logger -> m ()
+run' :: '[IOE] :>> es => ApiConfig -> Logger -> Eff es ()
 run' ApiConfig {..} glLogger = do
   config <- liftIO (Config.reloadConfig configFile)
   conf <- Config.csConfig <$> liftIO config

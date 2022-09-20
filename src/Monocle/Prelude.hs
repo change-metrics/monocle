@@ -18,6 +18,16 @@ module Monocle.Prelude (
   Secret (..),
   (:::),
 
+  -- * effectful
+  Effectful.Eff,
+  Effectful.IOE,
+  (:>>),
+  Effectful.runEff,
+  Effectful.runPureEff,
+  Effectful.Dispatch.Static.unEff,
+  Effectful.Dispatch.Static.unsafeEff,
+  Effectful.Dispatch.Static.unsafeEff_,
+
   -- * generic
   selectors,
   FromJSONField,
@@ -200,6 +210,9 @@ import Data.Time
 import Data.Time.Clock (getCurrentTime)
 import Data.Vector (Vector)
 import Database.Bloodhound qualified as BH
+import Effectful ((:>>))
+import Effectful qualified
+import Effectful.Dispatch.Static qualified
 import GHC.Float (double2Float)
 import GHC.Generics (C, D, K1, M1, R, Rep, S, Selector, U1, selName, (:*:), (:+:))
 import GHC.Stack
