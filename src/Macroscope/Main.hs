@@ -34,7 +34,7 @@ import Lentille.GraphQL
 import Macroscope.Worker (DocumentStream (..), runStream)
 import Monocle.Client
 import Monocle.Config qualified as Config
-import Monocle.Entity (CrawlerName (..), Entity)
+import Monocle.Entity (CrawlerName (..))
 import Monocle.Prelude
 import Network.HTTP.Types.Status qualified as HTTP
 import Network.Wai qualified as Wai
@@ -67,8 +67,8 @@ getCrawlers xs = do
 crawlerName :: Config.Crawler -> Text
 crawlerName Config.Crawler {..} = name
 
-withMonitoringServer :: Int -> IO () -> IO ()
-withMonitoringServer port action = do
+withMonitoringServer :: Int -> Logger -> IO () -> IO ()
+withMonitoringServer port logger action = do
   -- Setup GHC metrics for prometheus
   void $ promRegister ghcMetrics
 
@@ -76,7 +76,7 @@ withMonitoringServer port action = do
   v <- newEmptyMVar
   let settings = Warp.setPort port $ Warp.setBeforeMainLoop (putMVar v ()) Warp.defaultSettings
   withAsync (Warp.runSettings settings app) $ \warpPid -> do
-    mLog $ Log Macroscope $ LogStartingMonitoring port
+    runLogger logger $ logInfo "Starting monitoring service" ["port" .= port]
     -- Wait for the warp service to be running
     takeMVar v
     -- Run the action
@@ -91,13 +91,11 @@ withMonitoringServer port action = do
 -- | 'runMacroscope is the entrypoint of the macroscope process
 -- withClient "http://localhost:8080" Nothing $ runMacroscope 9001 "../etc/config.yaml"
 runMacroscope :: Int -> FilePath -> MonocleClient -> IO ()
-runMacroscope port confPath client = withMonitoringAndLogger $ \logger -> do
-  runLentilleM logger client $ do
-    mLog $ Log Macroscope LogMacroStart
-    config <- Config.mReloadConfig confPath
-    loop config (from ())
+runMacroscope port confPath client = withLogger $ \logger -> withMonitoringServer port logger $ runLentilleM logger client do
+  logInfo_ "Starting to fetch streams"
+  config <- Config.mReloadConfig confPath
+  loop config (from ())
  where
-  withMonitoringAndLogger = withMonitoringServer port . withLogger
   loop config clients = do
     -- Load the config
     conf <- Config.csConfig <$> config
@@ -146,7 +144,7 @@ runCrawlers' ::
   [StreamGroup m] ->
   m ()
 runCrawlers' startDelay loopDelay watchDelay isReloaded groups = do
-  mLog $ Log Macroscope $ LogMacroStartCrawlers $ map fst groups
+  logInfo "Starting crawlers" ["crawlers" .= map fst groups]
   -- Create a 'runGroup' thread for each stream group
   let groupAsyncs = Async.mapConcurrently runGroup (zip [0 ..] groups)
 
@@ -160,10 +158,10 @@ runCrawlers' startDelay loopDelay watchDelay isReloaded groups = do
 
   runGroup' (groupName, streams) = do
     -- Evaluate the group streams in sequence
-    mLog $ Log Macroscope $ LogMacroGroupStart groupName
+    logInfo "Group starting" ["group" .= groupName]
     -- TODO: catch any exception and continue
     sequence_ streams
-    mLog $ Log Macroscope $ LogMacroGroupEnd groupName
+    logInfo "Group end" ["group" .= groupName]
 
     -- Pause the group
     unlessStopped $ pauseGroup 0
@@ -185,7 +183,7 @@ runCrawlers' startDelay loopDelay watchDelay isReloaded groups = do
     if reloaded
       then do
         -- Update the crawlerStop ref to True so that stream gracefully stops
-        mLog $ Log Macroscope LogMacroReloadingStart
+        logInfo_ "Macroscope reloading begin"
         ref <- asks crawlerStop
         liftIO $ writeIORef ref True
 
@@ -270,7 +268,7 @@ groupByClient = grp >>> adapt
   keepOrder = fmap snd . NonEmpty.reverse
 
 -- | MonadMacro is an alias for a bunch of constraints required for the macroscope process
-type MonadMacro m = (MonadCatch m, MonadGerrit m, MonadBZ m, LentilleMonad m, MonadReader CrawlerEnv m)
+type MonadMacro m = (HasLogger m, MonadCatch m, MonadGerrit m, MonadBZ m, LentilleMonad m, MonadReader CrawlerEnv m)
 
 -- | 'runCrawler' evaluate a single crawler
 runCrawler :: MonadMacro m => Crawler m -> m ()
@@ -282,21 +280,21 @@ runCrawler = safeCrawl
       Right () -> pure ()
       Left exc ->
         let (InfoCrawler index _ Config.Crawler {..} _, _) = crawler
-         in mLog $ Log Macroscope $ LogMacroSkipCrawler (LogCrawlerContext index name Nothing) (show exc)
+         in logWarn "Skipping due to an unexpected exception" ["index" .= index, "crawler" .= name, "err" .= show @Text exc]
 
   crawl :: MonadMacro m => Crawler m -> m ()
   crawl (InfoCrawler index key crawler _, docStreams) = do
-    mLog $ Log Macroscope $ LogMacroStartCrawler $ LogCrawlerContext index (crawlerName crawler) Nothing
+    logInfo "Starting crawler" ["index" .= index, "crawler" .= crawlerName crawler]
 
     let runner = runStream (from key) (from index) (CrawlerName $ crawlerName crawler)
     traverse_ runner docStreams
 
 -- | 'getCrawler' converts a crawler configuration into a (ClientKey, streams)
 getCrawler ::
-  (Config.MonadConfig m, MonadGerrit m, MonadGraphQL m, MonadThrow m, MonadBZ m) =>
+  (HasLogger m, Config.MonadConfig m, MonadGerrit m, MonadGraphQL m, MonadThrow m, MonadBZ m) =>
   InfoCrawler ->
   StateT Clients m (Maybe (ClientKey, Crawler m))
-getCrawler inf@(InfoCrawler workspaceName _ crawler idents) = getCompose $ fmap addInfos (Compose getStreams)
+getCrawler inf@(InfoCrawler _ _ crawler idents) = getCompose $ fmap addInfos (Compose getStreams)
  where
   addInfos (key, streams) = (key, (inf, streams))
   getStreams =
@@ -345,32 +343,29 @@ getCrawler inf@(InfoCrawler workspaceName _ crawler idents) = getCompose $ fmap 
   getIdentByAliasCB :: Text -> Maybe Text
   getIdentByAliasCB = flip Config.getIdentByAliasFromIdents idents
 
-  mkLC :: Entity -> LogCrawlerContext
-  mkLC = LogCrawlerContext workspaceName (Config.getCrawlerName crawler) . Just
+  glMRCrawler :: HasLogger m => MonadGraphQLE m => GraphClient -> (Text -> Maybe Text) -> DocumentStream m
+  glMRCrawler glClient cb = Changes $ streamMergeRequests glClient cb
 
-  glMRCrawler :: MonadGraphQLE m => GraphClient -> (Text -> Maybe Text) -> DocumentStream m
-  glMRCrawler glClient cb = Changes $ streamMergeRequests glClient mkLC cb
+  glOrgCrawler :: HasLogger m => MonadGraphQLE m => GraphClient -> DocumentStream m
+  glOrgCrawler glClient = Projects $ streamGroupProjects glClient
 
-  glOrgCrawler :: MonadGraphQLE m => GraphClient -> DocumentStream m
-  glOrgCrawler glClient = Projects $ streamGroupProjects glClient mkLC
-
-  bzCrawler :: MonadBZ m => BugzillaSession -> DocumentStream m
+  bzCrawler :: HasLogger m => MonadBZ m => BugzillaSession -> DocumentStream m
   bzCrawler bzSession = TaskDatas $ getBZData bzSession
 
-  ghIssuesCrawler :: MonadGraphQLE m => GraphClient -> DocumentStream m
-  ghIssuesCrawler ghClient = TaskDatas $ streamLinkedIssue ghClient mkLC
+  ghIssuesCrawler :: HasLogger m => MonadGraphQLE m => GraphClient -> DocumentStream m
+  ghIssuesCrawler ghClient = TaskDatas $ streamLinkedIssue ghClient
 
-  ghOrgCrawler :: MonadGraphQLE m => GraphClient -> DocumentStream m
-  ghOrgCrawler ghClient = Projects $ streamOrganizationProjects ghClient mkLC
+  ghOrgCrawler :: HasLogger m => MonadGraphQLE m => GraphClient -> DocumentStream m
+  ghOrgCrawler ghClient = Projects $ streamOrganizationProjects ghClient
 
-  ghPRCrawler :: forall m. MonadGraphQLE m => GraphClient -> (Text -> Maybe Text) -> DocumentStream m
-  ghPRCrawler glClient cb = Changes $ streamPullRequests glClient mkLC cb
+  ghPRCrawler :: forall m. HasLogger m => MonadGraphQLE m => GraphClient -> (Text -> Maybe Text) -> DocumentStream m
+  ghPRCrawler glClient cb = Changes $ streamPullRequests glClient cb
 
   gerritRegexProjects :: [Text] -> [Text]
   gerritRegexProjects = filter (T.isPrefixOf "^")
 
-  gerritREProjectsCrawler :: MonadGerrit m => GerritCrawler.GerritEnv -> DocumentStream m
+  gerritREProjectsCrawler :: HasLogger m => MonadGerrit m => GerritCrawler.GerritEnv -> DocumentStream m
   gerritREProjectsCrawler gerritEnv = Projects $ GerritCrawler.getProjectsStream gerritEnv
 
-  gerritChangesCrawler :: MonadGerrit m => GerritCrawler.GerritEnv -> DocumentStream m
+  gerritChangesCrawler :: HasLogger m => MonadGerrit m => GerritCrawler.GerritEnv -> DocumentStream m
   gerritChangesCrawler gerritEnv = Changes $ GerritCrawler.getChangesStream gerritEnv

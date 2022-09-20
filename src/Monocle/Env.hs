@@ -3,7 +3,6 @@ module Monocle.Env where
 
 import Database.Bloodhound qualified as BH
 import Database.Bloodhound.Raw qualified as BHR
-import GHC.Stack (srcLocFile, srcLocStartLine)
 import Json.Extras qualified as Json
 import Monocle.Api.Jwt (OIDCEnv)
 import Monocle.Config qualified as Config
@@ -40,6 +39,11 @@ data AppEnv = AppEnv
 newtype AppM a = AppM {unApp :: ReaderT AppEnv Servant.Handler a}
   deriving newtype (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadError ServerError)
   deriving newtype (MonadReader AppEnv)
+
+instance HasLogger AppM where
+  getLogger = glLogger <$> asks aEnv
+  withContext ctx = local (\env -> env {aEnv = (aEnv env) {glLogger = addCtx ctx (glLogger (aEnv env))}})
+  logIO = liftIO
 
 instance MonadMonitor AppM where
   doIO = liftIO
@@ -81,21 +85,22 @@ newtype QueryM a = QueryM {unTenant :: ReaderT QueryEnv IO a}
   deriving newtype (MonadReader QueryEnv)
   deriving newtype (MonadUnliftIO, MonadMonitor)
 
+instance HasLogger QueryM where
+  getLogger = glLogger <$> asks tEnv
+  withContext ctx = local (\env -> env {tEnv = (tEnv env) {glLogger = addCtx ctx (glLogger (tEnv env))}})
+  logIO = liftIO
+
 -- | We can derive a MonadBH from QueryM, we just needs to read the BHEnv from the tEnv
 instance BH.MonadBH QueryM where
   getBHEnv = QueryM (asks $ bhEnv . tEnv)
 
 -- | The QueryMonad is the main constraint used by the Queries module. Note that it implies ElasticMonad.
-class (Functor m, Applicative m, Monad m, MonadReader QueryEnv m, ElasticMonad m) => QueryMonad m where
+class (Functor m, Applicative m, Monad m, HasLogger m, MonadReader QueryEnv m, ElasticMonad m) => QueryMonad m where
   -- | Get the current (UTC) time.
   getCurrentTime' :: m UTCTime
 
-  -- | Log a debug
-  trace' :: Text -> m ()
-
 instance QueryMonad QueryM where
   getCurrentTime' = liftIO getCurrentTime
-  trace' msg = logEvent $ LogRaw msg
 
 -- | A type class that defines the method available to query elastic
 class ElasticMonad m where
@@ -266,12 +271,3 @@ addFilter :: [BH.Query] -> QueryEnv -> QueryEnv
 addFilter extraQueries (QueryEnv tenant tEnv query context) =
   let newQueryGet modifier qf = extraQueries <> Q.queryGet query modifier qf
    in QueryEnv tenant tEnv (query {Q.queryGet = newQueryGet}) context
-
--------------------------------------------------------------------------------
--- logging function
--------------------------------------------------------------------------------
-logEvent :: LogEvent -> QueryM ()
-logEvent ev = do
-  Config.Index {..} <- getIndexConfig
-  logger <- asks (glLogger . tEnv)
-  liftIO $ doLog logger (encodeUtf8 $ name <> ": " <> from ev)

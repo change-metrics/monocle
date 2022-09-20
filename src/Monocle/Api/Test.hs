@@ -6,6 +6,7 @@ import Monocle.Backend.Index qualified as I
 import Monocle.Client
 import Monocle.Config qualified as Config
 import Monocle.Env
+import Monocle.Logging
 import Monocle.Main
 import Monocle.Prelude
 import Network.HTTP.Mock (withMockedManager)
@@ -14,10 +15,9 @@ import Servant.Auth.Server (defaultJWTSettings, generateKey)
 
 -- Create the AppEnv, necesary to create the monocle api Wai Application
 mkAppEnv :: Config.Index -> IO AppEnv
-mkAppEnv workspace = do
+mkAppEnv workspace = withLogger \glLogger -> do
   bhEnv <- mkEnv'
-  let glLogger _ = pure ()
-      config' = Config.Config Nothing Nothing [workspace]
+  let config' = Config.Config Nothing Nothing [workspace]
       ws = Config.mkWorkspaceStatus config'
   wsRef <- newMVar $ fmap (const Config.Ready) ws
   jwk <- generateKey

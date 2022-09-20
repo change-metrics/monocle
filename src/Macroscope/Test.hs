@@ -14,6 +14,7 @@ import Monocle.Client
 import Monocle.Config qualified as Config
 import Monocle.Entity (CrawlerName (..))
 import Monocle.Env
+import Monocle.Logging
 import Monocle.Prelude
 import Streaming.Prelude qualified as Streaming
 import Test.Tasty
@@ -137,7 +138,7 @@ testGetStream = do
   setEnv "CRAWLERS_API_KEY" "secret"
   setEnv "GITLAB_TOKEN" "42"
   setEnv "OTHER_TOKEN" "43"
-  runLentilleStreamTest $ do
+  runLentilleStreamTest do
     (streams, clients) <- runStateT (traverse Macroscope.getCrawler (Macroscope.getCrawlers conf)) (from ())
     assertEqual' "Two streams created" 3 (length streams)
     assertEqual' "Only two gitlab clients created" 2 (length $ toList $ Macroscope.clientsGraph clients)

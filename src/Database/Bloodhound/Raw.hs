@@ -24,6 +24,7 @@ import Data.Text qualified as Text
 import Data.Vector qualified as V
 import Database.Bloodhound qualified as BH
 import Json.Extras qualified as Json
+import Monocle.Logging
 import Monocle.Prelude
 import Network.HTTP.Client qualified as HTTP
 import Network.HTTP.Types.Method qualified as HTTP
@@ -57,7 +58,7 @@ dispatch method url body qs = do
 
 -- | Utility function to advance in scroll result. We can use the BH library
 --   because we no longer need to support a custom raw body once we have a scroll.
-advance :: (MonadBH m, MonadThrow m, FromJSON resp) => BH.ScrollId -> m (BH.SearchResult resp)
+advance :: (MonadBH m, HasLogger m, MonadThrow m, FromJSON resp) => BH.ScrollId -> m (BH.SearchResult resp)
 advance scroll = do
   resp <- BH.advanceScroll scroll 60
   case resp of
@@ -65,7 +66,7 @@ advance scroll = do
     Right x -> pure x
  where
   handleError resp = do
-    logText (show resp)
+    logWarn "Elastic scroll response failed" ["status" .= BH.errorStatus resp, "message" .= BH.errorMessage resp]
     error "Elastic scroll response failed"
 
 settings :: (MonadBH m, ToJSON body) => BH.IndexName -> body -> m ()
@@ -94,7 +95,7 @@ aesonCasing = AesonCasing.snakeCase . AesonCasing.dropFPrefix
 
 search ::
   forall resp m body.
-  (MonadBH m, MonadThrow m) =>
+  (HasLogger m, MonadBH m, MonadThrow m) =>
   (Aeson.ToJSON body, FromJSONField resp) =>
   BH.IndexName ->
   body ->
@@ -104,7 +105,7 @@ search index body scrollRequest = do
   rawResp <- search' index newBody qs
   resp <- BH.parseEsResponse rawResp
   case resp of
-    Left _e -> handleError rawResp
+    Left e -> handleError e rawResp
     Right x -> pure x
  where
   newBody = case (fields, toJSON body) of
@@ -125,9 +126,9 @@ search index body scrollRequest = do
   qs = case scrollRequest of
     NoScroll -> []
     GetScroll x -> [("scroll", Just x)]
-  handleError resp = do
-    logText (show resp)
-    error "Elastic response failed"
+  handleError resp rawResp = do
+    logWarn "Elastic response failed" ["status" .= BH.errorStatus resp, "message" .= BH.errorMessage resp]
+    error $ "Elastic response failed: " <> show rawResp
 
 -- | A special purpose search implementation that uses the faster json-syntax
 searchHit ::

@@ -8,17 +8,12 @@ module Lentille.GitHub.RateLimit where
 import Data.Morpheus.Client
 import Lentille (
   LentilleError (GraphQLError),
-  Log (Log),
-  LogAuthor (Macroscope),
-  LogEvent (LogRaw),
   MonadGraphQLE,
-  MonadLog,
   MonadTime (mThreadDelay),
   RequestLog (..),
-  mLog,
  )
 import Lentille.GraphQL
-import Monocle.Logging (LogCrawlerContext)
+import Monocle.Logging
 import Monocle.Prelude
 import Network.HTTP.Client (Response, responseBody, responseStatus)
 import Network.HTTP.Types (Status, badGateway502, forbidden403, ok200)
@@ -47,10 +42,10 @@ transformResponse = \case
       Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAt'
   respOther -> error ("Invalid response: " <> show respOther)
 
-getRateLimit :: (MonadGraphQLE m) => LogCrawlerContext -> GraphClient -> m RateLimit
-getRateLimit lc client = do
+getRateLimit :: (HasLogger m, MonadGraphQLE m) => GraphClient -> m RateLimit
+getRateLimit client = do
   transformResponse
-    <$> doRequest client lc mkRateLimitArgs (Just $ retryCheck Macroscope) Nothing Nothing
+    <$> doRequest client mkRateLimitArgs (Just retryCheck) Nothing Nothing
  where
   mkRateLimitArgs = const . const $ ()
 
@@ -62,25 +57,25 @@ retryResultToBool :: RetryResult -> Bool
 retryResultToBool DoRetry = True
 retryResultToBool DontRetry = False
 
-retryCheck :: MonadLog m => LogAuthor -> Handler m Bool
-retryCheck author = Handler $ \case
+retryCheck :: MonadTime m => HasLogger m => Handler m Bool
+retryCheck = Handler $ \case
   GraphQLError (err, RequestLog _req _body resp _rbody) -> retryResultToBool <$> checkResp err resp
   _anyOtherExceptionAreNotRetried -> pure False
  where
-  checkResp :: (Show a, MonadLog m) => a -> Response LByteString -> m RetryResult
+  checkResp :: (Show a, MonadTime m, HasLogger m) => a -> Response LByteString -> m RetryResult
   checkResp err resp
     | isTimeoutError status body = do
-        mLog $ Log author $ LogRaw "Server side timeout error. Will retry with lower query depth ..."
+        logWarn_ "Server side timeout error. Will retry with lower query depth ..."
         pure DoRetry
     | isSecondaryRateLimitError status body = do
-        mLog $ Log author $ LogRaw "Secondary rate limit error. Will retry after 60 seconds ..."
+        logWarn_ "Secondary rate limit error. Will retry after 60 seconds ..."
         mThreadDelay $ 60 * 1_000_000
         pure DoRetry
     | isRepoNotFound status body = do
-        mLog $ Log author $ LogRaw "Repository not found. Will not retry."
+        logWarn_ "Repository not found. Will not retry."
         pure DontRetry
     | otherwise = do
-        mLog $ Log author $ LogRaw $ "Unexpected error: " <> show err
+        logWarn "Unexpected error" ["err" .= show @Text err]
         pure DoRetry
    where
     status = responseStatus resp

@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 ### Changed
+
+- [logging] The api and crawler logs changed to structured json logging.
+- [prometheus] The http_request and http_failure counter labels changed from (workspace, url, crawler) to (module, url).
+
 ### Removed
 ### Fixed
 

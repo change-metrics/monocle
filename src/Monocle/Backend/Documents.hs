@@ -13,7 +13,7 @@
 -- This module provides From instance to help converting the data types.
 module Monocle.Backend.Documents where
 
-import Data.Aeson (Value (String), defaultOptions, genericParseJSON, genericToJSON, object, withObject, withText, (.:))
+import Data.Aeson (Value (String), defaultOptions, genericParseJSON, genericToJSON, withObject, withText, (.:))
 import Data.Aeson.Casing (aesonPrefix, snakeCase)
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import Data.Vector qualified as V

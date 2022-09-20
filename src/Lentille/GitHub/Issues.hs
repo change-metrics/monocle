@@ -21,7 +21,7 @@ import Lentille (MonadGraphQLE)
 import Lentille.GitHub.RateLimit (getRateLimit)
 import Lentille.GraphQL
 import Monocle.Entity (Entity (TaskDataEntity))
-import Monocle.Logging (LogCrawlerContext)
+import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Search (TaskData (..))
 
@@ -84,21 +84,19 @@ defineByDocumentFile
   |]
 
 streamLinkedIssue ::
-  MonadGraphQLE m =>
+  (HasLogger m, MonadGraphQLE m) =>
   GraphClient ->
-  (Entity -> LogCrawlerContext) ->
   UTCTime ->
   Text ->
   Stream (Of TaskData) m ()
-streamLinkedIssue client mkLC time repo =
-  streamFetch client lc mkArgs optParams transformResponse
+streamLinkedIssue client time repo =
+  streamFetch client mkArgs optParams transformResponse
  where
-  lc = mkLC $ TaskDataEntity repo
   mkArgs _ =
     GetLinkedIssuesArgs
       ( from $ "repo:" <> from repo <> " updated:>=" <> toSimpleDate time <> " linked:pr"
       )
-  optParams = defaultStreamFetchOptParams {fpGetRatelimit = Just $ getRateLimit lc}
+  optParams = defaultStreamFetchOptParams {fpGetRatelimit = Just getRateLimit}
   toSimpleDate :: UTCTime -> String
   toSimpleDate = formatTime defaultTimeLocale "%F"
 

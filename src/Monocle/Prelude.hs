@@ -7,6 +7,7 @@
 -- | An augmented relude with extra package such as time and aeson.
 module Monocle.Prelude (
   module Relude,
+  module GHC.Stack,
   fromFixed,
   double2Float,
   orDie,
@@ -41,13 +42,6 @@ module Monocle.Prelude (
   Stream,
   Of (..),
   toVector,
-
-  -- * fast-logger
-  Logger,
-  withLogger,
-  doLog,
-  logMessage,
-  logText,
 
   -- * unliftio
   MonadUnliftIO,
@@ -136,10 +130,12 @@ module Monocle.Prelude (
   FromJSON (..),
   ToJSON (..),
   Value (Number),
+  Pair,
   encode,
   encodePretty,
   encodePrettyWithSpace,
   (.=),
+  object,
 
   -- * http-client-openssl
   withOpenSSL,
@@ -149,8 +145,6 @@ module Monocle.Prelude (
   BH.MonadBH,
   BH.DocId,
   BH.BulkOperation (..),
-  simpleSearch,
-  doSearch,
   mkAnd,
   mkOr,
   mkNot,
@@ -193,10 +187,11 @@ import Control.Monad.Except (MonadError, catchError, throwError)
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Morph (hoist)
 import Control.Monad.Writer (MonadWriter, WriterT, runWriterT, tell)
-import Data.Aeson (FromJSON (..), ToJSON (..), Value (Number, String), encode, withText, (.=))
+import Data.Aeson (FromJSON (..), ToJSON (..), Value (Number, String), encode, object, withText, (.=))
 import Data.Aeson.Encode.Pretty qualified as Aeson
 import Data.Aeson.Key qualified as AesonKey
 import Data.Aeson.Lens (_Integer, _Object)
+import Data.Aeson.Types (Pair)
 import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)
 import Data.Map qualified as Map
 import Data.Text qualified as T
@@ -207,6 +202,7 @@ import Data.Vector (Vector)
 import Database.Bloodhound qualified as BH
 import GHC.Float (double2Float)
 import GHC.Generics (C, D, K1, M1, R, Rep, S, Selector, U1, selName, (:*:), (:+:))
+import GHC.Stack
 import Google.Protobuf.Timestamp qualified
 import Language.Haskell.TH.Quote (QuasiQuoter)
 import Network.HTTP.Client.OpenSSL (newOpenSSLManager, withOpenSSL)
@@ -222,14 +218,13 @@ import Streaming.Prelude (Stream)
 import Streaming.Prelude qualified as S
 import System.Environment (setEnv)
 import System.IO.Unsafe (unsafePerformIO)
-import System.Log.FastLogger qualified as FastLogger
 import Test.Tasty.HUnit
 import UnliftIO.Async (cancel, withAsync)
 import UnliftIO.MVar (modifyMVar, modifyMVar_)
 import Witch hiding (over)
 
 -- | Prometheus
-type CounterLabel = Prometheus.Vector (Text, Text, Text) Prometheus.Counter
+type CounterLabel = Prometheus.Vector (Text, Text) Prometheus.Counter
 
 promRegister :: MonadIO m => Prometheus.Metric s -> m s
 promRegister = Prometheus.register
@@ -237,7 +232,7 @@ promRegister = Prometheus.register
 promVector :: Prometheus.Label l => l -> Prometheus.Metric m -> Prometheus.Metric (Prometheus.Vector l m)
 promVector = Prometheus.vector
 
-incrementCounter :: Prometheus.MonadMonitor m => CounterLabel -> "labels" ::: (Text, Text, Text) -> m ()
+incrementCounter :: Prometheus.MonadMonitor m => CounterLabel -> ("module" ::: Text, "url" ::: Text) -> m ()
 incrementCounter x l = withLabel x l incCounter
 
 -------------------------------------------------------------------------------
@@ -270,12 +265,12 @@ monocleMetricCounter =
 {-# NOINLINE httpRequestCounter #-}
 httpRequestCounter :: CounterLabel
 httpRequestCounter =
-  unsafePerformIO $ promRegister $ promVector ("ident", "url", "type") $ Prometheus.counter (Info "http_request" "")
+  unsafePerformIO $ promRegister $ promVector ("module", "url") $ Prometheus.counter (Info "http_request" "")
 
 {-# NOINLINE httpFailureCounter #-}
 httpFailureCounter :: CounterLabel
 httpFailureCounter =
-  unsafePerformIO $ promRegister $ promVector ("ident", "url", "type") $ counter (Info "http_failure" "")
+  unsafePerformIO $ promRegister $ promVector ("module", "url") $ counter (Info "http_failure" "")
 
 -------------------------------------------------------------------------------
 
@@ -350,30 +345,6 @@ dropMilliSec (UTCTime day sec) = UTCTime day (fromInteger $ truncate sec)
 
 headMaybe :: [a] -> Maybe a
 headMaybe xs = head <$> nonEmpty xs
-
------------------------------------------------------------
--- Logging facilities
-
-type Logger = FastLogger.TimedFastLogger
-
--- | withLogger create the logger
-withLogger :: (Logger -> IO a) -> IO a
-withLogger cb = do
-  tc <- liftIO $ FastLogger.newTimeCache "%F %T "
-  FastLogger.withTimedFastLogger tc logger cb
- where
-  logger = FastLogger.LogStderr 1024
-
-doLog :: Logger -> ByteString -> IO ()
-doLog logger message = logger (\time -> FastLogger.toLogStr $ time <> message <> "\n")
-
--- | Print a message to the stderr with a timestamp
-logMessage :: MonadIO m => ByteString -> m ()
-logMessage msg = liftIO $ withLogger (`doLog` msg)
-
--- | Print a text message to the stderr with a timestamp
-logText :: MonadIO m => Text -> m ()
-logText = logMessage . from
 
 getEnv' :: Text -> IO Text
 getEnv' var = do
@@ -493,24 +464,6 @@ toVector s = do
 
 -------------------------------------------------------------------------------
 -- Bloodhound helpers
-
--- | Helper search func that can be replaced by a scanSearch
-doSearch :: (FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m (BH.SearchResult a)
-doSearch indexName search = do
-  -- logText . decodeUtf8 . encode $ search
-  rawResp <- BH.searchByIndex indexName search
-  -- logText $ show rawResp
-  resp <- BH.parseEsResponse rawResp
-  case resp of
-    Left _e -> handleError rawResp
-    Right x -> pure x
- where
-  handleError resp = do
-    logText (show resp)
-    error "Elastic response failed"
-
-simpleSearch :: (FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m [BH.Hit a]
-simpleSearch indexName search = BH.hits . BH.searchHits <$> doSearch indexName search
 
 mkAnd :: [BH.Query] -> BH.Query
 mkAnd andQ = BH.QueryBoolQuery $ BH.mkBoolQuery [] (BH.Filter <$> andQ) [] []

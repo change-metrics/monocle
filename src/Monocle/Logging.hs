@@ -1,108 +1,124 @@
 -- | Monocle log events
-module Monocle.Logging where
+-- Note: [Monocle Structured Logging]
+--
+-- Structure comes from the 'Data.Aeson.Series'. They can be created using
+--    key .= value
+-- And combined using mappend:
+--    key1 .= value1 <> key2 .= value2
+module Monocle.Logging (
+  -- * Logging effect
+  HasLogger (..),
+  LogLevel,
+  logWarn,
+  logWarn_,
+  logInfo,
+  logInfo_,
+  logDebug,
+  logDebug_,
 
-import Data.Text qualified as T
-import Monocle.Config qualified as Config
-import Monocle.Entity
+  -- * The logger object
+  Logger,
+  addCtx,
+  withLogger,
+
+  -- * Standalone logging implementation (for use outside of Monocle.Env or LentilleM)
+  LoggerT,
+  runLogger,
+  runLogger',
+) where
+
+import Data.Aeson (Series, pairs)
+import Data.Aeson.Encoding (encodingToLazyByteString)
+import Prometheus qualified
+import System.Log.FastLogger qualified as FastLogger
+
 import Monocle.Prelude
-import Monocle.Protob.Search (QueryRequest_QueryType (..))
-import Monocle.Search.Query qualified as Q
 
-data LogCrawlerContext = LogCrawlerContext
-  { lccIndex :: Text
-  , lccName :: Text
-  , lccEntity :: Maybe Entity
+-- | The logger effect definition, to be implemented by custom monad such as LentilleM
+class Monad m => HasLogger m where
+  getLogger :: m Logger
+  withContext :: Series -> m () -> m ()
+  logIO :: IO () -> m ()
+
+data LogLevel = LogWarning | LogInfo | LogDebug
+
+instance From LogLevel ByteString where
+  from = \case
+    LogWarning -> "WARNING "
+    LogInfo -> "INFO    "
+    LogDebug -> "DEBUG   "
+
+-- | doLog outputs a oneliner text message
+doLog :: HasLogger m => LogLevel -> ByteString -> Text -> [Series] -> m ()
+doLog lvl loc msg attrs = do
+  Logger ctx logger <- getLogger
+  let body :: ByteString
+      body = case from . encodingToLazyByteString . pairs . mappend ctx . mconcat $ attrs of
+        "{}" -> mempty
+        x -> " " <> x
+  logIO $ logger (\time -> FastLogger.toLogStr $ time <> msgText <> body <> "\n")
+ where
+  msgText :: ByteString
+  msgText = from lvl <> loc <> ": " <> encodeUtf8 msg
+
+-- | Get the `Module.Name:LINE` from the log* caller, jumping over the log* stack
+getLocName :: HasCallStack => ByteString
+getLocName = case getCallStack callStack of
+  (_logStack : (_, srcLoc) : _) -> from (srcLocModule srcLoc) <> ":" <> show (srcLocStartLine srcLoc)
+  _ -> "N/C"
+
+-- | Produce info log with attributes, for example:
+--
+-- logInfo "Starting" ["ip" .= addr, "port" .= 42]
+logInfo :: (HasCallStack, HasLogger m) => Text -> [Series] -> m ()
+logInfo = doLog LogInfo getLocName
+
+-- | Produce info log without attributes.
+logInfo_ :: (HasCallStack, HasLogger m) => Text -> m ()
+logInfo_ msg = doLog LogInfo getLocName msg []
+
+-- | Produce messages that need attention.
+logWarn :: (HasCallStack, HasLogger m) => Text -> [Series] -> m ()
+logWarn = doLog LogWarning getLocName
+
+logWarn_ :: (HasCallStack, HasLogger m) => Text -> m ()
+logWarn_ msg = doLog LogWarning getLocName msg []
+
+-- | Produce trace logs.
+logDebug :: (HasCallStack, HasLogger m) => Text -> [Series] -> m ()
+logDebug = doLog LogDebug getLocName
+
+logDebug_ :: (HasCallStack, HasLogger m) => Text -> m ()
+logDebug_ msg = doLog LogDebug getLocName msg []
+
+-- | The logger representation, it is opaque for users.
+data Logger = Logger
+  { _ctx :: Series
+  , _logger :: FastLogger.TimedFastLogger
   }
 
-noContext :: LogCrawlerContext
-noContext = LogCrawlerContext "<direct>" "CLI" Nothing
+addCtx :: Series -> Logger -> Logger
+addCtx ctx (Logger prev logger) = Logger (ctx <> prev) logger
 
-data LogEvent
-  = LogMacroStart
-  | LogStartingMonitoring Int
-  | LogMacroPause Word32
-  | LogMacroStartCrawlers [Text]
-  | LogMacroContinue LogCrawlerContext
-  | LogMacroSkipCrawler LogCrawlerContext Text
-  | LogMacroStartCrawler LogCrawlerContext
-  | LogMacroPostData LogCrawlerContext Entity Int
-  | LogMacroRequestOldestEntity LogCrawlerContext Text
-  | LogMacroGotOldestEntity LogCrawlerContext Entity UTCTime
-  | LogMacroNoOldestEnity LogCrawlerContext
-  | LogMacroEnded LogCrawlerContext Entity UTCTime
-  | LogMacroCommitFailed LogCrawlerContext Text
-  | LogMacroPostDataFailed LogCrawlerContext [Text]
-  | LogMacroStreamError LogCrawlerContext Text
-  | LogMacroGroupStart Text
-  | LogMacroGroupEnd Text
-  | LogMacroReloadingStart
-  | LogNetworkFailure Text
-  | LogGetBugs UTCTime Int Int
-  | LogGraphQL LogCrawlerContext Text
-  | LogRaw Text
-  | AddingChange LText Int Int
-  | AddingProject Text Text Int
-  | AddingTaskData LText Int
-  | UpdatingEntity LText Entity UTCTime
-  | Searching QueryRequest_QueryType LText Q.Query
-  | SystemReady Int Int Text
-  | AuthSystemReady Text
-  | ReloadConfig FilePath
-  | RefreshIndex Config.Index
-  | OIDCCallbackCall (Maybe Text) (Maybe Text) (Maybe Text)
-  | OIDCProviderTokenRequested Text
-  | JWTCreated Text Text
-  | JWTCreateFailed Text Text
+-- | withLogger create the logger
+withLogger :: (Logger -> IO a) -> IO a
+withLogger cb = do
+  tc <- liftIO $ FastLogger.newTimeCache "%F %T "
+  FastLogger.withTimedFastLogger tc logger (cb . Logger mempty)
+ where
+  logger = FastLogger.LogStderr 1024
 
-instance From LogEvent Text where
-  from = \case
-    LogMacroStart -> "Starting to fetch streams"
-    LogStartingMonitoring port -> "Starting monitoring service on port " <> show port
-    LogMacroPause usec -> "Waiting " <> show usec <> " sec. brb"
-    LogMacroStartCrawlers xs -> "Starting " <> show (length xs) <> " threads for " <> show xs
-    LogMacroContinue lc -> prefix lc <> " - Continuing on next entity"
-    LogMacroSkipCrawler lc err -> prefix lc <> " - Skipping due to an unexpected exception catched: " <> err
-    LogMacroStartCrawler lc -> prefix lc <> " - Start crawling entities"
-    LogMacroPostData lc entity count -> prefix lc <> " - Posting " <> show count <> " documents to: " <> show entity
-    LogMacroRequestOldestEntity lc entity -> prefix lc <> " - Looking for oldest refreshed " <> entity <> " entity"
-    LogMacroGotOldestEntity lc entity date ->
-      prefix lc <> " - Got entity: " <> show entity <> " last updated at " <> show date
-    LogMacroNoOldestEnity lc -> prefix lc <> " - Unable to find entity to update"
-    LogMacroEnded lc entity date -> prefix lc <> " - Crawling entities completed, oldest " <> show entity <> " last updated at " <> show date
-    LogMacroCommitFailed lc msg -> prefix lc <> " - Commit date failed: " <> msg
-    LogMacroPostDataFailed lc errors -> prefix lc <> " - Post documents failed: " <> T.intercalate " | " errors
-    LogMacroStreamError lc error' -> prefix lc <> " - Error occured when consuming the document stream: " <> error'
-    LogNetworkFailure msg -> "Network error: " <> msg
-    LogGetBugs ts offset limit ->
-      "Getting bugs from " <> show ts <> " offset " <> show offset <> " limit " <> show limit
-    LogMacroGroupStart name -> "Group start: " <> name
-    LogMacroGroupEnd name -> "Group end: " <> name
-    LogMacroReloadingStart -> "Macroscope reloading beging"
-    LogGraphQL lc text -> prefix lc <> " - " <> text
-    LogRaw t -> t
-    AddingChange crawler changes events ->
-      from crawler <> " adding " <> show changes <> " changes with " <> show events <> " events"
-    AddingProject crawler organizationName projects ->
-      crawler <> " adding " <> show projects <> " changes for organization: " <> organizationName
-    AddingTaskData crawler tds ->
-      from crawler <> " adding " <> show tds
-    UpdatingEntity crawler entity ts ->
-      from crawler <> " updating " <> show entity <> " to " <> show ts
-    Searching queryType queryText query ->
-      let jsonQuery = decodeUtf8 . encode $ Q.queryGet query id Nothing
-       in "searching " <> show queryType <> " with `" <> from queryText <> "`: " <> jsonQuery
-    SystemReady tenantCount port url ->
-      "Serving " <> show tenantCount <> " tenant(s) on 0.0.0.0:" <> show port <> " with elastic: " <> url
-    AuthSystemReady provider_name -> "Authentication provider (" <> provider_name <> ") ready"
-    RefreshIndex index ->
-      "Ensure workspace: " <> Config.getWorkspaceName index <> " exists and refresh crawlers metadata"
-    ReloadConfig fp ->
-      "Reloading " <> from fp
-    OIDCCallbackCall errM codeM stateM ->
-      "Received OIDC Callback: (err: " <> show errM <> " code: " <> show codeM <> " state: " <> show stateM <> ")"
-    OIDCProviderTokenRequested content ->
-      "Requested OIDC IdToken: " <> content
-    JWTCreated mUid redirectUri -> "JSON Web Token created for mUid: " <> mUid <> ". Redirecting user to: " <> redirectUri
-    JWTCreateFailed mUid err -> "JSON Web Token created failed for mUid: " <> mUid <> " due to: " <> err
-   where
-    prefix LogCrawlerContext {..} = "[" <> lccIndex <> "] " <> "Crawler: " <> lccName
+-- | A standalone HasLogger implementation
+newtype LoggerT a = LoggerT (ReaderT Logger IO a)
+  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadReader Logger, MonadMask, MonadCatch, MonadThrow, MonadUnliftIO, Prometheus.MonadMonitor)
+
+instance HasLogger LoggerT where
+  getLogger = ask
+  withContext series = local (addCtx series)
+  logIO = liftIO
+
+runLogger :: MonadIO m => Logger -> LoggerT a -> m a
+runLogger logger (LoggerT action) = liftIO $ runReaderT action logger
+
+runLogger' :: MonadIO m => LoggerT a -> m a
+runLogger' (LoggerT action) = liftIO $ withLogger (runReaderT action)

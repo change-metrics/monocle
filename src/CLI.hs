@@ -18,7 +18,7 @@ import Monocle.Backend.Janitor qualified as J
 import Monocle.Client (withClient)
 import Monocle.Config qualified as Config
 import Monocle.Env (mkEnv, runQueryM')
-import Monocle.Logging (LogCrawlerContext (..))
+import Monocle.Logging
 import Monocle.Main (ApiConfig (..))
 import Monocle.Main qualified
 import Monocle.Prelude hiding ((:::))
@@ -46,7 +46,7 @@ usage =
  where
   -- The API entrypoint (no CLI argument).
   usageApi :: O.Parser (IO ())
-  usageApi = pure $ do
+  usageApi = pure do
     -- get parameters from the environment
     ( configFile
       , getURL -> elasticUrl
@@ -73,7 +73,7 @@ usage =
       <*> envAdminToken
 
   -- The Crawler entrypoint (no CLI argument).
-  usageCrawler = pure $ do
+  usageCrawler = pure do
     -- get parameters from the environment
     (config, url, monitoringPort) <- getFromEnv usageCrawlerEnv
     -- start the Crawler
@@ -167,37 +167,37 @@ usageLentille =
   gerritChangeUsage = io <$> parser
    where
     parser = (,) <$> urlOption <*> changeOption
-    io (url, change) = do
+    io (url, change) = runLogger' do
       env <- getGerritEnv url
       dump Nothing $ G.streamChange env [G.ChangeId $ show (change :: Int)]
 
   gerritProjectsUsage = io <$> parser
    where
     parser = (,) <$> urlOption <*> queryOption
-    io (url, query) = do
+    io (url, query) = runLogger' do
       env <- getGerritEnv url
       dump Nothing $ G.streamProject env $ G.Regexp query
 
   gerritChangesUsage = io <$> parser
    where
     parser = (,,,) <$> urlOption <*> projectOption <*> sinceOption <*> limitOption
-    io (url, project, since, limit) = do
+    io (url, project, since, limit) = runLogger' do
       env <- getGerritEnv url
       dump limit $ G.streamChange env [G.Project project, G.After (toSince since)]
 
   githubProjectsUsage = io <$> parser
    where
     parser = (,,) <$> urlOption <*> secretOption <*> orgOption
-    io (url, secret, org) = do
+    io (url, secret, org) = runLogger' do
       client <- getGraphClient url secret
-      dump Nothing $ GH_ORG.streamOrganizationProjects client mkLC org
+      dump Nothing $ GH_ORG.streamOrganizationProjects client org
 
   githubWatchingUsage = io <$> parser
    where
     parser = (,,,) <$> urlOption <*> secretOption <*> userOption <*> limitOption
-    io (url, secret, user, limitM) = do
+    io (url, secret, user, limitM) = runLogger' do
       client <- getGraphClient url secret
-      dump limitM $ Lentille.GitHub.Watching.streamWatchedProjects client mkLC user
+      dump limitM $ Lentille.GitHub.Watching.streamWatchedProjects client user
 
   githubChangesUsage = io <$> parser
    where
@@ -208,19 +208,17 @@ usageLentille =
         <*> projectOption
         <*> sinceOption
         <*> limitOption
-    io (url, secret, repo, since, limitM) = do
+    io (url, secret, repo, since, limitM) = runLogger' do
       client <- getGraphClient url secret
-      dump limitM $ GH_PR.streamPullRequests client mkLC (const Nothing) (toSince since) repo
+      dump limitM $ GH_PR.streamPullRequests client (const Nothing) (toSince since) repo
 
   toSince txt = case Monocle.Search.Query.parseDateValue txt of
     Just x -> x
     Nothing -> error $ "Invalid date: " <> show txt
-  getGerritEnv url = do
+  getGerritEnv url = runLogger' do
     client <- G.getGerritClient url Nothing
     pure $ G.GerritEnv client Nothing (const Nothing) "cli"
   getGraphClient url secret = newGraphClient url (Secret secret)
-
-  mkLC = LogCrawlerContext "<stdout>" "cli" . Just
 
   urlOption = strOption (long "url" <> O.help "API url, e.g. https://api.github.com/graphql" <> metavar "URL")
   queryOption = strOption (long "query" <> O.help "Gerrit regexp query")

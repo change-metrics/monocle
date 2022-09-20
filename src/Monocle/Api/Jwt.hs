@@ -84,10 +84,10 @@ data LoginInUser = LoginInUser
   deriving (Show, Eq, Ord)
 
 instance ToMarkup LoginInUser where
-  toMarkup LoginInUser {..} = H.docTypeHtml $ do
+  toMarkup LoginInUser {..} = H.docTypeHtml do
     H.head $
       H.title "Redirecting after succesfull login ..."
-    H.body $ do
+    H.body do
       H.script
         ( H.toHtml
             ( "localStorage.setItem('api-key','"

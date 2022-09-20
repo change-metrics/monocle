@@ -159,30 +159,31 @@ run ApiConfig {..} = withLogger $ \glLogger -> do
   -- Initialize env to talk with OIDC provider
   oidcEnv <- case providerM of
     Just provider -> do
-      doLog glLogger $ via @Text $ AuthSystemReady $ opName provider
+      runLogger glLogger $ logInfo "AuthSystemReady" ["provider" .= opName provider]
       pure <$> initOIDCEnv provider
     _ -> pure Nothing
   let aOIDC = OIDC {..}
 
   bhEnv <- mkEnv elasticUrl
   let aEnv = Env {..}
-  httpRetry ("elastic-client", elasticUrl, "internal") $
-    liftIO $
-      traverse_ (\tenant -> runQueryM' bhEnv tenant I.ensureIndex) workspaces
-  httpRetry ("elastic-client", elasticUrl, "internal") $
-    liftIO $
-      runQueryTarget bhEnv (QueryConfig conf) I.ensureConfigIndex
+  runLogger glLogger do
+    httpRetry elasticUrl $
+      liftIO $
+        traverse_ (\tenant -> runQueryM' bhEnv tenant I.ensureIndex) workspaces
+    httpRetry elasticUrl $
+      liftIO $
+        runQueryTarget bhEnv (QueryConfig conf) I.ensureConfigIndex
   liftIO $
     withStdoutLogger $ \aplogger -> do
       let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
-      doLog glLogger $ via @Text $ SystemReady (length workspaces) port elasticUrl
+      runLogger glLogger $ logInfo "SystemReady" ["workspace" .= length workspaces, "port" .= port, "elastic" .= elasticUrl]
       Warp.runSettings
         settings
         . cors (const $ Just policy)
         . monitoringMiddleware
         . healthMiddleware
         . staticMiddleware
-        $ app (AppEnv {..})
+        $ app AppEnv {..}
  where
   policy =
     simpleCorsResourcePolicy {corsRequestHeaders = ["content-type"]}
