@@ -251,7 +251,11 @@ ghcid --test 'Tests.main'
 Similarly the api can be automatically restarted:
 
 ```ShellSession
-ghcid --test 'Monocle.Main.run 8080 "http://localhost:19200" "etc/config.yaml"'
+export MONOCLE_CONFIG=./etc/config.yaml
+export MONOCLE_ELASTIC_URL=http://localhost:19200
+export MONOCLE_PUBLIC_URL=http://localhost:8080
+export CRAWLERS_API_KEY=$(uuidgen)
+ghcid --set ":set args api" --test 'CLI.main'
 ```
 
 ### Update API (protobuf)
