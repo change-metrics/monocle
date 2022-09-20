@@ -127,9 +127,12 @@ defaultApiConfig port elasticUrl configFile =
 
 -- | Start the API in the foreground.
 run :: ApiConfig -> IO ()
-run ApiConfig {..} = withLogger $ \glLogger -> do
-  config <- Config.reloadConfig configFile
-  conf <- Config.csConfig <$> config
+run cfg = withLogger $ run' cfg
+
+run' :: MonadIO m => ApiConfig -> Logger -> m ()
+run' ApiConfig {..} glLogger = do
+  config <- liftIO (Config.reloadConfig configFile)
+  conf <- Config.csConfig <$> liftIO config
   let workspaces = Config.getWorkspaces conf
 
   -- Check alias and abort if they are not usable
@@ -141,26 +144,26 @@ run ApiConfig {..} = withLogger $ \glLogger -> do
 
   -- TODO: add the aliases to the AppM env to avoid parsing them for each request
 
-  staticMiddleware <- mkStaticMiddleware publicUrl title webAppPath
+  staticMiddleware <- liftIO (mkStaticMiddleware publicUrl title webAppPath)
 
   -- Monitoring
   void $ register ghcMetrics
   let monitoringMiddleware = prometheus def
 
   -- Initialize workspace status to ready since we are starting
-  wsRef <- Config.csWorkspaceStatus <$> config
-  Config.setWorkspaceStatus Config.Ready wsRef
+  wsRef <- Config.csWorkspaceStatus <$> liftIO config
+  liftIO (Config.setWorkspaceStatus Config.Ready wsRef)
 
   -- Init OIDC
   -- Initialise JWT settings for locally issuing JWT (local provider)
-  localJwk <- doGenJwk $ from <$> jwkKey
-  providerM <- getAuthProvider publicUrl conf
+  localJwk <- liftIO . doGenJwk $ from <$> jwkKey
+  providerM <- liftIO (getAuthProvider publicUrl conf)
   let localJWTSettings = defaultJWTSettings localJwk
   -- Initialize env to talk with OIDC provider
   oidcEnv <- case providerM of
     Just provider -> do
       runLogger glLogger $ logInfo "AuthSystemReady" ["provider" .= opName provider]
-      pure <$> initOIDCEnv provider
+      pure <$> liftIO (initOIDCEnv provider)
     _ -> pure Nothing
   let aOIDC = OIDC {..}
 
