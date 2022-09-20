@@ -42,10 +42,10 @@ transformResponse = \case
       Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAt'
   respOther -> error ("Invalid response: " <> show respOther)
 
-getRateLimit :: (HasLogger m, MonadGraphQLE m) => LogCrawlerContext -> GraphClient -> m RateLimit
-getRateLimit lc client = do
+getRateLimit :: (HasLogger m, MonadGraphQLE m) => GraphClient -> m RateLimit
+getRateLimit client = do
   transformResponse
-    <$> doRequest client lc mkRateLimitArgs (Just retryCheck) Nothing Nothing
+    <$> doRequest client mkRateLimitArgs (Just retryCheck) Nothing Nothing
  where
   mkRateLimitArgs = const . const $ ()
 

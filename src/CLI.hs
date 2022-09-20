@@ -190,14 +190,14 @@ usageLentille =
     parser = (,,) <$> urlOption <*> secretOption <*> orgOption
     io (url, secret, org) = runLogger' do
       client <- getGraphClient url secret
-      dump Nothing $ GH_ORG.streamOrganizationProjects client mkLC org
+      dump Nothing $ GH_ORG.streamOrganizationProjects client org
 
   githubWatchingUsage = io <$> parser
    where
     parser = (,,,) <$> urlOption <*> secretOption <*> userOption <*> limitOption
     io (url, secret, user, limitM) = runLogger' do
       client <- getGraphClient url secret
-      dump limitM $ Lentille.GitHub.Watching.streamWatchedProjects client mkLC user
+      dump limitM $ Lentille.GitHub.Watching.streamWatchedProjects client user
 
   githubChangesUsage = io <$> parser
    where
@@ -210,7 +210,7 @@ usageLentille =
         <*> limitOption
     io (url, secret, repo, since, limitM) = runLogger' do
       client <- getGraphClient url secret
-      dump limitM $ GH_PR.streamPullRequests client mkLC (const Nothing) (toSince since) repo
+      dump limitM $ GH_PR.streamPullRequests client (const Nothing) (toSince since) repo
 
   toSince txt = case Monocle.Search.Query.parseDateValue txt of
     Just x -> x
@@ -219,8 +219,6 @@ usageLentille =
     client <- G.getGerritClient url Nothing
     pure $ G.GerritEnv client Nothing (const Nothing) "cli"
   getGraphClient url secret = newGraphClient url (Secret secret)
-
-  mkLC = LogCrawlerContext "<stdout>" "cli" . Just
 
   urlOption = strOption (long "url" <> O.help "API url, e.g. https://api.github.com/graphql" <> metavar "URL")
   queryOption = strOption (long "query" <> O.help "Gerrit regexp query")

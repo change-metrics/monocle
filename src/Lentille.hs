@@ -13,7 +13,6 @@ module Lentille (
   MonadGraphQLE,
   LentilleError (..),
   RequestLog (..),
-  LogCrawlerContext (..),
 
   -- * Facilities
   getClientBaseUrl,

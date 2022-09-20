@@ -69,12 +69,12 @@ transformResponse = \case
        in (rateLimit, IdentInfo {..})
   respOther -> error ("Invalid response: " <> show respOther)
 
-getUser :: (HasLogger m, MonadGraphQLE m) => LogCrawlerContext -> GraphClient -> Text -> m IdentInfo
-getUser lc client login =
+getUser :: (HasLogger m, MonadGraphQLE m) => GraphClient -> Text -> m IdentInfo
+getUser client login =
   do
     (_, info) <-
       transformResponse
-        <$> doRequest client lc mkArgs (Just retryCheck) Nothing Nothing
+        <$> doRequest client mkArgs (Just retryCheck) Nothing Nothing
     pure info
  where
   mkArgs _ _ = GetUserArgs login

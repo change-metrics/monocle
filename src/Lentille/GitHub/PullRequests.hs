@@ -14,7 +14,6 @@ import Google.Protobuf.Timestamp qualified as T
 import Lentille
 import Lentille.GitHub.RateLimit (getRateLimit, retryCheck)
 import Lentille.GraphQL
-import Monocle.Entity
 import Monocle.Prelude hiding (id, state)
 import Monocle.Protob.Change
 import Proto3.Suite (Enumerated (Enumerated))
@@ -188,23 +187,21 @@ type Changes = (Change, [ChangeEvent])
 streamPullRequests ::
   (HasLogger m, MonadGraphQLE m) =>
   GraphClient ->
-  (Entity -> LogCrawlerContext) ->
   -- A callback to get Ident ID from an alias
   (Text -> Maybe Text) ->
   UTCTime ->
   Text ->
   LentilleStream m Changes
-streamPullRequests client mkLC cb untilDate repoFullname =
-  breakOnDate $ streamFetch client lc mkArgs optParams transformResponse'
+streamPullRequests client cb untilDate repoFullname =
+  breakOnDate $ streamFetch client mkArgs optParams transformResponse'
  where
-  lc = mkLC $ Project repoFullname
   org = Data.Text.takeWhile (/= '/') repoFullname
   repo = Data.Text.takeWhileEnd (/= '/') repoFullname
   mkArgs = GetProjectPullRequestsArgs org repo
   optParams =
     let fpRetryCheck = Just retryCheck
         fpDepth = Just defaultDepthCount
-        fpGetRatelimit = Just $ getRateLimit lc
+        fpGetRatelimit = Just getRateLimit
      in StreamFetchOptParams {..}
   transformResponse' = transformResponse getHost cb
   defaultDepthCount = 25

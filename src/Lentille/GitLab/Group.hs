@@ -14,7 +14,6 @@ import Lentille
 import Lentille.GitLab.Adapter
 import Lentille.GraphQL
 import Monocle.Entity (Entity (Organization))
-import Monocle.Logging (LogCrawlerContext, noContext)
 import Monocle.Prelude hiding (break)
 import Monocle.Protob.Crawler (Project (..))
 import Streaming.Prelude qualified as S
@@ -37,16 +36,15 @@ defineByDocumentFile
 
 fetchGroupProjects :: (HasLogger m, MonadGraphQLE m) => GraphClient -> Text -> m (Either (FetchError GetGroupProjects) GetGroupProjects, [RequestLog])
 fetchGroupProjects client fullPath =
-  fetchWithLog (doGraphRequest noContext client) (GetGroupProjectsArgs (ID fullPath) Nothing)
+  fetchWithLog (doGraphRequest client) (GetGroupProjectsArgs (ID fullPath) Nothing)
 
 streamGroupProjects ::
   (HasLogger m, MonadGraphQLE m) =>
   GraphClient ->
-  (Entity -> LogCrawlerContext) ->
   Text ->
   LentilleStream m Project
-streamGroupProjects client mkLC fullPath =
-  streamFetch client (mkLC $ Organization fullPath) mkArgs defaultStreamFetchOptParams transformResponse
+streamGroupProjects client fullPath =
+  streamFetch client mkArgs defaultStreamFetchOptParams transformResponse
  where
   mkArgs _ = GetGroupProjectsArgs (ID fullPath)
 

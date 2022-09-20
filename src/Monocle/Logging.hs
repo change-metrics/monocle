@@ -25,10 +25,6 @@ module Monocle.Logging (
   LoggerT,
   runLogger,
   runLogger',
-
-  -- * Legacy object
-  LogCrawlerContext (..),
-  noContext,
 ) where
 
 import Data.Aeson (Series, pairs)
@@ -37,7 +33,6 @@ import GHC.Stack
 import Prometheus qualified
 import System.Log.FastLogger qualified as FastLogger
 
-import Monocle.Entity
 import Monocle.Prelude
 
 -- | The logger effect definition, to be implemented by custom monad such as LentilleM
@@ -128,16 +123,3 @@ runLogger logger (LoggerT action) = liftIO $ runReaderT action logger
 
 runLogger' :: MonadIO m => LoggerT a -> m a
 runLogger' (LoggerT action) = liftIO $ withLogger (runReaderT action)
-
--- Legacy context, to be migrated as logging context to the main logger
-data LogCrawlerContext = LogCrawlerContext
-  { lccIndex :: Text
-  , lccName :: Text
-  , lccEntity :: Maybe Entity
-  }
-
-instance ToJSON LogCrawlerContext where
-  toJSON LogCrawlerContext {..} = object ["index" .= lccIndex, "name" .= lccName, "entity" .= lccEntity]
-
-noContext :: LogCrawlerContext
-noContext = LogCrawlerContext "<direct>" "CLI" Nothing
