@@ -138,7 +138,7 @@ run cfg =
 run' :: '[IOE, MonoConfigEffect] :>> es => ApiConfig -> Logger -> Eff es ()
 run' ApiConfig {..} glLogger = do
   config <- mkReloadConfig
-  conf <- Config.csConfig <$> liftIO config
+  conf <- Config.csConfig <$> config
   let workspaces = Config.getWorkspaces conf
 
   -- Check alias and abort if they are not usable
@@ -157,7 +157,7 @@ run' ApiConfig {..} glLogger = do
   let monitoringMiddleware = prometheus def
 
   -- Initialize workspace status to ready since we are starting
-  wsRef <- Config.csWorkspaceStatus <$> liftIO config
+  wsRef <- Config.csWorkspaceStatus <$> config
   liftIO (Config.setWorkspaceStatus Config.Ready wsRef)
 
   -- Init OIDC
@@ -182,7 +182,7 @@ run' ApiConfig {..} glLogger = do
     httpRetry elasticUrl $
       liftIO $
         runQueryTarget bhEnv (QueryConfig conf) I.ensureConfigIndex
-  liftIO $
+  unsafeEff \effEnv ->
     withStdoutLogger $ \aplogger -> do
       let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
       runLogger glLogger $ logInfo "SystemReady" ["workspace" .= length workspaces, "port" .= port, "elastic" .= elasticUrl]
@@ -192,7 +192,7 @@ run' ApiConfig {..} glLogger = do
         . monitoringMiddleware
         . healthMiddleware
         . staticMiddleware
-        $ app AppEnv {..}
+        $ app AppEnv {config = unEff config effEnv, ..}
  where
   policy =
     simpleCorsResourcePolicy {corsRequestHeaders = ["content-type"]}

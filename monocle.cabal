@@ -178,6 +178,7 @@ library
                      , transformers
                      , unliftio-core
                      , unliftio
+                     , unix
                      , vector                     >= 0.12
                      , wai                        >= 3.2.3
                      , wai-cors                   >= 0.2

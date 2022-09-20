@@ -35,13 +35,59 @@ import Network.HTTP.Client (HttpException (..))
 import Network.HTTP.Client qualified as HTTP
 
 import Effectful
-import Effectful.Dispatch.Static (SideEffects (WithSideEffects), StaticRep, evalStaticRep, getStaticRep, unEff)
-import Effectful.Internal.Monad (unsafeEff, unsafeEff_)
+import Effectful.Dispatch.Static (SideEffects (WithSideEffects), StaticRep, evalStaticRep, getStaticRep)
 import Effectful.Reader.Static as Eff
 
 import Monocle.Logging hiding (logInfo, withContext)
 
-import Monocle.Config (ConfigStatus, reloadConfig)
+import Monocle.Config (ConfigStatus)
+import Monocle.Config qualified
+
+import System.Posix.Temp (mkstemp)
+import Control.Exception (finally)
+import GHC.IO.Handle (hClose)
+import System.Directory
+import Test.Tasty
+import Test.Tasty.HUnit
+
+demo :: IO ()
+demo = defaultMain tests
+
+tests :: TestTree
+tests =
+  testGroup
+    "Monocle.Effects"
+    [ testCase "MonoConfig" do
+        (path, fd) <- mkstemp "/tmp/monoconfig-test"
+        hClose fd
+        runEff (runMonoConfig path (testMonoConfig path)) `finally` removeFile path
+    ]
+    where
+      testEff a b = liftIO (a @?= b)
+      testMonoConfig :: [MonoConfigEffect, IOE] :>> es => FilePath -> Eff es ()
+      testMonoConfig fp = do
+        -- Setup the test config
+        let getNames c = Monocle.Config.getWorkspaceName <$> Monocle.Config.getWorkspaces (Monocle.Config.csConfig c)
+        liftIO do writeFile fp "workspaces: []"
+        reloadConfig <- mkReloadConfig
+
+        -- initial load
+        do
+          config <- reloadConfig
+          Monocle.Config.csReloaded config `testEff` False
+          getNames config `testEff` []
+
+        -- test reload works
+        do
+          liftIO do writeFile fp "workspaces:\n- name: test\n  crawlers: []"
+          config <- reloadConfig
+          Monocle.Config.csReloaded config `testEff` True
+          getNames config `testEff` ["test"]
+
+        -- make sure reload is avoided when the file doesn't change
+        do
+          config <- reloadConfig
+          Monocle.Config.csReloaded config `testEff` False
 
 ------------------------------------------------------------------
 --
@@ -56,7 +102,7 @@ type MonoConfigEnv = FilePath
 -- | The effect definition using static rep.
 data MonoConfigEffect :: Effect
 
-type instance DispatchOf MonoConfigEffect = Static WithSideEffects
+type instance DispatchOf MonoConfigEffect = 'Static WithSideEffects
 newtype instance StaticRep MonoConfigEffect = MonoConfigEffect MonoConfigEnv
 
 -- | Run the effect (e.g. removes it from the list)
@@ -64,16 +110,11 @@ runMonoConfig :: IOE :> es => FilePath -> Eff (MonoConfigEffect : es) a -> Eff e
 runMonoConfig fp = evalStaticRep (MonoConfigEffect fp)
 
 -- | The lifted version of Monocle.Config.reloadConfig
-mkReloadConfig :: MonoConfigEffect :> es => Eff es (IO ConfigStatus)
+mkReloadConfig :: MonoConfigEffect :> es => Eff es (Eff es ConfigStatus)
 mkReloadConfig = do
   MonoConfigEffect fp <- getStaticRep
   (mkReload :: IO ConfigStatus) <- unsafeEff_ (Monocle.Config.reloadConfig fp)
-  -- pure $ unsafeEff_ mkReload
-  pure mkReload
-
-demo :: IO ()
-demo =
-  pure ()
+  pure $ unsafeEff_ mkReload
 
 -- runEff $ runLoggerEffect $ runHttpEffect $ crawler
 
