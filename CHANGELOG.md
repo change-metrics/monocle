@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## [master]
 ### Added
 
+- [api] Add the `file` field to the query language to filter changes changing at least a file path that match the regex.
+
 ### Changed
 ### Removed
 ### Fixed

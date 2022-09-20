@@ -148,6 +148,7 @@ fields =
   , ("approval", (fieldText, "approval", "Change approval name"))
   , ("ttm", (fieldNumber, "duration", "Change duration (Time To Merge) in second(s)"))
   , ("tag", (fieldText, "labels", "Change tag name"))
+  , ("file", (fieldRegex, "changed_files.path", "File path"))
   , ("task.priority", (fieldText, "tasks_data.priority", "Task priority"))
   , ("task.severity", (fieldText, "tasks_data.severity", "Task severity"))
   , ("task.tag", (fieldRegex, "tasks_data.ttype", "Task tag name"))
