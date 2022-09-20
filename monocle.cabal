@@ -128,6 +128,8 @@ library
                      , dhall-yaml                 >= 1.2
                      , directory
                      , either                     >= 5
+                     , effectful
+                     , effectful-core
                      , envparse                   >= 0.4
                      , exceptions                 >= 0.10
                      , fakedata                   >= 1.0
@@ -190,6 +192,7 @@ library
                      , Monocle.Logging
                      , Monocle.Version
                      , Monocle.Config
+                     , Monocle.Effects
                      , CLI
                      , Tests
 

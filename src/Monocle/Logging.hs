@@ -8,7 +8,7 @@
 module Monocle.Logging (
   -- * Logging effect
   HasLogger (..),
-  LogLevel,
+  LogLevel (..),
   logWarn,
   logWarn_,
   logInfo,
@@ -17,7 +17,7 @@ module Monocle.Logging (
   logDebug_,
 
   -- * The logger object
-  Logger,
+  Logger (..),
   addCtx,
   withLogger,
 
@@ -25,6 +25,9 @@ module Monocle.Logging (
   LoggerT,
   runLogger,
   runLogger',
+
+  -- * Helper
+  getLocName,
 ) where
 
 import Data.Aeson (Series, pairs)
