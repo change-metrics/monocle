@@ -7,6 +7,7 @@
 -- | An augmented relude with extra package such as time and aeson.
 module Monocle.Prelude (
   module Relude,
+  module GHC.Stack,
   fromFixed,
   double2Float,
   orDie,
@@ -201,6 +202,7 @@ import Data.Vector (Vector)
 import Database.Bloodhound qualified as BH
 import GHC.Float (double2Float)
 import GHC.Generics (C, D, K1, M1, R, Rep, S, Selector, U1, selName, (:*:), (:+:))
+import GHC.Stack
 import Google.Protobuf.Timestamp qualified
 import Language.Haskell.TH.Quote (QuasiQuoter)
 import Network.HTTP.Client.OpenSSL (newOpenSSLManager, withOpenSSL)
@@ -222,7 +224,7 @@ import UnliftIO.MVar (modifyMVar, modifyMVar_)
 import Witch hiding (over)
 
 -- | Prometheus
-type CounterLabel = Prometheus.Vector (Text, Text, Text) Prometheus.Counter
+type CounterLabel = Prometheus.Vector (Text, Text) Prometheus.Counter
 
 promRegister :: MonadIO m => Prometheus.Metric s -> m s
 promRegister = Prometheus.register
@@ -230,7 +232,7 @@ promRegister = Prometheus.register
 promVector :: Prometheus.Label l => l -> Prometheus.Metric m -> Prometheus.Metric (Prometheus.Vector l m)
 promVector = Prometheus.vector
 
-incrementCounter :: Prometheus.MonadMonitor m => CounterLabel -> "labels" ::: (Text, Text, Text) -> m ()
+incrementCounter :: Prometheus.MonadMonitor m => CounterLabel -> ("module" ::: Text, "url" ::: Text) -> m ()
 incrementCounter x l = withLabel x l incCounter
 
 -------------------------------------------------------------------------------
@@ -263,12 +265,12 @@ monocleMetricCounter =
 {-# NOINLINE httpRequestCounter #-}
 httpRequestCounter :: CounterLabel
 httpRequestCounter =
-  unsafePerformIO $ promRegister $ promVector ("ident", "url", "type") $ Prometheus.counter (Info "http_request" "")
+  unsafePerformIO $ promRegister $ promVector ("module", "url") $ Prometheus.counter (Info "http_request" "")
 
 {-# NOINLINE httpFailureCounter #-}
 httpFailureCounter :: CounterLabel
 httpFailureCounter =
-  unsafePerformIO $ promRegister $ promVector ("ident", "url", "type") $ counter (Info "http_failure" "")
+  unsafePerformIO $ promRegister $ promVector ("module", "url") $ counter (Info "http_failure" "")
 
 -------------------------------------------------------------------------------
 

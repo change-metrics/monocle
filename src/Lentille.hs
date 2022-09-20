@@ -59,7 +59,7 @@ newtype LentilleM a = LentilleM {unLentille :: ReaderT CrawlerEnv IO a}
 
 instance HasLogger LentilleM where
   getLogger = asks crawlerLogger
-  withContext ctx = local (\env -> env { crawlerLogger = (addCtx ctx (crawlerLogger env))})
+  withContext ctx = local (\env -> env {crawlerLogger = addCtx ctx (crawlerLogger env)})
   logIO = liftIO
 
 data CrawlerEnv = CrawlerEnv

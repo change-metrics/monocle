@@ -134,7 +134,7 @@ runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream =
     logInfo "Looking for oldest entity" ["offset" .= offset]
     monocleBaseUrl <- getClientBaseUrl
     let retryHttp :: m a -> m a
-        retryHttp = httpRetry ("api-client", monocleBaseUrl, "internal")
+        retryHttp = httpRetry monocleBaseUrl
 
     -- Query the monocle api for the oldest entity to be updated.
     oldestEntityM <- retryHttp $ getStreamOldestEntity indexName (from crawlerName) (streamEntity documentStream) offset

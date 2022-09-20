@@ -3,7 +3,6 @@ module Monocle.Env where
 
 import Database.Bloodhound qualified as BH
 import Database.Bloodhound.Raw qualified as BHR
-import GHC.Stack (srcLocFile, srcLocStartLine)
 import Json.Extras qualified as Json
 import Monocle.Api.Jwt (OIDCEnv)
 import Monocle.Config qualified as Config

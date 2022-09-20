@@ -120,9 +120,14 @@ retry' policy handler baseAction =
   action (RetryStatus num _ _) = baseAction num
 
 -- | Retry HTTP network action, doubling backoff each time
-httpRetry :: (HasLogger m, MonadMonitor m, MonadRetry m) => (Text, Text, Text) -> m a -> m a
-httpRetry label baseAction = retry policy httpHandler (const action)
+httpRetry :: (HasCallStack, HasLogger m, MonadMonitor m, MonadRetry m) => Text -> m a -> m a
+httpRetry urlLabel baseAction = retry policy httpHandler (const action)
  where
+  modName = case getCallStack callStack of
+    ((_, srcLoc) : _) -> from (srcLocModule srcLoc)
+    _ -> "N/C"
+  label = (modName, urlLabel)
+
   backoff = 500000 -- 500ms
   policy = Retry.exponentialBackoff backoff <> Retry.limitRetries retryLimit
   action = do

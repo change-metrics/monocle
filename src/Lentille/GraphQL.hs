@@ -94,7 +94,7 @@ doGraphRequest GraphClient {..} jsonBody = do
           }
 
   -- Do the request (and retry on HttpException raised by the http-client)
-  response <- lift $ httpRetry (error "lccIndex", url, error "lccName") $ httpRequest request manager
+  response <- lift $ httpRetry url $ httpRequest request manager
 
   -- Record the event
   let responseBody = HTTP.responseBody response

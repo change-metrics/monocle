@@ -29,7 +29,6 @@ module Monocle.Logging (
 
 import Data.Aeson (Series, pairs)
 import Data.Aeson.Encoding (encodingToLazyByteString)
-import GHC.Stack
 import Prometheus qualified
 import System.Log.FastLogger qualified as FastLogger
 
