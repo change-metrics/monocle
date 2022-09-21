@@ -49,6 +49,9 @@ doSearchLegacy indexName search = do
 simpleSearchLegacy :: (FromJSON a, HasLogger m, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m [BH.Hit a]
 simpleSearchLegacy indexName search = BH.hits . BH.searchHits <$> doSearchLegacy indexName search
 
+simpleSearchLegacy' :: forall es a. FromJSON a => BH.IndexName -> BH.Search -> Eff es [BH.Hit a]
+simpleSearchLegacy' = undefined
+
 -------------------------------------------------------------------------------
 -- Low level wrappers for bloodhound.
 measureQueryM :: (QueryMonad m, ToJSON body) => body -> m a -> m a
@@ -88,12 +91,11 @@ doSearchHitBH body = do
 -- | Call the count endpoint
 doCountBH' :: QEffect es => BH.Query -> Eff es Count
 doCountBH' body = do
-    index <- getIndexName'
-    resp <- esCountByIndex index (BH.CountQuery body)
-    case resp of
-      Left e -> error $ show e
-      Right x -> pure $ naturalToCount (BH.crCount x)
-
+  index <- getIndexName'
+  resp <- esCountByIndex index (BH.CountQuery body)
+  case resp of
+    Left e -> error $ show e
+    Right x -> pure $ naturalToCount (BH.crCount x)
 
 doCountBH :: QueryMonad m => BH.Query -> m Count
 doCountBH body = do
@@ -115,6 +117,9 @@ doDeleteByQueryBH body = do
 
 -------------------------------------------------------------------------------
 -- Mid level queries
+
+-- scanSearch' :: forall es resp. FromJSONField resp => Stream (Of (BH.Hit resp)) (Eff es) ()
+-- scanSearch' = undefined
 
 -- | scan search the result using a streaming
 scanSearch :: FromJSONField resp => Stream (Of (BH.Hit resp)) QueryM ()
@@ -143,6 +148,9 @@ scanSearch = do
 scanSearchHit :: FromJSONField resp => Stream (Of resp) QueryM ()
 scanSearchHit = Streaming.concat $ Streaming.map BH.hitSource scanSearch
 
+scanSearchHit' :: forall es resp. FromJSONField resp => Stream (Of resp) (Eff es) ()
+scanSearchHit' = undefined
+
 -- | scan search the document id, here is an example usage for the REPL:
 -- λ> testQueryM (defaultTenant "zuul") $ runQueryM (mkQuery []) $ Streaming.print scanSearchId
 -- DocId ...
@@ -154,8 +162,14 @@ scanSearchId = Streaming.map BH.hitDocId anyScan
   anyScan :: Stream (Of (BH.Hit AnyJSON)) QueryM ()
   anyScan = scanSearch
 
+scanSearchId' :: forall es. Stream (Of BH.DocId) (Eff es) ()
+scanSearchId' = undefined
+
 scanSearchSimple :: FromJSONField resp => QueryM [resp]
 scanSearchSimple = Streaming.toList_ scanSearchHit
+
+scanSearchSimple' :: forall es resp. FromJSONField resp => Eff es [resp]
+scanSearchSimple' = undefined
 
 -- | Get search results hits
 doSearch :: QueryMonad m => FromJSONField resp => Maybe SearchPB.Order -> Word32 -> m [resp]
@@ -198,7 +212,6 @@ countDocs' = do
   query <-
     fromMaybe (error "Need a query to count") <$> getQueryBH'
   doCountBH' query
-
 
 -- | Get document count matching the query
 countDocs :: QueryMonad m => m Count
@@ -262,6 +275,9 @@ doTermsCompositeAgg term = getPages Nothing
 
 -------------------------------------------------------------------------------
 -- High level queries
+changes' :: forall es. Maybe SearchPB.Order -> Word32 -> Eff es [EChange]
+changes' = undefined
+
 changes :: QueryMonad m => Maybe SearchPB.Order -> Word32 -> m [EChange]
 changes orderM limit =
   withDocTypes [EChangeDoc] (QueryFlavor Author UpdatedAt) $
@@ -316,6 +332,9 @@ commitsReviewsRatio =
     ]
 
 -- | Scroll over all know authors
+getAllAuthorsMuid'' :: forall es. Stream (Of Text) (Eff es) ()
+getAllAuthorsMuid'' = undefined
+
 getAllAuthorsMuid :: QueryMonad m => Stream (Of Text) m ()
 getAllAuthorsMuid = do
   Streaming.mapMaybe trans $ local updateEnv (doTermsCompositeAgg "author.muid")

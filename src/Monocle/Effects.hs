@@ -65,6 +65,7 @@ import Network.Wai.Handler.Warp qualified as Warp
 import Servant (Get, (:<|>))
 import Servant qualified
 
+import Data.Vector qualified as V
 import Database.Bloodhound qualified as BH
 import Database.Bloodhound.Raw qualified as BHR
 import Json.Extras qualified as Json
@@ -176,6 +177,32 @@ runEmptyMonoQuery ws = evalStaticRep (MonoQueryEffect $ MonoQueryEnv target quer
   target = Monocle.Env.QueryWorkspace ws
   query = Monocle.Env.mkQuery []
 
+localSearchQuery :: MonoQueryEffect :> es => (SearchQuery.Query -> SearchQuery.Query) -> Eff es a -> Eff es a
+localSearchQuery changeQuery = localStaticRep updateRep
+ where
+  updateRep (MonoQueryEffect env) = MonoQueryEffect (env {searchQuery = changeQuery (env.searchQuery)})
+
+localQueryTarget :: MonoQueryEffect :> es => Monocle.Env.QueryTarget -> Eff es a -> Eff es a
+localQueryTarget localTarget = localStaticRep updateRep
+ where
+  updateRep (MonoQueryEffect env) = MonoQueryEffect (env {queryTarget = localTarget})
+
+withQuery' :: MonoQueryEffect :> es => SearchQuery.Query -> Eff es a -> Eff es a
+withQuery' query = localSearchQuery (const query)
+
+withFilter' :: MonoQueryEffect :> es => [BH.Query] -> Eff es a -> Eff es a
+withFilter' = localSearchQuery . addFilter'
+
+addFilter' :: [BH.Query] -> SearchQuery.Query -> SearchQuery.Query
+addFilter' extraQueries query =
+  let newQueryGet modifier qf = extraQueries <> SearchQuery.queryGet query modifier qf
+   in query {SearchQuery.queryGet = newQueryGet}
+
+getQueryTarget :: MonoQueryEffect :> es => Eff es Monocle.Env.QueryTarget
+getQueryTarget = do
+  MonoQueryEffect env <- getStaticRep
+  pure env.queryTarget
+
 getIndexName' :: MonoQueryEffect :> es => Eff es BH.IndexName
 getIndexName' = do
   MonoQueryEffect env <- getStaticRep
@@ -233,6 +260,10 @@ esCreateIndex is iname = do
   ElasticEffect env <- getStaticRep
   unsafeEff_ $ void $ BH.runBH env $ BH.createIndex is iname
 
+esIndexDocument :: ToJSON body => ElasticEffect :> es => BH.IndexName -> BH.IndexDocumentSettings -> body -> BH.DocId -> Eff es (HTTP.Response LByteString)
+esIndexDocument indexName docSettings body docId = do
+  ElasticEffect env <- getStaticRep
+  unsafeEff_ $ BH.runBH env $ BH.indexDocument indexName docSettings body docId
 esPutMapping :: ElasticEffect :> es => ToJSON mapping => BH.IndexName -> mapping -> Eff es ()
 esPutMapping iname mapping = do
   ElasticEffect env <- getStaticRep
@@ -243,10 +274,30 @@ esIndexExists iname = do
   ElasticEffect env <- getStaticRep
   unsafeEff_ $ BH.runBH env $ BH.indexExists iname
 
+esDeleteIndex :: ElasticEffect :> es => BH.IndexName -> Eff es (HTTP.Response LByteString)
+esDeleteIndex iname = do
+  ElasticEffect env <- getStaticRep
+  unsafeEff_ $ BH.runBH env $ BH.deleteIndex iname
+
 esSettings :: ElasticEffect :> es => ToJSON body => BH.IndexName -> body -> Eff es ()
 esSettings iname body = do
   ElasticEffect env <- getStaticRep
   unsafeEff_ $ BH.runBH env $ BHR.settings iname body
+
+esRefreshIndex :: ElasticEffect :> es => BH.IndexName -> Eff es (HTTP.Response LByteString)
+esRefreshIndex iname = do
+  ElasticEffect env <- getStaticRep
+  unsafeEff_ $ BH.runBH env $ BH.refreshIndex iname
+
+esDocumentExists :: ElasticEffect :> es => BH.IndexName -> BH.DocId -> Eff es Bool
+esDocumentExists iname doc = do
+  ElasticEffect env <- getStaticRep
+  unsafeEff_ $ BH.runBH env $ BH.documentExists iname doc
+
+esBulk :: ElasticEffect :> es => V.Vector BulkOperation -> Eff es (HTTP.Response a)
+esBulk = undefined
+
+esUpdateDocument = undefined
 
 ------------------------------------------------------------------
 --
