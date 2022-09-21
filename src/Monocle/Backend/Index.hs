@@ -434,6 +434,13 @@ ensureIndexSetup = do
   createIndex indexName ChangesIndexMapping
   BHR.settings indexName (object ["index" .= object ["max_regex_length" .= (50_000 :: Int)]])
 
+ensureIndexSetup' :: [LoggerEffect, ElasticEffect, MonoQueryEffect] :>> es => Eff es ()
+ensureIndexSetup' = do
+  indexName <- getIndexName'
+  logInfo' "Ensure workspace " ["index" .= indexName]
+  createIndex' indexName ChangesIndexMapping
+  esSettings indexName (object ["index" .= object ["max_regex_length" .= (50_000 :: Int)]])
+
 ensureIndexCrawlerMetadata :: QueryM ()
 ensureIndexCrawlerMetadata = do
   config <- getIndexConfig
@@ -451,6 +458,10 @@ ensureIndex :: QueryM ()
 ensureIndex = do
   ensureIndexSetup
   ensureIndexCrawlerMetadata
+
+ensureIndex' :: '[LoggerEffect, MonoQueryEffect, ElasticEffect] :>> es => Eff es ()
+ensureIndex' =
+  ensureIndexSetup'
 
 removeIndex :: QueryM ()
 removeIndex = do

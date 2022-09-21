@@ -162,16 +162,18 @@ testQueryM config tenantM = do
 mkConfig :: Text -> Config.Index
 mkConfig = Config.mkTenant
 
--- | Utility function to hide the ReaderT layer
-getIndexName :: QueryMonad m => m BH.IndexName
-getIndexName = do
-  queryTarget <- asks tenant
-  pure $ case queryTarget of
+envToIndexName :: QueryTarget -> BH.IndexName
+envToIndexName target = do
+  case target of
     QueryWorkspace ws -> tenantIndexName ws
     QueryConfig _ -> BH.IndexName "monocle.config"
  where
   tenantIndexName :: Config.Index -> BH.IndexName
   tenantIndexName Config.Index {..} = BH.IndexName $ "monocle.changes.1." <> name
+
+-- | Utility function to hide the ReaderT layer
+getIndexName :: QueryMonad m => m BH.IndexName
+getIndexName = envToIndexName <$> asks tenant
 
 -- | Utility function to hide the ReaderT layer
 getIndexConfig :: QueryMonad m => m Config.Index

@@ -43,7 +43,7 @@ import Network.HTTP.Client (HttpException (..))
 import Network.HTTP.Client qualified as HTTP
 
 import Effectful
-import Effectful.Dispatch.Static (SideEffects (WithSideEffects), StaticRep, evalStaticRep, getStaticRep, localStaticRep)
+import Effectful.Dispatch.Static (SideEffects (..), StaticRep, evalStaticRep, getStaticRep, localStaticRep)
 import Effectful.Dispatch.Static.Primitive qualified as EffStatic
 
 import Monocle.Logging hiding (logInfo, withContext)
@@ -62,9 +62,13 @@ import Network.Wai.Handler.Warp qualified as Warp
 import Servant (Get, (:<|>))
 import Servant qualified
 
-import Database.Bloodhound.Raw qualified as BHR
 import Database.Bloodhound qualified as BH
+import Database.Bloodhound.Raw qualified as BHR
 import Json.Extras qualified as Json
+
+-- for MonoQueryEffect
+import Monocle.Env (QueryEnv (..))
+import Monocle.Env qualified
 
 tests :: TestTree
 tests =
@@ -72,7 +76,7 @@ tests =
     "Monocle.Effects"
     [ testCase "LoggerEffect" do
         runEff $ runLoggerEffect do
-          logInfo "logInfo prints!" []
+          logInfo' "logInfo prints!" []
     , testCase "MonoConfig" do
         (path, fd) <- mkstemp "/tmp/monoconfig-test"
         hClose fd
@@ -135,17 +139,40 @@ mkReloadConfig = do
 ------------------------------------------------------------------
 --
 
+-- | Query effects
+
+------------------------------------------------------------------
+data MonoQueryEnv = MonoQueryEnv
+  { queryTarget :: Monocle.Env.QueryTarget
+  }
+
+data MonoQueryEffect :: Effect
+type instance DispatchOf MonoQueryEffect = 'Static 'NoSideEffects
+newtype instance StaticRep MonoQueryEffect = MonoQueryEffect MonoQueryEnv
+
+runMonoQuery :: MonoQueryEnv -> Eff (MonoQueryEffect : es) a -> Eff es a
+runMonoQuery env = evalStaticRep (MonoQueryEffect env)
+
+getIndexName' :: MonoQueryEffect :> es => Eff es BH.IndexName
+getIndexName' = do
+  MonoQueryEffect env <- getStaticRep
+  pure $ Monocle.Env.envToIndexName (queryTarget env)
+
+------------------------------------------------------------------
+--
+
 -- | Elastic Effect to access elastic backend. TODO: make it use the HttpEffect retry capability.
 
 ------------------------------------------------------------------
 type ElasticEnv = BH.BHEnv
+
 data ElasticEffect :: Effect
 type instance DispatchOf ElasticEffect = 'Static 'WithSideEffects
 newtype instance StaticRep ElasticEffect = ElasticEffect ElasticEnv
 
-runElasticEffect :: IOE :> es => BH.Server -> Eff (ElasticEffect : es) a -> Eff es a
-runElasticEffect server action = do
-  bhEnv <- liftIO (BH.mkBHEnv <$> pure server <*> Monocle.Client.mkManager)
+runElasticEffect :: IOE :> es => BH.BHEnv -> Eff (ElasticEffect : es) a -> Eff es a
+runElasticEffect bhEnv action = do
+  -- bhEnv <- liftIO (BH.mkBHEnv <$> pure server <*> Monocle.Client.mkManager)
   evalStaticRep (ElasticEffect bhEnv) action
 
 esSearch :: [ElasticEffect, LoggerEffect] :>> es => (ToJSON body, FromJSONField resp) => BH.IndexName -> body -> BHR.ScrollRequest -> Eff es (BH.SearchResult resp)
@@ -235,7 +262,7 @@ httpRequest req = do
           arg = decodeUtf8 $ HTTP.queryString req
           loc = if num == 0 then url <> arg else url
       flip unEff env $
-        logInfo
+        logInfo'
           "network error"
           [ "count" .= num
           , "limit" .= retryLimit
@@ -281,12 +308,11 @@ doLog lvl loc msg attrs = do
   msgText :: ByteString
   msgText = from lvl <> loc <> ": " <> encodeUtf8 msg
 
-logInfo :: (HasCallStack, LoggerEffect :> es) => Text -> [Series] -> Eff es ()
-logInfo = doLog LogInfo getLocName
+logInfo' :: (HasCallStack, LoggerEffect :> es) => Text -> [Series] -> Eff es ()
+logInfo' = doLog LogInfo getLocName
 
 logWarn' :: (HasCallStack, LoggerEffect :> es) => Text -> [Series] -> Eff es ()
 logWarn' = doLog LogWarning getLocName
-
 
 ------------------------------------------------------------------
 --
@@ -307,7 +333,7 @@ serverEff = route1Handler Servant.:<|> route1Handler
  where
   route1Handler :: Eff es Natural
   route1Handler = do
-    logInfo "Handling route" []
+    logInfo' "Handling route" []
     pure 42
 
 -- | liftServer convert the effectful implementation to the Handler context.
@@ -330,8 +356,10 @@ demoServant =
       Warp.run 8080 $ Servant.serve (Proxy @TestApi) $ liftServer es
 demoCrawler = runEff $ runLoggerEffect $ runHttpEffect $ crawler
 
-crawler :: (LoggerEffect :> es, HttpEffect :> es) => Eff es ()
+type CrawlerEffect es = [IOE, HttpEffect, LoggerEffect] :>> es
+
+crawler :: CrawlerEffect es => Eff es ()
 crawler = withContext ("crawler" .= ("crawler-name" :: Text)) do
-  logInfo "Starting crawler" []
+  logInfo' "Starting crawler" []
   res <- httpRequest =<< HTTP.parseUrlThrow "http://localhost"
-  logInfo ("Got: " <> show res) []
+  logInfo' ("Got: " <> show res) []
