@@ -166,6 +166,7 @@ library
                      , servant-server             >= 0.18.2
                      , servant-auth-server        >= 0.4.1.0
                      , servant-blaze              >= 0.9.1
+                     , servant-effectful
                      , streaming                  >= 0.2
                      , string-interpolate         >= 0.3.1.2
                      , tasty                      >= 1.4
