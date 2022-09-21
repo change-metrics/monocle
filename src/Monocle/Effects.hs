@@ -37,13 +37,14 @@ import Data.Aeson.Encoding (encodingToLazyByteString)
 import Monocle.Prelude hiding (Reader, ask, local)
 import System.Log.FastLogger qualified as FastLogger
 
+import Control.Exception (throwIO, try)
 import Monocle.Client qualified
 import Network.HTTP.Client (HttpException (..))
 import Network.HTTP.Client qualified as HTTP
 
 import Effectful
-import Effectful.Dispatch.Static (SideEffects (WithSideEffects), StaticRep, evalStaticRep, getStaticRep)
-import Effectful.Reader.Static as Eff
+import Effectful.Dispatch.Static (SideEffects (WithSideEffects), StaticRep, evalStaticRep, getStaticRep, localStaticRep)
+import Effectful.Dispatch.Static.Primitive qualified as EffStatic
 
 import Monocle.Logging hiding (logInfo, withContext)
 
@@ -127,51 +128,55 @@ mkReloadConfig = do
   (mkReload :: IO ConfigStatus) <- unsafeEff_ (Monocle.Config.reloadConfig fp)
   pure $ unsafeEff_ mkReload
 
--- runEff $ runLoggerEffect $ runHttpEffect $ crawler
-
-crawler :: (LoggerEffect :> es, HttpEffect :> es) => Eff es ()
-crawler = withContext ("crawler" .= ("crawler-name" :: Text)) do
-  logInfo "Starting crawler" []
-  void $ httpRequest =<< HTTP.parseUrlThrow "http://localhost"
-
 ------------------------------------------------------------------
 --
 
--- | WIP HTTP Effect
+-- | HTTP Effect that retries on exception
 
 ------------------------------------------------------------------
-data HttpContext = HttpContext
-  { httpManager :: HTTP.Manager
-  }
-
+type HttpEnv = HTTP.Manager
 data HttpEffect :: Effect
 type instance DispatchOf HttpEffect = 'Static 'WithSideEffects
-newtype instance StaticRep HttpEffect = HttpEffect HttpContext
+newtype instance StaticRep HttpEffect = HttpEffect HttpEnv
 
+-- | 'runHttpEffect' simply add a Manager to the static rep env.
 runHttpEffect :: IOE :> es => Eff (HttpEffect : es) a -> Eff es a
 runHttpEffect action = do
-  ctx <- HttpContext <$> liftIO Monocle.Client.mkManager
+  ctx <- liftIO Monocle.Client.mkManager
   evalStaticRep (HttpEffect ctx) action
 
-httpRequest :: (LoggerEffect :> es, HttpEffect :> es) => HTTP.Request -> Eff es (HTTP.Response LByteString)
+-- | 'httpRequest' catches http exception and retries the requests.
+httpRequest ::
+  [LoggerEffect, HttpEffect] :>> es =>
+  HTTP.Request ->
+  Eff es (Either HTTP.HttpExceptionContent (HTTP.Response LByteString))
 httpRequest req = do
-  HttpEffect (HttpContext manager) <- getStaticRep
-  resp <- unsafeEff $ \env ->
-    Retry.recovering policy [httpHandler env] (const $ HTTP.httpLbs req manager)
-  logInfo "Got resp" ["status" .= show @Text resp]
-  pure resp
+  HttpEffect manager <- getStaticRep
+  respE <- unsafeEff $ \env ->
+    try $ Retry.recovering policy [httpHandler env] (const $ HTTP.httpLbs req manager)
+  case respE of
+    Right resp -> pure (Right resp)
+    Left err -> case err of
+      HttpExceptionRequest _ ctx -> pure (Left ctx)
+      _ -> unsafeEff_ (throwIO err)
  where
-  retryLimit :: Int
   retryLimit = 2
-
   backoff = 500000 -- 500ms
   policy = Retry.exponentialBackoff backoff <> Retry.limitRetries retryLimit
+  httpHandler :: LoggerEffect :> es => EffStatic.Env es -> RetryStatus -> Handler IO Bool
   httpHandler env (RetryStatus num _ _) = Handler $ \case
     HttpExceptionRequest _req ctx -> do
       let url = decodeUtf8 @Text $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
           arg = decodeUtf8 $ HTTP.queryString req
           loc = if num == 0 then url <> arg else url
-      flip unEff env (logInfo "network error" ["count" .= num, "limit" .= retryLimit, "loc" .= loc, "failed" .= show @Text ctx])
+      flip unEff env $
+        logInfo
+          "network error"
+          [ "count" .= num
+          , "limit" .= retryLimit
+          , "loc" .= loc
+          , "error" .= show @Text ctx
+          ]
       pure True
     InvalidUrlException _ _ -> pure False
 
@@ -182,24 +187,25 @@ httpRequest req = do
 
 ------------------------------------------------------------------
 
-type LoggerEffect = Reader Logger
+type LoggerEnv = Logger
+
+data LoggerEffect :: Effect
+type instance DispatchOf LoggerEffect = 'Static 'WithSideEffects
+newtype instance StaticRep LoggerEffect = LoggerEffect LoggerEnv
 
 runLoggerEffect :: IOE :> es => Eff (LoggerEffect : es) a -> Eff es a
 runLoggerEffect action =
   -- `withEffToIO` and `unInIO` enables calling IO function like: `(Logger -> IO a) -> IO a`.
   withEffToIO $ \runInIO ->
     withLogger \logger ->
-      runInIO $ Eff.runReader logger action
-
-runLoggerEffect' :: Logger -> Eff (LoggerEffect : es) a -> Eff es a
-runLoggerEffect' logger = Eff.runReader logger
+      runInIO $ evalStaticRep (LoggerEffect logger) action
 
 withContext :: LoggerEffect :> es => Series -> Eff es a -> Eff es a
-withContext ctx = local $ \(Logger prevCtx logger) -> Logger (ctx <> prevCtx) logger
+withContext ctx = localStaticRep $ \(LoggerEffect (Logger prevCtx logger)) -> LoggerEffect (Logger (ctx <> prevCtx) logger)
 
 doLog :: LoggerEffect :> es => LogLevel -> ByteString -> Text -> [Series] -> Eff es ()
 doLog lvl loc msg attrs = do
-  Logger ctx logger <- ask
+  LoggerEffect (Logger ctx logger) <- getStaticRep
   let body :: ByteString
       body = case from . encodingToLazyByteString . pairs . mappend ctx . mconcat $ attrs of
         "{}" -> mempty
@@ -224,8 +230,10 @@ type TestApi =
   "route1" Servant.:> Get '[Servant.JSON] Natural
     :<|> "route2" Servant.:> Get '[Servant.JSON] Natural
 
+type ApiEffects es = [IOE, LoggerEffect] :>> es
+
 -- | serverEff is the effectful implementation of the TestAPI
-serverEff :: forall es. [IOE, LoggerEffect] :>> es => Servant.ServerT TestApi (Eff es)
+serverEff :: forall es. ApiEffects es => Servant.ServerT TestApi (Eff es)
 serverEff = route1Handler Servant.:<|> route1Handler
  where
   route1Handler :: Eff es Natural
@@ -235,15 +243,26 @@ serverEff = route1Handler Servant.:<|> route1Handler
 
 -- | liftServer convert the effectful implementation to the Handler context.
 -- It is necessary to pass each effect environment so that the effects can be interpret for each request.
-liftServer :: Logger -> Servant.ServerT TestApi Servant.Handler
-liftServer logger = Servant.hoistServer (Proxy @TestApi) interpretServer serverEff
+liftServer :: forall es. ApiEffects es => EffStatic.Env es -> Servant.ServerT TestApi Servant.Handler
+liftServer es = Servant.hoistServer (Proxy @TestApi) interpretServer serverEff
  where
-  interpretServer :: Eff '[LoggerEffect, IOE] a -> Servant.Handler a
-  interpretServer =
-    liftIO . runEff . runLoggerEffect' logger
+  interpretServer :: Eff es a -> Servant.Handler a
+  interpretServer action = do
+    liftIO do
+      es' <- EffStatic.cloneEnv es
+      unEff action es'
 
-demo :: IO ()
-demo = do
-  -- defaultMain tests
-  withLogger \logger -> do
-    Warp.run 8080 $ Servant.serve (Proxy @TestApi) $ liftServer logger
+demo, demoServant, demoTest, demoCrawler :: IO ()
+demo = demoCrawler
+demoTest = defaultMain tests
+demoServant =
+  runEff $ runLoggerEffect do
+    unsafeEff $ \es ->
+      Warp.run 8080 $ Servant.serve (Proxy @TestApi) $ liftServer es
+demoCrawler = runEff $ runLoggerEffect $ runHttpEffect $ crawler
+
+crawler :: (LoggerEffect :> es, HttpEffect :> es) => Eff es ()
+crawler = withContext ("crawler" .= ("crawler-name" :: Text)) do
+  logInfo "Starting crawler" []
+  res <- httpRequest =<< HTTP.parseUrlThrow "http://localhost"
+  logInfo ("Got: " <> show res) []
