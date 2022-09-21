@@ -27,6 +27,10 @@ import Monocle.Search.Query (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (.
 import Monocle.Search.Query qualified as Q
 import Streaming.Prelude qualified as Streaming
 
+import Monocle.Effects
+
+type QEffect es = [ElasticEffect, LoggerEffect, MonoQueryEffect] :>> es
+
 -- Legacy wrappers
 doSearchLegacy :: (HasLogger m, FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m (BH.SearchResult a)
 doSearchLegacy indexName search = do
@@ -82,6 +86,15 @@ doSearchHitBH body = do
     elasticSearchHit index body
 
 -- | Call the count endpoint
+doCountBH' :: QEffect es => BH.Query -> Eff es Count
+doCountBH' body = do
+    index <- getIndexName'
+    resp <- esCountByIndex index (BH.CountQuery body)
+    case resp of
+      Left e -> error $ show e
+      Right x -> pure $ naturalToCount (BH.crCount x)
+
+
 doCountBH :: QueryMonad m => BH.Query -> m Count
 doCountBH body = do
   measureQueryM body do
@@ -178,6 +191,14 @@ doFastSearch limit = do
     (BH.mkSearch query Nothing)
       { BH.size = BH.Size $ fromInteger $ toInteger $ max 50 limit
       }
+
+-- | Get document count matching the query
+countDocs' :: QEffect es => Eff es Count
+countDocs' = do
+  query <-
+    fromMaybe (error "Need a query to count") <$> getQueryBH'
+  doCountBH' query
+
 
 -- | Get document count matching the query
 countDocs :: QueryMonad m => m Count

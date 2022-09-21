@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE TypeFamilies #-}
 -- for MTL Compat
 {-# LANGUAGE UndecidableInstances #-}
@@ -69,8 +70,16 @@ import Database.Bloodhound.Raw qualified as BHR
 import Json.Extras qualified as Json
 
 -- for MonoQueryEffect
-import Monocle.Env (QueryEnv (..))
+import Monocle.Env (AppEnv, QueryEnv (..))
 import Monocle.Env qualified
+import Monocle.Search.Query qualified as SearchQuery
+
+import Effectful qualified as E
+import Effectful.Error.Static qualified as E
+import Effectful.Reader.Static qualified as E
+import Effectful.Servant qualified as ES
+
+type ApiEffects es = [IOE, E.Reader AppEnv, E.Error Servant.ServerError, MonoConfigEffect, LoggerEffect] :>> es
 
 tests :: TestTree
 tests =
@@ -151,6 +160,7 @@ getReloadConfig = do
 ------------------------------------------------------------------
 data MonoQueryEnv = MonoQueryEnv
   { queryTarget :: Monocle.Env.QueryTarget
+  , searchQuery :: SearchQuery.Query
   }
 
 data MonoQueryEffect :: Effect
@@ -160,10 +170,21 @@ newtype instance StaticRep MonoQueryEffect = MonoQueryEffect MonoQueryEnv
 runMonoQuery :: MonoQueryEnv -> Eff (MonoQueryEffect : es) a -> Eff es a
 runMonoQuery env = evalStaticRep (MonoQueryEffect env)
 
+runEmptyMonoQuery :: Monocle.Config.Index -> Eff (MonoQueryEffect : es) a -> Eff es a
+runEmptyMonoQuery ws = evalStaticRep (MonoQueryEffect $ MonoQueryEnv target query)
+ where
+  target = Monocle.Env.QueryWorkspace ws
+  query = Monocle.Env.mkQuery []
+
 getIndexName' :: MonoQueryEffect :> es => Eff es BH.IndexName
 getIndexName' = do
   MonoQueryEffect env <- getStaticRep
   pure $ Monocle.Env.envToIndexName (queryTarget env)
+
+getQueryBH' :: MonoQueryEffect :> es => Eff es (Maybe BH.Query)
+getQueryBH' = do
+  MonoQueryEffect env <- getStaticRep
+  pure $ Monocle.Env.mkFinalQuery' Nothing env.searchQuery
 
 ------------------------------------------------------------------
 --
@@ -333,10 +354,10 @@ type TestApi =
   "route1" Servant.:> Get '[Servant.JSON] Natural
     :<|> "route2" Servant.:> Get '[Servant.JSON] Natural
 
-type ApiEffects es = [IOE, LoggerEffect] :>> es
+type ApiEffects' es = [IOE, LoggerEffect] :>> es
 
 -- | serverEff is the effectful implementation of the TestAPI
-serverEff :: forall es. ApiEffects es => Servant.ServerT TestApi (Eff es)
+serverEff :: forall es. ApiEffects' es => Servant.ServerT TestApi (Eff es)
 serverEff = route1Handler Servant.:<|> route1Handler
  where
   route1Handler :: Eff es Natural
@@ -346,7 +367,7 @@ serverEff = route1Handler Servant.:<|> route1Handler
 
 -- | liftServer convert the effectful implementation to the Handler context.
 -- It is necessary to pass each effect environment so that the effects can be interpret for each request.
-liftServer :: forall es. ApiEffects es => EffStatic.Env es -> Servant.ServerT TestApi Servant.Handler
+liftServer :: forall es. ApiEffects' es => EffStatic.Env es -> Servant.ServerT TestApi Servant.Handler
 liftServer es = Servant.hoistServer (Proxy @TestApi) interpretServer serverEff
  where
   interpretServer :: Eff es a -> Servant.Handler a
@@ -364,9 +385,9 @@ demoServant =
       Warp.run 8080 $ Servant.serve (Proxy @TestApi) $ liftServer es
 demoCrawler = runEff $ runLoggerEffect $ runHttpEffect $ crawler
 
-type CrawlerEffect es = [IOE, HttpEffect, LoggerEffect] :>> es
+type CrawlerEffect' es = [IOE, HttpEffect, LoggerEffect] :>> es
 
-crawler :: CrawlerEffect es => Eff es ()
+crawler :: CrawlerEffect' es => Eff es ()
 crawler = withContext ("crawler" .= ("crawler-name" :: Text)) do
   logInfo' "Starting crawler" []
   res <- httpRequest =<< HTTP.parseUrlThrow "http://localhost"

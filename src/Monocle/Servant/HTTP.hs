@@ -20,6 +20,10 @@ import Monocle.Servant.PBJSON (PBJSON)
 import Servant
 import Servant.Auth.Server (Auth, Cookie, JWT)
 
+import Effectful (Eff)
+import Monocle.Effects
+import Prelude (undefined)
+
 type MonocleAPI =
   "login" :> "username" :> "validate" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Login.LoginValidationRequest :> Post '[PBJSON, JSON] Monocle.Protob.Login.LoginValidationResponse
     :<|> "auth" :> "get" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Auth.GetMagicJwtRequest :> Post '[PBJSON, JSON] Monocle.Protob.Auth.GetMagicJwtResponse
@@ -40,7 +44,7 @@ type MonocleAPI =
     :<|> "crawler" :> "add" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.AddDocRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.AddDocResponse
     :<|> "crawler" :> "commit" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.CommitRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.CommitResponse
     :<|> "crawler" :> "get_commit_info" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.CommitInfoRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.CommitInfoResponse
-server :: ServerT MonocleAPI AppM
+server :: ApiEffects es => ServerT MonocleAPI (Eff es)
 server =
   loginLoginValidation
     :<|> authGetMagicJwt

@@ -202,9 +202,10 @@ mkQuery bhq =
    in Q.Query {..}
 
 mkFinalQuery :: QueryMonad m => Maybe Q.QueryFlavor -> m (Maybe BH.Query)
-mkFinalQuery flavorM = do
-  query <- getQuery
-  pure $ toBoolQuery $ Q.queryGet query id flavorM
+mkFinalQuery flavorM = mkFinalQuery' flavorM <$> getQuery
+
+mkFinalQuery' :: Maybe Q.QueryFlavor -> Q.Query -> Maybe BH.Query
+mkFinalQuery' flavorM query = toBoolQuery $ Q.queryGet query id flavorM
  where
   toBoolQuery = \case
     [] -> Nothing

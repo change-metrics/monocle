@@ -63,10 +63,8 @@ import Effectful.Reader.Static qualified as E
 import Monocle.Effects
 
 -- | 'getConfig' reload the config automatically from the env
-getConfig :: AppM Config.ConfigStatus
-getConfig = do
-  loadConfig <- asks config
-  liftIO loadConfig
+getConfig :: '[MonoConfigEffect] :>> es => Eff es [Config.Index]
+getConfig = Config.workspaces . Config.csConfig <$> getReloadConfig
 
 -- | 'updateIndex' if needed - ensures index exists and refresh crawler Metadata
 updateIndex :: Config.Index -> MVar Config.WorkspaceStatus -> AppM ()
@@ -145,9 +143,13 @@ authGetMagicJwt _auth (AuthPB.GetMagicJwtRequest inputAdminToken) = do
 
 -- | /login/validate endpoint
 loginLoginValidation ::
-  AuthResult AuthenticatedUser -> LoginPB.LoginValidationRequest -> AppM LoginPB.LoginValidationResponse
+  forall es.
+  ApiEffects es =>
+  AuthResult AuthenticatedUser ->
+  LoginPB.LoginValidationRequest ->
+  Eff es LoginPB.LoginValidationResponse
 loginLoginValidation _auth request = do
-  GetTenants tenants <- getConfig
+  tenants <- getConfig
   let username = request & LoginPB.loginValidationRequestUsername
   validated <- runMaybeT $ traverse (validateOnIndex $ from username) tenants
   let result =
@@ -162,10 +164,10 @@ loginLoginValidation _auth request = do
     . Enumerated
     $ Right result
  where
-  validateOnIndex :: Text -> Config.Index -> MaybeT AppM ()
+  validateOnIndex :: Text -> Config.Index -> MaybeT (Eff es) ()
   validateOnIndex username index = do
     let userQuery = Q.toUserTerm username
-    count <- lift $ runEmptyQueryM index $ withFilter [userQuery] Q.countDocs
+    count <- lift (runEmptyMonoQuery index $ withFilter [userQuery] Q.countDocs)
     when (count > 0) mzero
 
 -- | /api/2/about endpoint

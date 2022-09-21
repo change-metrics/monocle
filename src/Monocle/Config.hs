@@ -15,6 +15,7 @@
 module Monocle.Config (
   -- * Data types imported from dhall
   Config (..),
+  Workspace,
   Index (..),
   Project (..),
   Ident (..),
@@ -124,6 +125,9 @@ Dhall.TH.makeHaskellTypes
           Dhall.TH.SingleConstructor "Index" "Index" $ mainPath "Workspace"
         ]
   )
+
+-- | Workspace are not index name.
+type Workspace = Index
 
 -- | Embed the expected configuration schema
 configurationSchema :: Dhall.Core.Expr Dhall.Src.Src Void
