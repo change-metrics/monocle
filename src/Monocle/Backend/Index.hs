@@ -30,6 +30,8 @@ import Streaming qualified as S (chunksOf)
 import Streaming.Prelude qualified as S
 import Streaming.Prelude qualified as Streaming
 
+import Monocle.Effects hiding (logInfo)
+
 data ConfigIndexMapping = ConfigIndexMapping deriving (Eq, Show)
 
 instance ToJSON ConfigIndexMapping where
@@ -217,6 +219,19 @@ createIndex indexName mapping = do
   -- print respPM
   True <- BH.indexExists indexName
   pure ()
+ where
+  indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0) BH.defaultIndexMappingsLimits
+
+createIndex' :: [ElasticEffect, LoggerEffect] :>> es => ToJSON mapping => BH.IndexName -> mapping -> Eff es ()
+createIndex' indexName mapping = do
+  esCreateIndex indexSettings indexName
+  -- print respCI
+  esPutMapping indexName mapping
+  -- print respPM
+  res <- esIndexExists indexName
+  case res of
+    True -> pure ()
+    False -> logWarn' "Fail to create index" ["name" .= indexName]
  where
   indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0) BH.defaultIndexMappingsLimits
 

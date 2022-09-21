@@ -62,6 +62,10 @@ import Network.Wai.Handler.Warp qualified as Warp
 import Servant (Get, (:<|>))
 import Servant qualified
 
+import Database.Bloodhound.Raw qualified as BHR
+import Database.Bloodhound qualified as BH
+import Json.Extras qualified as Json
+
 tests :: TestTree
 tests =
   testGroup
@@ -127,6 +131,67 @@ mkReloadConfig = do
   MonoConfigEffect fp <- getStaticRep
   (mkReload :: IO ConfigStatus) <- unsafeEff_ (Monocle.Config.reloadConfig fp)
   pure $ unsafeEff_ mkReload
+
+------------------------------------------------------------------
+--
+
+-- | Elastic Effect to access elastic backend. TODO: make it use the HttpEffect retry capability.
+
+------------------------------------------------------------------
+type ElasticEnv = BH.BHEnv
+data ElasticEffect :: Effect
+type instance DispatchOf ElasticEffect = 'Static 'WithSideEffects
+newtype instance StaticRep ElasticEffect = ElasticEffect ElasticEnv
+
+runElasticEffect :: IOE :> es => BH.Server -> Eff (ElasticEffect : es) a -> Eff es a
+runElasticEffect server action = do
+  bhEnv <- liftIO (BH.mkBHEnv <$> pure server <*> Monocle.Client.mkManager)
+  evalStaticRep (ElasticEffect bhEnv) action
+
+esSearch :: [ElasticEffect, LoggerEffect] :>> es => (ToJSON body, FromJSONField resp) => BH.IndexName -> body -> BHR.ScrollRequest -> Eff es (BH.SearchResult resp)
+esSearch iname body scrollReq = do
+  ElasticEffect env <- getStaticRep
+  error "TODO"
+
+esAdvance :: [ElasticEffect, LoggerEffect] :>> es => FromJSON resp => BH.ScrollId -> Eff es (BH.SearchResult resp)
+esAdvance scroll = do
+  ElasticEffect env <- getStaticRep
+  error "TODO"
+
+esCountByIndex :: ElasticEffect :> es => BH.IndexName -> BH.CountQuery -> Eff es (Either BH.EsError BH.CountResponse)
+esCountByIndex iname q = do
+  ElasticEffect env <- getStaticRep
+  unsafeEff_ $ BH.runBH env $ BH.countByIndex iname q
+
+esSearchHit :: ElasticEffect :> es => ToJSON body => BH.IndexName -> body -> Eff es [Json.Value]
+esSearchHit iname body = do
+  ElasticEffect env <- getStaticRep
+  unsafeEff_ $ BH.runBH env $ BHR.searchHit iname body
+
+esDeleteByQuery :: ElasticEffect :> es => BH.IndexName -> BH.Query -> Eff es BH.Reply
+esDeleteByQuery iname q = do
+  ElasticEffect env <- getStaticRep
+  unsafeEff_ $ BH.runBH env $ BH.deleteByQuery iname q
+
+esCreateIndex :: ElasticEffect :> es => BH.IndexSettings -> BH.IndexName -> Eff es ()
+esCreateIndex is iname = do
+  ElasticEffect env <- getStaticRep
+  unsafeEff_ $ void $ BH.runBH env $ BH.createIndex is iname
+
+esPutMapping :: ElasticEffect :> es => ToJSON mapping => BH.IndexName -> mapping -> Eff es ()
+esPutMapping iname mapping = do
+  ElasticEffect env <- getStaticRep
+  unsafeEff_ $ void $ BH.runBH env $ BH.putMapping iname mapping
+
+esIndexExists :: ElasticEffect :> es => BH.IndexName -> Eff es Bool
+esIndexExists iname = do
+  ElasticEffect env <- getStaticRep
+  unsafeEff_ $ BH.runBH env $ BH.indexExists iname
+
+esSettings :: ElasticEffect :> es => ToJSON body => BH.IndexName -> body -> Eff es ()
+esSettings iname body = do
+  ElasticEffect env <- getStaticRep
+  unsafeEff_ $ BH.runBH env $ BHR.settings iname body
 
 ------------------------------------------------------------------
 --
@@ -218,6 +283,10 @@ doLog lvl loc msg attrs = do
 
 logInfo :: (HasCallStack, LoggerEffect :> es) => Text -> [Series] -> Eff es ()
 logInfo = doLog LogInfo getLocName
+
+logWarn' :: (HasCallStack, LoggerEffect :> es) => Text -> [Series] -> Eff es ()
+logWarn' = doLog LogWarning getLocName
+
 
 ------------------------------------------------------------------
 --
