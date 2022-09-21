@@ -190,9 +190,6 @@ getQuery = asks tQuery
 getContext :: QueryMonad m => m (Maybe Text)
 getContext = asks tContext
 
-getQueryBH :: QueryMonad m => m (Maybe BH.Query)
-getQueryBH = mkFinalQuery Nothing
-
 -- | 'mkQuery' creates a Q.Query from a BH.Query
 mkQuery :: [BH.Query] -> Q.Query
 mkQuery bhq =
@@ -212,65 +209,9 @@ mkFinalQuery' flavorM query = toBoolQuery $ Q.queryGet query id flavorM
     [x] -> Just x
     xs -> Just $ BH.QueryBoolQuery $ BH.mkBoolQuery [] (BH.Filter <$> xs) [] []
 
-withQuery :: QueryMonad m => Q.Query -> m a -> m a
-withQuery query = local addQuery
- where
-  addQuery e = e {tQuery = query}
-
 withCallStackContext :: QueryMonad m => HasCallStack => Text -> m a -> m a
 withCallStackContext context = local setContext
  where
   setContext (QueryEnv tenant tEnv query _) = QueryEnv tenant tEnv query (Just contextName)
   contextName = maybe context getLoc $ headMaybe (getCallStack callStack)
   getLoc (_, loc) = "[" <> context <> " " <> from (srcLocFile loc) <> ":" <> show (srcLocStartLine loc) <> "]"
-
--- | 'dropQuery' remove the query from the context
-dropQuery :: QueryMonad m => m a -> m a
-dropQuery = local dropQuery'
- where
-  -- we still want to call the provided modifier, so
-  -- the expr is removed by discarding the modifier parameter
-  dropQuery' (QueryEnv tenant tEnv query context) =
-    let newQueryGet modifier = Q.queryGet query (const $ modifier Nothing)
-     in QueryEnv tenant tEnv (query {Q.queryGet = newQueryGet}) context
-
--- | 'withFlavor' change the query flavor
-withFlavor :: QueryMonad m => Q.QueryFlavor -> m a -> m a
-withFlavor flavor = local setFlavor
- where
-  -- the new flavor replaces the oldFlavor
-  setFlavor (QueryEnv tenant tEnv query context) =
-    let newQueryGet modifier oldFlavor = Q.queryGet query modifier (Just $ fromMaybe flavor oldFlavor)
-     in QueryEnv tenant tEnv (query {Q.queryGet = newQueryGet}) context
-
--- | 'withModified' run a queryM with a modified query
--- Use it to remove or change field from the initial expr, for example to drop dates.
-withModified :: QueryMonad m => (Maybe Expr -> Maybe Expr) -> m a -> m a
-withModified modifier = local addModifier
- where
-  -- The new modifier is composed with the previous one
-  addModifier (QueryEnv tenant tEnv query context) =
-    let newQueryGet oldModifier = Q.queryGet query (modifier . oldModifier)
-     in QueryEnv tenant tEnv (query {Q.queryGet = newQueryGet}) context
-
--- | 'withFilterFlavor' run a queryM with extra queries provided based on the current query flavor.
--- This is used in monoHisto where the extra bounds need to take into account the query flavor,
--- e.g. firstComment metrics uses
-withFilterFlavor :: QueryMonad m => (Maybe Q.QueryFlavor -> [BH.Query]) -> m a -> m a
-withFilterFlavor extraQueries = local addModifier
- where
-  addModifier (QueryEnv tenant tEnv query context) =
-    let newQueryGet modifier qf = extraQueries qf <> Q.queryGet query modifier qf
-     in QueryEnv tenant tEnv (query {Q.queryGet = newQueryGet}) context
-
--- | 'withFilter' run a queryM with extra queries.
--- Use it to mappend bloodhound expression to the final result
-withFilter :: QueryMonad m => [BH.Query] -> m a -> m a
-withFilter = local . addFilter
-
--- | Add extra queires to a QueryEnv
--- Extra queries are added to the resulting [BH.Query]
-addFilter :: [BH.Query] -> QueryEnv -> QueryEnv
-addFilter extraQueries (QueryEnv tenant tEnv query context) =
-  let newQueryGet modifier qf = extraQueries <> Q.queryGet query modifier qf
-   in QueryEnv tenant tEnv (query {Q.queryGet = newQueryGet}) context

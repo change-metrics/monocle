@@ -63,14 +63,18 @@ import Effectful.Reader.Static qualified as E
 import Monocle.Effects
 
 -- | 'getConfig' reload the config automatically from the env
-getConfig :: '[MonoConfigEffect] :>> es => Eff es [Config.Index]
-getConfig = Config.workspaces . Config.csConfig <$> getReloadConfig
+getWorkspaces :: '[MonoConfigEffect] :>> es => Eff es [Config.Index]
+getWorkspaces = Config.workspaces . Config.csConfig <$> getReloadConfig
+
+-- | 'getConfig' reload the config automatically from the env
+getConfig' :: '[MonoConfigEffect] :>> es => Eff es Config.Config
+getConfig' = Config.csConfig <$> getReloadConfig
 
 -- | 'updateIndex' if needed - ensures index exists and refresh crawler Metadata
-updateIndex :: Config.Index -> MVar Config.WorkspaceStatus -> AppM ()
-updateIndex index wsRef = runEmptyQueryM index $ modifyMVar_ wsRef doUpdateIfNeeded
+updateIndex :: forall es. ApiEffects es => Config.Index -> MVar Config.WorkspaceStatus -> Eff es ()
+updateIndex index wsRef = runEmptyMonoQuery index $ modifyMVar_ wsRef undefined -- doUpdateIfNeeded
  where
-  doUpdateIfNeeded :: Config.WorkspaceStatus -> QueryM Config.WorkspaceStatus
+  doUpdateIfNeeded :: Config.WorkspaceStatus -> Eff es Config.WorkspaceStatus
   doUpdateIfNeeded ws = case Map.lookup (Config.getWorkspaceName index) ws of
     Just Config.Ready -> pure ws
     Just Config.NeedRefresh -> do
@@ -78,11 +82,12 @@ updateIndex index wsRef = runEmptyQueryM index $ modifyMVar_ wsRef doUpdateIfNee
       pure $ Map.insert (Config.getWorkspaceName index) Config.Ready ws
     Nothing -> error $ "Unknown workspace: " <> show (Config.getWorkspaceName index)
 
-  refreshIndex :: QueryM ()
+  refreshIndex :: Eff es ()
   refreshIndex = do
-    logInfo "RefreshIndex" ["index" .= Config.getWorkspaceName index]
-    I.ensureIndexSetup
-    traverse_ I.initCrawlerMetadata $ Config.crawlers index
+    logInfo' "RefreshIndex" ["index" .= Config.getWorkspaceName index]
+    runEmptyMonoQuery index do
+      I.ensureIndexSetup'
+      traverse_ I.initCrawlerMetadata $ Config.crawlers index
 
 -- | Convenient pattern to get the config from the status
 pattern GetConfig :: Config.Config -> Config.ConfigStatus
@@ -92,31 +97,31 @@ pattern GetConfig a <- Config.ConfigStatus _ a _
 pattern GetTenants :: [Config.Index] -> Config.ConfigStatus
 pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _about _auth a) _
 
-checkAuth :: forall a. AuthResult AuthenticatedUser -> (Maybe AuthenticatedUser -> AppM a) -> AppM a
+checkAuth :: forall a es. ApiEffects es => AuthResult AuthenticatedUser -> (Maybe AuthenticatedUser -> Eff es a) -> Eff es a
 checkAuth auth action = do
-  aOIDC <- asks aOIDC
+  aOIDC <- E.asks aOIDC
   case oidcEnv aOIDC of
     Just (OIDCEnv {providerConfig}) -> case auth of
       Authenticated au -> action $ Just au
       _ -> do
         if not $ opEnforceAuth providerConfig
           then action Nothing
-          else forbidden' "Not allowed"
+          else forbidden "Not allowed"
     Nothing -> action Nothing
  where
   forbidden' :: (MonadError ServerError m) => Text -> m a
   forbidden' = throwError . forbiddenErr
 
 -- curl -XPOST -d '{"void": ""}' -H "Content-type: application/json" -H 'Authorization: Bearer <token>' http://localhost:8080/auth/whoami
-authWhoAmi :: AuthResult AuthenticatedUser -> AuthPB.WhoAmiRequest -> AppM AuthPB.WhoAmiResponse
+authWhoAmi :: ApiEffects es => AuthResult AuthenticatedUser -> AuthPB.WhoAmiRequest -> Eff es AuthPB.WhoAmiResponse
 authWhoAmi (Authenticated au) _request =
   pure $ AuthPB.WhoAmiResponse . Just . AuthPB.WhoAmiResponseResultUid $ show au
 authWhoAmi _auth _request = pure $ AuthPB.WhoAmiResponse . Just . AuthPB.WhoAmiResponseResultError . Enumerated $ Right AuthPB.WhoAmiErrorUnAuthorized
 
 -- curl -XPOST -d '{"token": "admin-token"}' -H "Content-type: application/json" http://localhost:8080/auth/get
-authGetMagicJwt :: AuthResult AuthenticatedUser -> AuthPB.GetMagicJwtRequest -> AppM AuthPB.GetMagicJwtResponse
+authGetMagicJwt :: ApiEffects es => AuthResult AuthenticatedUser -> AuthPB.GetMagicJwtRequest -> Eff es AuthPB.GetMagicJwtResponse
 authGetMagicJwt _auth (AuthPB.GetMagicJwtRequest inputAdminToken) = do
-  oidc <- asks aOIDC
+  oidc <- E.asks aOIDC
   -- The generated JWT does not have any expiry
   -- An API restart generates new JWK that will invalidate the token
   jwtE <- liftIO $ mkJwt (localJWTSettings oidc) Map.empty "bot" Nothing
@@ -149,7 +154,7 @@ loginLoginValidation ::
   LoginPB.LoginValidationRequest ->
   Eff es LoginPB.LoginValidationResponse
 loginLoginValidation _auth request = do
-  tenants <- getConfig
+  tenants <- getWorkspaces
   let username = request & LoginPB.loginValidationRequestUsername
   validated <- runMaybeT $ traverse (validateOnIndex $ from username) tenants
   let result =
@@ -167,16 +172,21 @@ loginLoginValidation _auth request = do
   validateOnIndex :: Text -> Config.Index -> MaybeT (Eff es) ()
   validateOnIndex username index = do
     let userQuery = Q.toUserTerm username
-    count <- lift (runEmptyMonoQuery index $ withFilter [userQuery] Q.countDocs)
+    count <- lift (runEmptyMonoQuery index $ withFilter [userQuery] Q.countDocs')
     when (count > 0) mzero
 
 -- | /api/2/about endpoint
-configGetAbout :: AuthResult AuthenticatedUser -> ConfigPB.GetAboutRequest -> AppM ConfigPB.GetAboutResponse
+configGetAbout ::
+  forall es.
+  ApiEffects es =>
+  AuthResult AuthenticatedUser ->
+  ConfigPB.GetAboutRequest ->
+  Eff es ConfigPB.GetAboutResponse
 configGetAbout _auth _request = response
  where
   response = do
-    aOIDC <- asks aOIDC
-    GetConfig config <- getConfig
+    aOIDC <- E.asks aOIDC
+    config <- getConfig'
     let aboutVersion = from version
         links = maybe [] Config.links (Config.about config)
         aboutLinks = fromList $ toLink <$> links
@@ -195,20 +205,20 @@ configGetAbout _auth _request = response
      in ConfigPB.AboutAuthAuthConfig $ ConfigPB.About_AuthConfig {..}
 
 -- | /api/2/get_workspaces endpoint
-configGetWorkspaces :: AuthResult AuthenticatedUser -> ConfigPB.GetWorkspacesRequest -> AppM ConfigPB.GetWorkspacesResponse
+configGetWorkspaces :: ApiEffects es => AuthResult AuthenticatedUser -> ConfigPB.GetWorkspacesRequest -> Eff es ConfigPB.GetWorkspacesResponse
 configGetWorkspaces auth _request = checkAuth auth $ const response
  where
   response = do
-    GetTenants tenants <- getConfig
+    tenants <- getWorkspaces
     pure . ConfigPB.GetWorkspacesResponse . V.fromList $ map toWorkspace tenants
   toWorkspace Config.Index {..} =
     let workspaceName = from name
      in ConfigPB.Workspace {..}
 
 -- | /api/2/get_groups endpoint
-configGetGroups :: AuthResult AuthenticatedUser -> ConfigPB.GetGroupsRequest -> AppM ConfigPB.GetGroupsResponse
+configGetGroups :: ApiEffects es => AuthResult AuthenticatedUser -> ConfigPB.GetGroupsRequest -> Eff es ConfigPB.GetGroupsResponse
 configGetGroups auth request = checkAuth auth . const $ do
-  GetTenants tenants <- getConfig
+  tenants <- getWorkspaces
   let ConfigPB.GetGroupsRequest {..} = request
 
   pure . ConfigPB.GetGroupsResponse . V.fromList $ case Config.lookupTenant tenants (from getGroupsRequestIndex) of
@@ -222,9 +232,9 @@ configGetGroups auth request = checkAuth auth . const $ do
      in ConfigPB.GroupDefinition {..}
 
 -- | /api/2/get_group_members endpoint
-configGetGroupMembers :: AuthResult AuthenticatedUser -> ConfigPB.GetGroupMembersRequest -> AppM ConfigPB.GetGroupMembersResponse
+configGetGroupMembers :: ApiEffects es => AuthResult AuthenticatedUser -> ConfigPB.GetGroupMembersRequest -> Eff es ConfigPB.GetGroupMembersResponse
 configGetGroupMembers auth request = checkAuth auth . const $ do
-  GetTenants tenants <- getConfig
+  tenants <- getWorkspaces
   let ConfigPB.GetGroupMembersRequest {..} = request
   members <- case Config.lookupTenant tenants (from getGroupMembersRequestIndex) of
     Just index -> pure $ fromMaybe [] $ lookup (from getGroupMembersRequestGroup) (Config.getTenantGroups index)
@@ -232,9 +242,9 @@ configGetGroupMembers auth request = checkAuth auth . const $ do
   pure . ConfigPB.GetGroupMembersResponse . V.fromList $ from <$> members
 
 -- | /api/2/get_projects
-configGetProjects :: AuthResult AuthenticatedUser -> ConfigPB.GetProjectsRequest -> AppM ConfigPB.GetProjectsResponse
+configGetProjects :: ApiEffects es => AuthResult AuthenticatedUser -> ConfigPB.GetProjectsRequest -> Eff es ConfigPB.GetProjectsResponse
 configGetProjects auth ConfigPB.GetProjectsRequest {..} = checkAuth auth . const $ do
-  GetTenants tenants <- getConfig
+  tenants <- getWorkspaces
   pure . ConfigPB.GetProjectsResponse . V.fromList $ case Config.lookupTenant tenants (from getProjectsRequestIndex) of
     Just index -> maybe [] (fmap toResp) (Config.projects index)
     Nothing -> []
@@ -267,9 +277,9 @@ toEntity entityPB = case entityPB of
   otherEntity -> error $ "Unknown Entity type: " <> show otherEntity
 
 -- | /crawler/add endpoint
-crawlerAddDoc :: AuthResult AuthenticatedUser -> CrawlerPB.AddDocRequest -> AppM CrawlerPB.AddDocResponse
+crawlerAddDoc :: ApiEffects es => AuthResult AuthenticatedUser -> CrawlerPB.AddDocRequest -> Eff es CrawlerPB.AddDocResponse
 crawlerAddDoc _auth request = do
-  GetTenants tenants <- getConfig
+  tenants <- getWorkspaces
   let ( CrawlerPB.AddDocRequest
           indexName
           crawlerName
@@ -297,18 +307,19 @@ crawlerAddDoc _auth request = do
         pure (index, crawler)
 
   case requestE of
-    Right (index, crawler) -> runEmptyQueryM index $ case toEntity entity of
+    Right (index, crawler) -> runEmptyMonoQuery index $ case toEntity entity of
       Project _ -> addChanges crawlerName changes events
       Organization organizationName -> addProjects crawler organizationName projects
       TaskDataEntity _ -> addTDs crawlerName taskDatas
     Left err -> pure $ toErrorResponse err
  where
   addTDs crawlerName taskDatas = do
-    logInfo "AddingTaskData" ["crawler" .= crawlerName, "tds" .= length taskDatas]
+    logInfo' "AddingTaskData" ["crawler" .= crawlerName, "tds" .= length taskDatas]
     I.taskDataAdd (from crawlerName) $ toList taskDatas
     pure $ CrawlerPB.AddDocResponse Nothing
+
   addChanges crawlerName changes events = do
-    logInfo "AddingChange" ["crawler" .= crawlerName, "changes" .= length changes, "events" .= length events]
+    logInfo' "AddingChange" ["crawler" .= crawlerName, "changes" .= length changes, "events" .= length events]
     let changes' = map from $ toList changes
         events' = map I.toEChangeEvent $ toList events
     I.indexChanges changes'
@@ -316,8 +327,9 @@ crawlerAddDoc _auth request = do
     I.updateChangesAndEventsFromOrphanTaskData changes' events'
     I.addCachedAuthors events'
     pure $ CrawlerPB.AddDocResponse Nothing
+
   addProjects crawler organizationName projects = do
-    logInfo "AddingProject" ["crawler" .= getWorkerName crawler, "org" .= organizationName, "projects" .= length projects]
+    logInfo' "AddingProject" ["crawler" .= getWorkerName crawler, "org" .= organizationName, "projects" .= length projects]
     let names = projectNames projects
         -- TODO(fbo) Enable crawl github issues by default for an organization.
         -- We might need to re-think some data fetching like priority/severity.
@@ -336,9 +348,9 @@ crawlerAddDoc _auth request = do
       $ Right err
 
 -- | /crawler/commit endpoint
-crawlerCommit :: AuthResult AuthenticatedUser -> CrawlerPB.CommitRequest -> AppM CrawlerPB.CommitResponse
+crawlerCommit :: ApiEffects es => AuthResult AuthenticatedUser -> CrawlerPB.CommitRequest -> Eff es CrawlerPB.CommitResponse
 crawlerCommit _auth request = do
-  GetTenants tenants <- getConfig
+  tenants <- getWorkspaces
   let (CrawlerPB.CommitRequest indexName crawlerName apiKey entityPB timestampM) = request
 
   let requestE = do
@@ -361,9 +373,9 @@ crawlerCommit _auth request = do
         pure (index, ts, toEntity entityPB)
 
   case requestE of
-    Right (index, ts, entity) -> runEmptyQueryM index $ do
+    Right (index, ts, entity) -> runEmptyMonoQuery index $ do
       let date = Timestamp.toUTCTime ts
-      logInfo "UpdatingEntity" ["crawler" .= crawlerName, "entity" .= entity, "date" .= date]
+      logInfo' "UpdatingEntity" ["crawler" .= crawlerName, "entity" .= entity, "date" .= date]
       -- TODO: check for CommitDateInferiorThanPrevious
       _ <- I.setLastUpdated (CrawlerName $ from crawlerName) date entity
 
@@ -380,9 +392,9 @@ crawlerCommit _auth request = do
       $ Right err
 
 -- | /crawler/get_commit_info endpoint
-crawlerCommitInfo :: AuthResult AuthenticatedUser -> CrawlerPB.CommitInfoRequest -> AppM CrawlerPB.CommitInfoResponse
+crawlerCommitInfo :: ApiEffects es => AuthResult AuthenticatedUser -> CrawlerPB.CommitInfoRequest -> Eff es CrawlerPB.CommitInfoResponse
 crawlerCommitInfo _auth request = do
-  Config.ConfigStatus _ Config.Config {..} wsStatus <- getConfig
+  Config.ConfigStatus _ Config.Config {..} wsStatus <- getReloadConfig
   let tenants = workspaces
   let (CrawlerPB.CommitInfoRequest indexName crawlerName entityM offset) = request
 
@@ -400,7 +412,7 @@ crawlerCommitInfo _auth request = do
   case requestE of
     Right (index, worker, entityType) -> do
       updateIndex index wsStatus
-      runEmptyQueryM index $ do
+      runEmptyMonoQuery index $ do
         toUpdateEntityM <- I.getLastUpdated worker (fromPBEnum entityType) offset
         case toUpdateEntityM of
           Just crawlerMetadata ->
@@ -431,9 +443,9 @@ data TDError
   deriving (Show)
 
 -- | /suggestions endpoint
-searchSuggestions :: AuthResult AuthenticatedUser -> SearchPB.SuggestionsRequest -> AppM SearchPB.SuggestionsResponse
+searchSuggestions :: ApiEffects es => AuthResult AuthenticatedUser -> SearchPB.SuggestionsRequest -> Eff es SearchPB.SuggestionsResponse
 searchSuggestions auth request = checkAuth auth . const $ do
-  GetTenants tenants <- getConfig
+  tenants <- getWorkspaces
   let SearchPB.SuggestionsRequest {..} = request
 
   let tenantM = Config.lookupTenant tenants (from suggestionsRequestIndex)
@@ -441,7 +453,7 @@ searchSuggestions auth request = checkAuth auth . const $ do
   case tenantM of
     Just tenant -> do
       now <- getCurrentTime
-      runQueryM tenant (emptyQ now) $ Q.getSuggestions tenant
+      runMonoQueryWorkSpace tenant (emptyQ now) $ Q.getSuggestions tenant
     Nothing ->
       -- Simply return empty suggestions in case of unknown tenant
       pure $
@@ -450,9 +462,9 @@ searchSuggestions auth request = checkAuth auth . const $ do
   emptyQ now' = Q.blankQuery now' $ Q.yearAgo now'
 
 -- | A helper function to decode search query
-validateSearchRequest :: LText -> LText -> LText -> AppM (Either ParseError (Config.Index, Q.Query))
+validateSearchRequest :: ApiEffects es => LText -> LText -> LText -> Eff es (Either ParseError (Config.Index, Q.Query))
 validateSearchRequest tenantName queryText username = do
-  GetTenants tenants <- getConfig
+  tenants <- getWorkspaces
   now <- getCurrentTime
   let requestE =
         do
@@ -470,10 +482,10 @@ validateSearchRequest tenantName queryText username = do
   pure requestE
 
 -- | /search/author endpoint
-searchAuthor :: AuthResult AuthenticatedUser -> SearchPB.AuthorRequest -> AppM SearchPB.AuthorResponse
+searchAuthor :: ApiEffects es => AuthResult AuthenticatedUser -> SearchPB.AuthorRequest -> Eff es SearchPB.AuthorResponse
 searchAuthor auth request = checkAuth auth . const $ do
   let SearchPB.AuthorRequest {..} = request
-  GetTenants tenants <- getConfig
+  tenants <- getWorkspaces
   let indexM = Config.lookupTenant tenants $ from authorRequestIndex
 
   authors <- case indexM of
@@ -485,7 +497,7 @@ searchAuthor auth request = checkAuth auth . const $ do
                   authorAliases = V.fromList $ from <$> aliases
                   authorGroups = V.fromList $ from <$> fromMaybe mempty groups
                in SearchPB.Author {..}
-      found <- runEmptyQueryM index $ I.searchAuthorCache . from $ authorRequestQuery
+      found <- runEmptyMonoQuery index $ I.searchAuthorCache . from $ authorRequestQuery
       pure $ toSearchAuthor <$> found
     Nothing -> pure []
 
@@ -495,7 +507,7 @@ getMuidByIndexName :: Text -> AuthenticatedUser -> Maybe Text
 getMuidByIndexName index = Map.lookup index . aMuidMap
 
 -- | /search/check endpoint
-searchCheck :: AuthResult AuthenticatedUser -> SearchPB.CheckRequest -> AppM SearchPB.CheckResponse
+searchCheck :: ApiEffects es => AuthResult AuthenticatedUser -> SearchPB.CheckRequest -> Eff es SearchPB.CheckResponse
 searchCheck auth request = checkAuth auth response
  where
   response authenticatedUserM = do
@@ -516,7 +528,7 @@ searchCheck auth request = checkAuth auth response
               SearchPB.QueryError (from msg) (fromInteger . toInteger $ offset)
 
 -- | /search/query endpoint
-searchQuery :: AuthResult AuthenticatedUser -> SearchPB.QueryRequest -> AppM SearchPB.QueryResponse
+searchQuery :: ApiEffects es => AuthResult AuthenticatedUser -> SearchPB.QueryRequest -> Eff es SearchPB.QueryResponse
 searchQuery auth request = checkAuth auth response
  where
   response authenticatedUserM = do
@@ -529,9 +541,9 @@ searchQuery auth request = checkAuth auth response
     requestE <- validateSearchRequest queryRequestIndex queryRequestQuery username
 
     case requestE of
-      Right (tenant, query) -> runQueryM tenant (Q.ensureMinBound query) $ do
+      Right (tenant, query) -> runMonoQueryWorkSpace tenant (Q.ensureMinBound query) $ do
         let queryType = fromPBEnum queryRequestQueryType
-        logInfo
+        logInfo'
           "Searching"
           [ "querytype" .= queryType
           , "request" .= queryRequestQuery
@@ -637,7 +649,7 @@ searchQuery auth request = checkAuth auth response
       . SearchPB.QueryResponseResultTopAuthors
       . Q.toTermsCountPBInt
 
-  handleTopAuthorsQ :: Word32 -> (Word32 -> QueryM Q.TermsResultWTH) -> QueryM SearchPB.QueryResponse
+  handleTopAuthorsQ :: Word32 -> (Word32 -> Eff es Q.TermsResultWTH) -> Eff es SearchPB.QueryResponse
   handleTopAuthorsQ limit cb = do
     results <- cb limit
     pure
@@ -683,7 +695,7 @@ searchQuery auth request = checkAuth auth response
         changeAndEventsEvents = V.fromList $ from <$> events
      in SearchPB.ChangeAndEvents {..}
 
-searchFields :: AuthResult AuthenticatedUser -> SearchPB.FieldsRequest -> AppM SearchPB.FieldsResponse
+searchFields :: ApiEffects es => AuthResult AuthenticatedUser -> SearchPB.FieldsRequest -> Eff es SearchPB.FieldsResponse
 searchFields auth _request = checkAuth auth . const $ response
  where
   response = pure . SearchPB.FieldsResponse . V.fromList . map toResult $ Q.fields
@@ -693,7 +705,7 @@ searchFields auth _request = checkAuth auth . const $ response
         fieldType = Enumerated . Right $ fieldType'
      in SearchPB.Field {..}
 
-metricList :: AuthResult AuthenticatedUser -> MetricPB.ListRequest -> AppM MetricPB.ListResponse
+metricList :: ApiEffects es => AuthResult AuthenticatedUser -> MetricPB.ListRequest -> Eff es MetricPB.ListResponse
 metricList auth _request = checkAuth auth . const $ response
  where
   response = pure . MetricPB.ListResponse . fromList . fmap toResp $ Q.allMetrics
@@ -705,7 +717,7 @@ metricList auth _request = checkAuth auth . const $ response
       , metricInfoMetric = from miMetricName
       }
 
-metricInfo :: AuthResult AuthenticatedUser -> MetricPB.InfoRequest -> AppM MetricPB.InfoResponse
+metricInfo :: ApiEffects es => AuthResult AuthenticatedUser -> MetricPB.InfoRequest -> Eff es MetricPB.InfoResponse
 metricInfo auth (MetricPB.InfoRequest {..}) = checkAuth auth . const $ response
  where
   response = pure
@@ -802,7 +814,7 @@ toTopResultOrFail = \case
       . Just
       $ MetricPB.GetResponseResultError "This metric does not support Top option"
 
-metricGet :: AuthResult AuthenticatedUser -> MetricPB.GetRequest -> AppM MetricPB.GetResponse
+metricGet :: forall es. ApiEffects es => AuthResult AuthenticatedUser -> MetricPB.GetRequest -> Eff es MetricPB.GetResponse
 metricGet auth request = checkAuth auth response
  where
   handleError = pure . MetricPB.GetResponse . Just . MetricPB.GetResponseResultError
@@ -823,7 +835,7 @@ metricGet auth request = checkAuth auth response
     Q.Query ->
     Text ->
     Maybe MetricPB.GetRequestOptions ->
-    AppM MetricPB.GetResponse
+    Eff es MetricPB.GetResponse
   runMetricQuery tenant query getRequestMetric getRequestOptions = do
     case getRequestMetric of
       "changes_created" -> runMetric Q.metricChangesCreated
@@ -849,7 +861,7 @@ metricGet auth request = checkAuth auth response
       -- Unknown query
       _ -> handleError $ "Unknown metric: " <> from getRequestMetric
    where
-    runM = runQueryM tenant (Q.ensureMinBound query)
+    runM = runMonoQueryWorkSpace tenant (Q.ensureMinBound query)
     runMetric m = case getRequestOptions of
       Just (MetricPB.GetRequestOptionsTrend (MetricPB.Trend interval)) ->
         toTrendResult <$> runM (Q.runMetricTrend m $ fromPBTrendInterval $ from interval)
@@ -859,11 +871,8 @@ metricGet auth request = checkAuth auth response
     fromPBTrendInterval = readMaybe
 
 -- | gen a 302 redirect helper
-redirects :: ByteString -> AppM ()
-redirects url = throwError err302 {errHeaders = [("Location", url)]}
-
-redirects' :: '[E.Error ServerError] :>> es => ByteString -> Eff es ()
-redirects' url = E.throwError err302 {errHeaders = [("Location", url)]}
+redirects :: ApiEffects es => '[E.Error ServerError] :>> es => ByteString -> Eff es ()
+redirects url = E.throwError err302 {errHeaders = [("Location", url)]}
 
 data Err = Err
   { errTitle :: Text
@@ -881,7 +890,7 @@ instance ToMarkup Err where
 format :: ToMarkup a => a -> LBS.ByteString
 format err = toMarkup err & renderMarkup
 
-forbidden :: '[E.Error ServerError] :>> es => Text -> Eff es a
+forbidden :: ApiEffects es => '[E.Error ServerError] :>> es => Text -> Eff es a
 forbidden = E.throwError . forbiddenErr
 
 forbiddenErr :: Text -> ServerError
@@ -894,14 +903,14 @@ appToErr x msg =
     , errHeaders = [("Content-Type", "text/html")]
     }
 
-handleLogin :: [IOE, E.Reader AppEnv, E.Error ServerError] :>> es => Maybe Text -> Eff es NoContent
+handleLogin :: ApiEffects es => Maybe Text -> Eff es NoContent
 handleLogin uriM = do
   aOIDC <- E.asks aOIDC
   case oidcEnv aOIDC of
     Just oidcenv -> do
       incCounter monocleAuthProviderRedirectCounter
       loc <- liftIO (genOIDCURL oidcenv)
-      redirects' loc
+      redirects loc
       pure NoContent
     Nothing -> forbidden "No OIDC Context"
  where
@@ -911,7 +920,7 @@ handleLogin uriM = do
     return (show loc)
 
 handleLoggedIn ::
-  [IOE, E.Reader AppEnv, E.Error ServerError, MonoConfigEffect, LoggerEffect] :>> es =>
+  ApiEffects es =>
   -- | error
   Maybe Text ->
   -- | code

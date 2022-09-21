@@ -318,7 +318,7 @@ upgradeConfigV3 = do
   indexName <- getIndexName'
   logInfo' "Applying migration to schema V3 on workspace" ["index" .= indexName]
   count <-
-    withQuery' eventQuery $
+    withQuery eventQuery $
       scanEvents
         & ( Streaming.mapMaybe updateEvent
               >>> Streaming.map (mkEventBulkUpdate indexName)
@@ -344,7 +344,7 @@ upgradeConfigV4 = do
   indexName <- getIndexName'
   logInfo' "Applying migration to schema V4 on workspace " ["index" .= indexName]
   count <-
-    withQuery' changeQuery $
+    withQuery changeQuery $
       scanChanges
         & ( Streaming.map updateChange
               >>> Streaming.map (mkChangeBulkUpdate indexName)
@@ -604,7 +604,7 @@ getBHDocID = BH.DocId . getDocID
 
 -- | A simple scan search that loads all the results in memory
 runScanSearch :: '[MonoQueryEffect] :>> es => IndexEffects es => forall a. FromJSONField a => BH.Query -> Eff es [a]
-runScanSearch query = withQuery' (mkQuery [query]) Q.scanSearchSimple'
+runScanSearch query = withQuery (mkQuery [query]) Q.scanSearchSimple
 
 getChangeDocId :: EChange -> BH.DocId
 getChangeDocId change = BH.DocId . from $ echangeId change
@@ -899,7 +899,7 @@ ensureCrawlerMetadata crawlerName getDate entity = do
 
 getMostRecentUpdatedChange :: '[MonoQueryEffect] :>> es => IndexEffects es => Text -> Eff es [EChange]
 getMostRecentUpdatedChange fullname = do
-  withFilter' [mkTerm "repository_fullname" fullname] $ Q.changes' (Just order) 1
+  withFilter [mkTerm "repository_fullname" fullname] $ Q.changes' (Just order) 1
  where
   order =
     SearchPB.Order
@@ -991,8 +991,8 @@ populateAuthorCache = do
   indexName <- getIndexName'
   -- First wipe the cache
   void $
-    withFilter' [Q.documentType ECachedAuthor] $
-      Q.scanSearchId'
+    withFilter [Q.documentType ECachedAuthor] $
+      Q.scanSearchId
         & ( Streaming.map (BulkDelete indexName)
               >>> bulkStream
           )
@@ -1019,21 +1019,21 @@ addCachedAuthors events = do
     BulkUpsert indexName (getBHDocID muid) (BH.UpsertDoc $ toCachedAuthorValue muid) []
 
 -- | This function returns the author cache contents
-getAuthorCache :: QueryM [CachedAuthor]
+getAuthorCache :: '[MonoQueryEffect] :>> es => IndexEffects es => Eff es [CachedAuthor]
 getAuthorCache =
   withFilter
     [Q.documentType ECachedAuthor]
     Q.scanSearchSimple
 
 -- | This function returns matched author muid(s) based on the match query
-searchAuthorCache :: Text -> QueryM [Text]
+searchAuthorCache :: forall es. '[MonoQueryEffect] :>> es => IndexEffects es => Text -> Eff es [Text]
 searchAuthorCache matchQuery = do
-  indexName <- getIndexName
-  ret <- runSearch indexName
+  indexName <- getIndexName'
+  ret <- runSearch
   pure $ mapMaybe trans ret
  where
-  runSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> m [BH.Hit CachedAuthor]
-  runSearch index = BH.scanSearch index search
+  runSearch :: Eff es [BH.Hit CachedAuthor]
+  runSearch = undefined -- Q.scanSearch' search
   search = BH.mkSearch (Just query) Nothing
   query =
     BH.QueryMatchQuery . BH.mkMatchQuery (BH.FieldName "cached_author_muid") $

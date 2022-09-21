@@ -35,6 +35,7 @@ import Monocle.Effects
 
 import Effectful qualified as E
 import Effectful.Error.Static qualified as E
+import Effectful.Fail qualified as E
 import Effectful.Reader.Static qualified as E
 import Effectful.Servant qualified as ES
 
@@ -63,9 +64,7 @@ type AuthAPI =
   "auth" :> "login" :> QueryParam "redirectUri" Text :> Get '[JSON] NoContent
     :<|> "auth" :> "cb" :> QueryParam "error" Text :> QueryParam "code" Text :> QueryParam "state" Text :> Get '[HTML] LoginInUser
 
-rootServer ::
-  [E.Reader AppEnv, E.Error ServerError, LoggerEffect, ElasticEffect, IOE, MonoConfigEffect] :>> es =>
-  ES.ServerEff RootAPI es
+rootServer :: ApiEffects es => ES.ServerEff RootAPI es
 rootServer = app :<|> app
  where
   app = undefined :<|> handleLogin :<|> handleLoggedIn
@@ -186,13 +185,9 @@ run' ApiConfig {..} aplogger glLogger = runLoggerEffect do
 
   bhEnv <- mkEnv elasticUrl
   let aEnv = Env {..}
-
-  runElasticEffect bhEnv do
-    traverse_ (\workspace -> runMonoQuery (MonoQueryEnv $ QueryWorkspace workspace) I.ensureIndex') workspaces
-    runLogger glLogger do
-      httpRetry elasticUrl $
-        liftIO $
-          runQueryTarget bhEnv (QueryConfig conf) I.ensureConfigIndex
+  r <- E.runFail $ runElasticEffect bhEnv do
+    traverse_ (\workspace -> runEmptyMonoQuery workspace I.ensureIndex) workspaces
+    runMonoQuery (MonoQueryEnv (QueryConfig conf) (mkQuery [])) I.ensureConfigIndex
 
     let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
         jwtCfg = localJWTSettings
@@ -217,6 +212,9 @@ run' ApiConfig {..} aplogger glLogger = runLoggerEffect do
     case r of
       Left (x :: ServerError) -> error (show x)
       Right () -> pure ()
+  case r of
+    Left e -> error (show e)
+    Right () -> pure ()
  where
   policy =
     simpleCorsResourcePolicy {corsRequestHeaders = ["content-type"]}

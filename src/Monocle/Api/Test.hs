@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedRecordDot #-}
+
 module Monocle.Api.Test (mkAppEnv, withTestApi) where
 
 import Control.Exception (bracket)
@@ -13,6 +15,8 @@ import Network.HTTP.Mock (withMockedManager)
 import Network.Wai
 import Servant.Auth.Server (defaultJWTSettings, generateKey)
 
+import Monocle.Effects
+
 -- Create the AppEnv, necesary to create the monocle api Wai Application
 mkAppEnv :: Config.Index -> IO AppEnv
 mkAppEnv workspace = withLogger \glLogger -> do
@@ -26,22 +30,29 @@ mkAppEnv workspace = withLogger \glLogger -> do
       aEnv = Env {..}
   pure $ AppEnv {..}
 
+runAppEnv :: [ElasticEffect, LoggerEffect, IOE] :>> es => AppEnv -> Eff es a -> IO a
+runAppEnv appEnv action =
+  runEff
+    . runLoggerEffect
+    . runElasticEffect (appEnv.aEnv.bhEnv)
+    $ action
+
 withTestApi :: IO AppEnv -> (Logger -> MonocleClient -> Assertion) -> IO ()
 withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
  where
   -- Using a mockedManager, run the Api behind a MonocleClient for the tests
   runTest :: AppEnv -> Assertion
-  runTest appEnv = do
-    conf <- Config.csConfig <$> config appEnv
+  runTest appEnv = runAppEnv appEnv $ do
+    conf <- Config.csConfig <$> liftIO (appEnv.config)
     let indexes = Config.getWorkspaces conf
     traverse_
-      (\index -> runQueryM' (bhEnv $ aEnv appEnv) index I.ensureIndex)
+      (\index -> runEmptyMonoQuery index I.ensureIndex)
       indexes
-    {- TODO: migrate to effectful
-    withMockedManager
-      (dropVersionPath $ app appEnv)
-      (\manager -> withLogger $ \logger -> withClient "http://localhost" (Just manager) (testCb logger))
-    -}
+  {- TODO: migrate to effectful
+  withMockedManager
+    (dropVersionPath $ app appEnv)
+    (\manager -> withLogger $ \logger -> withClient "http://localhost" (Just manager) (testCb logger))
+  -}
   dropVersionPath app' req = do
     app'
       ( req
@@ -51,9 +62,9 @@ withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
       )
   -- Remove the index
   cleanIndex :: AppEnv -> IO ()
-  cleanIndex appEnv = do
-    conf <- Config.csConfig <$> config appEnv
+  cleanIndex appEnv = runAppEnv appEnv $ do
+    conf <- Config.csConfig <$> (liftIO appEnv.config)
     let indexes = Config.getWorkspaces conf
     traverse_
-      (\index -> runQueryM' (bhEnv $ aEnv appEnv) index I.removeIndex)
+      (\index -> runEmptyMonoQuery index index I.removeIndex)
       indexes

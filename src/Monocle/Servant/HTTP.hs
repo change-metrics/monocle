@@ -21,7 +21,7 @@ import Servant
 import Servant.Auth.Server (Auth, Cookie, JWT)
 
 import Effectful (Eff)
-import Monocle.Effects
+import Monocle.Effects hiding (searchQuery)
 import Prelude (undefined)
 
 type MonocleAPI =
