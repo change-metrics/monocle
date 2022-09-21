@@ -92,7 +92,7 @@ doCountBH body = do
       Right x -> pure $ naturalToCount (BH.crCount x)
 
 -- | Call _delete_by_query endpoint
-doDeleteByQueryBH :: (QueryMonad m, BH.MonadBH m) => BH.Query -> m ()
+doDeleteByQueryBH :: QueryMonad m => BH.Query -> m ()
 doDeleteByQueryBH body = do
   measureQueryM body do
     index <- getIndexName
@@ -187,7 +187,7 @@ countDocs = do
   doCountBH query
 
 -- | Delete documents matching the query
-deleteDocs :: (QueryMonad m, BH.MonadBH m) => m ()
+deleteDocs :: QueryMonad m => m ()
 deleteDocs = do
   query <-
     fromMaybe (error "Need a query to delete") <$> getQueryBH

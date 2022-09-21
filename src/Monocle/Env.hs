@@ -95,7 +95,7 @@ instance BH.MonadBH QueryM where
   getBHEnv = QueryM (asks $ bhEnv . tEnv)
 
 -- | The QueryMonad is the main constraint used by the Queries module. Note that it implies ElasticMonad.
-class (Functor m, Applicative m, Monad m, HasLogger m, MonadReader QueryEnv m, ElasticMonad m) => QueryMonad m where
+class (Functor m, Applicative m, Monad m, HasLogger m, MonadReader QueryEnv m, ElasticMonad m, BH.MonadBH m) => QueryMonad m where
   -- | Get the current (UTC) time.
   getCurrentTime' :: m UTCTime
 
