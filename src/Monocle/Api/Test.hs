@@ -37,9 +37,11 @@ withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
     traverse_
       (\index -> runQueryM' (bhEnv $ aEnv appEnv) index I.ensureIndex)
       indexes
+    {- TODO: migrate to effectful
     withMockedManager
       (dropVersionPath $ app appEnv)
       (\manager -> withLogger $ \logger -> withClient "http://localhost" (Just manager) (testCb logger))
+    -}
   dropVersionPath app' req = do
     app'
       ( req

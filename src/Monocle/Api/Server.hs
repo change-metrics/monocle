@@ -57,6 +57,11 @@ import Text.Blaze.Renderer.Utf8 (renderMarkup)
 import Web.OIDC.Client (sub)
 import Web.OIDC.Client qualified as O
 
+import Effectful qualified as E
+import Effectful.Error.Static qualified as E
+import Effectful.Reader.Static qualified as E
+import Monocle.Effects
+
 -- | 'getConfig' reload the config automatically from the env
 getConfig :: AppM Config.ConfigStatus
 getConfig = do
@@ -98,8 +103,11 @@ checkAuth auth action = do
       _ -> do
         if not $ opEnforceAuth providerConfig
           then action Nothing
-          else forbidden "Not allowed"
+          else forbidden' "Not allowed"
     Nothing -> action Nothing
+ where
+  forbidden' :: (MonadError ServerError m) => Text -> m a
+  forbidden' = throwError . forbiddenErr
 
 -- curl -XPOST -d '{"void": ""}' -H "Content-type: application/json" -H 'Authorization: Bearer <token>' http://localhost:8080/auth/whoami
 authWhoAmi :: AuthResult AuthenticatedUser -> AuthPB.WhoAmiRequest -> AppM AuthPB.WhoAmiResponse
@@ -852,6 +860,9 @@ metricGet auth request = checkAuth auth response
 redirects :: ByteString -> AppM ()
 redirects url = throwError err302 {errHeaders = [("Location", url)]}
 
+redirects' :: '[E.Error ServerError] :>> es => ByteString -> Eff es ()
+redirects' url = E.throwError err302 {errHeaders = [("Location", url)]}
+
 data Err = Err
   { errTitle :: Text
   , errMsg :: Text
@@ -868,8 +879,8 @@ instance ToMarkup Err where
 format :: ToMarkup a => a -> LBS.ByteString
 format err = toMarkup err & renderMarkup
 
-forbidden :: (MonadError ServerError m) => Text -> m a
-forbidden = throwError . forbiddenErr
+forbidden :: '[E.Error ServerError] :>> es => Text -> Eff es a
+forbidden = E.throwError . forbiddenErr
 
 forbiddenErr :: Text -> ServerError
 forbiddenErr = appToErr err403
@@ -881,14 +892,14 @@ appToErr x msg =
     , errHeaders = [("Content-Type", "text/html")]
     }
 
-handleLogin :: Maybe Text -> AppM NoContent
+handleLogin :: [IOE, E.Reader AppEnv, E.Error ServerError] :>> es => Maybe Text -> Eff es NoContent
 handleLogin uriM = do
-  aOIDC <- asks aOIDC
+  aOIDC <- E.asks aOIDC
   case oidcEnv aOIDC of
     Just oidcenv -> do
       incCounter monocleAuthProviderRedirectCounter
       loc <- liftIO (genOIDCURL oidcenv)
-      redirects loc
+      redirects' loc
       pure NoContent
     Nothing -> forbidden "No OIDC Context"
  where
@@ -898,17 +909,19 @@ handleLogin uriM = do
     return (show loc)
 
 handleLoggedIn ::
+  [IOE, E.Reader AppEnv, E.Error ServerError, MonoConfigEffect, LoggerEffect] :>> es =>
   -- | error
   Maybe Text ->
   -- | code
   Maybe Text ->
   -- | state
   Maybe Text ->
-  AppM LoginInUser
+  Eff es LoginInUser
 handleLoggedIn err codeM stateM = do
-  aOIDC <- asks aOIDC
-  GetConfig config <- getConfig
-  logInfo "OIDCCallbackCall" ["err" .= err, "code" .= codeM, "state" .= stateM]
+  aOIDC <- E.asks aOIDC
+  Config.ConfigStatus _ config _ <- getReloadConfig
+
+  logInfo' "OIDCCallbackCall" ["err" .= err, "code" .= codeM, "state" .= stateM]
   case (oidcEnv aOIDC, err, codeM, stateM) of
     (_, Just errorMsg, _, _) -> forbidden $ "Error from remote provider: " <> errorMsg
     (_, _, Nothing, _) -> forbidden "No code parameter given"
@@ -928,19 +941,19 @@ handleLoggedIn err codeM stateM = do
           expiry = addUTCTime (24 * 3600) now
           userId = aUserId oidcEnv idToken
           mUidMap = getIdents config $ "AuthProviderUID:" <> userId
-      logInfo "OIDCProviderTokenRequested" ["id" .= show @Text idToken]
+      logInfo' "OIDCProviderTokenRequested" ["id" .= show @Text idToken]
       jwtE <- liftIO $ mkJwt (localJWTSettings aOIDC) mUidMap userId (Just expiry)
       case jwtE of
         Right jwt -> do
           incCounter monocleAuthSuccessCounter
-          logInfo "JWTCreated" ["uid" .= mUidMap, "redir" .= unsafeInto @Text (redirectUri oidcEnv)]
+          logInfo' "JWTCreated" ["uid" .= mUidMap, "redir" .= unsafeInto @Text (redirectUri oidcEnv)]
           let liJWT = decodeUtf8 jwt
               liRedirectURI = case decodeOIDCState $ encodeUtf8 oauthState of
                 Just (OIDCState _ (Just uri)) -> uri
                 _ -> "/"
           pure $ LoginInUser {..}
         Left err' -> do
-          logInfo "JWTCreateFailed" ["uid" .= mUidMap, "err" .= show @Text err']
+          logInfo' "JWTCreateFailed" ["uid" .= mUidMap, "err" .= show @Text err']
           forbidden $ "Unable to generate user JWT due to: " <> show err'
  where
   -- Get the Token's claim that identify an unique user

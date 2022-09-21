@@ -1,4 +1,6 @@
 {-# LANGUAGE TypeFamilies #-}
+-- for MTL Compat
+{-# LANGUAGE UndecidableInstances #-}
 
 -- | This module demonstrates how the static reader based effect
 -- provided by the effectful library can be used to replace the
@@ -108,6 +110,10 @@ tests =
     do
       config <- getReloadConfig
       Monocle.Config.csReloaded config `testEff` False
+
+-- | MTL Compat
+instance IOE :> es => MonadMonitor (Eff es) where
+  doIO = liftIO
 
 ------------------------------------------------------------------
 --

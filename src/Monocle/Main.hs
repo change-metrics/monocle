@@ -1,5 +1,8 @@
+-- This is for https://github.com/Kleidukos/servant-effectful/pull/4
+{-# LANGUAGE AllowAmbiguousTypes #-}
+
 -- | The Monocle entry point.
-module Monocle.Main (run, app, ApiConfig (..), defaultApiConfig) where
+module Monocle.Main (run, rootServer, ApiConfig (..), defaultApiConfig) where
 
 import Data.List qualified
 import Data.Text qualified as Text
@@ -18,7 +21,7 @@ import Monocle.Servant.HTTP (MonocleAPI, server)
 import Network.HTTP.Types.Status qualified as HTTP
 import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
-import Network.Wai.Logger (withStdoutLogger)
+import Network.Wai.Logger (ApacheLogger, withStdoutLogger)
 import Network.Wai.Middleware.Cors (cors, corsRequestHeaders, simpleCorsResourcePolicy)
 import Network.Wai.Middleware.Prometheus (def, prometheus)
 import Prometheus (register)
@@ -28,8 +31,27 @@ import Servant.Auth.Server (CookieSettings, JWTSettings, defaultCookieSettings, 
 import Servant.HTML.Blaze (HTML)
 import System.Directory qualified
 
-import Effectful.Dispatch.Static.Primitive (tailEnv)
 import Monocle.Effects
+
+import Effectful qualified as E
+import Effectful.Error.Static qualified as E
+import Effectful.Reader.Static qualified as E
+import Effectful.Servant qualified as ES
+
+runWarpServerSettingsContext ::
+  forall (api :: Type) (context :: [Type]) (es :: [E.Effect]).
+  (HasServer api context, ServerContext context, [IOE, E.Error ServerError] :>> es) =>
+  Warp.Settings ->
+  Context context ->
+  ES.ServerEff api es ->
+  Wai.Middleware ->
+  Eff es ()
+runWarpServerSettingsContext settings cfg serverEff middleware = do
+  E.withEffToIO $ \runInIO -> do
+    let api = Proxy @api
+        ctx = Proxy @context
+        server' = Servant.hoistServerWithContext @api @context api ctx (ES.effToHandlerWith runInIO) serverEff
+    Warp.runSettings settings (middleware (Servant.serveWithContext api cfg $ server'))
 
 -- | The API is served at both `/api/2/` (for backward compat with the legacy nginx proxy)
 -- and `/` (for compat with crawler client)
@@ -41,24 +63,12 @@ type AuthAPI =
   "auth" :> "login" :> QueryParam "redirectUri" Text :> Get '[JSON] NoContent
     :<|> "auth" :> "cb" :> QueryParam "error" Text :> QueryParam "code" Text :> QueryParam "state" Text :> Get '[HTML] LoginInUser
 
-serverAuth :: ServerT AuthAPI AppM
-serverAuth = handleLogin :<|> handleLoggedIn
-
--- | Create the underlying Monocle web application interface, for integration or testing purpose.
-app :: AppEnv -> Wai.Application
-app env = do
-  let server' = server :<|> serverAuth
-  serveWithContext (Proxy @RootAPI) cfg $
-    hoistServerWithContext
-      (Proxy @RootAPI)
-      (Proxy :: Proxy '[CookieSettings, JWTSettings])
-      mkAppM
-      (server' :<|> server')
+rootServer ::
+  [E.Reader AppEnv, E.Error ServerError, LoggerEffect, ElasticEffect, IOE, MonoConfigEffect] :>> es =>
+  ES.ServerEff RootAPI es
+rootServer = app :<|> app
  where
-  jwtCfg = localJWTSettings $ aOIDC env
-  cfg = jwtCfg :. defaultCookieSettings :. EmptyContext
-  mkAppM :: AppM x -> Servant.Handler x
-  mkAppM apM = runReaderT (unApp apM) env
+  app = undefined :<|> handleLogin :<|> handleLoggedIn
 
 fallbackWebAppPath :: FilePath
 fallbackWebAppPath = "web/build/"
@@ -131,15 +141,15 @@ defaultApiConfig port elasticUrl configFile =
 -- | Start the API in the foreground.
 run :: ApiConfig -> IO ()
 run cfg =
-  withLogger $
-    runEff
-      . runMonoConfig (configFile cfg)
-      . run' cfg
+  withStdoutLogger $ \aplogger ->
+    withLogger $ \logger ->
+      runEff
+        . runMonoConfig (configFile cfg)
+        $ run' cfg aplogger logger
 
-run' :: '[IOE, MonoConfigEffect] :>> es => ApiConfig -> Logger -> Eff es ()
-run' ApiConfig {..} glLogger = runLoggerEffect do
-  config <- mkReloadConfig
-  conf <- Config.csConfig <$> config
+run' :: '[IOE, MonoConfigEffect] :>> es => ApiConfig -> ApacheLogger -> Logger -> Eff es ()
+run' ApiConfig {..} aplogger glLogger = runLoggerEffect do
+  conf <- Config.csConfig <$> getReloadConfig
   let workspaces = Config.getWorkspaces conf
 
   -- Check alias and abort if they are not usable
@@ -158,13 +168,13 @@ run' ApiConfig {..} glLogger = runLoggerEffect do
   let monitoringMiddleware = prometheus def
 
   -- Initialize workspace status to ready since we are starting
-  wsRef <- Config.csWorkspaceStatus <$> config
+  wsRef <- Config.csWorkspaceStatus <$> getReloadConfig
   liftIO (Config.setWorkspaceStatus Config.Ready wsRef)
 
   -- Init OIDC
   -- Initialise JWT settings for locally issuing JWT (local provider)
   localJwk <- liftIO . doGenJwk $ from <$> jwkKey
-  providerM <- getAuthProvider publicUrl conf
+  providerM <- liftIO (getAuthProvider publicUrl conf)
   let localJWTSettings = defaultJWTSettings localJwk
   -- Initialize env to talk with OIDC provider
   oidcEnv <- case providerM of
@@ -184,18 +194,29 @@ run' ApiConfig {..} glLogger = runLoggerEffect do
         liftIO $
           runQueryTarget bhEnv (QueryConfig conf) I.ensureConfigIndex
 
-    unsafeEff \effEnv ->
-      withStdoutLogger $ \aplogger -> do
-        let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
-        runLogger glLogger $ logInfo "SystemReady" ["workspace" .= length workspaces, "port" .= port, "elastic" .= elasticUrl]
-        esEnv <- tailEnv effEnv
-        Warp.runSettings
-          settings
-          . cors (const $ Just policy)
-          . monitoringMiddleware
-          . healthMiddleware
-          . staticMiddleware
-          $ app AppEnv {config = unEff config esEnv, ..}
+    let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
+        jwtCfg = localJWTSettings
+        cfg = jwtCfg :. defaultCookieSettings :. EmptyContext
+        middleware =
+          ( cors (const $ Just policy)
+              . monitoringMiddleware
+              . healthMiddleware
+              . staticMiddleware
+          )
+    logInfo' "SystemReady" ["workspace" .= length workspaces, "port" .= port, "elastic" .= elasticUrl]
+
+    appEnv <- E.withEffToIO $ \effToIO -> do
+      let configIO = effToIO getReloadConfig
+      pure AppEnv {aEnv, aOIDC, config = configIO}
+
+    r <-
+      -- it's a bit weird we need to runError here, it should only be necessary for the server
+      E.runErrorNoCallStack $
+        E.runReader appEnv $
+          runWarpServerSettingsContext @RootAPI settings cfg rootServer middleware
+    case r of
+      Left (x :: ServerError) -> error (show x)
+      Right () -> pure ()
  where
   policy =
     simpleCorsResourcePolicy {corsRequestHeaders = ["content-type"]}
