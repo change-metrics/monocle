@@ -20,9 +20,16 @@
 --
 -- If approved, then the inidivual effect should be sperated in multiple modules for
 -- better re-usability.
+--
+-- Usage:
+--
+-- To use Monocle.Effects:
+--
+-- - Run individual effect with the associated `run*`.
+-- - Use `unsafeEff` to liftIO (until IO is necessary)
 module Monocle.Effects where
 
-import Control.Retry (RetryPolicyM, RetryStatus (..))
+import Control.Retry (RetryStatus (..))
 import Control.Retry qualified as Retry
 
 import Data.Aeson (Series, pairs)
@@ -36,7 +43,6 @@ import Network.HTTP.Client qualified as HTTP
 
 import Effectful
 import Effectful.Dispatch.Static (SideEffects (WithSideEffects), StaticRep, evalStaticRep, getStaticRep)
-import Effectful.Dispatch.Static.Primitive (Env, cloneEnv)
 import Effectful.Reader.Static as Eff
 
 import Monocle.Logging hiding (logInfo, withContext)
@@ -51,38 +57,9 @@ import System.Posix.Temp (mkstemp)
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
 import Servant (Get, (:<|>))
 import Servant qualified
-
-type TestApi =
-  "route1" Servant.:> Get '[Servant.JSON] Natural
-    :<|> "route2" Servant.:> Get '[Servant.JSON] Natural
-
--- | serverEff is the effectful implementation
-serverEff :: forall es. [IOE, LoggerEffect] :>> es => Servant.ServerT TestApi (Eff es)
-serverEff = route1Handler Servant.:<|> route1Handler
- where
-  route1Handler :: Eff es Natural
-  route1Handler = do
-    logInfo "Handling route" []
-    pure 42
-
--- | liftServer convert the effectful implementation to the Handler context
-liftServer :: Logger -> Servant.ServerT TestApi Servant.Handler
-liftServer logger = Servant.hoistServer (Proxy @TestApi) interpretServer serverEff
- where
-  interpretServer :: Eff '[LoggerEffect, IOE] a -> Servant.Handler a
-  interpretServer =
-    liftIO . runEff . runLoggerEffect' logger
-
-demo :: IO ()
-demo = do
-  withLogger \logger -> do
-    Warp.run 8080 $ Servant.serve (Proxy @TestApi) $ liftServer logger
-
--- defaultMain tests
 
 tests :: TestTree
 tests =
@@ -136,7 +113,7 @@ type MonoConfigEnv = FilePath
 -- | The effect definition using static rep.
 data MonoConfigEffect :: Effect
 
-type instance DispatchOf MonoConfigEffect = 'Static WithSideEffects
+type instance DispatchOf MonoConfigEffect = 'Static 'WithSideEffects
 newtype instance StaticRep MonoConfigEffect = MonoConfigEffect MonoConfigEnv
 
 -- | Run the effect (e.g. removes it from the list)
@@ -157,14 +134,18 @@ crawler = withContext ("crawler" .= ("crawler-name" :: Text)) do
   logInfo "Starting crawler" []
   void $ httpRequest =<< HTTP.parseUrlThrow "http://localhost"
 
--- | ---------------------------------------------------------------------
--- | HTTP effect
+------------------------------------------------------------------
+--
+
+-- | WIP HTTP Effect
+
+------------------------------------------------------------------
 data HttpContext = HttpContext
   { httpManager :: HTTP.Manager
   }
 
 data HttpEffect :: Effect
-type instance DispatchOf HttpEffect = Static WithSideEffects
+type instance DispatchOf HttpEffect = 'Static 'WithSideEffects
 newtype instance StaticRep HttpEffect = HttpEffect HttpContext
 
 runHttpEffect :: IOE :> es => Eff (HttpEffect : es) a -> Eff es a
@@ -186,7 +167,7 @@ httpRequest req = do
   backoff = 500000 -- 500ms
   policy = Retry.exponentialBackoff backoff <> Retry.limitRetries retryLimit
   httpHandler env (RetryStatus num _ _) = Handler $ \case
-    HttpExceptionRequest req ctx -> do
+    HttpExceptionRequest _req ctx -> do
       let url = decodeUtf8 @Text $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
           arg = decodeUtf8 $ HTTP.queryString req
           loc = if num == 0 then url <> arg else url
@@ -231,3 +212,38 @@ doLog lvl loc msg attrs = do
 
 logInfo :: (HasCallStack, LoggerEffect :> es) => Text -> [Series] -> Eff es ()
 logInfo = doLog LogInfo getLocName
+
+------------------------------------------------------------------
+--
+
+-- | Demonstrate Servant.Handler implemented with Eff
+
+------------------------------------------------------------------
+
+type TestApi =
+  "route1" Servant.:> Get '[Servant.JSON] Natural
+    :<|> "route2" Servant.:> Get '[Servant.JSON] Natural
+
+-- | serverEff is the effectful implementation of the TestAPI
+serverEff :: forall es. [IOE, LoggerEffect] :>> es => Servant.ServerT TestApi (Eff es)
+serverEff = route1Handler Servant.:<|> route1Handler
+ where
+  route1Handler :: Eff es Natural
+  route1Handler = do
+    logInfo "Handling route" []
+    pure 42
+
+-- | liftServer convert the effectful implementation to the Handler context.
+-- It is necessary to pass each effect environment so that the effects can be interpret for each request.
+liftServer :: Logger -> Servant.ServerT TestApi Servant.Handler
+liftServer logger = Servant.hoistServer (Proxy @TestApi) interpretServer serverEff
+ where
+  interpretServer :: Eff '[LoggerEffect, IOE] a -> Servant.Handler a
+  interpretServer =
+    liftIO . runEff . runLoggerEffect' logger
+
+demo :: IO ()
+demo = do
+  -- defaultMain tests
+  withLogger \logger -> do
+    Warp.run 8080 $ Servant.serve (Proxy @TestApi) $ liftServer logger
