@@ -28,7 +28,8 @@ import Servant.Auth.Server (CookieSettings, JWTSettings, defaultCookieSettings, 
 import Servant.HTML.Blaze (HTML)
 import System.Directory qualified
 
-import Monocle.Effects (MonoConfigEffect, mkReloadConfig, runMonoConfig)
+import Effectful.Dispatch.Static.Primitive (tailEnv)
+import Monocle.Effects
 
 -- | The API is served at both `/api/2/` (for backward compat with the legacy nginx proxy)
 -- and `/` (for compat with crawler client)
@@ -136,7 +137,7 @@ run cfg =
       . run' cfg
 
 run' :: '[IOE, MonoConfigEffect] :>> es => ApiConfig -> Logger -> Eff es ()
-run' ApiConfig {..} glLogger = do
+run' ApiConfig {..} glLogger = runLoggerEffect do
   config <- mkReloadConfig
   conf <- Config.csConfig <$> config
   let workspaces = Config.getWorkspaces conf
@@ -163,7 +164,7 @@ run' ApiConfig {..} glLogger = do
   -- Init OIDC
   -- Initialise JWT settings for locally issuing JWT (local provider)
   localJwk <- liftIO . doGenJwk $ from <$> jwkKey
-  providerM <- liftIO (getAuthProvider publicUrl conf)
+  providerM <- getAuthProvider publicUrl conf
   let localJWTSettings = defaultJWTSettings localJwk
   -- Initialize env to talk with OIDC provider
   oidcEnv <- case providerM of
@@ -175,24 +176,26 @@ run' ApiConfig {..} glLogger = do
 
   bhEnv <- mkEnv elasticUrl
   let aEnv = Env {..}
-  runLogger glLogger do
-    httpRetry elasticUrl $
-      liftIO $
-        traverse_ (\tenant -> runQueryM' bhEnv tenant I.ensureIndex) workspaces
-    httpRetry elasticUrl $
-      liftIO $
-        runQueryTarget bhEnv (QueryConfig conf) I.ensureConfigIndex
-  unsafeEff \effEnv ->
-    withStdoutLogger $ \aplogger -> do
-      let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
-      runLogger glLogger $ logInfo "SystemReady" ["workspace" .= length workspaces, "port" .= port, "elastic" .= elasticUrl]
-      Warp.runSettings
-        settings
-        . cors (const $ Just policy)
-        . monitoringMiddleware
-        . healthMiddleware
-        . staticMiddleware
-        $ app AppEnv {config = unEff config effEnv, ..}
+
+  runElasticEffect bhEnv do
+    traverse_ (\workspace -> runMonoQuery (MonoQueryEnv $ QueryWorkspace workspace) I.ensureIndex') workspaces
+    runLogger glLogger do
+      httpRetry elasticUrl $
+        liftIO $
+          runQueryTarget bhEnv (QueryConfig conf) I.ensureConfigIndex
+
+    unsafeEff \effEnv ->
+      withStdoutLogger $ \aplogger -> do
+        let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
+        runLogger glLogger $ logInfo "SystemReady" ["workspace" .= length workspaces, "port" .= port, "elastic" .= elasticUrl]
+        esEnv <- tailEnv effEnv
+        Warp.runSettings
+          settings
+          . cors (const $ Just policy)
+          . monitoringMiddleware
+          . healthMiddleware
+          . staticMiddleware
+          $ app AppEnv {config = unEff config esEnv, ..}
  where
   policy =
     simpleCorsResourcePolicy {corsRequestHeaders = ["content-type"]}
