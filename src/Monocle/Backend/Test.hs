@@ -38,8 +38,6 @@ import Effectful.Fail qualified as E
 import Effectful.Reader.Static qualified as E
 import Monocle.Effects
 
-type TestEffects es = (E.Fail :> es, IOE :> es, Q.QEffects es)
-
 fakeDate, fakeDateAlt :: UTCTime
 fakeDate = [utctime|2021-05-31 10:00:00|]
 fakeDateAlt = [utctime|2021-06-01 20:00:00|]
@@ -95,19 +93,23 @@ withTenant = withTenantConfig index
   -- todo: generate random name
   index = Config.mkTenant "test-tenant"
 
-testQueryM' :: TestEffects es =>  Config.Index ->  Eff es a ->  IO a
-testQueryM' = undefined
+testQueryM' :: Config.Index -> Eff [MonoQueryEffect,ElasticEffect,LoggerEffect,E.Fail,IOE] a ->  IO a
+testQueryM' config action = do
+  bhEnv <- mkEnv'
+  runEff $ E.runFailIO $ runLoggerEffect $ runElasticEffect bhEnv $ runEmptyMonoQuery config action
 
-runQueryTarget' :: Q.QEffects es => BH.BHEnv -> QueryTarget -> Eff es a -> IO a
+runQueryTarget' :: QEffects es => BH.BHEnv -> QueryTarget -> Eff es a -> IO a
 runQueryTarget' = undefined
 
-withTenantConfig :: [E.Fail, IOE] :>> es => Q.QEffects es => Config.Index -> Eff es () -> IO ()
-withTenantConfig index cb = testQueryM' index $ E.withEffToIO $ \runInIO ->
+withTenantConfig :: QEffects es => Config.Index -> Eff es () -> IO ()
+withTenantConfig = undefined
+{-
+testQueryM' index $ E.withEffToIO $ \runInIO ->
   bracket_ (runInIO create) (runInIO delete) (runInIO cb)
  where
   create = I.ensureIndex
   delete = I.removeIndex
-
+-}
 checkEChangeField :: TestEffects es => (Show a, Eq a) => BH.DocId -> (EChange -> a) -> a -> Eff es ()
 checkEChangeField = _checkField
 
@@ -346,7 +348,7 @@ testTaskDataCrawlerMetadata = withTenant @es doTest
 testEnsureConfig :: Assertion
 testEnsureConfig = bracket_ create delete doTest
  where
-  wrap :: Q.QEffects es => Eff es () -> IO ()
+  wrap :: QEffects es => Eff es () -> IO ()
   wrap action = do
     bhEnv <- mkEnv'
     let qt = QueryConfig $ Config.Config Nothing Nothing [tenantConfig]
@@ -669,7 +671,7 @@ defaultQuery =
 
 testGetInfoMetric :: forall es. TestEffects es => Assertion
 testGetInfoMetric = withTenantConfig @es tenant do
-  liftIO . Monocle.Api.Test.withTestApi env $ \_logger client -> do
+  liftIO . Monocle.Api.Test.withTestApi env $ \client -> do
     -- Get basic metric
     resp <- Monocle.Client.Api.metricInfo client (MetricPB.InfoRequest "time_to_merge")
     assertEqual
@@ -690,7 +692,7 @@ testGetMetrics = withTenantConfig @es tenant do
   indexScenario (nominalMerge (scenarioProject "openstack/nova") "42" fakeDate 1800)
 
   -- Start the API
-  liftIO . Monocle.Api.Test.withTestApi env $ \_logger client -> do
+  liftIO . Monocle.Api.Test.withTestApi env $ \client -> do
     -- Get basic metric
     resp <- Monocle.Client.Api.metricGet client (mkReq "time_to_merge")
     assertEqual
@@ -1296,7 +1298,7 @@ data ScenarioEvent
   | SComment EChangeEvent
   | SMerge EChangeEvent
 
-indexScenario :: Q.QEffects es => [ScenarioEvent] -> Eff es ()
+indexScenario :: QEffects es => [ScenarioEvent] -> Eff es ()
 indexScenario xs = sequence_ $ indexDoc <$> xs
  where
   indexDoc = \case
@@ -1306,10 +1308,10 @@ indexScenario xs = sequence_ $ indexDoc <$> xs
     SComment d -> I.indexEvents [d]
     SMerge d -> I.indexEvents [d]
 
-indexScenarioNM :: Q.QEffects es => ScenarioProject -> LText -> Eff es ()
+indexScenarioNM :: QEffects es => ScenarioProject -> LText -> Eff es ()
 indexScenarioNM project cid = indexScenario (nominalMerge project cid fakeDate 3600)
 
-indexScenarioNO :: Q.QEffects es => ScenarioProject -> LText -> Eff es ()
+indexScenarioNO :: QEffects es => ScenarioProject -> LText -> Eff es ()
 indexScenarioNO project cid = indexScenario (nominalOpen project cid fakeDate 3600)
 
 mkDate :: Integer -> UTCTime -> UTCTime

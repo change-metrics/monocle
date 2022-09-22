@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedRecordDot #-}
 
-module Monocle.Api.Test (mkAppEnv, withTestApi) where
+module Monocle.Api.Test (mkAppEnv, withTestApi, runAppEnv) where
 
 import Control.Exception (bracket)
 import Data.ByteString qualified as B
@@ -24,6 +24,8 @@ import Monocle.Effects
 import Servant (Context (..), ServerError)
 import Servant.Auth.Server (defaultCookieSettings, defaultJWTSettings)
 
+import Effectful.Concurrent.MVar qualified as E
+
 -- Create the AppEnv, necesary to create the monocle api Wai Application
 mkAppEnv :: Config.Index -> IO AppEnv
 mkAppEnv workspace = withLogger \glLogger -> do
@@ -40,34 +42,39 @@ mkAppEnv workspace = withLogger \glLogger -> do
 test :: (Either e a) -> a
 test = fromRight (error "too")
 
-runAppEnv :: AppEnv -> Eff (ElasticEffect : MonoConfigEffect : E.Reader AppEnv : LoggerEffect : E.Error ServerError : E.Fail : IOE : '[]) a -> IO a
+--  Note: when running Effect, the order is set
+runAppEnv :: AppEnv -> Eff (ElasticEffect : MonoConfigEffect : E.Reader AppEnv : LoggerEffect : E.Error ServerError : E.Fail : E.Concurrent : IOE : '[]) a -> IO a
 runAppEnv appEnv =
   runEff
+    . E.runConcurrent
     . E.runFailIO
     . (fmap (fromRight (error "oops")) . E.runErrorNoCallStack)
     . runLoggerEffect
     . E.runReader appEnv
-    . runMonoConfig undefined
+    . runMonoConfigFromEnv (appEnv.config)
     . runElasticEffect (appEnv.aEnv.bhEnv :: BH.BHEnv)
 
-withTestApi :: IO AppEnv -> (Logger -> MonocleClient -> Assertion) -> IO ()
+withTestApi :: IO AppEnv -> (MonocleClient -> IO ()) -> Assertion
 withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
  where
   -- Using a mockedManager, run the Api behind a MonocleClient for the tests
   runTest :: AppEnv -> Assertion
-  runTest appEnv = runAppEnv appEnv $ do
-    conf <- Config.csConfig <$> liftIO (appEnv.config)
-    let indexes = Config.getWorkspaces conf
-        cfg = appEnv.aOIDC.localJWTSettings :. defaultCookieSettings :. EmptyContext
-    traverse_
-      (\index -> runEmptyMonoQuery index I.ensureIndex)
-      indexes
-
-    unsafeEff $ \es ->
-      let app = hoistEff @RootAPI es cfg rootServer
-       in withMockedManager
-            (dropVersionPath app)
-            (\manager -> withLogger $ \logger -> withClient "http://localhost" (Just manager) (testCb logger))
+  runTest appEnv = runAppEnv appEnv testSetup
+   where
+    -- testSetup :: TestEffects es => Eff es ()
+    testSetup = do
+      conf <- Config.csConfig <$> liftIO (appEnv.config)
+      let indexes = Config.getWorkspaces conf
+          cfg = appEnv.aOIDC.localJWTSettings :. defaultCookieSettings :. EmptyContext
+      traverse_
+        (\index -> runEmptyMonoQuery index I.ensureIndex)
+        indexes
+      unsafeEff $ \es ->
+        let app = hoistEff @RootAPI es cfg rootServer
+            withManager manager = do
+              withClient "http://localhost" (Just manager) $ \client -> do
+                testCb client
+         in withMockedManager (dropVersionPath app) withManager
 
   dropVersionPath app' req = do
     app'

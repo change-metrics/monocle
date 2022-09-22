@@ -20,7 +20,7 @@ import Monocle.Backend.Queries as Q
 import Monocle.Config qualified as Config
 import Monocle.Entity (Entity (Project))
 import Monocle.Env
-import Monocle.Logging
+import Monocle.Logging hiding (logInfo)
 import Monocle.Prelude
 import Monocle.Protob.Crawler qualified as CrawlerPB
 import Streaming.Prelude qualified as Streaming
@@ -48,7 +48,7 @@ updateIdentsOnWorkspace = do
     QueryConfig _ -> error "Config can't be updated"
   changesCount <- withQuery (mkQuery [Q.documentType D.EChangeDoc]) Q.countDocs
   eventsCount <- withQuery (mkQuery [Q.documentTypes $ fromList D.allEventTypes]) Q.countDocs
-  flip logInfo' [] $ show @Text $
+  flip logInfo [] $ show @Text $
     "Workspace "
       <> workspaceName
       <> " - Janitor will process on "
@@ -56,13 +56,13 @@ updateIdentsOnWorkspace = do
       <> " changes and "
       <> show eventsCount
       <> " events."
-  logInfo' "Processing (this may take some time) ..." []
+  logInfo "Processing (this may take some time) ..." []
   updatedChangesCount <- updateIdentsOnChanges
-  logInfo' "Updated changes" ["count" .= updatedChangesCount]
+  logInfo "Updated changes" ["count" .= updatedChangesCount]
   updatedEventsCount <- updateIdentsOnEvents
-  logInfo' "Updated events" ["count" .= updatedEventsCount]
+  logInfo "Updated events" ["count" .= updatedEventsCount]
   populatedCount <- I.populateAuthorCache
-  logInfo' "Author cache re-populated with entries" ["count" .= populatedCount]
+  logInfo "Author cache re-populated with entries" ["count" .= populatedCount]
 
 -- | Apply identities according to the configuration on Changes
 -- Try this on the REPL with:
@@ -193,10 +193,10 @@ wipeCrawlerData crawlerName = do
       crawler = fromMaybe (error "Unable to find the crawler in the configuration") crawlerM
       prefixM = Config.getPrefix crawler
       prefix = fromMaybe mempty prefixM
-  logInfo' "Discovered crawler prefix" ["prefix" .= prefixM]
+  logInfo "Discovered crawler prefix" ["prefix" .= prefixM]
   -- Get projects for this crawler from the crawler metadata objects
   projects <- getProjectsCrawler
-  logInfo' "Discovered" ["projects" .= length projects]
+  logInfo "Discovered" ["projects" .= length projects]
   -- For each projects delete related changes and events
   traverse_ deleteDocsByRepoName ((prefix <>) <$> projects)
   -- Finally remove crawler metadata objects
@@ -218,7 +218,7 @@ wipeCrawlerData crawlerName = do
       _ -> Nothing
   deleteDocsByRepoName :: Text -> Eff es ()
   deleteDocsByRepoName fullname = do
-    logInfo' "Deleting" ["fullname" .= fullname]
+    logInfo "Deleting" ["fullname" .= fullname]
     withQuery sQuery Q.deleteDocs
    where
     sQuery =
@@ -228,7 +228,7 @@ wipeCrawlerData crawlerName = do
         ]
   deleteCrawlerMDs :: Eff es ()
   deleteCrawlerMDs = do
-    logInfo' "Deleting crawling metadata objects" ["crawler" .= crawlerName]
+    logInfo "Deleting crawling metadata objects" ["crawler" .= crawlerName]
     withQuery sQuery Q.deleteDocs
    where
     sQuery = mkQuery [mkTerm "crawler_metadata.crawler_name" crawlerName]
@@ -241,7 +241,7 @@ removeTDCrawlerData crawlerName = do
   index <- getIndexName'
   tdDeletedCount <- removeOrphanTaskDatas index
   tdChangesCount <- removeChangeTaskDatas index
-  logInfo' "Deleting td" ["crawler" .= crawlerName, "deleted" .= tdDeletedCount, "updated" .= tdChangesCount]
+  logInfo "Deleting td" ["crawler" .= crawlerName, "deleted" .= tdDeletedCount, "updated" .= tdChangesCount]
  where
   -- Note about the structure:
   --   ($)   :: (a -> b) -> a -> b
@@ -298,7 +298,7 @@ removeProjectMD = removeMD CrawlerPB.EntityTypeENTITY_TYPE_PROJECT
 
 removeMD :: QEffects es => CrawlerPB.EntityType -> Text -> Eff es ()
 removeMD entity crawlerName = do
-  logInfo' "Will delete crawler md" ["crawler" .= crawlerName, "entity" .= entity]
+  logInfo "Will delete crawler md" ["crawler" .= crawlerName, "entity" .= entity]
   index <- getIndexName'
   deletedCount <-
     withFilter [crawlerMDQuery entity crawlerName] $
@@ -306,4 +306,4 @@ removeMD entity crawlerName = do
         & ( Streaming.map (BulkDelete index)
               >>> I.bulkStream
           )
-  logInfo' "Deleted metadata" ["crawler" .= crawlerName, "count" .= deletedCount]
+  logInfo "Deleted metadata" ["crawler" .= crawlerName, "count" .= deletedCount]

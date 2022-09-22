@@ -14,7 +14,7 @@ import Monocle.Backend.Index qualified as I
 import Monocle.Config (getAuthProvider, opName)
 import Monocle.Config qualified as Config
 import Monocle.Env
-import Monocle.Logging
+import Monocle.Logging hiding (logInfo)
 import Monocle.Prelude
 import Monocle.Search.Query (loadAliases)
 import Monocle.Servant.HTTP (MonocleAPI, server)
@@ -40,6 +40,7 @@ import Effectful.Fail qualified as E
 import Effectful.Reader.Static qualified as E
 import Effectful.Servant qualified as ES
 import qualified Control.Monad.Except as T
+import Effectful.Concurrent.MVar qualified as E
 
 runWarpServerSettingsContext ::
   forall (api :: Type) (context :: [Type]) (es :: [E.Effect]).
@@ -80,7 +81,7 @@ type AuthAPI =
   "auth" :> "login" :> QueryParam "redirectUri" Text :> Get '[JSON] NoContent
     :<|> "auth" :> "cb" :> QueryParam "error" Text :> QueryParam "code" Text :> QueryParam "state" Text :> Get '[HTML] LoginInUser
 
-rootServer :: ApiEffects es => ES.ServerEff RootAPI es
+rootServer :: ApiEffects es => '[E.Concurrent] :>> es => ES.ServerEff RootAPI es
 rootServer = app :<|> app
  where
   app = server :<|> handleLogin :<|> handleLoggedIn
@@ -163,7 +164,7 @@ run cfg =
         $ run' cfg aplogger logger
 
 run' :: '[IOE, MonoConfigEffect] :>> es => ApiConfig -> ApacheLogger -> Logger -> Eff es ()
-run' ApiConfig {..} aplogger glLogger = runLoggerEffect do
+run' ApiConfig {..} aplogger glLogger = E.runConcurrent $ runLoggerEffect do
   conf <- Config.csConfig <$> getReloadConfig
   let workspaces = Config.getWorkspaces conf
 
@@ -194,7 +195,7 @@ run' ApiConfig {..} aplogger glLogger = runLoggerEffect do
   -- Initialize env to talk with OIDC provider
   oidcEnv <- case providerM of
     Just provider -> do
-      runLogger glLogger $ logInfo "AuthSystemReady" ["provider" .= opName provider]
+      logInfo "AuthSystemReady" ["provider" .= opName provider]
       pure <$> liftIO (initOIDCEnv provider)
     _ -> pure Nothing
   let aOIDC = OIDC {..}
@@ -214,7 +215,7 @@ run' ApiConfig {..} aplogger glLogger = runLoggerEffect do
               . healthMiddleware
               . staticMiddleware
           )
-    logInfo' "SystemReady" ["workspace" .= length workspaces, "port" .= port, "elastic" .= elasticUrl]
+    logInfo "SystemReady" ["workspace" .= length workspaces, "port" .= port, "elastic" .= elasticUrl]
 
     appEnv <- E.withEffToIO $ \effToIO -> do
       let configIO = effToIO getReloadConfig

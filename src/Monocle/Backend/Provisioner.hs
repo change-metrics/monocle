@@ -40,9 +40,9 @@ runProvisioner tenantName = undefined
   testQueryM' @es (mkTenant tenantName) do
   I.ensureIndex
   events <- liftIO createFakeEvents
-  logInfo'  ("[provisioner] Adding " <> show (length events) <> " events to " <> tenantName <> ".") []
+  logInfo  ("[provisioner] Adding " <> show (length events) <> " events to " <> tenantName <> ".") []
   T.indexScenario events
-  logInfo' "[provisioner] Done." []
+  logInfo "[provisioner] Done." []
 -}
 
 -- | Ensure changes have a unique ID

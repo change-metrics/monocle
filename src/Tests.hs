@@ -134,7 +134,7 @@ monocleApiTests =
     let appEnv = mkAppEnv $ Config.mkTenant "ws"
     let adminToken = "test"
     setEnv "MONOCLE_ADMIN_TOKEN" adminToken
-    withTestApi appEnv $ \_logger client -> do
+    withTestApi appEnv $ \client -> do
       resp <- authGetMagicJwt client $ GetMagicJwtRequest $ from adminToken
       case resp of
         GetMagicJwtResponse (Just (GetMagicJwtResponseResultJwt jwt)) -> do
@@ -160,7 +160,7 @@ monocleApiTests =
                     , Config.Ident [] (Just ["grp2", "grp3"]) "Jane"
                     ]
               }
-    withTestApi appEnv $ \_logger client ->
+    withTestApi appEnv $ \client ->
       do
         GetGroupsResponse {..} <- configGetGroups client $ GetGroupsRequest "ws"
         assertEqual
@@ -190,7 +190,7 @@ monocleApiTests =
                 ]
             )
             reloadedRef
-    withTestApi appEnv $ \_logger client ->
+    withTestApi appEnv $ \client ->
       do
         -- Run a commitInfo and expect an Entity
         resp1 <- crawlerCommitInfo client $ mkReq wsName1 0

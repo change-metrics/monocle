@@ -31,8 +31,6 @@ import Streaming.Prelude qualified as Streaming
 import Effectful.Fail qualified as E
 import Monocle.Effects
 
-type IndexEffects es = [ElasticEffect, LoggerEffect] :>> es
-
 data ConfigIndexMapping = ConfigIndexMapping deriving (Eq, Show)
 
 instance ToJSON ConfigIndexMapping where
@@ -212,19 +210,8 @@ instance ToJSON ChangesIndexMapping where
             )
       ]
 
-createIndex :: (BH.MonadBH m, ToJSON mapping, MonadFail m) => BH.IndexName -> mapping -> m ()
+createIndex :: IndexEffects es => ToJSON mapping => BH.IndexName -> mapping -> Eff es ()
 createIndex indexName mapping = do
-  _respCI <- BH.createIndex indexSettings indexName
-  -- print respCI
-  _respPM <- BH.putMapping indexName mapping
-  -- print respPM
-  True <- BH.indexExists indexName
-  pure ()
- where
-  indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0) BH.defaultIndexMappingsLimits
-
-createIndex' :: IndexEffects es => [ElasticEffect, LoggerEffect] :>> es => ToJSON mapping => BH.IndexName -> mapping -> Eff es ()
-createIndex' indexName mapping = do
   esCreateIndex indexSettings indexName
   -- print respCI
   esPutMapping indexName mapping
@@ -251,7 +238,7 @@ configDoc = BH.DocId "config"
 upgradeConfigV1 :: forall es. '[E.Fail, LoggerEffect, MonoQueryEffect] :>> es => IndexEffects es => Eff es ()
 upgradeConfigV1 = do
   indexName <- getIndexName'
-  logInfo' "Applying migration to schema V1 on workspace" ["index" .= indexName]
+  logInfo "Applying migration to schema V1 on workspace" ["index" .= indexName]
   QueryWorkspace ws <- getQueryTarget
   -- Get GitHub crawler names
   let ghCrawlerNames = getGHCrawlerNames ws
@@ -274,7 +261,7 @@ upgradeConfigV1 = do
     let entity = CrawlerPB.EntityTypeENTITY_TYPE_PROJECT
         search = BH.mkSearch (Just $ crawlerMDQuery entity crawlerName) Nothing
     index <- getIndexName'
-    resp <- fmap BH.hitSource <$> Q.simpleSearchLegacy' index search
+    resp <- fmap BH.hitSource <$> Q.simpleSearchLegacy index search
     pure $ catMaybes resp
   isCrawlerLastCommitAtIsDefault :: Config.Index -> ECrawlerMetadata -> Bool
   isCrawlerLastCommitAtIsDefault
@@ -299,21 +286,21 @@ upgradeConfigV1 = do
                 lastUpdatedAt
                 ecmCrawlerEntity
         otherEntity -> do
-          logInfo' "Unexpected entity" ["other" .= otherEntity]
+          logInfo "Unexpected entity" ["other" .= otherEntity]
 
 upgradeConfigV2 :: forall es. '[E.Fail, LoggerEffect, MonoQueryEffect] :>> es => IndexEffects es => Eff es ()
 upgradeConfigV2 = do
   indexName <- getIndexName'
-  logInfo' "Applying migration to schema V2 on workspace" ["index" .= indexName]
+  logInfo "Applying migration to schema V2 on workspace" ["index" .= indexName]
   void $ esPutMapping indexName CachedAuthorIndexMapping
   added <- populateAuthorCache
-  logInfo' "Authors cache populated monocle uid" ["added" .= added]
+  logInfo "Authors cache populated monocle uid" ["added" .= added]
 
 -- | Add self_merged data to event of type ChangeMergedEvent
 upgradeConfigV3 :: forall es. '[E.Fail, LoggerEffect, MonoQueryEffect] :>> es => IndexEffects es => Eff es Int
 upgradeConfigV3 = do
   indexName <- getIndexName'
-  logInfo' "Applying migration to schema V3 on workspace" ["index" .= indexName]
+  logInfo "Applying migration to schema V3 on workspace" ["index" .= indexName]
   count <-
     withQuery eventQuery $
       scanEvents
@@ -321,11 +308,11 @@ upgradeConfigV3 = do
               >>> Streaming.map (mkEventBulkUpdate indexName)
               >>> bulkStream
           )
-  logInfo' "Migration to schema V3 affected documents" ["count" .= count]
+  logInfo "Migration to schema V3 affected documents" ["count" .= count]
   pure count
  where
   scanEvents :: Stream (Of EChangeEvent) (Eff es) ()
-  scanEvents = Q.scanSearchHit'
+  scanEvents = Q.scanSearchHit
   eventQuery = mkQuery [Q.documentType EChangeMergedEvent]
   updateEvent :: EChangeEvent -> Maybe EChangeEvent
   updateEvent se@EChangeEvent {..}
@@ -339,7 +326,7 @@ upgradeConfigV3 = do
 upgradeConfigV4 :: forall es. '[E.Fail, LoggerEffect, MonoQueryEffect] :>> es => IndexEffects es => Eff es Int
 upgradeConfigV4 = do
   indexName <- getIndexName'
-  logInfo' "Applying migration to schema V4 on workspace " ["index" .= indexName]
+  logInfo "Applying migration to schema V4 on workspace " ["index" .= indexName]
   count <-
     withQuery changeQuery $
       scanChanges
@@ -347,11 +334,11 @@ upgradeConfigV4 = do
               >>> Streaming.map (mkChangeBulkUpdate indexName)
               >>> bulkStream
           )
-  logInfo' "Migration to schema V4 affected documents" ["count" .= count]
+  logInfo "Migration to schema V4 affected documents" ["count" .= count]
   pure count
  where
   scanChanges :: Stream (Of EChange) (Eff es) ()
-  scanChanges = Q.scanSearchHit'
+  scanChanges = Q.scanSearchHit
   changeQuery =
     mkQuery
       [ Q.documentType EChangeDoc
@@ -405,7 +392,7 @@ ensureConfigIndex = do
   QueryConfig conf <- getQueryTarget
 
   -- Ensure index and index mapping
-  createIndex' configIndex ConfigIndexMapping
+  createIndex configIndex ConfigIndexMapping
 
   -- Get current config version
   (currentVersion, currentConfig) <- getConfigVersion
@@ -421,7 +408,7 @@ ensureConfigIndex = do
   -- Write new config version in config index
   let newConfig = setVersion configVersion currentConfig
   void $ esIndexDocument configIndex BH.defaultIndexDocumentSettings newConfig configDoc
-  logInfo' "Ensure schema version" ["version" .= configVersion]
+  logInfo "Ensure schema version" ["version" .= configVersion]
  where
   -- traverseWorkspace replace the QueryEnv tenant attribute from QueryConfig to QueryWorkspace
   traverseWorkspace action conf = do
@@ -430,7 +417,7 @@ ensureConfigIndex = do
 ensureIndexSetup :: '[MonoQueryEffect, LoggerEffect, ElasticEffect] :>> es => Eff es ()
 ensureIndexSetup = do
   indexName <- getIndexName'
-  createIndex' indexName ChangesIndexMapping
+  createIndex indexName ChangesIndexMapping
   esSettings indexName (object ["index" .= object ["max_regex_length" .= (50_000 :: Int)]])
 
 ensureIndexCrawlerMetadata :: [E.Fail, LoggerEffect, ElasticEffect, MonoQueryEffect] :>> es => Eff es ()
@@ -853,7 +840,7 @@ crawlerMDQuery entity crawlerName =
 getLastUpdated :: '[MonoQueryEffect] :>> es => IndexEffects es => Config.Crawler -> CrawlerPB.EntityType -> Word32 -> Eff es (Maybe ECrawlerMetadataObject)
 getLastUpdated crawler entity offset = do
   index <- getIndexName'
-  resp <- fmap BH.hitSource <$> Q.simpleSearchLegacy' index search
+  resp <- fmap BH.hitSource <$> Q.simpleSearchLegacy index search
   case nonEmpty (catMaybes resp) of
     Nothing -> pure Nothing
     Just xs ->
@@ -889,7 +876,7 @@ ensureCrawlerMetadata crawlerName getDate entity = do
 
 getMostRecentUpdatedChange :: '[MonoQueryEffect] :>> es => IndexEffects es => Text -> Eff es [EChange]
 getMostRecentUpdatedChange fullname = do
-  withFilter [mkTerm "repository_fullname" fullname] $ Q.changes' (Just order) 1
+  withFilter [mkTerm "repository_fullname" fullname] $ Q.changes (Just order) 1
  where
   order =
     SearchPB.Order
@@ -987,7 +974,7 @@ populateAuthorCache = do
               >>> bulkStream
           )
   -- Second populate the cache
-  Q.getAllAuthorsMuid''
+  Q.getAllAuthorsMuid
     & ( Streaming.map (mkECachedAuthorBulkInsert indexName)
           >>> bulkStream
       )

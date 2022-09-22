@@ -21,6 +21,7 @@ module Monocle.Prelude (
   -- * effectful
   Effectful.Eff,
   Effectful.IOE,
+  Effectful.Effect,
   (:>>),
   Effectful.runEff,
   Effectful.runPureEff,

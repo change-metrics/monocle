@@ -30,7 +30,6 @@ import Monocle.Config (Config, OIDCProviderConfig (..))
 import Monocle.Config qualified as Config
 import Monocle.Entity
 import Monocle.Env
-import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Auth qualified as AuthPB
 import Monocle.Protob.Config qualified as ConfigPB
@@ -57,7 +56,7 @@ import Text.Blaze.Renderer.Utf8 (renderMarkup)
 import Web.OIDC.Client (sub)
 import Web.OIDC.Client qualified as O
 
-import Effectful qualified as E
+import Effectful.Concurrent.MVar qualified as E
 import Effectful.Error.Static qualified as E
 import Effectful.Reader.Static qualified as E
 import Monocle.Effects
@@ -71,10 +70,10 @@ getConfig' :: '[MonoConfigEffect] :>> es => Eff es Config.Config
 getConfig' = Config.csConfig <$> getReloadConfig
 
 -- | 'updateIndex' if needed - ensures index exists and refresh crawler Metadata
-updateIndex :: forall es. ApiEffects es => Config.Index -> MVar Config.WorkspaceStatus -> Eff es ()
-updateIndex index wsRef = runEmptyMonoQuery index $ modifyMVar_ wsRef undefined -- doUpdateIfNeeded
+updateIndex :: forall es. ApiEffects es => '[E.Concurrent] :>> es => Config.Index -> MVar Config.WorkspaceStatus -> Eff es ()
+updateIndex index wsRef = runEmptyMonoQuery index $ E.modifyMVar_ wsRef doUpdateIfNeeded
  where
-  doUpdateIfNeeded :: Config.WorkspaceStatus -> Eff es Config.WorkspaceStatus
+  doUpdateIfNeeded :: Config.WorkspaceStatus -> Eff (MonoQueryEffect : es) Config.WorkspaceStatus
   doUpdateIfNeeded ws = case Map.lookup (Config.getWorkspaceName index) ws of
     Just Config.Ready -> pure ws
     Just Config.NeedRefresh -> do
@@ -82,20 +81,12 @@ updateIndex index wsRef = runEmptyMonoQuery index $ modifyMVar_ wsRef undefined 
       pure $ Map.insert (Config.getWorkspaceName index) Config.Ready ws
     Nothing -> error $ "Unknown workspace: " <> show (Config.getWorkspaceName index)
 
-  refreshIndex :: Eff es ()
+  refreshIndex :: Eff (MonoQueryEffect : es) ()
   refreshIndex = do
-    logInfo' "RefreshIndex" ["index" .= Config.getWorkspaceName index]
+    logInfo "RefreshIndex" ["index" .= Config.getWorkspaceName index]
     runEmptyMonoQuery index do
       I.ensureIndexSetup
       traverse_ I.initCrawlerMetadata $ Config.crawlers index
-
--- | Convenient pattern to get the config from the status
-pattern GetConfig :: Config.Config -> Config.ConfigStatus
-pattern GetConfig a <- Config.ConfigStatus _ a _
-
--- | Convenient pattern to get the list of tenants
-pattern GetTenants :: [Config.Index] -> Config.ConfigStatus
-pattern GetTenants a <- Config.ConfigStatus _ (Config.Config _about _auth a) _
 
 checkAuth :: forall a es. ApiEffects es => AuthResult AuthenticatedUser -> (Maybe AuthenticatedUser -> Eff es a) -> Eff es a
 checkAuth auth action = do
@@ -314,12 +305,12 @@ crawlerAddDoc _auth request = do
     Left err -> pure $ toErrorResponse err
  where
   addTDs crawlerName taskDatas = do
-    logInfo' "AddingTaskData" ["crawler" .= crawlerName, "tds" .= length taskDatas]
+    logInfo "AddingTaskData" ["crawler" .= crawlerName, "tds" .= length taskDatas]
     I.taskDataAdd (from crawlerName) $ toList taskDatas
     pure $ CrawlerPB.AddDocResponse Nothing
 
   addChanges crawlerName changes events = do
-    logInfo' "AddingChange" ["crawler" .= crawlerName, "changes" .= length changes, "events" .= length events]
+    logInfo "AddingChange" ["crawler" .= crawlerName, "changes" .= length changes, "events" .= length events]
     let changes' = map from $ toList changes
         events' = map I.toEChangeEvent $ toList events
     I.indexChanges changes'
@@ -329,7 +320,7 @@ crawlerAddDoc _auth request = do
     pure $ CrawlerPB.AddDocResponse Nothing
 
   addProjects crawler organizationName projects = do
-    logInfo' "AddingProject" ["crawler" .= getWorkerName crawler, "org" .= organizationName, "projects" .= length projects]
+    logInfo "AddingProject" ["crawler" .= getWorkerName crawler, "org" .= organizationName, "projects" .= length projects]
     let names = projectNames projects
         -- TODO(fbo) Enable crawl github issues by default for an organization.
         -- We might need to re-think some data fetching like priority/severity.
@@ -375,7 +366,7 @@ crawlerCommit _auth request = do
   case requestE of
     Right (index, ts, entity) -> runEmptyMonoQuery index $ do
       let date = Timestamp.toUTCTime ts
-      logInfo' "UpdatingEntity" ["crawler" .= crawlerName, "entity" .= entity, "date" .= date]
+      logInfo "UpdatingEntity" ["crawler" .= crawlerName, "entity" .= entity, "date" .= date]
       -- TODO: check for CommitDateInferiorThanPrevious
       _ <- I.setLastUpdated (CrawlerName $ from crawlerName) date entity
 
@@ -392,7 +383,7 @@ crawlerCommit _auth request = do
       $ Right err
 
 -- | /crawler/get_commit_info endpoint
-crawlerCommitInfo :: ApiEffects es => AuthResult AuthenticatedUser -> CrawlerPB.CommitInfoRequest -> Eff es CrawlerPB.CommitInfoResponse
+crawlerCommitInfo :: ApiEffects es => '[E.Concurrent] :>> es => AuthResult AuthenticatedUser -> CrawlerPB.CommitInfoRequest -> Eff es CrawlerPB.CommitInfoResponse
 crawlerCommitInfo _auth request = do
   Config.ConfigStatus _ Config.Config {..} wsStatus <- getReloadConfig
   let tenants = workspaces
@@ -543,7 +534,7 @@ searchQuery auth request = checkAuth auth response
     case requestE of
       Right (tenant, query) -> runMonoQueryWorkSpace tenant (Q.ensureMinBound query) $ do
         let queryType = fromPBEnum queryRequestQueryType
-        logInfo'
+        logInfo
           "Searching"
           [ "querytype" .= queryType
           , "request" .= queryRequestQuery
@@ -932,7 +923,7 @@ handleLoggedIn err codeM stateM = do
   aOIDC <- E.asks aOIDC
   Config.ConfigStatus _ config _ <- getReloadConfig
 
-  logInfo' "OIDCCallbackCall" ["err" .= err, "code" .= codeM, "state" .= stateM]
+  logInfo "OIDCCallbackCall" ["err" .= err, "code" .= codeM, "state" .= stateM]
   case (oidcEnv aOIDC, err, codeM, stateM) of
     (_, Just errorMsg, _, _) -> forbidden $ "Error from remote provider: " <> errorMsg
     (_, _, Nothing, _) -> forbidden "No code parameter given"
@@ -952,19 +943,19 @@ handleLoggedIn err codeM stateM = do
           expiry = addUTCTime (24 * 3600) now
           userId = aUserId oidcEnv idToken
           mUidMap = getIdents config $ "AuthProviderUID:" <> userId
-      logInfo' "OIDCProviderTokenRequested" ["id" .= show @Text idToken]
+      logInfo "OIDCProviderTokenRequested" ["id" .= show @Text idToken]
       jwtE <- liftIO $ mkJwt (localJWTSettings aOIDC) mUidMap userId (Just expiry)
       case jwtE of
         Right jwt -> do
           incCounter monocleAuthSuccessCounter
-          logInfo' "JWTCreated" ["uid" .= mUidMap, "redir" .= unsafeInto @Text (redirectUri oidcEnv)]
+          logInfo "JWTCreated" ["uid" .= mUidMap, "redir" .= unsafeInto @Text (redirectUri oidcEnv)]
           let liJWT = decodeUtf8 jwt
               liRedirectURI = case decodeOIDCState $ encodeUtf8 oauthState of
                 Just (OIDCState _ (Just uri)) -> uri
                 _ -> "/"
           pure $ LoginInUser {..}
         Left err' -> do
-          logInfo' "JWTCreateFailed" ["uid" .= mUidMap, "err" .= show @Text err']
+          logInfo "JWTCreateFailed" ["uid" .= mUidMap, "err" .= show @Text err']
           forbidden $ "Unable to generate user JWT due to: " <> show err'
  where
   -- Get the Token's claim that identify an unique user

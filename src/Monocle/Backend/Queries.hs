@@ -20,8 +20,6 @@ import Database.Bloodhound.Raw qualified as BHR
 import Json.Extras qualified as Json
 import Monocle.Backend.Documents (EChange (..), EChangeEvent (..), EChangeState (..), EDocType (..), allEventTypes)
 import Monocle.Config qualified as Config
-import Monocle.Env
-import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Metric qualified as MetricPB
 import Monocle.Protob.Search qualified as SearchPB
@@ -29,47 +27,29 @@ import Monocle.Search.Query (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (.
 import Monocle.Search.Query qualified as Q
 import Streaming.Prelude qualified as Streaming
 
-import Effectful ((:>), Effect)
 import Monocle.Effects
 
-type QEffects es = [ElasticEffect, LoggerEffect, MonoQueryEffect] :>> es
-
 -- Legacy wrappers
-doSearchLegacy :: (HasLogger m, FromJSON a, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m (BH.SearchResult a)
-doSearchLegacy indexName search = do
-  -- logText . decodeUtf8 . encode $ search
-  rawResp <- BH.searchByIndex indexName search
-  -- logText $ show rawResp
-  resp <- BH.parseEsResponse rawResp
-  case resp of
-    Left e -> handleError e rawResp
-    Right x -> pure x
- where
-  handleError resp rawResp = do
-    logWarn "Elastic response failed" ["status" .= BH.errorStatus resp, "message" .= BH.errorMessage resp]
-    error $ "Elastic response failed: " <> show rawResp
-
-simpleSearchLegacy :: (FromJSON a, HasLogger m, MonadThrow m, BH.MonadBH m) => BH.IndexName -> BH.Search -> m [BH.Hit a]
-simpleSearchLegacy indexName search = BH.hits . BH.searchHits <$> doSearchLegacy indexName search
-
-simpleSearchLegacy' :: forall es a. FromJSON a => BH.IndexName -> BH.Search -> Eff es [BH.Hit a]
-simpleSearchLegacy' = undefined
+simpleSearchLegacy :: [LoggerEffect, ElasticEffect] :>> es => (FromJSON a) => BH.IndexName -> BH.Search -> Eff es [BH.Hit a]
+simpleSearchLegacy indexName search = BH.hits . BH.searchHits <$> esSearchLegacy indexName search
 
 -------------------------------------------------------------------------------
 -- Low level wrappers for bloodhound.
-measureQueryM :: (QEffects es, ToJSON body) => body -> Eff es a -> Eff es a
+{- TODO: migrate to proper effect
+measureQueryM :: (QueryMonad m, ToJSON body) => body -> m a -> m a
 measureQueryM body action = do
-  prev <- unsafeEff_ getCurrentTime
+  prev <- getCurrentTime'
   res <- action
-  after <- unsafeEff_ getCurrentTime
-  {- TODO: migrate to effectful
+  after <- getCurrentTime'
   ctxM <- getContext
   case ctxM of
     Just ctx ->
-      logDebug ctx ["body" .= body, "elapsed" .= elapsedSeconds prev after]
+      trace' $ ctx <> " " <> decodeUtf8 (encode body) <> " took " <> show (elapsedSeconds prev after)
     Nothing -> pure ()
-  -}
   pure res
+-}
+measureQueryM :: a -> b -> b
+measureQueryM _ = id
 
 -- | Call the search endpoint
 doScrollSearchBH :: (QEffects es, ToJSON body, FromJSONField resp) => BHR.ScrollRequest -> body -> Eff es (BH.SearchResult resp)
@@ -123,9 +103,6 @@ doDeleteByQueryBH body = do
 -------------------------------------------------------------------------------
 -- Mid level queries
 
-scanSearch' :: forall es resp. FromJSONField resp => Stream (Of (BH.Hit resp)) (Eff es) ()
-scanSearch' = undefined
-
 -- | scan search the result using a streaming
 scanSearch :: QEffects es => FromJSONField resp => Stream (Of (BH.Hit resp)) (Eff es) ()
 scanSearch = do
@@ -152,9 +129,6 @@ scanSearch = do
 -- https://hackage.haskell.org/package/streaming-0.2.3.0/docs/Streaming-Prelude.html#v:concat
 scanSearchHit :: QEffects es => FromJSONField resp => Stream (Of resp) (Eff es) ()
 scanSearchHit = Streaming.concat $ Streaming.map BH.hitSource scanSearch
-
-scanSearchHit' :: forall es resp. QEffects es => FromJSONField resp => Stream (Of resp) (Eff es) ()
-scanSearchHit' = undefined
 
 -- | scan search the document id, here is an example usage for the REPL:
 -- λ> testQueryM (defaultTenant "zuul") $ runQueryM (mkQuery []) $ Streaming.print scanSearchId
@@ -274,9 +248,6 @@ doTermsCompositeAgg term = getPages Nothing
 
 -------------------------------------------------------------------------------
 -- High level queries
-changes' :: forall es. Maybe SearchPB.Order -> Word32 -> Eff es [EChange]
-changes' = undefined
-
 changes :: QEffects es => Maybe SearchPB.Order -> Word32 -> Eff es [EChange]
 changes orderM limit =
   withDocTypes [EChangeDoc] (QueryFlavor Author UpdatedAt) $
@@ -331,9 +302,6 @@ commitsReviewsRatio =
     ]
 
 -- | Scroll over all know authors
-getAllAuthorsMuid'' :: forall es. Stream (Of Text) (Eff es) ()
-getAllAuthorsMuid'' = undefined
-
 getAllAuthorsMuid :: QEffects es => Stream (Of Text) (Eff es) ()
 getAllAuthorsMuid = do
   Streaming.mapMaybe trans $ hoist (localSearchQuery updateEnv) (doTermsCompositeAgg "author.muid")
@@ -1132,7 +1100,7 @@ toPBTermsCountDuration (TermsCount {..}) =
         termCountDurationTerm = from term
      in MetricPB.TermCountDuration {..}
 
-runMetricTrendIntPB :: QEffects es => Metric es Word32 -> Eff es (V.Vector MetricPB.HistoInt)
+runMetricTrendIntPB :: Metric es Word32 -> Eff es (V.Vector MetricPB.HistoInt)
 runMetricTrendIntPB m = fmap toPBHistoInt <$> runMetricTrend m Nothing
 
 authorFlavorToDesc :: AuthorFlavor -> Text
@@ -1316,7 +1284,7 @@ authorCntHisto aField changeEvent intervalM = withDocType changeEvent qf getAuth
 
     hBuckets . parseAggregationResults "agg1" <$> doAggregation search
 
-topNotSupported :: QEffects es => Word32 -> Eff es (Maybe (TermsCount a))
+topNotSupported :: Word32 -> Eff es (Maybe (TermsCount a))
 topNotSupported = const $ pure Nothing
 
 toTermsCountWord32 :: TermsResultWTH -> TermsCount Word32
@@ -1704,14 +1672,10 @@ metricCommitsPerChange =
   computeTrend = flip monoHisto compute
 
 allMetrics :: [MetricInfo]
-allMetrics = undefined
-
-{- TODO: figure out the type logic here...
-allMetrics :: forall (es :: [Effect]). [MetricInfo]
 allMetrics =
   map
     metricInfo
-    [ toJSON <$> metricChangesCreated @es
+    [ toJSON <$> metricChangesCreated @[ElasticEffect, LoggerEffect, MonoQueryEffect]
     , toJSON <$> metricChangesMerged
     , toJSON <$> metricChangesAbandoned
     , toJSON <$> metricChangesSelfMerged
@@ -1732,9 +1696,8 @@ allMetrics =
     , toJSON <$> metricFirstReviewerMeanTime
     , toJSON <$> metricCommitsPerChange
     ]
--}
 
 getMetricInfo :: Text -> Maybe MetricInfo
-getMetricInfo metric = case filter (\m -> metric == miMetricName m) allMetrics of
+getMetricInfo metric = case filter (\m -> metric == miMetricName m) (allMetrics) of
   [m] -> Just m
   _ -> Nothing

@@ -22,6 +22,8 @@ import Servant.Auth.Server (Auth, Cookie, JWT)
 
 import Effectful (Eff)
 import Monocle.Effects hiding (searchQuery)
+import Effectful.Concurrent.MVar qualified as E
+import Effectful ((:>>))
 import Prelude (undefined)
 
 type MonocleAPI =
@@ -44,7 +46,7 @@ type MonocleAPI =
     :<|> "crawler" :> "add" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.AddDocRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.AddDocResponse
     :<|> "crawler" :> "commit" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.CommitRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.CommitResponse
     :<|> "crawler" :> "get_commit_info" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.CommitInfoRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.CommitInfoResponse
-server :: ApiEffects es => ServerT MonocleAPI (Eff es)
+server :: ApiEffects es => '[E.Concurrent] :>> es => ServerT MonocleAPI (Eff es)
 server =
   loginLoginValidation
     :<|> authGetMagicJwt

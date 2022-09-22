@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 -- | Tests for the macroscope process
 module Macroscope.Test where
 
@@ -20,19 +21,25 @@ import Streaming.Prelude qualified as Streaming
 import Test.Tasty
 import Test.Tasty.HUnit
 
+import Monocle.Api.Test (runAppEnv)
+import Monocle.Backend.Test (testQueryM')
+import Monocle.Effects
+import Effectful.Fail qualified as E
+
 testCrawlingPoint :: Assertion
 testCrawlingPoint = do
   appEnv <- mkAppEnv fakeConfig
-  void $ undefined -- runQueryM' (bhEnv $ aEnv appEnv) fakeConfig I.ensureIndexSetup
-  let fakeChange1 =
-        BT.fakeChange
+  runAppEnv appEnv $ runEmptyMonoQuery fakeConfig do
+    I.ensureIndexSetup
+    let fakeChange1 =
+         BT.fakeChange
           { D.echangeId = "efake1"
           , D.echangeUpdatedAt = BT.fakeDate
           , D.echangeRepositoryFullname = "opendev/neutron"
           }
-      fakeChange2 = fakeChange1 {D.echangeId = "efake2", D.echangeUpdatedAt = BT.fakeDateAlt}
-  void $ undefined -- runQueryM' (bhEnv $ aEnv appEnv) fakeConfig $ I.indexChanges [fakeChange1, fakeChange2]
-  withTestApi (mkAppEnv fakeConfig) $ \logger client -> do
+        fakeChange2 = fakeChange1 {D.echangeId = "efake2", D.echangeUpdatedAt = BT.fakeDateAlt}
+    I.indexChanges [fakeChange1, fakeChange2]
+  withTestApi (mkAppEnv fakeConfig) $ \client -> withLogger $ \logger -> do
     let stream date name
           | date == BT.fakeDateAlt && name == "opendev/neutron" = pure mempty
           | otherwise = error "Bad crawling point"
@@ -62,18 +69,23 @@ testCrawlingPoint = do
   indexName = "test-macroscope"
   crawlerName = "testy"
 
+
 testTaskDataMacroscope :: Assertion
-testTaskDataMacroscope = withTestApi appEnv $ \logger client -> do
-  -- Start the macroscope with a fake stream
-  td <- Monocle.Backend.Provisioner.generateNonDeterministic Monocle.Backend.Provisioner.fakeTaskData
-  let stream _untilDate project
-        | project == "fake_product" = Streaming.each [td]
-        | otherwise = error $ "Unexpected product entity: " <> show project
-  void $ runLentilleM logger client $ Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.TaskDatas stream)
-  -- Check task data got indexed
-  count <- undefined -- testQueryM fakeConfig $ withQuery taskDataQuery $ Streaming.length_ Q.scanSearchId
-  assertEqual "Task data got indexed by macroscope" count 1
+testTaskDataMacroscope = withTestApi appEnv $ \client -> withLogger $ \logger -> testAction client logger
  where
+  testAction :: MonocleClient -> Logger -> IO ()
+  testAction client logger = do
+    -- Start the macroscope with a fake stream
+    td <- Monocle.Backend.Provisioner.generateNonDeterministic Monocle.Backend.Provisioner.fakeTaskData
+    let stream _untilDate project
+          | project == "fake_product" = Streaming.each [td]
+          | otherwise = error $ "Unexpected product entity: " <> show project
+    void $ runLentilleM logger client $ Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.TaskDatas stream)
+    -- Check task data got indexed
+    testQueryM' fakeConfig do
+      count <- withQuery taskDataQuery $ Streaming.length_ Q.scanSearchId
+      liftIO (assertEqual "Task data got indexed by macroscope" count 1)
+
   appEnv = mkAppEnv fakeConfig
   taskDataQuery = mkQuery [mkTerm "tasks_data.crawler_name" (from crawlerName)]
   fakeConfig =

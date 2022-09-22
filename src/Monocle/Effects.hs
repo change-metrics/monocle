@@ -2,6 +2,8 @@
 {-# LANGUAGE TypeFamilies #-}
 -- for MTL Compat
 {-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
+{-# OPTIONS_GHC -fno-warn-unused-imports #-}
 
 -- | This module demonstrates how the static reader based effect
 -- provided by the effectful library can be used to replace the
@@ -82,15 +84,23 @@ import Effectful.Fail qualified as E
 import Effectful.Reader.Static qualified as E
 import Effectful.Servant qualified as ES
 
+-- the servant api
 type ApiEffects es = [IOE, E.Reader AppEnv, E.Error Servant.ServerError, MonoConfigEffect, LoggerEffect, ElasticEffect, E.Fail] :>> es
 
-tests :: TestTree
-tests =
+type IndexEffects es = [ElasticEffect, LoggerEffect] :>> es
+
+-- the query handler
+type QEffects es = [ElasticEffect, LoggerEffect, MonoQueryEffect] :>> es
+
+type TestEffects es = (E.Fail :> es, IOE :> es, QEffects es)
+
+testTree :: TestTree
+testTree =
   testGroup
     "Monocle.Effects"
     [ testCase "LoggerEffect" do
         runEff $ runLoggerEffect do
-          logInfo' "logInfo prints!" []
+          logInfo "logInfo prints!" []
     , testCase "MonoConfig" do
         (path, fd) <- mkstemp "/tmp/monoconfig-test"
         hClose fd
@@ -148,6 +158,9 @@ runMonoConfig :: IOE :> es => FilePath -> Eff (MonoConfigEffect : es) a -> Eff e
 runMonoConfig fp action = do
   (mkReload :: IO ConfigStatus) <- unsafeEff_ (Monocle.Config.reloadConfig fp)
   evalStaticRep (MonoConfigEffect mkReload) action
+
+runMonoConfigFromEnv :: IOE :> es => IO ConfigStatus -> Eff (MonoConfigEffect : es) a -> Eff es a
+runMonoConfigFromEnv reload action = evalStaticRep (MonoConfigEffect reload) action
 
 -- | The lifted version of Monocle.Config.reloadConfig
 getReloadConfig :: MonoConfigEffect :> es => Eff es ConfigStatus
@@ -294,12 +307,12 @@ runElasticEffect bhEnv action = do
 esSearch :: [ElasticEffect, LoggerEffect] :>> es => (ToJSON body, FromJSONField resp) => BH.IndexName -> body -> BHR.ScrollRequest -> Eff es (BH.SearchResult resp)
 esSearch iname body scrollReq = do
   ElasticEffect env <- getStaticRep
-  error "TODO"
+  unsafeEff_ $ BH.runBH env $ BHR.search iname body scrollReq
 
 esAdvance :: [ElasticEffect, LoggerEffect] :>> es => FromJSON resp => BH.ScrollId -> Eff es (BH.SearchResult resp)
 esAdvance scroll = do
   ElasticEffect env <- getStaticRep
-  error "TODO"
+  unsafeEff_ $ BH.runBH env $ BHR.advance scroll
 
 esGetDocument :: ElasticEffect :> es => BH.IndexName -> BH.DocId -> Eff es (HTTP.Response LByteString)
 esGetDocument iname doc = do
@@ -360,10 +373,32 @@ esDocumentExists iname doc = do
   ElasticEffect env <- getStaticRep
   unsafeEff_ $ BH.runBH env $ BH.documentExists iname doc
 
-esBulk :: ElasticEffect :> es => V.Vector BulkOperation -> Eff es (HTTP.Response a)
-esBulk = undefined
+esBulk :: ElasticEffect :> es => V.Vector BulkOperation -> Eff es (BH.Reply)
+esBulk ops = do
+  ElasticEffect env <- getStaticRep
+  unsafeEff_ $ BH.runBH env $ BH.bulk ops
 
-esUpdateDocument = undefined
+esUpdateDocument :: ElasticEffect :> es => ToJSON a => BH.IndexName -> BH.IndexDocumentSettings -> a -> DocId -> Eff es BH.Reply
+esUpdateDocument iname ids body doc = do
+  ElasticEffect env <- getStaticRep
+  unsafeEff_ $ BH.runBH env $ BH.updateDocument iname ids body doc
+
+-- Legacy wrappers
+esSearchLegacy :: [LoggerEffect, ElasticEffect] :>> es => (FromJSON a) => BH.IndexName -> BH.Search -> Eff es (BH.SearchResult a)
+esSearchLegacy indexName search = do
+  ElasticEffect env <- getStaticRep
+  (rawResp, resp) <- unsafeEff_ $ BH.runBH env do
+    -- logText . decodeUtf8 . encode $ search
+    rawResp <- BH.searchByIndex indexName search
+    -- logText $ show rawResp
+    (\resp -> (rawResp, resp)) <$> BH.parseEsResponse rawResp
+  case resp of
+    Left e -> handleError e rawResp
+    Right x -> pure x
+ where
+  handleError resp rawResp = do
+    logWarn' "Elastic response failed" ["status" .= BH.errorStatus resp, "message" .= BH.errorMessage resp]
+    error $ "Elastic response failed: " <> show rawResp
 
 ------------------------------------------------------------------
 --
@@ -408,7 +443,7 @@ httpRequest req = do
           arg = decodeUtf8 $ HTTP.queryString req
           loc = if num == 0 then url <> arg else url
       flip unEff env $
-        logInfo'
+        logInfo
           "network error"
           [ "count" .= num
           , "limit" .= retryLimit
@@ -454,8 +489,8 @@ doLog lvl loc msg attrs = do
   msgText :: ByteString
   msgText = from lvl <> loc <> ": " <> encodeUtf8 msg
 
-logInfo' :: (HasCallStack, LoggerEffect :> es) => Text -> [Series] -> Eff es ()
-logInfo' = doLog LogInfo getLocName
+logInfo :: (HasCallStack, LoggerEffect :> es) => Text -> [Series] -> Eff es ()
+logInfo = doLog LogInfo getLocName
 
 logWarn' :: (HasCallStack, LoggerEffect :> es) => Text -> [Series] -> Eff es ()
 logWarn' = doLog LogWarning getLocName
@@ -479,7 +514,7 @@ serverEff = route1Handler Servant.:<|> route1Handler
  where
   route1Handler :: Eff es Natural
   route1Handler = do
-    logInfo' "Handling route" []
+    logInfo "Handling route" []
     pure 42
 
 -- | liftServer convert the effectful implementation to the Handler context.
@@ -495,17 +530,17 @@ liftServer es = Servant.hoistServer (Proxy @TestApi) interpretServer serverEff
 
 demo, demoServant, demoTest, demoCrawler :: IO ()
 demo = demoTest
-demoTest = defaultMain tests
+demoTest = defaultMain testTree
 demoServant =
   runEff $ runLoggerEffect do
     unsafeEff $ \es ->
       Warp.run 8080 $ Servant.serve (Proxy @TestApi) $ liftServer es
-demoCrawler = runEff $ runLoggerEffect $ runHttpEffect $ crawler
+demoCrawler = runEff $ runLoggerEffect $ runHttpEffect $ crawlerDemo
 
 type CrawlerEffect' es = [IOE, HttpEffect, LoggerEffect] :>> es
 
-crawler :: CrawlerEffect' es => Eff es ()
-crawler = withContext ("crawler" .= ("crawler-name" :: Text)) do
-  logInfo' "Starting crawler" []
+crawlerDemo :: CrawlerEffect' es => Eff es ()
+crawlerDemo = withContext ("crawler" .= ("crawler-name" :: Text)) do
+  logInfo "Starting crawler" []
   res <- httpRequest =<< HTTP.parseUrlThrow "http://localhost"
-  logInfo' ("Got: " <> show res) []
+  logInfo ("Got: " <> show res) []

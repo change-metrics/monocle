@@ -9,7 +9,6 @@ import Monocle.Config qualified as Config
 import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Search.Query qualified as Q
-import Monocle.Search.Syntax (Expr)
 import Network.HTTP.Client qualified as HTTP
 import Servant (ServerError)
 import Servant qualified (Handler)
