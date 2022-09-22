@@ -63,10 +63,11 @@ withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
       (\index -> runEmptyMonoQuery index I.ensureIndex)
       indexes
 
-    withApp @RootAPI cfg rootServer \app ->
-      withMockedManager
-        (dropVersionPath app)
-        (\manager -> withLogger $ \logger -> withClient "http://localhost" (Just manager) (testCb logger))
+    unsafeEff $ \es ->
+      let app = hoistEff @RootAPI es cfg rootServer
+       in withMockedManager
+            (dropVersionPath app)
+            (\manager -> withLogger $ \logger -> withClient "http://localhost" (Just manager) (testCb logger))
 
   dropVersionPath app' req = do
     app'
