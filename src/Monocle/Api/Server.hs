@@ -86,7 +86,7 @@ updateIndex index wsRef = runEmptyMonoQuery index $ modifyMVar_ wsRef undefined 
   refreshIndex = do
     logInfo' "RefreshIndex" ["index" .= Config.getWorkspaceName index]
     runEmptyMonoQuery index do
-      I.ensureIndexSetup'
+      I.ensureIndexSetup
       traverse_ I.initCrawlerMetadata $ Config.crawlers index
 
 -- | Convenient pattern to get the config from the status

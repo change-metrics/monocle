@@ -301,6 +301,11 @@ esAdvance scroll = do
   ElasticEffect env <- getStaticRep
   error "TODO"
 
+esGetDocument :: ElasticEffect :> es => BH.IndexName -> BH.DocId -> Eff es (HTTP.Response LByteString)
+esGetDocument iname doc = do
+  ElasticEffect env <- getStaticRep
+  unsafeEff_ $ BH.runBH env $ BH.getDocument iname doc
+
 esCountByIndex :: ElasticEffect :> es => BH.IndexName -> BH.CountQuery -> Eff es (Either BH.EsError BH.CountResponse)
 esCountByIndex iname q = do
   ElasticEffect env <- getStaticRep

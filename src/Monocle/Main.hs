@@ -81,7 +81,7 @@ type AuthAPI =
 rootServer :: ApiEffects es => ES.ServerEff RootAPI es
 rootServer = app :<|> app
  where
-  app = undefined :<|> handleLogin :<|> handleLoggedIn
+  app = server :<|> handleLogin :<|> handleLoggedIn
 
 fallbackWebAppPath :: FilePath
 fallbackWebAppPath = "web/build/"

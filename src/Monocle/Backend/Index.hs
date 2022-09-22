@@ -11,14 +11,12 @@ import Data.Map qualified as Map
 import Data.Time
 import Data.Vector qualified as V
 import Database.Bloodhound qualified as BH
-import Database.Bloodhound.Raw qualified as BHR
 import Google.Protobuf.Timestamp as T
 import Monocle.Backend.Documents
 import Monocle.Backend.Queries qualified as Q
 import Monocle.Config qualified as Config
 import Monocle.Entity
 import Monocle.Env
-import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Change qualified as ChangePB
 import Monocle.Protob.Crawler qualified as CrawlerPB
@@ -31,8 +29,7 @@ import Streaming.Prelude qualified as S
 import Streaming.Prelude qualified as Streaming
 
 import Effectful.Fail qualified as E
-import Effectful.Reader.Static qualified as E
-import Monocle.Effects hiding (logInfo)
+import Monocle.Effects
 
 type IndexEffects es = [ElasticEffect, LoggerEffect] :>> es
 
@@ -433,14 +430,6 @@ ensureConfigIndex = do
 ensureIndexSetup :: '[MonoQueryEffect, LoggerEffect, ElasticEffect] :>> es => Eff es ()
 ensureIndexSetup = do
   indexName <- getIndexName'
-  logInfo' "Ensure workspace " ["index" .= indexName]
-  createIndex' indexName ChangesIndexMapping
-  esSettings indexName (object ["index" .= object ["max_regex_length" .= (50_000 :: Int)]])
-
-ensureIndexSetup' :: [E.Fail, LoggerEffect, ElasticEffect, MonoQueryEffect] :>> es => Eff es ()
-ensureIndexSetup' = do
-  indexName <- getIndexName'
-  logInfo' "Ensure workspace " ["index" .= indexName]
   createIndex' indexName ChangesIndexMapping
   esSettings indexName (object ["index" .= object ["max_regex_length" .= (50_000 :: Int)]])
 
@@ -634,9 +623,9 @@ checkDocExists docId = do
   index <- getIndexName'
   esDocumentExists index docId
 
-getDocumentById' :: (BH.MonadBH m, FromJSON a, MonadThrow m) => BH.IndexName -> BH.DocId -> m (Maybe a)
+getDocumentById' :: IndexEffects es => FromJSON a => BH.IndexName -> BH.DocId -> Eff es (Maybe a)
 getDocumentById' index docId = do
-  resp <- BH.getDocument index docId
+  resp <- esGetDocument index docId
   if isNotFound resp
     then pure Nothing
     else do
@@ -650,7 +639,8 @@ getDocumentById' index docId = do
 
 getDocumentById :: '[MonoQueryEffect] :>> es => IndexEffects es => FromJSON a => BH.DocId -> Eff es (Maybe a)
 getDocumentById docId = do
-  getDocumentById docId
+  index <- getIndexName'
+  getDocumentById' index docId
 
 getChangeById :: '[MonoQueryEffect] :>> es => IndexEffects es => BH.DocId -> Eff es (Maybe EChange)
 getChangeById = getDocumentById

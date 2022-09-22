@@ -35,12 +35,15 @@ import Monocle.Protob.Search (TaskData (..))
 
 -- | Provision fakedata for a tenant
 runProvisioner :: Text -> IO ()
-runProvisioner tenantName = testQueryM (mkTenant tenantName) do
+runProvisioner tenantName = undefined
+{-
+  testQueryM' @es (mkTenant tenantName) do
   I.ensureIndex
   events <- liftIO createFakeEvents
-  putTextLn $ "[provisioner] Adding " <> show (length events) <> " events to " <> tenantName <> "."
+  logInfo'  ("[provisioner] Adding " <> show (length events) <> " events to " <> tenantName <> ".") []
   T.indexScenario events
-  putTextLn "[provisioner] Done."
+  logInfo' "[provisioner] Done." []
+-}
 
 -- | Ensure changes have a unique ID
 setChangeID :: [EChange] -> IO [EChange]

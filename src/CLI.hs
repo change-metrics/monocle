@@ -148,7 +148,7 @@ usageJanitor =
     workspaceOption = optional $ strOption (long "workspace" <> O.help "Workspace name" <> metavar "WORKSPACE")
     configOption = strOption (long "config" <> O.help "Path to configuration file" <> metavar "MONOCLE_CONFIG")
     elasticOption = strOption (long "elastic" <> O.help "The Elastic endpoint url" <> metavar "MONOCLE_ELASTIC_URL")
-    runOnWorkspace env workspace = runQueryM' env workspace J.updateIdentsOnWorkspace
+    runOnWorkspace env workspace = undefined -- runQueryM' env workspace J.updateIdentsOnWorkspace
 
 ---------------------------------------------------------------
 -- Lentille cli

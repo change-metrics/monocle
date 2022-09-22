@@ -23,7 +23,7 @@ import Test.Tasty.HUnit
 testCrawlingPoint :: Assertion
 testCrawlingPoint = do
   appEnv <- mkAppEnv fakeConfig
-  void $ runQueryM' (bhEnv $ aEnv appEnv) fakeConfig I.ensureIndexSetup
+  void $ undefined -- runQueryM' (bhEnv $ aEnv appEnv) fakeConfig I.ensureIndexSetup
   let fakeChange1 =
         BT.fakeChange
           { D.echangeId = "efake1"
@@ -31,7 +31,7 @@ testCrawlingPoint = do
           , D.echangeRepositoryFullname = "opendev/neutron"
           }
       fakeChange2 = fakeChange1 {D.echangeId = "efake2", D.echangeUpdatedAt = BT.fakeDateAlt}
-  void $ runQueryM' (bhEnv $ aEnv appEnv) fakeConfig $ I.indexChanges [fakeChange1, fakeChange2]
+  void $ undefined -- runQueryM' (bhEnv $ aEnv appEnv) fakeConfig $ I.indexChanges [fakeChange1, fakeChange2]
   withTestApi (mkAppEnv fakeConfig) $ \logger client -> do
     let stream date name
           | date == BT.fakeDateAlt && name == "opendev/neutron" = pure mempty
@@ -71,7 +71,7 @@ testTaskDataMacroscope = withTestApi appEnv $ \logger client -> do
         | otherwise = error $ "Unexpected product entity: " <> show project
   void $ runLentilleM logger client $ Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.TaskDatas stream)
   -- Check task data got indexed
-  count <- testQueryM fakeConfig $ withQuery taskDataQuery $ Streaming.length_ Q.scanSearchId
+  count <- undefined -- testQueryM fakeConfig $ withQuery taskDataQuery $ Streaming.length_ Q.scanSearchId
   assertEqual "Task data got indexed by macroscope" count 1
  where
   appEnv = mkAppEnv fakeConfig
