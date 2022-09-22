@@ -257,6 +257,13 @@ getIndexName' = do
   MonoQueryEffect env <- getStaticRep
   pure $ Monocle.Env.envToIndexName (queryTarget env)
 
+getIndexConfig' :: MonoQueryEffect :> es => Eff es Monocle.Config.Index
+getIndexConfig' = do
+  MonoQueryEffect env <- getStaticRep
+  pure $ case queryTarget env of
+    Monocle.Env.QueryWorkspace ws -> ws
+    _ -> error "Config has no index config"
+
 getQueryBH :: MonoQueryEffect :> es => Eff es (Maybe BH.Query)
 getQueryBH = do
   MonoQueryEffect env <- getStaticRep

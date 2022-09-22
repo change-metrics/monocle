@@ -15,7 +15,14 @@ import Network.HTTP.Mock (withMockedManager)
 import Network.Wai
 import Servant.Auth.Server (defaultJWTSettings, generateKey)
 
+import Database.Bloodhound qualified as BH
+import Effectful qualified as E
+import Effectful.Error.Static qualified as E
+import Effectful.Fail qualified as E
+import Effectful.Reader.Static qualified as E
 import Monocle.Effects
+import Servant (Context (..), ServerError)
+import Servant.Auth.Server (defaultCookieSettings, defaultJWTSettings)
 
 -- Create the AppEnv, necesary to create the monocle api Wai Application
 mkAppEnv :: Config.Index -> IO AppEnv
@@ -30,12 +37,18 @@ mkAppEnv workspace = withLogger \glLogger -> do
       aEnv = Env {..}
   pure $ AppEnv {..}
 
-runAppEnv :: [ElasticEffect, LoggerEffect, IOE] :>> es => AppEnv -> Eff es a -> IO a
-runAppEnv appEnv action =
+test :: (Either e a) -> a
+test = fromRight (error "too")
+
+runAppEnv :: AppEnv -> Eff (ElasticEffect : MonoConfigEffect : E.Reader AppEnv : LoggerEffect : E.Error ServerError : E.Fail : IOE : '[]) a -> IO a
+runAppEnv appEnv =
   runEff
+    . E.runFailIO
+    . (fmap (fromRight (error "oops")) . E.runErrorNoCallStack)
     . runLoggerEffect
-    . runElasticEffect (appEnv.aEnv.bhEnv)
-    $ action
+    . E.runReader appEnv
+    . runMonoConfig undefined
+    . runElasticEffect (appEnv.aEnv.bhEnv :: BH.BHEnv)
 
 withTestApi :: IO AppEnv -> (Logger -> MonocleClient -> Assertion) -> IO ()
 withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
@@ -45,14 +58,16 @@ withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
   runTest appEnv = runAppEnv appEnv $ do
     conf <- Config.csConfig <$> liftIO (appEnv.config)
     let indexes = Config.getWorkspaces conf
+        cfg = appEnv.aOIDC.localJWTSettings :. defaultCookieSettings :. EmptyContext
     traverse_
       (\index -> runEmptyMonoQuery index I.ensureIndex)
       indexes
-  {- TODO: migrate to effectful
-  withMockedManager
-    (dropVersionPath $ app appEnv)
-    (\manager -> withLogger $ \logger -> withClient "http://localhost" (Just manager) (testCb logger))
-  -}
+
+    withApp @RootAPI cfg rootServer \app ->
+      withMockedManager
+        (dropVersionPath app)
+        (\manager -> withLogger $ \logger -> withClient "http://localhost" (Just manager) (testCb logger))
+
   dropVersionPath app' req = do
     app'
       ( req
@@ -66,5 +81,5 @@ withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
     conf <- Config.csConfig <$> (liftIO appEnv.config)
     let indexes = Config.getWorkspaces conf
     traverse_
-      (\index -> runEmptyMonoQuery index index I.removeIndex)
+      (\index -> runEmptyMonoQuery index I.removeIndex)
       indexes

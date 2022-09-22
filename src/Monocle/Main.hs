@@ -2,7 +2,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
 -- | The Monocle entry point.
-module Monocle.Main (run, rootServer, ApiConfig (..), defaultApiConfig) where
+module Monocle.Main (run, withApp, rootServer, ApiConfig (..), defaultApiConfig, RootAPI) where
 
 import Data.List qualified
 import Data.Text qualified as Text
@@ -53,6 +53,20 @@ runWarpServerSettingsContext settings cfg serverEff middleware = do
         ctx = Proxy @context
         server' = Servant.hoistServerWithContext @api @context api ctx (ES.effToHandlerWith runInIO) serverEff
     Warp.runSettings settings (middleware (Servant.serveWithContext api cfg $ server'))
+
+withApp ::
+  forall (api :: Type) (context :: [Type]) (es :: [E.Effect]).
+  (HasServer api context, ServerContext context, [IOE, E.Error ServerError] :>> es) =>
+  Context context ->
+  ES.ServerEff api es ->
+  (Wai.Application -> IO ()) ->
+  Eff es ()
+withApp cfg serverEff cb = do
+  E.withEffToIO $ \runInIO -> do
+    let api = Proxy @api
+        ctx = Proxy @context
+        server' = Servant.hoistServerWithContext @api @context api ctx (ES.effToHandlerWith runInIO) serverEff
+    cb (Servant.serveWithContext api cfg server')
 
 -- | The API is served at both `/api/2/` (for backward compat with the legacy nginx proxy)
 -- and `/` (for compat with crawler client)
