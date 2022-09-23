@@ -39,7 +39,7 @@ mkAppEnv workspace = withLogger \glLogger -> do
   pure $ AppEnv {..}
 
 --  Note: when running Effect, the order is set
-runAppEnv :: AppEnv -> Eff (ElasticEffect : MonoConfigEffect : E.Reader AppEnv : LoggerEffect : E.Error ServerError : E.Fail : E.Concurrent : IOE : '[]) a -> IO a
+runAppEnv :: AppEnv -> Eff ('[ElasticEffect, MonoConfigEffect, E.Reader AppEnv, LoggerEffect, E.Error ServerError, E.Fail, E.Concurrent, IOE]) a -> IO a
 runAppEnv appEnv =
   runEff
     . E.runConcurrent
