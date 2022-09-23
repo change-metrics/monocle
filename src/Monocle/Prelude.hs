@@ -25,10 +25,14 @@ module Monocle.Prelude (
   (:>>),
   (:>),
   Effectful.runEff,
+  Effectful.withEffToIO,
   Effectful.runPureEff,
   Effectful.Dispatch.Static.unEff,
   Effectful.Dispatch.Static.unsafeEff,
   Effectful.Dispatch.Static.unsafeEff_,
+  Effectful.Fail.Fail,
+  Effectful.Fail.runFail,
+  Effectful.Fail.runFailIO,
 
   -- * generic
   selectors,
@@ -215,6 +219,7 @@ import Database.Bloodhound qualified as BH
 import Effectful ((:>), (:>>))
 import Effectful qualified
 import Effectful.Dispatch.Static qualified
+import Effectful.Fail qualified
 import GHC.Float (double2Float)
 import GHC.Generics (C, D, K1, M1, R, Rep, S, Selector, U1, selName, (:*:), (:+:))
 import GHC.Stack

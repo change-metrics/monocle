@@ -1044,7 +1044,7 @@ instance Functor (Metric es) where
       (const $ (fmap . fmap) f <$> runMetricTrend Nothing)
       (const $ (fmap . fmap) f <$> runMetricTop 0)
 
-runMetricNum :: QEffects es => Metric es a -> Eff es a
+runMetricNum :: Metric es a -> Eff es a
 runMetricNum m = unNum <$> runMetric m
 
 toPBHistoInt :: Histo Word32 -> MetricPB.HistoInt

@@ -17,7 +17,7 @@ import Macroscope.Main (runMacroscope)
 import Monocle.Backend.Janitor qualified as J
 import Monocle.Client (withClient)
 import Monocle.Config qualified as Config
-import Monocle.Env (mkEnv, runQueryM')
+import Monocle.Env (mkEnv)
 import Monocle.Logging
 import Monocle.Main (ApiConfig (..))
 import Monocle.Main qualified
@@ -28,6 +28,9 @@ import Options.Applicative hiding (header, help, str)
 import Options.Applicative qualified as O
 import Options.Applicative.Help.Pretty (string)
 import Streaming.Prelude qualified as S
+
+import Database.Bloodhound qualified as BH
+import Monocle.Effects
 
 ---------------------------------------------------------------
 -- Unified CLI
@@ -148,7 +151,8 @@ usageJanitor =
     workspaceOption = optional $ strOption (long "workspace" <> O.help "Workspace name" <> metavar "WORKSPACE")
     configOption = strOption (long "config" <> O.help "Path to configuration file" <> metavar "MONOCLE_CONFIG")
     elasticOption = strOption (long "elastic" <> O.help "The Elastic endpoint url" <> metavar "MONOCLE_ELASTIC_URL")
-    runOnWorkspace env workspace = undefined -- runQueryM' env workspace J.updateIdentsOnWorkspace
+    runOnWorkspace :: BH.BHEnv -> Config.Index -> IO ()
+    runOnWorkspace env workspace = runEff $ runLoggerEffect $ runElasticEffect env $ runEmptyMonoQuery workspace $ J.updateIdentsOnWorkspace
 
 ---------------------------------------------------------------
 -- Lentille cli

@@ -32,6 +32,8 @@ import Servant.Auth.Server (defaultJWTSettings, generateKey)
 import Test.Tasty
 import Test.Tasty.HUnit
 
+import Monocle.Effects
+
 main :: IO ()
 main = withOpenSSL do
   setEnv "API_KEY" "secret"
@@ -45,8 +47,8 @@ main = withOpenSSL do
       Just _ -> do
         setEnv "TASTY_NUM_THREADS" "1"
         pure
-          [ -- monocleBackendQueriesTests
-            monocleMacroscopeTests
+          [ monocleBackendQueriesTests
+          , monocleMacroscopeTests
           , monocleApiTests
           ]
 
@@ -124,9 +126,9 @@ monocleApiTests =
     "Monocle.Api.Server"
     [ testCase "Test getGroups and getGroupMembers" testGetGroups
     , testCase "Test crawler MDs refreshed after config reload" testReloadedConfig
-    , -- , testCase "Test get metrics" testGetMetrics
-      -- ,   testCase "Test get info metric" testGetInfoMetric
-      testCase "Test Auth Magic Token endpoint" testAuthMagicTokenEndpoint
+    , testCase "Test get metrics" testGetMetrics
+    , testCase "Test get info metric" testGetInfoMetric
+    , testCase "Test Auth Magic Token endpoint" testAuthMagicTokenEndpoint
     ]
  where
   testAuthMagicTokenEndpoint :: Assertion
@@ -256,7 +258,6 @@ monocleApiTests =
     wsName2 = "ws2"
     crawlerName = "testy"
 
-{-
 monocleBackendQueriesTests :: TestTree
 monocleBackendQueriesTests =
   testGroup
@@ -293,7 +294,6 @@ monocleBackendQueriesTests =
     , testCase "Test Config Upgrade to version 3" testUpgradeConfigV3
     , testCase "Test Config Upgrade to version 4" testUpgradeConfigV4
     ]
--}
 
 monocleSearchLanguage :: TestTree
 monocleSearchLanguage =
@@ -515,16 +515,15 @@ monocleSearchLanguage =
             "created_at>2000 and created_at>2001 and created_at<2010 and created_at<2011"
             (d "2001-01-01", d "2010-01-01")
         )
-        -- , testCase "QueryM withFlavor" testWithFlavor
-        -- , testCase "QueryM combinator" testSimpleQueryM
-        -- , testCase "QueryM ensureMinBound" testEnsureMinBound
-        -- , testCase "QueryM dropDate" testDropDate
+    , testCase "QueryM withFlavor" testWithFlavor
+    , testCase "QueryM combinator" testSimpleQueryM
+    , testCase "QueryM ensureMinBound" testEnsureMinBound
+    , testCase "QueryM dropDate" testDropDate
     ]
  where
-  {-
-    mkQueryM code = undefined -- testQueryM testTenant . withQuery (mkCodeQuery code)
-    testWithFlavor :: Assertion
-    testWithFlavor = mkQueryM "from:2021" do
+  mkQueryM code action = withTenant $ withQuery (mkCodeQuery code) $ action
+  testWithFlavor :: Assertion
+  testWithFlavor = mkQueryM "from:2021" do
       withFlavor (Q.QueryFlavor Q.Author Q.OnCreatedAndCreated) do
         q <- prettyQuery
         let expected = "{\"bool\":{\"filter\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-01-01T00:00:00Z\"}}},{\"range\":{\"on_created_at\":{\"boost\":1,\"gt\":\"2021-01-01T00:00:00Z\"}}}]}}"
@@ -534,41 +533,41 @@ monocleSearchLanguage =
           let expected' = "{\"range\":{\"updated_at\":{\"boost\":1,\"gt\":\"2021-01-01T00:00:00Z\"}}}"
           liftIO $ assertEqual "range flavor reset" (Just expected') q'
 
-    testSimpleQueryM :: Assertion
-    testSimpleQueryM = mkQueryM "author:alice" do
-      q <- prettyQuery
-      liftIO $ assertEqual "simple queryM work" (Just "{\"regexp\":{\"author.muid\":{\"flags\":\"ALL\",\"value\":\"alice\"}}}") q
-      dropQuery do
-        emptyQ <- prettyQuery
-        liftIO $ assertEqual "dropQuery work" Nothing emptyQ
-        withModified (const $ Just (S.EqExpr "author" "bob")) do
-          newQ <- prettyQuery
-          liftIO $ assertEqual "withModified work" (Just "{\"regexp\":{\"author.muid\":{\"flags\":\"ALL\",\"value\":\"bob\"}}}") newQ
-
-    testEnsureMinBound :: Assertion
-    testEnsureMinBound = do
-      testQueryM testTenant do
-        withQuery (Q.ensureMinBound $ mkCodeQuery "author:alice") do
-          got <- prettyQuery
-          let expected = "{\"bool\":{\"must\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}},{\"regexp\":{\"author.muid\":{\"flags\":\"ALL\",\"value\":\"alice\"}}}]}}"
-          liftIO $ assertEqual "bound ensured with query" (Just expected) got
-        withQuery (Q.ensureMinBound $ mkCodeQuery "") do
-          got <- prettyQuery
-          let expected = "{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}}"
-          liftIO $ assertEqual "match ensured without query" (Just expected) got
-
-    testDropDate :: Assertion
-    testDropDate = mkQueryM "from:2020 repo:zuul" do
-      got <- prettyQuery
-      let expected = "{\"bool\":{\"must\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2020-01-01T00:00:00Z\"}}},{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"zuul\"}}}]}}"
-      liftIO $ assertEqual "match" (Just expected) got
-      withModified Q.dropDate do
+  testSimpleQueryM :: Assertion
+  testSimpleQueryM = mkQueryM "author:alice" do
+    q <- prettyQuery
+    liftIO $ assertEqual "simple queryM work" (Just "{\"regexp\":{\"author.muid\":{\"flags\":\"ALL\",\"value\":\"alice\"}}}") q
+    dropQuery do
+      emptyQ <- prettyQuery
+      liftIO $ assertEqual "dropQuery work" Nothing emptyQ
+      withModified (const $ Just (S.EqExpr "author" "bob")) do
         newQ <- prettyQuery
-        liftIO $ assertEqual "drop date worked" (Just "{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"zuul\"}}}") newQ
-  -}
+        liftIO $ assertEqual "withModified work" (Just "{\"regexp\":{\"author.muid\":{\"flags\":\"ALL\",\"value\":\"bob\"}}}") newQ
+
+  testEnsureMinBound :: Assertion
+  testEnsureMinBound = do
+    withTenantConfig testTenant do
+      withQuery (Q.ensureMinBound $ mkCodeQuery "author:alice") do
+        got <- prettyQuery
+        let expected = "{\"bool\":{\"must\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}},{\"regexp\":{\"author.muid\":{\"flags\":\"ALL\",\"value\":\"alice\"}}}]}}"
+        liftIO $ assertEqual "bound ensured with query" (Just expected) got
+      withQuery (Q.ensureMinBound $ mkCodeQuery "") do
+        got <- prettyQuery
+        let expected = "{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}}"
+        liftIO $ assertEqual "match ensured without query" (Just expected) got
+
+  testDropDate :: Assertion
+  testDropDate = mkQueryM "from:2020 repo:zuul" do
+    got <- prettyQuery
+    let expected = "{\"bool\":{\"must\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2020-01-01T00:00:00Z\"}}},{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"zuul\"}}}]}}"
+    liftIO $ assertEqual "match" (Just expected) got
+    withModified Q.dropDate do
+      newQ <- prettyQuery
+      liftIO $ assertEqual "drop date worked" (Just "{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"zuul\"}}}") newQ
+
   -- Get pretty query
-  prettyQuery :: QueryM (Maybe LByteString)
-  prettyQuery = undefined -- fmap encodePretty <$> getQueryBH
+  prettyQuery :: MonoQueryEffect :> es => Eff es (Maybe LByteString)
+  prettyQuery = fmap encodePretty <$> getQueryBH
 
   -- Create a Query object
   mkQuery' code = P.parse [] code >>= Q.queryWithMods now mempty testTenant

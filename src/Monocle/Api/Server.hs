@@ -99,12 +99,9 @@ checkAuth auth action = do
           then action Nothing
           else forbidden "Not allowed"
     Nothing -> action Nothing
- where
-  forbidden' :: (MonadError ServerError m) => Text -> m a
-  forbidden' = throwError . forbiddenErr
 
 -- curl -XPOST -d '{"void": ""}' -H "Content-type: application/json" -H 'Authorization: Bearer <token>' http://localhost:8080/auth/whoami
-authWhoAmi :: ApiEffects es => AuthResult AuthenticatedUser -> AuthPB.WhoAmiRequest -> Eff es AuthPB.WhoAmiResponse
+authWhoAmi :: AuthResult AuthenticatedUser -> AuthPB.WhoAmiRequest -> Eff es AuthPB.WhoAmiResponse
 authWhoAmi (Authenticated au) _request =
   pure $ AuthPB.WhoAmiResponse . Just . AuthPB.WhoAmiResponseResultUid $ show au
 authWhoAmi _auth _request = pure $ AuthPB.WhoAmiResponse . Just . AuthPB.WhoAmiResponseResultError . Enumerated $ Right AuthPB.WhoAmiErrorUnAuthorized
@@ -862,7 +859,7 @@ metricGet auth request = checkAuth auth response
     fromPBTrendInterval = readMaybe
 
 -- | gen a 302 redirect helper
-redirects :: ApiEffects es => '[E.Error ServerError] :>> es => ByteString -> Eff es ()
+redirects :: ApiEffects es => ByteString -> Eff es ()
 redirects url = E.throwError err302 {errHeaders = [("Location", url)]}
 
 data Err = Err
@@ -881,7 +878,7 @@ instance ToMarkup Err where
 format :: ToMarkup a => a -> LBS.ByteString
 format err = toMarkup err & renderMarkup
 
-forbidden :: ApiEffects es => '[E.Error ServerError] :>> es => Text -> Eff es a
+forbidden :: ApiEffects es => Text -> Eff es a
 forbidden = E.throwError . forbiddenErr
 
 forbiddenErr :: Text -> ServerError

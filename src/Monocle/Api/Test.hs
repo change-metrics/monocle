@@ -16,13 +16,12 @@ import Network.Wai
 import Servant.Auth.Server (defaultJWTSettings, generateKey)
 
 import Database.Bloodhound qualified as BH
-import Effectful qualified as E
 import Effectful.Error.Static qualified as E
 import Effectful.Fail qualified as E
 import Effectful.Reader.Static qualified as E
 import Monocle.Effects
 import Servant (Context (..), ServerError)
-import Servant.Auth.Server (defaultCookieSettings, defaultJWTSettings)
+import Servant.Auth.Server (defaultCookieSettings)
 
 import Effectful.Concurrent.MVar qualified as E
 
@@ -38,9 +37,6 @@ mkAppEnv workspace = withLogger \glLogger -> do
       config = pure (Config.ConfigStatus False config' wsRef)
       aEnv = Env {..}
   pure $ AppEnv {..}
-
-test :: (Either e a) -> a
-test = fromRight (error "too")
 
 --  Note: when running Effect, the order is set
 runAppEnv :: AppEnv -> Eff (ElasticEffect : MonoConfigEffect : E.Reader AppEnv : LoggerEffect : E.Error ServerError : E.Fail : E.Concurrent : IOE : '[]) a -> IO a

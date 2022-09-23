@@ -20,12 +20,10 @@ import Monocle.Backend.Queries as Q
 import Monocle.Config qualified as Config
 import Monocle.Entity (Entity (Project))
 import Monocle.Env
-import Monocle.Logging hiding (logInfo)
 import Monocle.Prelude
 import Monocle.Protob.Crawler qualified as CrawlerPB
 import Streaming.Prelude qualified as Streaming
 
-import Effectful ((:>))
 import Monocle.Effects
 
 updateAuthor :: Config.Index -> D.Author -> D.Author

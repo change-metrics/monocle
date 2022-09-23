@@ -7,8 +7,7 @@ module Monocle.Main (run, hoistEff, rootServer, ApiConfig (..), defaultApiConfig
 import Data.List qualified
 import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
-import Lentille (httpRetry)
-import Monocle.Api.Jwt (LoginInUser (..), doGenJwk, initOIDCEnv)
+import Monocle.Api.Jwt (doGenJwk, initOIDCEnv)
 import Monocle.Api.Server (handleLoggedIn, handleLogin)
 import Monocle.Backend.Index qualified as I
 import Monocle.Config (getAuthProvider, opName)
@@ -17,7 +16,7 @@ import Monocle.Env
 import Monocle.Logging hiding (logInfo)
 import Monocle.Prelude
 import Monocle.Search.Query (loadAliases)
-import Monocle.Servant.HTTP (MonocleAPI, RootAPI, server)
+import Monocle.Servant.HTTP (RootAPI, server)
 import Network.HTTP.Types.Status qualified as HTTP
 import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
@@ -27,8 +26,7 @@ import Network.Wai.Middleware.Prometheus (def, prometheus)
 import Prometheus (register)
 import Prometheus.Metric.GHC (ghcMetrics)
 import Servant
-import Servant.Auth.Server (CookieSettings, JWTSettings, defaultCookieSettings, defaultJWTSettings)
-import Servant.HTML.Blaze (HTML)
+import Servant.Auth.Server (defaultCookieSettings, defaultJWTSettings)
 import System.Directory qualified
 
 import Monocle.Effects
@@ -44,7 +42,7 @@ import Effectful.Concurrent.MVar qualified as E
 
 runWarpServerSettingsContext ::
   forall (api :: Type) (context :: [Type]) (es :: [E.Effect]).
-  (HasServer api context, ServerContext context, IOE E.:> es) =>
+  (HasServer api context, ServerContext context) =>
   Warp.Settings ->
   Context context ->
   Servant.ServerT api (Eff (E.Error ServerError : es)) ->

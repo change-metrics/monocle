@@ -43,6 +43,7 @@ common common-options
                        -- Enable stan integration
                        -fwrite-ide-info
                        -hiedir=.hie
+                       -- -fplugin=Effectful.Plugin
   if impl(ghc >= 8.0)
     ghc-options:       -Wredundant-constraints
   if impl(ghc >= 8.2)
@@ -130,6 +131,7 @@ library
                      , either                     >= 5
                      , effectful
                      , effectful-core
+                     -- , effectful-plugin
                      , envparse                   >= 0.4
                      , exceptions                 >= 0.10
                      , fakedata                   >= 1.0

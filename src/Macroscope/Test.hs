@@ -24,7 +24,6 @@ import Test.Tasty.HUnit
 import Monocle.Api.Test (runAppEnv)
 import Monocle.Backend.Test (testQueryM')
 import Monocle.Effects
-import Effectful.Fail qualified as E
 
 testCrawlingPoint :: Assertion
 testCrawlingPoint = do

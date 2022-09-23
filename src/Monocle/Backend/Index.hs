@@ -669,14 +669,14 @@ data TaskDataDoc = TaskDataDoc
 
 type TaskDataOrphanDoc = TaskDataDoc
 
-getOrphanTaskDataByChangeURL :: '[MonoQueryEffect] :>> es => IndexEffects es => [Text] -> Eff es [EChangeOrphanTD]
+getOrphanTaskDataByChangeURL :: forall es. [ElasticEffect, MonoQueryEffect] :>> es => [Text] -> Eff es [EChangeOrphanTD]
 getOrphanTaskDataByChangeURL urls = do
   index <- getIndexName'
   results <- scanSearch index
   pure $ catMaybes $ BH.hitSource <$> results
  where
   scanSearch :: BH.IndexName -> Eff es [BH.Hit EChangeOrphanTD]
-  scanSearch index = undefined -- BH.scanSearch index search
+  scanSearch index = esScanSearch index search
   search = BH.mkSearch (Just query) Nothing
   query =
     mkAnd
@@ -687,7 +687,7 @@ getOrphanTaskDataByChangeURL urls = do
           ]
       ]
 
-getOrphanTaskDataAndDeclareAdoption :: '[MonoQueryEffect] :>> es => IndexEffects es => [Text] -> Eff es [EChangeOrphanTD]
+getOrphanTaskDataAndDeclareAdoption :: [ElasticEffect, MonoQueryEffect] :>> es => IndexEffects es => [Text] -> Eff es [EChangeOrphanTD]
 getOrphanTaskDataAndDeclareAdoption urls = do
   oTDs <- getOrphanTaskDataByChangeURL urls
   void $ updateDocs $ toAdoptedDoc <$> oTDs
@@ -1006,11 +1006,11 @@ getAuthorCache =
 searchAuthorCache :: forall es. '[MonoQueryEffect] :>> es => IndexEffects es => Text -> Eff es [Text]
 searchAuthorCache matchQuery = do
   indexName <- getIndexName'
-  ret <- runSearch
+  ret <- runSearch indexName
   pure $ mapMaybe trans ret
  where
-  runSearch :: Eff es [BH.Hit CachedAuthor]
-  runSearch = undefined -- Q.scanSearch' search
+  runSearch :: BH.IndexName -> Eff es [BH.Hit CachedAuthor]
+  runSearch idx = esScanSearch idx search
   search = BH.mkSearch (Just query) Nothing
   query =
     BH.QueryMatchQuery . BH.mkMatchQuery (BH.FieldName "cached_author_muid") $

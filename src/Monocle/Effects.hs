@@ -26,12 +26,25 @@
 -- If approved, then the inidivual effect should be sperated in multiple modules for
 -- better re-usability.
 --
--- Usage:
+-- Note: [Monocle Effects]
 --
--- To use Monocle.Effects:
+-- Monocle uses effectful to implement a simple effect system.
+-- An effect is composed of an environment data type and associated
+-- functions.
 --
--- - Run individual effect with the associated `run*`.
--- - Use `unsafeEff` to liftIO (until IO is necessary)
+-- Effectful uses an extensible record indexed by types of kind Effect.
+-- This list is represented as a type variable, usually named `es`
+--
+-- * Effect constraints
+--
+-- Effect can be added as a contraints using the `:>` operator:
+--
+--   `LoggerEffect :> es` meanst that the es list contains the Effect.
+--
+-- * Effect execution
+--
+-- Effect can be executed using a run* function to remove the effect from the list.
+--
 module Monocle.Effects where
 
 import Control.Retry (RetryStatus (..))
@@ -329,6 +342,12 @@ esSearchHit iname body = do
   ElasticEffect env <- getStaticRep
   unsafeEff_ $ BH.runBH env $ BHR.searchHit iname body
 
+esScanSearch :: ElasticEffect :> es => FromJSON body => BH.IndexName -> BH.Search -> Eff es [BH.Hit body]
+esScanSearch iname search = do
+  ElasticEffect env <- getStaticRep
+  unsafeEff_ $ BH.runBH env $ BH.scanSearch iname search
+
+
 esDeleteByQuery :: ElasticEffect :> es => BH.IndexName -> BH.Query -> Eff es BH.Reply
 esDeleteByQuery iname q = do
   ElasticEffect env <- getStaticRep
@@ -343,6 +362,7 @@ esIndexDocument :: ToJSON body => ElasticEffect :> es => BH.IndexName -> BH.Inde
 esIndexDocument indexName docSettings body docId = do
   ElasticEffect env <- getStaticRep
   unsafeEff_ $ BH.runBH env $ BH.indexDocument indexName docSettings body docId
+
 esPutMapping :: ElasticEffect :> es => ToJSON mapping => BH.IndexName -> mapping -> Eff es ()
 esPutMapping iname mapping = do
   ElasticEffect env <- getStaticRep
@@ -509,8 +529,8 @@ type TestApi =
 type ApiEffects' es = [IOE, LoggerEffect] :>> es
 
 -- | serverEff is the effectful implementation of the TestAPI
-serverEff :: forall es. ApiEffects' es => Servant.ServerT TestApi (Eff es)
-serverEff = route1Handler Servant.:<|> route1Handler
+serverEff' :: forall es. ApiEffects' es => Servant.ServerT TestApi (Eff es)
+serverEff' = route1Handler Servant.:<|> route1Handler
  where
   route1Handler :: Eff es Natural
   route1Handler = do
@@ -520,7 +540,7 @@ serverEff = route1Handler Servant.:<|> route1Handler
 -- | liftServer convert the effectful implementation to the Handler context.
 -- It is necessary to pass each effect environment so that the effects can be interpret for each request.
 liftServer :: forall es. ApiEffects' es => EffStatic.Env es -> Servant.ServerT TestApi Servant.Handler
-liftServer es = Servant.hoistServer (Proxy @TestApi) interpretServer serverEff
+liftServer es = Servant.hoistServer (Proxy @TestApi) interpretServer serverEff'
  where
   interpretServer :: Eff es a -> Servant.Handler a
   interpretServer action = do
@@ -529,7 +549,7 @@ liftServer es = Servant.hoistServer (Proxy @TestApi) interpretServer serverEff
       unEff action es'
 
 demo, demoServant, demoTest, demoCrawler :: IO ()
-demo = demoTest
+demo = demoMultiEffects
 demoTest = defaultMain testTree
 demoServant =
   runEff $ runLoggerEffect do
@@ -544,3 +564,15 @@ crawlerDemo = withContext ("crawler" .= ("crawler-name" :: Text)) do
   logInfo "Starting crawler" []
   res <- httpRequest =<< HTTP.parseUrlThrow "http://localhost"
   logInfo ("Got: " <> show res) []
+
+demoMultiEffects :: IO ()
+demoMultiEffects = do
+  runEff $ E.runFailIO $ runLoggerEffect do
+    loggerDemo
+    subDemo
+
+loggerDemo :: LoggerEffect :> es => Eff es ()
+loggerDemo = logInfo "Hello effectful" []
+
+subDemo :: E.Fail :> es => Eff es ()
+subDemo = fail "Toto"
