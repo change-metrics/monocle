@@ -44,7 +44,6 @@
 -- * Effect execution
 --
 -- Effect can be executed using a run* function to remove the effect from the list.
---
 module Monocle.Effects where
 
 import Control.Retry (RetryStatus (..))
@@ -346,7 +345,6 @@ esScanSearch :: ElasticEffect :> es => FromJSON body => BH.IndexName -> BH.Searc
 esScanSearch iname search = do
   ElasticEffect env <- getStaticRep
   unsafeEff_ $ BH.runBH env $ BH.scanSearch iname search
-
 
 esDeleteByQuery :: ElasticEffect :> es => BH.IndexName -> BH.Query -> Eff es BH.Reply
 esDeleteByQuery iname q = do

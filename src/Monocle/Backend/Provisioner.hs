@@ -29,16 +29,16 @@ import Monocle.Backend.Documents
 import Monocle.Backend.Index qualified as I
 import Monocle.Backend.Test qualified as T
 import Monocle.Config (mkTenant)
+import Monocle.Effects (logInfo)
 import Monocle.Prelude
 import Monocle.Protob.Search (TaskData (..))
-import Monocle.Effects (logInfo)
 
 -- | Provision fakedata for a tenant
 runProvisioner :: Text -> IO ()
 runProvisioner tenantName = T.withTenantConfig (mkTenant tenantName) $ runFailIO $ do
   I.ensureIndex
   events <- liftIO createFakeEvents
-  logInfo  ("[provisioner] Adding " <> show (length events) <> " events to " <> tenantName <> ".") []
+  logInfo ("[provisioner] Adding " <> show (length events) <> " events to " <> tenantName <> ".") []
   T.indexScenario events
   logInfo "[provisioner] Done." []
 

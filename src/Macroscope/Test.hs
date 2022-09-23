@@ -1,18 +1,21 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+
 -- | Tests for the macroscope process
 module Macroscope.Test where
 
 import Lentille (runLentilleM)
 import Macroscope.Main qualified as Macroscope
 import Macroscope.Worker qualified as Macroscope
-import Monocle.Api.Test (mkAppEnv, withTestApi)
+import Monocle.Api.Test (mkAppEnv, runAppEnv, withTestApi)
 import Monocle.Backend.Documents qualified as D
 import Monocle.Backend.Index qualified as I
 import Monocle.Backend.Provisioner qualified
 import Monocle.Backend.Queries qualified as Q
+import Monocle.Backend.Test (testQueryM')
 import Monocle.Backend.Test qualified as BT (fakeChange, fakeDate, fakeDateAlt)
 import Monocle.Client
 import Monocle.Config qualified as Config
+import Monocle.Effects
 import Monocle.Entity (CrawlerName (..))
 import Monocle.Env
 import Monocle.Logging
@@ -21,21 +24,17 @@ import Streaming.Prelude qualified as Streaming
 import Test.Tasty
 import Test.Tasty.HUnit
 
-import Monocle.Api.Test (runAppEnv)
-import Monocle.Backend.Test (testQueryM')
-import Monocle.Effects
-
 testCrawlingPoint :: Assertion
 testCrawlingPoint = do
   appEnv <- mkAppEnv fakeConfig
   runAppEnv appEnv $ runEmptyMonoQuery fakeConfig do
     I.ensureIndexSetup
     let fakeChange1 =
-         BT.fakeChange
-          { D.echangeId = "efake1"
-          , D.echangeUpdatedAt = BT.fakeDate
-          , D.echangeRepositoryFullname = "opendev/neutron"
-          }
+          BT.fakeChange
+            { D.echangeId = "efake1"
+            , D.echangeUpdatedAt = BT.fakeDate
+            , D.echangeRepositoryFullname = "opendev/neutron"
+            }
         fakeChange2 = fakeChange1 {D.echangeId = "efake2", D.echangeUpdatedAt = BT.fakeDateAlt}
     I.indexChanges [fakeChange1, fakeChange2]
   withTestApi (mkAppEnv fakeConfig) $ \client -> withLogger $ \logger -> do
@@ -67,7 +66,6 @@ testCrawlingPoint = do
   apiKey = "secret"
   indexName = "test-macroscope"
   crawlerName = "testy"
-
 
 testTaskDataMacroscope :: Assertion
 testTaskDataMacroscope = withTestApi appEnv $ \client -> withLogger $ \logger -> testAction client logger

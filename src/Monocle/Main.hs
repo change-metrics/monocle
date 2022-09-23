@@ -31,14 +31,14 @@ import System.Directory qualified
 
 import Monocle.Effects
 
+import Control.Monad.Except qualified as T
 import Effectful qualified as E
+import Effectful.Concurrent.MVar qualified as E
 import Effectful.Dispatch.Static.Primitive qualified as EP
 import Effectful.Error.Static qualified as E
 import Effectful.Fail qualified as E
 import Effectful.Reader.Static qualified as E
 import Effectful.Servant qualified as ES
-import qualified Control.Monad.Except as T
-import Effectful.Concurrent.MVar qualified as E
 
 runWarpServerSettingsContext ::
   forall (api :: Type) (context :: [Type]) (es :: [E.Effect]).
@@ -50,7 +50,7 @@ runWarpServerSettingsContext ::
   Eff es Void
 runWarpServerSettingsContext settings cfg serverEff middleware = do
   unsafeEff $ \es ->
-     Warp.runSettings settings (middleware $ hoistEff @api es cfg serverEff)
+    Warp.runSettings settings (middleware $ hoistEff @api es cfg serverEff)
   error "Warp exited"
 
 hoistEff ::
@@ -60,14 +60,14 @@ hoistEff ::
   Context context ->
   Servant.ServerT api (Eff (E.Error ServerError : es)) ->
   Wai.Application
-hoistEff env ctx serverEff = Servant.serveWithContextT (Proxy @api) ctx interpretServer serverEff
-  where
-    interpretServer :: Eff (E.Error ServerError : es) a -> Servant.Handler a
-    interpretServer action = do
-      v <- liftIO do
-         es' <- EP.cloneEnv env
-         unEff (E.runErrorNoCallStack action) es'
-      T.liftEither v
+hoistEff env ctx = Servant.serveWithContextT (Proxy @api) ctx interpretServer
+ where
+  interpretServer :: Eff (E.Error ServerError : es) a -> Servant.Handler a
+  interpretServer action = do
+    v <- liftIO do
+      es' <- EP.cloneEnv env
+      unEff (E.runErrorNoCallStack action) es'
+    T.liftEither v
 
 rootServer :: ApiEffects es => '[E.Concurrent] :>> es => ES.ServerEff RootAPI es
 rootServer = app :<|> app
@@ -191,18 +191,17 @@ run' ApiConfig {..} aplogger glLogger = E.runConcurrent $ runLoggerEffect do
   bhEnv <- mkEnv elasticUrl
   let aEnv = Env {..}
   r <- E.runFail $ runElasticEffect bhEnv do
-    traverse_ (\workspace -> runEmptyMonoQuery workspace I.ensureIndex) workspaces
+    traverse_ (`runEmptyMonoQuery` I.ensureIndex) workspaces
     runMonoQuery (MonoQueryEnv (QueryConfig conf) (mkQuery [])) I.ensureConfigIndex
 
     let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
         jwtCfg = localJWTSettings
         cfg = jwtCfg :. defaultCookieSettings :. EmptyContext
         middleware =
-          ( cors (const $ Just policy)
-              . monitoringMiddleware
-              . healthMiddleware
-              . staticMiddleware
-          )
+          cors (const $ Just policy)
+            . monitoringMiddleware
+            . healthMiddleware
+            . staticMiddleware
     logInfo "SystemReady" ["workspace" .= length workspaces, "port" .= port, "elastic" .= elasticUrl]
 
     appEnv <- E.withEffToIO $ \effToIO -> do
@@ -210,7 +209,7 @@ run' ApiConfig {..} aplogger glLogger = E.runConcurrent $ runLoggerEffect do
       pure AppEnv {aEnv, aOIDC, config = configIO}
 
     E.runReader appEnv $
-          runWarpServerSettingsContext @RootAPI settings cfg rootServer middleware
+      runWarpServerSettingsContext @RootAPI settings cfg rootServer middleware
   case r of
     Left e -> error (show e)
     Right e -> error (show e)

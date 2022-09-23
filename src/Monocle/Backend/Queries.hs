@@ -1,5 +1,6 @@
 -- ambiguous type is necessary for allMetrics
 {-# LANGUAGE AllowAmbiguousTypes #-}
+
 -- | Monocle queries
 -- The goal of this module is to transform 'Query' into list of items
 module Monocle.Backend.Queries where
@@ -1177,7 +1178,6 @@ monoHisto intervalM metric = do
       overrideQueryEnvBound :: Q.Query -> Q.Query
       overrideQueryEnvBound query = query {Q.queryBounds = bounds}
 
-
 countHisto :: forall es. QEffects es => RangeFlavor -> Maybe Q.TimeRange -> Eff es (V.Vector (Histo Word32))
 countHisto rf intervalM = fmap toHisto <$> getCountHisto
  where
@@ -1698,6 +1698,6 @@ allMetrics =
     ]
 
 getMetricInfo :: Text -> Maybe MetricInfo
-getMetricInfo metric = case filter (\m -> metric == miMetricName m) (allMetrics) of
+getMetricInfo metric = case filter (\m -> metric == miMetricName m) allMetrics of
   [m] -> Just m
   _ -> Nothing

@@ -1,9 +1,10 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+
 --
 module Monocle.Backend.Test where
 
-import Control.Monad.Random.Lazy
 import Control.Exception (bracket_)
+import Control.Monad.Random.Lazy
 import Data.List (partition)
 import Data.Maybe (fromJust)
 import Data.Text qualified as Text
@@ -91,7 +92,7 @@ withTenant = withTenantConfig index
   -- todo: generate random name
   index = Config.mkTenant "test-tenant"
 
-testQueryM' :: Config.Index -> Eff [MonoQueryEffect,ElasticEffect,LoggerEffect,E.Fail,IOE] a ->  IO a
+testQueryM' :: Config.Index -> Eff [MonoQueryEffect, ElasticEffect, LoggerEffect, E.Fail, IOE] a -> IO a
 testQueryM' config action = do
   bhEnv <- mkEnv'
   runEff $ E.runFailIO $ runLoggerEffect $ runElasticEffect bhEnv $ runEmptyMonoQuery config action
@@ -106,8 +107,8 @@ withTenantConfig ws action = do
     withEffToIO $ \runInIO ->
       bracket_ (runInIO create) (runInIO delete) (runInIO action)
  where
-  create = E.runFailIO $ I.ensureIndex
-  delete = E.runFailIO $ I.removeIndex
+  create = E.runFailIO I.ensureIndex
+  delete = E.runFailIO I.removeIndex
 
 checkEChangeField :: TestEffects es => (Show a, Eq a) => BH.DocId -> (EChange -> a) -> a -> Eff es ()
 checkEChangeField = _checkField
@@ -442,7 +443,7 @@ testUpgradeConfigV1 = do
     getCrawlerProjectMDDocID =
       let entity = Project repoName
        in entityDocID (CrawlerName crawlerName) entity
-  setDocs :: [MonoQueryEffect,ElasticEffect,LoggerEffect] :>> es => Config.Crawler -> Text -> Text -> Text -> (Eff es) ()
+  setDocs :: [MonoQueryEffect, ElasticEffect, LoggerEffect] :>> es => Config.Crawler -> Text -> Text -> Text -> (Eff es) ()
   setDocs crawler crawlerName repo1 repo2 = do
     -- Init crawler metadata
     I.initCrawlerMetadata crawler

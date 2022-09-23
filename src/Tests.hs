@@ -521,17 +521,17 @@ monocleSearchLanguage =
     , testCase "QueryM dropDate" testDropDate
     ]
  where
-  mkQueryM code action = withTenant $ withQuery (mkCodeQuery code) $ action
+  mkQueryM code action = withTenant $ withQuery (mkCodeQuery code) action
   testWithFlavor :: Assertion
   testWithFlavor = mkQueryM "from:2021" do
-      withFlavor (Q.QueryFlavor Q.Author Q.OnCreatedAndCreated) do
-        q <- prettyQuery
-        let expected = "{\"bool\":{\"filter\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-01-01T00:00:00Z\"}}},{\"range\":{\"on_created_at\":{\"boost\":1,\"gt\":\"2021-01-01T00:00:00Z\"}}}]}}"
-        liftIO $ assertEqual "OnCreatedAndCreated range flavor" (Just expected) q
-        withFlavor (Q.QueryFlavor Q.Author Q.UpdatedAt) do
-          q' <- prettyQuery
-          let expected' = "{\"range\":{\"updated_at\":{\"boost\":1,\"gt\":\"2021-01-01T00:00:00Z\"}}}"
-          liftIO $ assertEqual "range flavor reset" (Just expected') q'
+    withFlavor (Q.QueryFlavor Q.Author Q.OnCreatedAndCreated) do
+      q <- prettyQuery
+      let expected = "{\"bool\":{\"filter\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-01-01T00:00:00Z\"}}},{\"range\":{\"on_created_at\":{\"boost\":1,\"gt\":\"2021-01-01T00:00:00Z\"}}}]}}"
+      liftIO $ assertEqual "OnCreatedAndCreated range flavor" (Just expected) q
+      withFlavor (Q.QueryFlavor Q.Author Q.UpdatedAt) do
+        q' <- prettyQuery
+        let expected' = "{\"range\":{\"updated_at\":{\"boost\":1,\"gt\":\"2021-01-01T00:00:00Z\"}}}"
+        liftIO $ assertEqual "range flavor reset" (Just expected') q'
 
   testSimpleQueryM :: Assertion
   testSimpleQueryM = mkQueryM "author:alice" do

@@ -1,0 +1,2 @@
+- arguments: [-XQuasiQuotes]
+- ignore: {name: "Use if"}

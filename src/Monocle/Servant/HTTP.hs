@@ -7,7 +7,8 @@
 -- SPDX-License-Identifier: AGPL-3.0-only
 module Monocle.Servant.HTTP (RootAPI, MonocleAPI, server) where
 
-import Monocle.Api.Jwt (AuthenticatedUser)
+import Data.Text
+import Monocle.Api.Jwt (AuthenticatedUser, LoginInUser (..))
 import Monocle.Api.Server (authGetMagicJwt, authWhoAmi, configGetAbout, configGetGroupMembers, configGetGroups, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, loginLoginValidation, metricGet, metricInfo, metricList, searchAuthor, searchCheck, searchFields, searchQuery, searchSuggestions)
 import Monocle.Protob.Auth (GetMagicJwtRequest, GetMagicJwtResponse, WhoAmiRequest, WhoAmiResponse)
 import Monocle.Protob.Config (GetAboutRequest, GetAboutResponse, GetGroupMembersRequest, GetGroupMembersResponse, GetGroupsRequest, GetGroupsResponse, GetProjectsRequest, GetProjectsResponse, GetWorkspacesRequest, GetWorkspacesResponse)
@@ -18,13 +19,10 @@ import Monocle.Protob.Search (AuthorRequest, AuthorResponse, CheckRequest, Check
 import Monocle.Servant.PBJSON (PBJSON)
 import Servant
 import Servant.Auth.Server (Auth, Cookie, JWT)
-import Data.Text
 
-import Effectful (Eff)
-import Monocle.Effects hiding (searchQuery)
+import Effectful (Eff, (:>>))
 import Effectful.Concurrent.MVar qualified as E
-import Effectful ((:>>))
-import Monocle.Api.Jwt (LoginInUser (..))
+import Monocle.Effects hiding (searchQuery)
 import Servant.HTML.Blaze (HTML)
 
 type MonocleAPI =

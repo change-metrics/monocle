@@ -46,14 +46,15 @@ updateIdentsOnWorkspace = do
     QueryConfig _ -> error "Config can't be updated"
   changesCount <- withQuery (mkQuery [Q.documentType D.EChangeDoc]) Q.countDocs
   eventsCount <- withQuery (mkQuery [Q.documentTypes $ fromList D.allEventTypes]) Q.countDocs
-  flip logInfo [] $ show @Text $
-    "Workspace "
-      <> workspaceName
-      <> " - Janitor will process on "
-      <> show changesCount
-      <> " changes and "
-      <> show eventsCount
-      <> " events."
+  flip logInfo [] $
+    show @Text $
+      "Workspace "
+        <> workspaceName
+        <> " - Janitor will process on "
+        <> show changesCount
+        <> " changes and "
+        <> show eventsCount
+        <> " events."
   logInfo "Processing (this may take some time) ..." []
   updatedChangesCount <- updateIdentsOnChanges
   logInfo "Updated changes" ["count" .= updatedChangesCount]
