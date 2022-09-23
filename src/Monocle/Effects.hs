@@ -1,8 +1,6 @@
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE TypeFamilies #-}
 -- for MTL Compat
-{-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 
 -- | This module demonstrates how the static reader based effect
@@ -60,6 +58,7 @@ import Monocle.Config qualified
 import Network.HTTP.Client (HttpException (..))
 import Network.HTTP.Client qualified as HTTP
 
+import Monocle.Effects.Compat ()
 import Effectful
 import Effectful.Dispatch.Static (SideEffects (..), StaticRep, evalStaticRep, getStaticRep, localStaticRep)
 import Effectful.Dispatch.Static.Primitive qualified as EffStatic
@@ -145,10 +144,6 @@ testTree =
     do
       config <- getReloadConfig
       Monocle.Config.csReloaded config `testEff` False
-
--- | MTL Compat
-instance IOE :> es => MonadMonitor (Eff es) where
-  doIO = liftIO
 
 ------------------------------------------------------------------
 --
@@ -551,7 +546,7 @@ liftServer es = Servant.hoistServer (Proxy @TestApi) interpretServer serverEff'
       unEff action es'
 
 demo, demoServant, demoTest, demoCrawler :: IO ()
-demo = demoMultiEffects
+demo = pure ()
 demoTest = defaultMain testTree
 demoServant =
   runEff $ runLoggerEffect do

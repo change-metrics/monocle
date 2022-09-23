@@ -197,6 +197,7 @@ library
                      , Monocle.Version
                      , Monocle.Config
                      , Monocle.Effects
+                     , Monocle.Effects.Compat
                      , CLI
                      , Tests
 

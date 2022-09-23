@@ -1,5 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-
 -- | Tests for the macroscope process
 module Macroscope.Test where
 
