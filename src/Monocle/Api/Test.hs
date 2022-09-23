@@ -63,7 +63,7 @@ withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
       let indexes = Config.getWorkspaces conf
           cfg = appEnv.aOIDC.localJWTSettings :. defaultCookieSettings :. EmptyContext
       traverse_
-        (\index -> runEmptyMonoQuery index I.ensureIndex)
+        (\index -> runEmptyQueryM index I.ensureIndex)
         indexes
       unsafeEff $ \es ->
         let app = hoistEff @RootAPI es cfg rootServer
@@ -85,5 +85,5 @@ withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
     conf <- Config.csConfig <$> (liftIO appEnv.config)
     let indexes = Config.getWorkspaces conf
     traverse_
-      (\index -> runEmptyMonoQuery index I.removeIndex)
+      (\index -> runEmptyQueryM index I.removeIndex)
       indexes

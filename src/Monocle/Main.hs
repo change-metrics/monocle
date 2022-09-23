@@ -191,7 +191,7 @@ run' ApiConfig {..} aplogger glLogger = E.runConcurrent $ runLoggerEffect do
   bhEnv <- mkEnv elasticUrl
   let aEnv = Env {..}
   r <- E.runFail $ runElasticEffect bhEnv do
-    traverse_ (`runEmptyMonoQuery` I.ensureIndex) workspaces
+    traverse_ (`runEmptyQueryM` I.ensureIndex) workspaces
     runMonoQuery (MonoQueryEnv (QueryConfig conf) (mkQuery [])) I.ensureConfigIndex
 
     let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings

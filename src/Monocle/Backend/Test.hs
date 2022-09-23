@@ -86,24 +86,24 @@ fakeChange =
     }
 
 -- | TODO: rename 'withTenant' into 'runTenantEffects', this is a test helper
-withTenant :: Eff [MonoQueryEffect, ElasticEffect, LoggerEffect, IOE] () -> IO ()
+withTenant :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] () -> IO ()
 withTenant = withTenantConfig index
  where
   -- todo: generate random name
   index = Config.mkTenant "test-tenant"
 
-testQueryM' :: Config.Index -> Eff [MonoQueryEffect, ElasticEffect, LoggerEffect, E.Fail, IOE] a -> IO a
+testQueryM' :: Config.Index -> Eff [MonoQuery, ElasticEffect, LoggerEffect, E.Fail, IOE] a -> IO a
 testQueryM' config action = do
   bhEnv <- mkEnv'
-  runEff $ E.runFailIO $ runLoggerEffect $ runElasticEffect bhEnv $ runEmptyMonoQuery config action
+  runEff $ E.runFailIO $ runLoggerEffect $ runElasticEffect bhEnv $ runEmptyQueryM config action
 
 runQueryTarget' :: BH.BHEnv -> QueryTarget -> Eff es a -> IO a
 runQueryTarget' = error "TODO"
 
-withTenantConfig :: Config.Index -> Eff [MonoQueryEffect, ElasticEffect, LoggerEffect, IOE] () -> IO ()
+withTenantConfig :: Config.Index -> Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] () -> IO ()
 withTenantConfig ws action = do
   bhEnv <- mkEnv'
-  runEff $ runLoggerEffect $ runElasticEffect bhEnv $ runEmptyMonoQuery ws do
+  runEff $ runLoggerEffect $ runElasticEffect bhEnv $ runEmptyQueryM ws do
     withEffToIO $ \runInIO ->
       bracket_ (runInIO create) (runInIO delete) (runInIO action)
  where
@@ -138,7 +138,7 @@ checkChangesCount expectedCount = do
 testIndexChanges :: Assertion
 testIndexChanges = withTenant doTest
  where
-  doTest :: Eff [MonoQueryEffect, ElasticEffect, LoggerEffect, IOE] ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = E.runFailIO do
     -- Index two Changes and check present in database
     I.indexChanges [fakeChange1, fakeChange2]
@@ -192,7 +192,7 @@ testIndexChanges = withTenant doTest
 testProjectCrawlerMetadata :: Assertion
 testProjectCrawlerMetadata = withTenant doTest
  where
-  doTest :: Eff [MonoQueryEffect, ElasticEffect, LoggerEffect, IOE] ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     -- Init default crawler metadata and ensure we get the default updated date
     I.initCrawlerMetadata workerGitlab
@@ -270,7 +270,7 @@ testProjectCrawlerMetadata = withTenant doTest
 testOrganizationCrawlerMetadata :: Assertion
 testOrganizationCrawlerMetadata = withTenant doTest
  where
-  doTest :: Eff [MonoQueryEffect, ElasticEffect, LoggerEffect, IOE] ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     -- Init crawler entities metadata and check we get the default date
     I.initCrawlerMetadata worker
@@ -309,7 +309,7 @@ testOrganizationCrawlerMetadata = withTenant doTest
 testTaskDataCrawlerMetadata :: Assertion
 testTaskDataCrawlerMetadata = withTenant doTest
  where
-  doTest :: Eff [MonoQueryEffect, ElasticEffect, LoggerEffect, IOE] ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     -- Init default crawler metadata and ensure we get the default updated date
     I.initCrawlerMetadata workerGithub
@@ -443,7 +443,7 @@ testUpgradeConfigV1 = do
     getCrawlerProjectMDDocID =
       let entity = Project repoName
        in entityDocID (CrawlerName crawlerName) entity
-  setDocs :: [MonoQueryEffect, ElasticEffect, LoggerEffect] :>> es => Config.Crawler -> Text -> Text -> Text -> (Eff es) ()
+  setDocs :: [MonoQuery, ElasticEffect, LoggerEffect] :>> es => Config.Crawler -> Text -> Text -> Text -> (Eff es) ()
   setDocs crawler crawlerName repo1 repo2 = do
     -- Init crawler metadata
     I.initCrawlerMetadata crawler
@@ -563,7 +563,7 @@ testJanitorUpdateIdents = do
   mkIdent uid = Config.Ident uid Nothing
   expectedAuthor = Author "John Doe" "github.com/john"
 
-  doUpdateIndentOnEventsTest :: Eff [MonoQueryEffect, ElasticEffect, LoggerEffect, IOE] ()
+  doUpdateIndentOnEventsTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doUpdateIndentOnEventsTest = E.runFailIO do
     I.indexEvents [evt1, evt2]
     count <- J.updateIdentsOnEvents
@@ -586,7 +586,7 @@ testJanitorUpdateIdents = do
     mkEventWithAuthor eid eAuthor =
       mkEvent 0 fakeDate EChangeCommentedEvent eAuthor eAuthor (from eid) mempty
 
-  doUpdateIndentOnChangesTest :: Eff [MonoQueryEffect, ElasticEffect, LoggerEffect, IOE] ()
+  doUpdateIndentOnChangesTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doUpdateIndentOnChangesTest = E.runFailIO do
     I.indexChanges [change1, change2, change3]
     count <- J.updateIdentsOnChanges
@@ -644,7 +644,7 @@ scenarioProject name =
 testAchievements :: Assertion
 testAchievements = withTenant doTest
  where
-  doTest :: Eff [MonoQueryEffect, ElasticEffect, LoggerEffect, IOE] ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     indexScenario (nominalMerge (scenarioProject "openstack/nova") "42" fakeDate 3600)
 
@@ -723,7 +723,7 @@ testGetMetrics = withTenantConfig tenant do
 testReposSummary :: Assertion
 testReposSummary = withTenant doTest
  where
-  doTest :: Eff [MonoQueryEffect, ElasticEffect, LoggerEffect, IOE] ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     indexScenario (nominalMerge (scenarioProject "openstack/nova") "42" fakeDate 3600)
     indexScenario (nominalMerge (scenarioProject "openstack/neutron") "43" fakeDate 3600)
@@ -763,7 +763,7 @@ testReposSummary = withTenant doTest
 testTopAuthors :: Assertion
 testTopAuthors = withTenant doTest
  where
-  doTest :: Eff [MonoQueryEffect, ElasticEffect, LoggerEffect, IOE] ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     -- Prapare data
     let nova = SProject "openstack/nova" [alice] [alice] [eve]
@@ -811,7 +811,7 @@ testTopAuthors = withTenant doTest
 testGetAuthorsPeersStrength :: Assertion
 testGetAuthorsPeersStrength = withTenant doTest
  where
-  doTest :: Eff [MonoQueryEffect, ElasticEffect, LoggerEffect, IOE] ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     -- Prapare data
     let nova = SProject "openstack/nova" [bob] [alice] [eve]
@@ -843,7 +843,7 @@ testGetNewContributors :: Assertion
 testGetNewContributors = withTenant doTest
  where
   indexScenario' project fakeDate' cid = indexScenario (nominalMerge project cid fakeDate' 3600)
-  doTest :: Eff [MonoQueryEffect, ElasticEffect, LoggerEffect, IOE] ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     -- Prapare data
     let sn1 = SProject "openstack/nova" [bob] [alice] [eve]
@@ -872,7 +872,7 @@ testGetNewContributors = withTenant doTest
 testLifecycleStats :: Assertion
 testLifecycleStats = withTenant doTest
  where
-  doTest :: Eff [MonoQueryEffect, ElasticEffect, LoggerEffect, IOE] ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     traverse_ (indexScenarioNM (SProject "openstack/nova" [alice] [bob] [eve])) ["42", "43"]
     let query =
@@ -891,7 +891,7 @@ testLifecycleStats = withTenant doTest
 testGetActivityStats :: Assertion
 testGetActivityStats = withTenant doTest
  where
-  doTest :: Eff [MonoQueryEffect, ElasticEffect, LoggerEffect, IOE] ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     -- Prapare data
     let nova = SProject "openstack/nova" [alice] [alice] [eve]
@@ -940,7 +940,7 @@ testGetActivityStats = withTenant doTest
 testGetChangesTops :: Assertion
 testGetChangesTops = withTenant doTest
  where
-  doTest :: Eff [MonoQueryEffect, ElasticEffect, LoggerEffect, IOE] ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     let nova = SProject "openstack/nova" [alice] [alice] [eve]
     let neutron = SProject "openstack/neutron" [bob] [alice] [eve]
@@ -1034,7 +1034,7 @@ testGetSuggestions = withTenant doTest
 testGetAllAuthorsMuid :: Assertion
 testGetAllAuthorsMuid = withTenant doTest
  where
-  doTest :: Eff [MonoQueryEffect, ElasticEffect, LoggerEffect, IOE] ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     traverse_ (indexScenarioNM $ SProject "openstack/nova" [alice] [alice] [eve]) ["42", "43"]
     withQuery defaultQuery do
@@ -1105,7 +1105,7 @@ mkTaskData changeId =
 testTaskDataAdd :: Assertion
 testTaskDataAdd = withTenant doTest
  where
-  doTest :: Eff [MonoQueryEffect, ElasticEffect, LoggerEffect, IOE] ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     let nova = SProject "openstack/nova" [alice] [alice] [eve]
     traverse_ (indexScenarioNM nova) ["42", "43", "44"]
@@ -1181,13 +1181,13 @@ testTaskDataAdd = withTenant doTest
       )
       orphanTdM'
 
-  getOrphanTd :: Text -> Eff [MonoQueryEffect, ElasticEffect, LoggerEffect, IOE] (Maybe EChangeOrphanTD)
+  getOrphanTd :: Text -> Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] (Maybe EChangeOrphanTD)
   getOrphanTd url = I.getDocumentById $ I.getBHDocID url
 
 testTaskDataAdoption :: Assertion
 testTaskDataAdoption = withTenant doTest
  where
-  doTest :: Eff [MonoQueryEffect, ElasticEffect, LoggerEffect, IOE] ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest =
     do
       -- Send Task data w/o a matching change (orphan task data)

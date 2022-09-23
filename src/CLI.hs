@@ -152,7 +152,7 @@ usageJanitor =
     configOption = strOption (long "config" <> O.help "Path to configuration file" <> metavar "MONOCLE_CONFIG")
     elasticOption = strOption (long "elastic" <> O.help "The Elastic endpoint url" <> metavar "MONOCLE_ELASTIC_URL")
     runOnWorkspace :: BH.BHEnv -> Config.Index -> IO ()
-    runOnWorkspace env workspace = runEff $ runLoggerEffect $ runElasticEffect env $ runEmptyMonoQuery workspace J.updateIdentsOnWorkspace
+    runOnWorkspace env workspace = runEff $ runLoggerEffect $ runElasticEffect env $ runEmptyQueryM workspace J.updateIdentsOnWorkspace
 
 ---------------------------------------------------------------
 -- Lentille cli

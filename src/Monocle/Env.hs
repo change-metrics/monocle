@@ -116,19 +116,6 @@ instance ElasticMonad QueryM where
   elasticCountByIndex = BH.countByIndex
   elasticDeleteByQuery = BH.deleteByQuery
 
--- | Run a QueryM computation without a Query, e.g. when adding task data.
-runEmptyQueryM :: Config.Index -> QueryM a -> AppM a
-runEmptyQueryM = flip runQueryM (mkQuery [])
-
--- | Run a QueryM in the AppM
-runQueryM :: Config.Index -> Q.Query -> QueryM a -> AppM a
-runQueryM ws tQuery (QueryM im) = do
-  tEnv <- asks aEnv
-  liftIO $ runReaderT im (QueryEnv {..})
- where
-  tenant = QueryWorkspace ws
-  tContext = Nothing
-
 -- | Run a 'QueryM' with an existing BHEnv
 runQueryM' :: forall a. BH.BHEnv -> Config.Index -> QueryM a -> IO a
 runQueryM' bhEnv ws = runQueryTarget bhEnv (QueryWorkspace ws)
@@ -150,12 +137,6 @@ mkEnv' :: MonadIO m => m BH.BHEnv
 mkEnv' = do
   url <- fromMaybe "http://localhost:9200" <$> lookupEnv "MONOCLE_ELASTIC_URL"
   mkEnv (from url)
-
--- | Run a QueryM without sharing a BHEnv, this is useful for one-off test
-testQueryM :: Config.Index -> QueryM a -> IO a
-testQueryM config tenantM = do
-  bhEnv <- mkEnv'
-  runQueryM' bhEnv config tenantM
 
 -- | Re-export utility function to create a config for testQueryM
 mkConfig :: Text -> Config.Index

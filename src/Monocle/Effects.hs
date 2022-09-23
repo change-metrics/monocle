@@ -84,7 +84,7 @@ import Database.Bloodhound qualified as BH
 import Database.Bloodhound.Raw qualified as BHR
 import Json.Extras qualified as Json
 
--- for MonoQueryEffect
+-- for MonoQuery
 import Monocle.Env (AppEnv, QueryEnv (..))
 import Monocle.Env qualified
 import Monocle.Search.Query qualified as SearchQuery
@@ -96,13 +96,14 @@ import Effectful.Fail qualified as E
 import Effectful.Reader.Static qualified as E
 import Effectful.Servant qualified as ES
 
--- the servant api
+-- the servant api, previously known as AppM
 type ApiEffects es = [IOE, E.Reader AppEnv, E.Error Servant.ServerError, MonoConfigEffect, LoggerEffect, ElasticEffect, E.Fail] :>> es
 
+-- the effect necessary to run elastic request
 type IndexEffects es = [ElasticEffect, LoggerEffect] :>> es
 
--- the query handler
-type QEffects es = [ElasticEffect, LoggerEffect, MonoQueryEffect] :>> es
+-- the query handler, previously known as QueryM
+type QEffects es = [ElasticEffect, LoggerEffect, MonoQuery] :>> es
 
 type TestEffects es = (E.Fail :> es, IOE :> es, QEffects es)
 
@@ -187,41 +188,41 @@ data MonoQueryEnv = MonoQueryEnv
   , searchQuery :: SearchQuery.Query
   }
 
-data MonoQueryEffect :: Effect
-type instance DispatchOf MonoQueryEffect = 'Static 'NoSideEffects
-newtype instance StaticRep MonoQueryEffect = MonoQueryEffect MonoQueryEnv
+data MonoQuery :: Effect
+type instance DispatchOf MonoQuery = 'Static 'NoSideEffects
+newtype instance StaticRep MonoQuery = MonoQuery MonoQueryEnv
 
-runMonoQuery :: MonoQueryEnv -> Eff (MonoQueryEffect : es) a -> Eff es a
-runMonoQuery env = evalStaticRep (MonoQueryEffect env)
+runMonoQuery :: MonoQueryEnv -> Eff (MonoQuery : es) a -> Eff es a
+runMonoQuery env = evalStaticRep (MonoQuery env)
 
-runMonoQueryConfig :: SearchQuery.Query -> Eff (MonoQueryEffect : es) a -> Eff es a
-runMonoQueryConfig q = evalStaticRep (MonoQueryEffect $ MonoQueryEnv (Monocle.Env.QueryWorkspace $ Monocle.Config.mkTenant "test-tenant") q)
+runMonoQueryConfig :: SearchQuery.Query -> Eff (MonoQuery : es) a -> Eff es a
+runMonoQueryConfig q = evalStaticRep (MonoQuery $ MonoQueryEnv (Monocle.Env.QueryWorkspace $ Monocle.Config.mkTenant "test-tenant") q)
 
-runMonoQueryWorkSpace :: Monocle.Config.Index -> SearchQuery.Query -> Eff (MonoQueryEffect : es) a -> Eff es a
-runMonoQueryWorkSpace ws query = evalStaticRep (MonoQueryEffect $ MonoQueryEnv target query)
+runQueryM :: Monocle.Config.Index -> SearchQuery.Query -> Eff (MonoQuery : es) a -> Eff es a
+runQueryM ws query = evalStaticRep (MonoQuery $ MonoQueryEnv target query)
  where
   target = Monocle.Env.QueryWorkspace ws
 
-runEmptyMonoQuery :: Monocle.Config.Index -> Eff (MonoQueryEffect : es) a -> Eff es a
-runEmptyMonoQuery ws = runMonoQueryWorkSpace ws query
+runEmptyQueryM :: Monocle.Config.Index -> Eff (MonoQuery : es) a -> Eff es a
+runEmptyQueryM ws = runQueryM ws query
  where
   query = Monocle.Env.mkQuery []
 
-localSearchQuery :: MonoQueryEffect :> es => (SearchQuery.Query -> SearchQuery.Query) -> Eff es a -> Eff es a
+localSearchQuery :: MonoQuery :> es => (SearchQuery.Query -> SearchQuery.Query) -> Eff es a -> Eff es a
 localSearchQuery changeQuery = localStaticRep updateRep
  where
-  updateRep (MonoQueryEffect env) = MonoQueryEffect (env {searchQuery = changeQuery (env.searchQuery)})
+  updateRep (MonoQuery env) = MonoQuery (env {searchQuery = changeQuery (env.searchQuery)})
 
-localQueryTarget :: MonoQueryEffect :> es => Monocle.Env.QueryTarget -> Eff es a -> Eff es a
+localQueryTarget :: MonoQuery :> es => Monocle.Env.QueryTarget -> Eff es a -> Eff es a
 localQueryTarget localTarget = localStaticRep updateRep
  where
-  updateRep (MonoQueryEffect env) = MonoQueryEffect (env {queryTarget = localTarget})
+  updateRep (MonoQuery env) = MonoQuery (env {queryTarget = localTarget})
 
-withQuery :: MonoQueryEffect :> es => SearchQuery.Query -> Eff es a -> Eff es a
+withQuery :: MonoQuery :> es => SearchQuery.Query -> Eff es a -> Eff es a
 withQuery query = localSearchQuery (const query)
 
 -- | 'withFlavor' change the query flavor
-withFlavor :: MonoQueryEffect :> es => SearchQuery.QueryFlavor -> Eff es a -> Eff es a
+withFlavor :: MonoQuery :> es => SearchQuery.QueryFlavor -> Eff es a -> Eff es a
 withFlavor flavor = localSearchQuery setFlavor
  where
   -- the new flavor replaces the oldFlavor
@@ -231,13 +232,13 @@ withFlavor flavor = localSearchQuery setFlavor
 
 -- | 'withFilter' run a queryM with extra queries.
 -- Use it to mappend bloodhound expression to the final result
-withFilter :: MonoQueryEffect :> es => [BH.Query] -> Eff es a -> Eff es a
+withFilter :: MonoQuery :> es => [BH.Query] -> Eff es a -> Eff es a
 withFilter = localSearchQuery . addFilter
 
 -- | 'withFilterFlavor' run a queryM with extra queries provided based on the current query flavor.
 -- This is used in monoHisto where the extra bounds need to take into account the query flavor,
 -- e.g. firstComment metrics uses
-withFilterFlavor :: MonoQueryEffect :> es => (Maybe SearchQuery.QueryFlavor -> [BH.Query]) -> Eff es a -> Eff es a
+withFilterFlavor :: MonoQuery :> es => (Maybe SearchQuery.QueryFlavor -> [BH.Query]) -> Eff es a -> Eff es a
 withFilterFlavor extraQueries = localSearchQuery addModifier
  where
   addModifier query =
@@ -246,7 +247,7 @@ withFilterFlavor extraQueries = localSearchQuery addModifier
 
 -- | 'withModified' run a queryM with a modified query
 -- Use it to remove or change field from the initial expr, for example to drop dates.
-withModified :: MonoQueryEffect :> es => (Maybe Expr -> Maybe Expr) -> Eff es a -> Eff es a
+withModified :: MonoQuery :> es => (Maybe Expr -> Maybe Expr) -> Eff es a -> Eff es a
 withModified modifier = localSearchQuery addModifier
  where
   -- The new modifier is composed with the previous one
@@ -262,7 +263,7 @@ addFilter extraQueries query =
    in query {SearchQuery.queryGet = newQueryGet}
 
 -- | 'dropQuery' remove the query from the context
-dropQuery :: MonoQueryEffect :> es => Eff es a -> Eff es a
+dropQuery :: MonoQuery :> es => Eff es a -> Eff es a
 dropQuery = localSearchQuery dropQuery'
  where
   -- we still want to call the provided modifier, so
@@ -271,31 +272,31 @@ dropQuery = localSearchQuery dropQuery'
     let newQueryGet modifier = SearchQuery.queryGet query (const $ modifier Nothing)
      in query {SearchQuery.queryGet = newQueryGet}
 
-getQueryTarget :: MonoQueryEffect :> es => Eff es Monocle.Env.QueryTarget
+getQueryTarget :: MonoQuery :> es => Eff es Monocle.Env.QueryTarget
 getQueryTarget = do
-  MonoQueryEffect env <- getStaticRep
+  MonoQuery env <- getStaticRep
   pure env.queryTarget
 
-getIndexName' :: MonoQueryEffect :> es => Eff es BH.IndexName
+getIndexName' :: MonoQuery :> es => Eff es BH.IndexName
 getIndexName' = do
-  MonoQueryEffect env <- getStaticRep
+  MonoQuery env <- getStaticRep
   pure $ Monocle.Env.envToIndexName (queryTarget env)
 
-getIndexConfig' :: MonoQueryEffect :> es => Eff es Monocle.Config.Index
+getIndexConfig' :: MonoQuery :> es => Eff es Monocle.Config.Index
 getIndexConfig' = do
-  MonoQueryEffect env <- getStaticRep
+  MonoQuery env <- getStaticRep
   pure $ case queryTarget env of
     Monocle.Env.QueryWorkspace ws -> ws
     _ -> error "Config has no index config"
 
-getQueryBH :: MonoQueryEffect :> es => Eff es (Maybe BH.Query)
+getQueryBH :: MonoQuery :> es => Eff es (Maybe BH.Query)
 getQueryBH = do
-  MonoQueryEffect env <- getStaticRep
+  MonoQuery env <- getStaticRep
   pure $ Monocle.Env.mkFinalQuery' Nothing env.searchQuery
 
-getQueryBound :: MonoQueryEffect :> es => Eff es (UTCTime, UTCTime)
+getQueryBound :: MonoQuery :> es => Eff es (UTCTime, UTCTime)
 getQueryBound = do
-  MonoQueryEffect env <- getStaticRep
+  MonoQuery env <- getStaticRep
   pure $ SearchQuery.queryBounds env.searchQuery
 
 ------------------------------------------------------------------
@@ -564,7 +565,7 @@ crawlerDemo = withContext ("crawler" .= ("crawler-name" :: Text)) do
 
 demoMultiEffects :: IO ()
 demoMultiEffects = do
-  runEff $ E.runFailIO $ runLoggerEffect do
+  runEff $ E.runFailIO $ runLoggerEffect $ runLoggerEffect $ do
     loggerDemo
     subDemo
 

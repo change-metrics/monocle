@@ -546,7 +546,7 @@ monocleSearchLanguage =
 
   testEnsureMinBound :: Assertion
   testEnsureMinBound = do
-    runEff $ runEmptyMonoQuery testTenant do
+    runEff $ runEmptyQueryM testTenant do
       withQuery (Q.ensureMinBound $ mkCodeQuery "author:alice") do
         got <- prettyQuery
         let expected = "{\"bool\":{\"must\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}},{\"regexp\":{\"author.muid\":{\"flags\":\"ALL\",\"value\":\"alice\"}}}]}}"
@@ -566,7 +566,7 @@ monocleSearchLanguage =
       liftIO $ assertEqual "drop date worked" (Just "{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"zuul\"}}}") newQ
 
   -- Get pretty query
-  prettyQuery :: MonoQueryEffect :> es => Eff es (Maybe LByteString)
+  prettyQuery :: MonoQuery :> es => Eff es (Maybe LByteString)
   prettyQuery = fmap encodePretty <$> getQueryBH
 
   -- Create a Query object

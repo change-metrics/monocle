@@ -30,7 +30,7 @@ import Monocle.Config (Config, OIDCProviderConfig (..))
 import Monocle.Config qualified as Config
 import Monocle.Entity
 import Monocle.Env
-import Monocle.Prelude
+import Monocle.Prelude hiding (asks)
 import Monocle.Protob.Auth qualified as AuthPB
 import Monocle.Protob.Config qualified as ConfigPB
 import Monocle.Protob.Crawler qualified as CrawlerPB
@@ -58,7 +58,7 @@ import Web.OIDC.Client qualified as O
 
 import Effectful.Concurrent.MVar qualified as E
 import Effectful.Error.Static qualified as E
-import Effectful.Reader.Static qualified as E
+import Effectful.Reader.Static (asks)
 import Monocle.Effects
 
 -- | 'getConfig' reload the config automatically from the env
@@ -66,14 +66,14 @@ getWorkspaces :: '[MonoConfigEffect] :>> es => Eff es [Config.Index]
 getWorkspaces = Config.workspaces . Config.csConfig <$> getReloadConfig
 
 -- | 'getConfig' reload the config automatically from the env
-getConfig' :: '[MonoConfigEffect] :>> es => Eff es Config.Config
+getConfig' :: MonoConfigEffect :> es => Eff es Config.Config
 getConfig' = Config.csConfig <$> getReloadConfig
 
 -- | 'updateIndex' if needed - ensures index exists and refresh crawler Metadata
-updateIndex :: forall es. ApiEffects es => '[E.Concurrent] :>> es => Config.Index -> MVar Config.WorkspaceStatus -> Eff es ()
-updateIndex index wsRef = runEmptyMonoQuery index $ E.modifyMVar_ wsRef doUpdateIfNeeded
+updateIndex :: forall es. ApiEffects es => [MonoQuery, E.Concurrent] :>> es => Config.Index -> MVar Config.WorkspaceStatus -> Eff es ()
+updateIndex index wsRef = E.modifyMVar_ wsRef doUpdateIfNeeded
  where
-  doUpdateIfNeeded :: Config.WorkspaceStatus -> Eff (MonoQueryEffect : es) Config.WorkspaceStatus
+  doUpdateIfNeeded :: Config.WorkspaceStatus -> Eff es Config.WorkspaceStatus
   doUpdateIfNeeded ws = case Map.lookup (Config.getWorkspaceName index) ws of
     Just Config.Ready -> pure ws
     Just Config.NeedRefresh -> do
@@ -81,16 +81,15 @@ updateIndex index wsRef = runEmptyMonoQuery index $ E.modifyMVar_ wsRef doUpdate
       pure $ Map.insert (Config.getWorkspaceName index) Config.Ready ws
     Nothing -> error $ "Unknown workspace: " <> show (Config.getWorkspaceName index)
 
-  refreshIndex :: Eff (MonoQueryEffect : es) ()
+  refreshIndex :: Eff es ()
   refreshIndex = do
     logInfo "RefreshIndex" ["index" .= Config.getWorkspaceName index]
-    runEmptyMonoQuery index do
-      I.ensureIndexSetup
-      traverse_ I.initCrawlerMetadata $ Config.crawlers index
+    I.ensureIndexSetup
+    traverse_ I.initCrawlerMetadata $ Config.crawlers index
 
 checkAuth :: forall a es. ApiEffects es => AuthResult AuthenticatedUser -> (Maybe AuthenticatedUser -> Eff es a) -> Eff es a
 checkAuth auth action = do
-  aOIDC <- E.asks aOIDC
+  aOIDC <- asks aOIDC
   case oidcEnv aOIDC of
     Just (OIDCEnv {providerConfig}) -> case auth of
       Authenticated au -> action $ Just au
@@ -109,7 +108,7 @@ authWhoAmi _auth _request = pure $ AuthPB.WhoAmiResponse . Just . AuthPB.WhoAmiR
 -- curl -XPOST -d '{"token": "admin-token"}' -H "Content-type: application/json" http://localhost:8080/auth/get
 authGetMagicJwt :: ApiEffects es => AuthResult AuthenticatedUser -> AuthPB.GetMagicJwtRequest -> Eff es AuthPB.GetMagicJwtResponse
 authGetMagicJwt _auth (AuthPB.GetMagicJwtRequest inputAdminToken) = do
-  oidc <- E.asks aOIDC
+  oidc <- asks aOIDC
   -- The generated JWT does not have any expiry
   -- An API restart generates new JWK that will invalidate the token
   jwtE <- liftIO $ mkJwt (localJWTSettings oidc) Map.empty "bot" Nothing
@@ -160,7 +159,7 @@ loginLoginValidation _auth request = do
   validateOnIndex :: Text -> Config.Index -> MaybeT (Eff es) ()
   validateOnIndex username index = do
     let userQuery = Q.toUserTerm username
-    count <- lift (runEmptyMonoQuery index $ withFilter [userQuery] Q.countDocs')
+    count <- lift $ runEmptyQueryM index $ withFilter [userQuery] Q.countDocs
     when (count > 0) mzero
 
 -- | /api/2/about endpoint
@@ -173,7 +172,7 @@ configGetAbout ::
 configGetAbout _auth _request = response
  where
   response = do
-    aOIDC <- E.asks aOIDC
+    aOIDC <- asks aOIDC
     config <- getConfig'
     let aboutVersion = from version
         links = maybe [] Config.links (Config.about config)
@@ -295,7 +294,7 @@ crawlerAddDoc _auth request = do
         pure (index, crawler)
 
   case requestE of
-    Right (index, crawler) -> runEmptyMonoQuery index $ case toEntity entity of
+    Right (index, crawler) -> runEmptyQueryM index $ case toEntity entity of
       Project _ -> addChanges crawlerName changes events
       Organization organizationName -> addProjects crawler organizationName projects
       TaskDataEntity _ -> addTDs crawlerName taskDatas
@@ -361,7 +360,7 @@ crawlerCommit _auth request = do
         pure (index, ts, toEntity entityPB)
 
   case requestE of
-    Right (index, ts, entity) -> runEmptyMonoQuery index $ do
+    Right (index, ts, entity) -> runEmptyQueryM index $ do
       let date = Timestamp.toUTCTime ts
       logInfo "UpdatingEntity" ["crawler" .= crawlerName, "entity" .= entity, "date" .= date]
       -- TODO: check for CommitDateInferiorThanPrevious
@@ -399,8 +398,8 @@ crawlerCommitInfo _auth request = do
 
   case requestE of
     Right (index, worker, entityType) -> do
-      updateIndex index wsStatus
-      runEmptyMonoQuery index $ do
+      runEmptyQueryM index $ do
+        updateIndex index wsStatus
         toUpdateEntityM <- I.getLastUpdated worker (fromPBEnum entityType) offset
         case toUpdateEntityM of
           Just crawlerMetadata ->
@@ -441,7 +440,7 @@ searchSuggestions auth request = checkAuth auth . const $ do
   case tenantM of
     Just tenant -> do
       now <- getCurrentTime
-      runMonoQueryWorkSpace tenant (emptyQ now) $ Q.getSuggestions tenant
+      runQueryM tenant (emptyQ now) $ Q.getSuggestions tenant
     Nothing ->
       -- Simply return empty suggestions in case of unknown tenant
       pure $
@@ -485,7 +484,7 @@ searchAuthor auth request = checkAuth auth . const $ do
                   authorAliases = V.fromList $ from <$> aliases
                   authorGroups = V.fromList $ from <$> fromMaybe mempty groups
                in SearchPB.Author {..}
-      found <- runEmptyMonoQuery index $ I.searchAuthorCache . from $ authorRequestQuery
+      found <- runEmptyQueryM index $ I.searchAuthorCache . from $ authorRequestQuery
       pure $ toSearchAuthor <$> found
     Nothing -> pure []
 
@@ -529,7 +528,7 @@ searchQuery auth request = checkAuth auth response
     requestE <- validateSearchRequest queryRequestIndex queryRequestQuery username
 
     case requestE of
-      Right (tenant, query) -> runMonoQueryWorkSpace tenant (Q.ensureMinBound query) $ do
+      Right (tenant, query) -> runQueryM tenant (Q.ensureMinBound query) $ do
         let queryType = fromPBEnum queryRequestQueryType
         logInfo
           "Searching"
@@ -849,7 +848,7 @@ metricGet auth request = checkAuth auth response
       -- Unknown query
       _ -> handleError $ "Unknown metric: " <> from getRequestMetric
    where
-    runM = runMonoQueryWorkSpace tenant (Q.ensureMinBound query)
+    runM = runQueryM tenant (Q.ensureMinBound query)
     runMetric m = case getRequestOptions of
       Just (MetricPB.GetRequestOptionsTrend (MetricPB.Trend interval)) ->
         toTrendResult <$> runM (Q.runMetricTrend m $ fromPBTrendInterval $ from interval)
@@ -859,7 +858,7 @@ metricGet auth request = checkAuth auth response
     fromPBTrendInterval = readMaybe
 
 -- | gen a 302 redirect helper
-redirects :: ApiEffects es => ByteString -> Eff es ()
+redirects :: E.Error ServerError :> es => ByteString -> Eff es ()
 redirects url = E.throwError err302 {errHeaders = [("Location", url)]}
 
 data Err = Err
@@ -893,7 +892,7 @@ appToErr x msg =
 
 handleLogin :: ApiEffects es => Maybe Text -> Eff es NoContent
 handleLogin uriM = do
-  aOIDC <- E.asks aOIDC
+  aOIDC <- asks aOIDC
   case oidcEnv aOIDC of
     Just oidcenv -> do
       incCounter monocleAuthProviderRedirectCounter
@@ -917,7 +916,7 @@ handleLoggedIn ::
   Maybe Text ->
   Eff es LoginInUser
 handleLoggedIn err codeM stateM = do
-  aOIDC <- E.asks aOIDC
+  aOIDC <- asks aOIDC
   Config.ConfigStatus _ config _ <- getReloadConfig
 
   logInfo "OIDCCallbackCall" ["err" .= err, "code" .= codeM, "state" .= stateM]

@@ -25,7 +25,7 @@ import Test.Tasty.HUnit
 testCrawlingPoint :: Assertion
 testCrawlingPoint = do
   appEnv <- mkAppEnv fakeConfig
-  runAppEnv appEnv $ runEmptyMonoQuery fakeConfig do
+  runAppEnv appEnv $ runEmptyQueryM fakeConfig do
     I.ensureIndexSetup
     let fakeChange1 =
           BT.fakeChange

@@ -181,13 +181,6 @@ doFastSearch limit = do
       }
 
 -- | Get document count matching the query
-countDocs' :: QEffects es => Eff es Count
-countDocs' = do
-  query <-
-    fromMaybe (error "Need a query to count") <$> getQueryBH
-  doCountBH' query
-
--- | Get document count matching the query
 countDocs :: QEffects es => Eff es Count
 countDocs = do
   query <-
@@ -1675,7 +1668,7 @@ allMetrics :: [MetricInfo]
 allMetrics =
   map
     metricInfo
-    [ toJSON <$> metricChangesCreated @[ElasticEffect, LoggerEffect, MonoQueryEffect]
+    [ toJSON <$> metricChangesCreated @[ElasticEffect, LoggerEffect, MonoQuery]
     , toJSON <$> metricChangesMerged
     , toJSON <$> metricChangesAbandoned
     , toJSON <$> metricChangesSelfMerged
