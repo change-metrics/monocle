@@ -1,8 +1,5 @@
--- This is for https://github.com/Kleidukos/servant-effectful/pull/4
-{-# LANGUAGE AllowAmbiguousTypes #-}
-
 -- | The Monocle entry point.
-module Monocle.Main (run, hoistEff, rootServer, ApiConfig (..), defaultApiConfig, RootAPI) where
+module Monocle.Main (run, rootServer, ApiConfig (..), defaultApiConfig, RootAPI) where
 
 import Data.List qualified
 import Data.Text qualified as Text
@@ -28,47 +25,14 @@ import Servant
 import Servant.Auth.Server (defaultCookieSettings, defaultJWTSettings)
 import System.Directory qualified
 
-import Monocle.Effects
-
-import Control.Monad.Except qualified as T
 import Effectful qualified as E
 import Effectful.Concurrent.MVar qualified as E
-import Effectful.Dispatch.Static.Primitive qualified as EP
-import Effectful.Error.Static qualified as E
 import Effectful.Fail qualified as E
 import Effectful.Reader.Static qualified as E
-import Effectful.Servant qualified as ES
+import Effectful.Servant qualified
+import Monocle.Effects
 
-runWarpServerSettingsContext ::
-  forall (api :: Type) (context :: [Type]) (es :: [E.Effect]).
-  (HasServer api context, ServerContext context) =>
-  Warp.Settings ->
-  Context context ->
-  Servant.ServerT api (Eff (E.Error ServerError : es)) ->
-  Wai.Middleware ->
-  Eff es Void
-runWarpServerSettingsContext settings cfg serverEff middleware = do
-  unsafeEff $ \es ->
-    Warp.runSettings settings (middleware $ hoistEff @api es cfg serverEff)
-  error "Warp exited"
-
-hoistEff ::
-  forall (api :: Type) (context :: [Type]) (es :: [E.Effect]).
-  (HasServer api context, ServerContext context) =>
-  EP.Env es ->
-  Context context ->
-  Servant.ServerT api (Eff (E.Error ServerError : es)) ->
-  Wai.Application
-hoistEff env ctx = Servant.serveWithContextT (Proxy @api) ctx interpretServer
- where
-  interpretServer :: Eff (E.Error ServerError : es) a -> Servant.Handler a
-  interpretServer action = do
-    v <- liftIO do
-      es' <- EP.cloneEnv env
-      unEff (E.runErrorNoCallStack action) es'
-    T.liftEither v
-
-rootServer :: ApiEffects es => '[E.Concurrent] :>> es => ES.ServerEff RootAPI es
+rootServer :: ApiEffects es => '[E.Concurrent] :>> es => Servant.ServerT RootAPI (Eff es)
 rootServer = app :<|> app
  where
   app = server :<|> handleLogin :<|> handleLoggedIn
@@ -206,7 +170,7 @@ run' ApiConfig {..} aplogger = E.runConcurrent $ runLoggerEffect do
       pure AppEnv {bhEnv, aOIDC, config = configIO}
 
     E.runReader appEnv $
-      runWarpServerSettingsContext @RootAPI settings cfg rootServer middleware
+      Effectful.Servant.runWarpServerSettingsContext @RootAPI settings cfg rootServer middleware
   case r of
     Left e -> error (show e)
     Right e -> error (show e)

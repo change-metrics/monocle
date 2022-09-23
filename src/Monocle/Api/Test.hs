@@ -22,6 +22,7 @@ import Monocle.Effects
 import Servant (Context (..), ServerError)
 import Servant.Auth.Server (defaultCookieSettings)
 
+import Effectful.Servant qualified
 import Effectful.Concurrent.MVar qualified as E
 import Effectful.Servant qualified
 
@@ -66,7 +67,7 @@ withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
         (\index -> runEmptyQueryM index I.ensureIndex)
         indexes
       unsafeEff $ \es ->
-        let app = hoistEff @RootAPI es cfg rootServer
+        let app = Effectful.Servant.hoistEff @RootAPI es cfg rootServer
             withManager manager = do
               withClient "http://localhost" (Just manager) $ \client -> do
                 testCb client
