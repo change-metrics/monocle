@@ -56,6 +56,7 @@ import System.Log.FastLogger qualified as FastLogger
 
 import Control.Exception (throwIO, try)
 import Monocle.Client qualified
+import Monocle.Config qualified
 import Network.HTTP.Client (HttpException (..))
 import Network.HTTP.Client qualified as HTTP
 
@@ -197,6 +198,9 @@ newtype instance StaticRep MonoQueryEffect = MonoQueryEffect MonoQueryEnv
 
 runMonoQuery :: MonoQueryEnv -> Eff (MonoQueryEffect : es) a -> Eff es a
 runMonoQuery env = evalStaticRep (MonoQueryEffect env)
+
+runMonoQueryConfig :: SearchQuery.Query -> Eff (MonoQueryEffect : es) a -> Eff es a
+runMonoQueryConfig q = evalStaticRep (MonoQueryEffect $ MonoQueryEnv (Monocle.Env.QueryWorkspace $ Monocle.Config.mkTenant "test-tenant") q)
 
 runMonoQueryWorkSpace :: Monocle.Config.Index -> SearchQuery.Query -> Eff (MonoQueryEffect : es) a -> Eff es a
 runMonoQueryWorkSpace ws query = evalStaticRep (MonoQueryEffect $ MonoQueryEnv target query)

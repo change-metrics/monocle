@@ -521,7 +521,7 @@ monocleSearchLanguage =
     , testCase "QueryM dropDate" testDropDate
     ]
  where
-  mkQueryM code action = withTenant $ withQuery (mkCodeQuery code) action
+  mkQueryM code action = runEff $ runMonoQueryConfig (mkCodeQuery code) $ action
   testWithFlavor :: Assertion
   testWithFlavor = mkQueryM "from:2021" do
     withFlavor (Q.QueryFlavor Q.Author Q.OnCreatedAndCreated) do
@@ -546,7 +546,7 @@ monocleSearchLanguage =
 
   testEnsureMinBound :: Assertion
   testEnsureMinBound = do
-    withTenantConfig testTenant do
+    runEff $ runEmptyMonoQuery testTenant do
       withQuery (Q.ensureMinBound $ mkCodeQuery "author:alice") do
         got <- prettyQuery
         let expected = "{\"bool\":{\"must\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}},{\"regexp\":{\"author.muid\":{\"flags\":\"ALL\",\"value\":\"alice\"}}}]}}"
