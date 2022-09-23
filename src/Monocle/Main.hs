@@ -17,7 +17,7 @@ import Monocle.Env
 import Monocle.Logging hiding (logInfo)
 import Monocle.Prelude
 import Monocle.Search.Query (loadAliases)
-import Monocle.Servant.HTTP (MonocleAPI, server)
+import Monocle.Servant.HTTP (MonocleAPI, RootAPI, server)
 import Network.HTTP.Types.Status qualified as HTTP
 import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
@@ -70,16 +70,6 @@ hoistEff env ctx serverEff = Servant.serveWithContextT (Proxy @api) ctx interpre
          es' <- EP.cloneEnv env
          unEff (E.runErrorNoCallStack action) es'
       T.liftEither v
-
--- | The API is served at both `/api/2/` (for backward compat with the legacy nginx proxy)
--- and `/` (for compat with crawler client)
-type MonocleAPI' = MonocleAPI :<|> AuthAPI
-
-type RootAPI = "api" :> "2" :> MonocleAPI' :<|> MonocleAPI'
-
-type AuthAPI =
-  "auth" :> "login" :> QueryParam "redirectUri" Text :> Get '[JSON] NoContent
-    :<|> "auth" :> "cb" :> QueryParam "error" Text :> QueryParam "code" Text :> QueryParam "state" Text :> Get '[HTML] LoginInUser
 
 rootServer :: ApiEffects es => '[E.Concurrent] :>> es => ES.ServerEff RootAPI es
 rootServer = app :<|> app

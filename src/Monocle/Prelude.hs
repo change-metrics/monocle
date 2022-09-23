@@ -23,6 +23,7 @@ module Monocle.Prelude (
   Effectful.IOE,
   Effectful.Effect,
   (:>>),
+  (:>),
   Effectful.runEff,
   Effectful.runPureEff,
   Effectful.Dispatch.Static.unEff,
@@ -211,7 +212,7 @@ import Data.Time
 import Data.Time.Clock (getCurrentTime)
 import Data.Vector (Vector)
 import Database.Bloodhound qualified as BH
-import Effectful ((:>>))
+import Effectful ((:>), (:>>))
 import Effectful qualified
 import Effectful.Dispatch.Static qualified
 import GHC.Float (double2Float)
