@@ -1,6 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-
---
 module Monocle.Backend.Test where
 
 import Control.Exception (bracket_)
@@ -125,7 +122,7 @@ _checkField docId field value = do
 
 checkChangesCount :: TestEffects es => Int -> (Eff es) ()
 checkChangesCount expectedCount = do
-  index <- getIndexName'
+  index <- getIndexName
   resp <-
     esCountByIndex
       index
@@ -344,27 +341,15 @@ testTaskDataCrawlerMetadata = withTenant doTest
     fakeDefaultDate = [utctime|2020-01-01 00:00:00|]
     fakeDateB = [utctime|2021-05-31 10:00:00|]
 
-{-
 testEnsureConfig :: Assertion
-testEnsureConfig = bracket_ create delete doTest
+testEnsureConfig = withTenantConfig tenantConfig $ localQueryTarget target $ E.runFailIO do
+  I.ensureIndexSetup
+  I.ensureConfigIndex
+  (currentVersion, _) <- I.getConfigVersion
+  assertEqual' "Check expected Config Index" I.configVersion currentVersion
  where
-  wrap :: QEffects es => Eff es () -> IO ()
-  wrap action = do
-    bhEnv <- mkEnv'
-    let qt = QueryConfig $ Config.Config Nothing Nothing [tenantConfig]
-    runQueryTarget' bhEnv qt action
-
-  create = do
-    testQueryM' tenantConfig I.ensureIndexSetup
-    wrap I.ensureConfigIndex
-  delete = do
-    testQueryM' tenantConfig I.removeIndex
-    wrap I.removeIndex
-  doTest = wrap do
-    (currentVersion, _) <- I.getConfigVersion
-    assertEqual' "Check expected Config Index" I.configVersion currentVersion
   tenantConfig = Config.mkTenant "test-index"
--}
+  target = QueryConfig $ Config.Config Nothing Nothing [tenantConfig]
 
 testUpgradeConfigV3 :: Assertion
 testUpgradeConfigV3 = do
@@ -483,9 +468,8 @@ testUpgradeConfigV1 = do
       , search_aliases = Nothing
       }
 
-{-
-testJanitorWipeCrawler :: forall es. TestEffects es => Assertion
-testJanitorWipeCrawler = withTenant $ local updateEnv doTest
+testJanitorWipeCrawler :: Assertion
+testJanitorWipeCrawler = withTenant $ localQueryTarget updateEnv doTest
  where
   crawlerGerrit = "test-crawler-gerrit"
   fakeDefaultDate = [utctime|2020-01-01 00:00:00|]
@@ -504,8 +488,8 @@ testJanitorWipeCrawler = withTenant $ local updateEnv doTest
                   ]
            in Config.GerritProvider Config.Gerrit {..}
      in Config.Crawler {..}
-  updateEnv :: QueryEnv -> QueryEnv
-  updateEnv orig = orig {tenant = QueryWorkspace tenant}
+  updateEnv :: QueryTarget
+  updateEnv = QueryWorkspace tenant
    where
     tenant =
       Config.Index
@@ -516,7 +500,7 @@ testJanitorWipeCrawler = withTenant $ local updateEnv doTest
         , idents = Nothing
         , search_aliases = Nothing
         }
-  doTest :: (Eff es) ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     I.initCrawlerMetadata workerGerrit
     I.indexChanges
@@ -542,7 +526,6 @@ testJanitorWipeCrawler = withTenant $ local updateEnv doTest
     assertEqual' "Ensure expected amount of docs after wipe" 1 count'
    where
     sQuery = mkQuery [BH.MatchAllQuery Nothing]
--}
 
 testJanitorUpdateIdents :: Assertion
 testJanitorUpdateIdents = do
@@ -999,18 +982,17 @@ testGetChangesTops = withTenant doTest
         )
         results
 
-{-
 testGetSuggestions :: Assertion
 testGetSuggestions = withTenant doTest
  where
-  doTest :: Eff es ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
-    tEnv <- ask
+    target <- getQueryTarget
     let nova = SProject "openstack/nova" [alice] [alice] [eve]
     let neutron = SProject "openstack/neutron" [eve] [alice] [bob]
     traverse_ (indexScenarioNM nova) ["42", "43"]
     traverse_ (indexScenarioNO neutron) ["142", "143"]
-    let ws = case tenant tEnv of
+    let ws = case target of
           QueryWorkspace x -> x
           QueryConfig _ -> error "Can't get config suggestions"
 
@@ -1029,7 +1011,6 @@ testGetSuggestions = withTenant doTest
             mempty
         )
         results
--}
 
 testGetAllAuthorsMuid :: Assertion
 testGetAllAuthorsMuid = withTenant doTest

@@ -11,7 +11,6 @@ import Monocle.Client (MonocleClient (tokenM))
 import Monocle.Client.Api (authGetMagicJwt, authWhoAmi, configGetGroupMembers, configGetGroups, crawlerCommitInfo)
 import Monocle.Config qualified as Config
 import Monocle.Env
-import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Auth
 import Monocle.Protob.Config (
@@ -69,7 +68,7 @@ main = withOpenSSL do
 
 -- Create an AppEnv where the supply of a new config can be controled
 mkAppEnvWithSideEffect :: Config.Config -> Config.Config -> TVar Bool -> IO AppEnv
-mkAppEnvWithSideEffect config' newConfig reloadedRef = withLogger \glLogger -> do
+mkAppEnvWithSideEffect config' newConfig reloadedRef = do
   bhEnv <- mkEnv'
   ws <- newMVar $ Config.mkWorkspaceStatus config'
   newWs <- newMVar $ Config.mkWorkspaceStatus newConfig
@@ -77,7 +76,6 @@ mkAppEnvWithSideEffect config' newConfig reloadedRef = withLogger \glLogger -> d
   Config.setWorkspaceStatus Config.Ready ws
   let config = configSE (config', ws) (newConfig, newWs)
       aOIDC = OIDC Nothing (defaultJWTSettings jwk)
-      aEnv = Env {..}
   pure $ AppEnv {..}
  where
   configSE conf confNew = do
@@ -284,13 +282,13 @@ monocleBackendQueriesTests =
     , testCase
         "Index TaskDataCrawlerMetadata"
         testTaskDataCrawlerMetadata
-    , -- TODO: , testCase "Test suggestions" testGetSuggestions
-      testCase "Test taskData add" testTaskDataAdd
+    , testCase "Test suggestions" testGetSuggestions
+    , testCase "Test taskData add" testTaskDataAdd
     , testCase "Test taskData adoption" testTaskDataAdoption
-    , -- TODO: , testCase "Test Janitor wipe crawler" testJanitorWipeCrawler
-      testCase "Test Janitor update idents" testJanitorUpdateIdents
-    , -- TODO: , testCase "Test Config Index initialization" testEnsureConfig
-      testCase "Test Config Upgrade to version 1" testUpgradeConfigV1
+    , testCase "Test Janitor wipe crawler" testJanitorWipeCrawler
+    , testCase "Test Janitor update idents" testJanitorUpdateIdents
+    , testCase "Test Config Index initialization" testEnsureConfig
+    , testCase "Test Config Upgrade to version 1" testUpgradeConfigV1
     , testCase "Test Config Upgrade to version 3" testUpgradeConfigV3
     , testCase "Test Config Upgrade to version 4" testUpgradeConfigV4
     ]

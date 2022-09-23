@@ -8,7 +8,6 @@ import Monocle.Backend.Index qualified as I
 import Monocle.Client
 import Monocle.Config qualified as Config
 import Monocle.Env
-import Monocle.Logging
 import Monocle.Main
 import Monocle.Prelude
 import Network.HTTP.Mock (withMockedManager)
@@ -24,10 +23,11 @@ import Servant (Context (..), ServerError)
 import Servant.Auth.Server (defaultCookieSettings)
 
 import Effectful.Concurrent.MVar qualified as E
+import Effectful.Servant qualified
 
 -- Create the AppEnv, necesary to create the monocle api Wai Application
 mkAppEnv :: Config.Index -> IO AppEnv
-mkAppEnv workspace = withLogger \glLogger -> do
+mkAppEnv workspace = do
   bhEnv <- mkEnv'
   let config' = Config.Config Nothing Nothing [workspace]
       ws = Config.mkWorkspaceStatus config'
@@ -35,10 +35,9 @@ mkAppEnv workspace = withLogger \glLogger -> do
   jwk <- generateKey
   let aOIDC = OIDC Nothing (defaultJWTSettings jwk)
       config = pure (Config.ConfigStatus False config' wsRef)
-      aEnv = Env {..}
   pure $ AppEnv {..}
 
---  Note: when running Effect, the order is set
+-- | Run the test effects list using an existing AppEnv. This is useful for legacy test written for QueryM ()
 runAppEnv :: AppEnv -> Eff ('[ElasticEffect, MonoConfigEffect, E.Reader AppEnv, LoggerEffect, E.Error ServerError, E.Fail, E.Concurrent, IOE]) a -> IO a
 runAppEnv appEnv =
   runEff
@@ -48,8 +47,9 @@ runAppEnv appEnv =
     . runLoggerEffect
     . E.runReader appEnv
     . runMonoConfigFromEnv (appEnv.config)
-    . runElasticEffect (appEnv.aEnv.bhEnv :: BH.BHEnv)
+    . runElasticEffect (appEnv.bhEnv :: BH.BHEnv)
 
+-- | Run the api effects and provide a http client to the callback for api testing.
 withTestApi :: IO AppEnv -> (MonocleClient -> IO ()) -> Assertion
 withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
  where
@@ -72,6 +72,7 @@ withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
                 testCb client
          in withMockedManager (dropVersionPath app) withManager
 
+  -- TODO: check if dropVersionPath is still necessary
   dropVersionPath app' req = do
     app'
       ( req
@@ -82,7 +83,7 @@ withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
   -- Remove the index
   cleanIndex :: AppEnv -> IO ()
   cleanIndex appEnv = runAppEnv appEnv $ do
-    conf <- Config.csConfig <$> (liftIO appEnv.config)
+    conf <- Config.csConfig <$> getReloadConfig
     let indexes = Config.getWorkspaces conf
     traverse_
       (\index -> runEmptyQueryM index I.removeIndex)

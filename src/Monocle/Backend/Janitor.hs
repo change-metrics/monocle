@@ -18,13 +18,12 @@ import Monocle.Backend.Index (crawlerMDQuery)
 import Monocle.Backend.Index qualified as I
 import Monocle.Backend.Queries as Q
 import Monocle.Config qualified as Config
+import Monocle.Effects
 import Monocle.Entity (Entity (Project))
 import Monocle.Env
 import Monocle.Prelude
 import Monocle.Protob.Crawler qualified as CrawlerPB
 import Streaming.Prelude qualified as Streaming
-
-import Monocle.Effects
 
 updateAuthor :: Config.Index -> D.Author -> D.Author
 updateAuthor index author@D.Author {..} = case getIdent of
@@ -46,16 +45,7 @@ updateIdentsOnWorkspace = do
     QueryConfig _ -> error "Config can't be updated"
   changesCount <- withQuery (mkQuery [Q.documentType D.EChangeDoc]) Q.countDocs
   eventsCount <- withQuery (mkQuery [Q.documentTypes $ fromList D.allEventTypes]) Q.countDocs
-  flip logInfo [] $
-    show @Text $
-      "Workspace "
-        <> workspaceName
-        <> " - Janitor will process on "
-        <> show changesCount
-        <> " changes and "
-        <> show eventsCount
-        <> " events."
-  logInfo "Processing (this may take some time) ..." []
+  logInfo "Janitor will process changes and event" ["workspace" .= workspaceName, "changes" .= changesCount, "events" .= eventsCount]
   updatedChangesCount <- updateIdentsOnChanges
   logInfo "Updated changes" ["count" .= updatedChangesCount]
   updatedEventsCount <- updateIdentsOnEvents
@@ -69,7 +59,7 @@ updateIdentsOnWorkspace = do
 updateIdentsOnChanges :: QEffects es => Eff es Int
 updateIdentsOnChanges = do
   target <- getQueryTarget
-  indexName <- getIndexName'
+  indexName <- getIndexName
   case target of
     QueryWorkspace index -> doUpdateIdentsOnChanges indexName (updateAuthor index)
     QueryConfig _ -> error "Config can't be updated"
@@ -132,7 +122,7 @@ doUpdateIdentsOnChanges indexName updateAuthor' = do
 updateIdentsOnEvents :: QEffects es => Eff es Int
 updateIdentsOnEvents = do
   target <- getQueryTarget
-  indexName <- getIndexName'
+  indexName <- getIndexName
   case target of
     QueryWorkspace index -> doUpdateIdentsOnEvents indexName (updateAuthor index)
     QueryConfig _ -> error "Config can't be updated"
@@ -186,7 +176,7 @@ doUpdateIdentsOnEvents indexName updateAuthor' =
 wipeCrawlerData :: forall es. QEffects es => Text -> Eff es ()
 wipeCrawlerData crawlerName = do
   -- Get index from QueryM
-  config <- getIndexConfig'
+  config <- getIndexConfig
   -- Get crawler defintion from configuration (we need it to discover if a prefix is set)
   let crawlerM = Config.lookupCrawler config crawlerName
       crawler = fromMaybe (error "Unable to find the crawler in the configuration") crawlerM
@@ -237,7 +227,7 @@ wipeCrawlerData crawlerName = do
 -- λ> testQueryM (mkConfig "zuul") $ removeTDCrawlerData "custom"
 removeTDCrawlerData :: forall es. QEffects es => Text -> Eff es ()
 removeTDCrawlerData crawlerName = do
-  index <- getIndexName'
+  index <- getIndexName
   tdDeletedCount <- removeOrphanTaskDatas index
   tdChangesCount <- removeChangeTaskDatas index
   logInfo "Deleting td" ["crawler" .= crawlerName, "deleted" .= tdDeletedCount, "updated" .= tdChangesCount]
@@ -298,7 +288,7 @@ removeProjectMD = removeMD CrawlerPB.EntityTypeENTITY_TYPE_PROJECT
 removeMD :: QEffects es => CrawlerPB.EntityType -> Text -> Eff es ()
 removeMD entity crawlerName = do
   logInfo "Will delete crawler md" ["crawler" .= crawlerName, "entity" .= entity]
-  index <- getIndexName'
+  index <- getIndexName
   deletedCount <-
     withFilter [crawlerMDQuery entity crawlerName] $
       Q.scanSearchId

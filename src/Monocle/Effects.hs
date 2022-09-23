@@ -1,15 +1,21 @@
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE TypeFamilies #-}
+
 -- for MTL Compat
-{-# OPTIONS_GHC -fno-warn-unused-imports #-}
 
 -- | This module demonstrates how the static reader based effect
 -- provided by the effectful library can be used to replace the
 -- current mtl style solution.
 --
+-- Note: [Monocle Effects]
+--
+-- Monocle uses effectful to implement a simple effect system.
+-- An effect is composed of an environment data type and associated
+-- functions.
+--
 -- The goals are:
 --
--- - Remove the `instance HasLogger Api` and `instance HasLogger Lentille` boilerplate.
+-- - Remove the `instance HasLogger Api` and `instance HasLogger Worker` boilerplate.
 --   The effects should be usable and general purpose.
 -- - Enable using multiple reader so that effect can easily have an environment.
 --   This removes the needs for `AppEnv.aEnv.glLogger` and `QueryEnv.tEnv.glLogger`
@@ -21,15 +27,6 @@
 -- The effect are implemented using the familiar `ReaderT env IO` but using a StaticRep and 'unsafeEff' to liftIO.
 -- The downside is that dynamic implementation, e.g. for testing, is presently not possible.
 --
--- If approved, then the inidivual effect should be sperated in multiple modules for
--- better re-usability.
---
--- Note: [Monocle Effects]
---
--- Monocle uses effectful to implement a simple effect system.
--- An effect is composed of an environment data type and associated
--- functions.
---
 -- Effectful uses an extensible record indexed by types of kind Effect.
 -- This list is represented as a type variable, usually named `es`
 --
@@ -39,9 +36,30 @@
 --
 --   `LoggerEffect :> es` meanst that the es list contains the Effect.
 --
+-- To add multiple effect, use the ':>>' operator:
+--
+--   `[LoggerEffect,ConfigEffect] :>> es` == `(LoggerEffect :> es, ConfigEffect :> es)`
+--
+-- If the list contains only one item, it needs to be quoted, e.g.: `'[LoggerEffect] :>> es`
+--
 -- * Effect execution
 --
 -- Effect can be executed using a run* function to remove the effect from the list.
+--
+-- When executing the final effects, constraint can't be used,
+-- the effects need to be concrete and in order:
+--
+-- runMyEffect :: Eff [LoggerEffect, Fail, IOE] a -> IO (Either String a)
+-- runMyEffect = runEff . runFail . runLoggerE
+--
+-- This does not work: `[LoggerEffect, Fail, IOE] :>> es => Eff es a -> IO a`
+--
+-- As a rule of thumb, when IO is on the right hand side of the arrow, then the
+-- Effect needs to be defined as concrete Eff type.
+--
+-- Moreover, when peeling just one effect, then the peeled effect needs to be concret too:
+--
+-- runFail :: Eff (Fail : es) a => Eff es (Either String a)
 module Monocle.Effects where
 
 import Control.Retry (RetryStatus (..))
@@ -58,15 +76,14 @@ import Monocle.Config qualified
 import Network.HTTP.Client (HttpException (..))
 import Network.HTTP.Client qualified as HTTP
 
-import Monocle.Effects.Compat ()
 import Effectful
 import Effectful.Dispatch.Static (SideEffects (..), StaticRep, evalStaticRep, getStaticRep, localStaticRep)
 import Effectful.Dispatch.Static.Primitive qualified as EffStatic
+import Monocle.Effects.Compat ()
 
 import Monocle.Logging hiding (logInfo, withContext)
 
 import Monocle.Config (ConfigStatus)
-import Monocle.Config qualified
 
 import Control.Exception (finally)
 import GHC.IO.Handle (hClose)
@@ -85,16 +102,14 @@ import Database.Bloodhound.Raw qualified as BHR
 import Json.Extras qualified as Json
 
 -- for MonoQuery
-import Monocle.Env (AppEnv, QueryEnv (..))
+import Monocle.Env (AppEnv)
 import Monocle.Env qualified
 import Monocle.Search.Query qualified as SearchQuery
 import Monocle.Search.Syntax (Expr)
 
-import Effectful qualified as E
 import Effectful.Error.Static qualified as E
 import Effectful.Fail qualified as E
 import Effectful.Reader.Static qualified as E
-import Effectful.Servant qualified as ES
 
 -- the servant api, previously known as AppM
 type ApiEffects es = [IOE, E.Reader AppEnv, E.Error Servant.ServerError, MonoConfigEffect, LoggerEffect, ElasticEffect, E.Fail] :>> es
@@ -277,13 +292,13 @@ getQueryTarget = do
   MonoQuery env <- getStaticRep
   pure env.queryTarget
 
-getIndexName' :: MonoQuery :> es => Eff es BH.IndexName
-getIndexName' = do
+getIndexName :: MonoQuery :> es => Eff es BH.IndexName
+getIndexName = do
   MonoQuery env <- getStaticRep
   pure $ Monocle.Env.envToIndexName (queryTarget env)
 
-getIndexConfig' :: MonoQuery :> es => Eff es Monocle.Config.Index
-getIndexConfig' = do
+getIndexConfig :: MonoQuery :> es => Eff es Monocle.Config.Index
+getIndexConfig = do
   MonoQuery env <- getStaticRep
   pure $ case queryTarget env of
     Monocle.Env.QueryWorkspace ws -> ws
@@ -292,7 +307,7 @@ getIndexConfig' = do
 getQueryBH :: MonoQuery :> es => Eff es (Maybe BH.Query)
 getQueryBH = do
   MonoQuery env <- getStaticRep
-  pure $ Monocle.Env.mkFinalQuery' Nothing env.searchQuery
+  pure $ Monocle.Env.mkFinalQuery Nothing env.searchQuery
 
 getQueryBound :: MonoQuery :> es => Eff es (UTCTime, UTCTime)
 getQueryBound = do
@@ -354,7 +369,7 @@ esDeleteByQuery iname q = do
 esCreateIndex :: ElasticEffect :> es => BH.IndexSettings -> BH.IndexName -> Eff es ()
 esCreateIndex is iname = do
   ElasticEffect env <- getStaticRep
-  unsafeEff_ $ void $ BH.runBH env $ BH.createIndex is iname
+  unsafeEff_ $ void $ Retry.recoverAll policy (const $ BH.runBH env $ BH.createIndex is iname)
 
 esIndexDocument :: ToJSON body => ElasticEffect :> es => BH.IndexName -> BH.IndexDocumentSettings -> body -> BH.DocId -> Eff es (HTTP.Response LByteString)
 esIndexDocument indexName docSettings body docId = do
@@ -444,32 +459,38 @@ httpRequest ::
 httpRequest req = do
   HttpEffect manager <- getStaticRep
   respE <- unsafeEff $ \env ->
-    try $ Retry.recovering policy [httpHandler env] (const $ HTTP.httpLbs req manager)
+    try $ Retry.recovering policy [httpHandler req env] (const $ HTTP.httpLbs req manager)
   case respE of
     Right resp -> pure (Right resp)
     Left err -> case err of
       HttpExceptionRequest _ ctx -> pure (Left ctx)
       _ -> unsafeEff_ (throwIO err)
- where
-  retryLimit = 2
-  backoff = 500000 -- 500ms
-  policy = Retry.exponentialBackoff backoff <> Retry.limitRetries retryLimit
-  httpHandler :: LoggerEffect :> es => EffStatic.Env es -> RetryStatus -> Handler IO Bool
-  httpHandler env (RetryStatus num _ _) = Handler $ \case
-    HttpExceptionRequest _req ctx -> do
-      let url = decodeUtf8 @Text $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
-          arg = decodeUtf8 $ HTTP.queryString req
-          loc = if num == 0 then url <> arg else url
-      flip unEff env $
-        logInfo
-          "network error"
-          [ "count" .= num
-          , "limit" .= retryLimit
-          , "loc" .= loc
-          , "error" .= show @Text ctx
-          ]
-      pure True
-    InvalidUrlException _ _ -> pure False
+
+backoff :: Int
+backoff = 500000 -- 500ms
+
+policy :: Retry.RetryPolicyM IO
+policy = Retry.exponentialBackoff backoff <> Retry.limitRetries retryLimit
+
+retryLimit :: Int
+retryLimit = 7
+
+httpHandler :: LoggerEffect :> es => HTTP.Request -> EffStatic.Env es -> RetryStatus -> Handler IO Bool
+httpHandler req env (RetryStatus num _ _) = Handler $ \case
+  HttpExceptionRequest _req ctx -> do
+    let url = decodeUtf8 @Text $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
+        arg = decodeUtf8 $ HTTP.queryString req
+        loc = if num == 0 then url <> arg else url
+    flip unEff env $
+      logInfo
+        "network error"
+        [ "count" .= num
+        , "limit" .= retryLimit
+        , "loc" .= loc
+        , "error" .= show @Text ctx
+        ]
+    pure True
+  InvalidUrlException _ _ -> pure False
 
 ------------------------------------------------------------------
 --
@@ -509,6 +530,9 @@ doLog lvl loc msg attrs = do
 
 logInfo :: (HasCallStack, LoggerEffect :> es) => Text -> [Series] -> Eff es ()
 logInfo = doLog LogInfo getLocName
+
+logInfo_ :: (HasCallStack, LoggerEffect :> es) => Text -> Eff es ()
+logInfo_ msg = doLog LogInfo getLocName msg []
 
 logWarn' :: (HasCallStack, LoggerEffect :> es) => Text -> [Series] -> Eff es ()
 logWarn' = doLog LogWarning getLocName

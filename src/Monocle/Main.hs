@@ -13,7 +13,6 @@ import Monocle.Backend.Index qualified as I
 import Monocle.Config (getAuthProvider, opName)
 import Monocle.Config qualified as Config
 import Monocle.Env
-import Monocle.Logging hiding (logInfo)
 import Monocle.Prelude
 import Monocle.Search.Query (loadAliases)
 import Monocle.Servant.HTTP (RootAPI, server)
@@ -146,13 +145,12 @@ defaultApiConfig port elasticUrl configFile =
 run :: ApiConfig -> IO ()
 run cfg =
   withStdoutLogger $ \aplogger ->
-    withLogger $ \logger ->
-      runEff
-        . runMonoConfig (configFile cfg)
-        $ run' cfg aplogger logger
+    runEff
+      . runMonoConfig (configFile cfg)
+      $ run' cfg aplogger
 
-run' :: '[IOE, MonoConfigEffect] :>> es => ApiConfig -> ApacheLogger -> Logger -> Eff es ()
-run' ApiConfig {..} aplogger glLogger = E.runConcurrent $ runLoggerEffect do
+run' :: '[IOE, MonoConfigEffect] :>> es => ApiConfig -> ApacheLogger -> Eff es ()
+run' ApiConfig {..} aplogger = E.runConcurrent $ runLoggerEffect do
   conf <- Config.csConfig <$> getReloadConfig
   let workspaces = Config.getWorkspaces conf
 
@@ -189,7 +187,6 @@ run' ApiConfig {..} aplogger glLogger = E.runConcurrent $ runLoggerEffect do
   let aOIDC = OIDC {..}
 
   bhEnv <- mkEnv elasticUrl
-  let aEnv = Env {..}
   r <- E.runFail $ runElasticEffect bhEnv do
     traverse_ (`runEmptyQueryM` I.ensureIndex) workspaces
     runMonoQuery (MonoQueryEnv (QueryConfig conf) (mkQuery [])) I.ensureConfigIndex
@@ -198,7 +195,7 @@ run' ApiConfig {..} aplogger glLogger = E.runConcurrent $ runLoggerEffect do
         jwtCfg = localJWTSettings
         cfg = jwtCfg :. defaultCookieSettings :. EmptyContext
         middleware =
-          cors (const $ Just policy)
+          cors (const $ Just corsPolicy)
             . monitoringMiddleware
             . healthMiddleware
             . staticMiddleware
@@ -206,7 +203,7 @@ run' ApiConfig {..} aplogger glLogger = E.runConcurrent $ runLoggerEffect do
 
     appEnv <- E.withEffToIO $ \effToIO -> do
       let configIO = effToIO getReloadConfig
-      pure AppEnv {aEnv, aOIDC, config = configIO}
+      pure AppEnv {bhEnv, aOIDC, config = configIO}
 
     E.runReader appEnv $
       runWarpServerSettingsContext @RootAPI settings cfg rootServer middleware
@@ -214,5 +211,5 @@ run' ApiConfig {..} aplogger glLogger = E.runConcurrent $ runLoggerEffect do
     Left e -> error (show e)
     Right e -> error (show e)
  where
-  policy =
+  corsPolicy =
     simpleCorsResourcePolicy {corsRequestHeaders = ["content-type"]}

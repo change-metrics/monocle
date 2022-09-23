@@ -1,6 +1,3 @@
--- ambiguous type is necessary for allMetrics
-{-# LANGUAGE AllowAmbiguousTypes #-}
-
 -- | Monocle queries
 -- The goal of this module is to transform 'Query' into list of items
 module Monocle.Backend.Queries where
@@ -56,7 +53,7 @@ measureQueryM _ = id
 doScrollSearchBH :: (QEffects es, ToJSON body, FromJSONField resp) => BHR.ScrollRequest -> body -> Eff es (BH.SearchResult resp)
 doScrollSearchBH scrollRequest body = do
   measureQueryM body do
-    index <- getIndexName'
+    index <- getIndexName
     esSearch index body scrollRequest
 
 -- | A search without scroll
@@ -71,22 +68,14 @@ doAdvanceScrollBH scroll = do
 doSearchHitBH :: (QEffects es, ToJSON body) => body -> Eff es [Json.Value]
 doSearchHitBH body = do
   measureQueryM body do
-    index <- getIndexName'
+    index <- getIndexName
     esSearchHit index body
 
 -- | Call the count endpoint
-doCountBH' :: QEffects es => BH.Query -> Eff es Count
-doCountBH' body = do
-  index <- getIndexName'
-  resp <- esCountByIndex index (BH.CountQuery body)
-  case resp of
-    Left e -> error $ show e
-    Right x -> pure $ naturalToCount (BH.crCount x)
-
 doCountBH :: QEffects es => BH.Query -> Eff es Count
 doCountBH body = do
   measureQueryM body do
-    index <- getIndexName'
+    index <- getIndexName
     resp <- esCountByIndex index (BH.CountQuery body)
     case resp of
       Left e -> error $ show e
@@ -96,7 +85,7 @@ doCountBH body = do
 doDeleteByQueryBH :: QEffects es => BH.Query -> Eff es ()
 doDeleteByQueryBH body = do
   measureQueryM body do
-    index <- getIndexName'
+    index <- getIndexName
     -- TODO: BH does not return parsed response - keep as is or if not enough move it to BHR.
     void $ esDeleteByQuery index body
     void $ esRefreshIndex index

@@ -9,7 +9,7 @@ import Monocle.Backend.Documents qualified as D
 import Monocle.Backend.Index qualified as I
 import Monocle.Backend.Provisioner qualified
 import Monocle.Backend.Queries qualified as Q
-import Monocle.Backend.Test (testQueryM')
+import Monocle.Backend.Test (withTenantConfig)
 import Monocle.Backend.Test qualified as BT (fakeChange, fakeDate, fakeDateAlt)
 import Monocle.Client
 import Monocle.Config qualified as Config
@@ -77,7 +77,7 @@ testTaskDataMacroscope = withTestApi appEnv $ \client -> withLogger $ \logger ->
           | otherwise = error $ "Unexpected product entity: " <> show project
     void $ runLentilleM logger client $ Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.TaskDatas stream)
     -- Check task data got indexed
-    testQueryM' fakeConfig do
+    withTenantConfig fakeConfig do
       count <- withQuery taskDataQuery $ Streaming.length_ Q.scanSearchId
       liftIO (assertEqual "Task data got indexed by macroscope" count 1)
 

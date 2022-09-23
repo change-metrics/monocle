@@ -61,15 +61,12 @@ import Effectful.Error.Static qualified as E
 import Effectful.Reader.Static (asks)
 import Monocle.Effects
 
--- | 'getConfig' reload the config automatically from the env
+-- | 'getWorkspaces' returns the list of workspace, reloading the config when the file changed.
 getWorkspaces :: '[MonoConfigEffect] :>> es => Eff es [Config.Index]
 getWorkspaces = Config.workspaces . Config.csConfig <$> getReloadConfig
 
--- | 'getConfig' reload the config automatically from the env
-getConfig' :: MonoConfigEffect :> es => Eff es Config.Config
-getConfig' = Config.csConfig <$> getReloadConfig
-
 -- | 'updateIndex' if needed - ensures index exists and refresh crawler Metadata
+-- note: updateIndex is the handler that needs the Concurrent Effect to modify the MVar.
 updateIndex :: forall es. ApiEffects es => [MonoQuery, E.Concurrent] :>> es => Config.Index -> MVar Config.WorkspaceStatus -> Eff es ()
 updateIndex index wsRef = E.modifyMVar_ wsRef doUpdateIfNeeded
  where
@@ -173,7 +170,7 @@ configGetAbout _auth _request = response
  where
   response = do
     aOIDC <- asks aOIDC
-    config <- getConfig'
+    config <- Config.csConfig <$> getReloadConfig
     let aboutVersion = from version
         links = maybe [] Config.links (Config.about config)
         aboutLinks = fromList $ toLink <$> links
@@ -918,7 +915,6 @@ handleLoggedIn ::
 handleLoggedIn err codeM stateM = do
   aOIDC <- asks aOIDC
   Config.ConfigStatus _ config _ <- getReloadConfig
-
   logInfo "OIDCCallbackCall" ["err" .= err, "code" .= codeM, "state" .= stateM]
   case (oidcEnv aOIDC, err, codeM, stateM) of
     (_, Just errorMsg, _, _) -> forbidden $ "Error from remote provider: " <> errorMsg

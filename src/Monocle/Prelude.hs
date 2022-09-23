@@ -404,7 +404,7 @@ diffTimeSec a b = truncate (realToFrac $ elapsedSeconds b a :: Double) :: Int
 
 -- | Numerical type to count documents
 newtype Count = MkCount Word32
-  deriving newtype (Show, Eq, Ord, Enum, Real, Integral, FromJSON)
+  deriving newtype (Show, Eq, Ord, Enum, Real, Integral, FromJSON, ToJSON)
 
 countToWord :: Count -> Word32
 countToWord (MkCount x) = x

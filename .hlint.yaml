@@ -1,2 +1,2 @@
-- arguments: [-XQuasiQuotes]
+- arguments: [-XQuasiQuotes, -XOverloadedRecordDot]
 - ignore: {name: "Use if"}

@@ -2,26 +2,16 @@
 module Monocle.Env where
 
 import Database.Bloodhound qualified as BH
-import Database.Bloodhound.Raw qualified as BHR
-import Json.Extras qualified as Json
 import Monocle.Api.Jwt (OIDCEnv)
 import Monocle.Config qualified as Config
-import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Search.Query qualified as Q
 import Network.HTTP.Client qualified as HTTP
-import Servant (ServerError)
-import Servant qualified (Handler)
 import Servant.Auth.Server (JWTSettings)
 
 -------------------------------------------------------------------------------
--- The main AppM context, embeded in the Servant handler
+-- The main AppEnv context, embeded in the Servant handler
 -------------------------------------------------------------------------------
-data Env = Env
-  { bhEnv :: BH.BHEnv
-  , glLogger :: Logger
-  }
-
 data OIDC = OIDC
   { oidcEnv :: Maybe OIDCEnv
   , localJWTSettings :: JWTSettings
@@ -30,29 +20,9 @@ data OIDC = OIDC
 -- | 'Env' is the global environment
 data AppEnv = AppEnv
   { config :: IO Config.ConfigStatus
-  , aEnv :: Env
+  , bhEnv :: BH.BHEnv
   , aOIDC :: OIDC
   }
-
--- | 'AppM' is the main context, it just adds Env to the servant Handler using Reader
-newtype AppM a = AppM {unApp :: ReaderT AppEnv Servant.Handler a}
-  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadError ServerError)
-  deriving newtype (MonadReader AppEnv)
-
-instance HasLogger AppM where
-  getLogger = glLogger <$> asks aEnv
-  withContext ctx = local (\env -> env {aEnv = (aEnv env) {glLogger = addCtx ctx (glLogger (aEnv env))}})
-  logIO = liftIO
-
-instance MonadMonitor AppM where
-  doIO = liftIO
-
--- | We can derive a MonadBH from AppM, we just needs to tell 'getBHEnv' where is BHEnv
-instance BH.MonadBH AppM where
-  getBHEnv = asks (bhEnv . aEnv)
-
-instance MonadFail AppM where
-  fail = error . from
 
 -------------------------------------------------------------------------------
 -- The query context, associated to each individual http request
@@ -64,68 +34,6 @@ data QueryTarget
     QueryWorkspace Config.Index
   | -- | Or the whole config (e.g. for maintainance operation)
     QueryConfig Config.Config
-
--- | 'QueryEnv' is the request environment, after validation
-data QueryEnv = QueryEnv
-  { tenant :: QueryTarget
-  -- ^ The current workspace configuration (todo: rename tenant and Index into Workspace)
-  , tEnv :: Env
-  -- ^ The application env, for logging and accessing bloodhound
-  , tQuery :: Q.Query
-  -- ^ The query language expression, used by the `withXXX` combinator below
-  , tContext :: Maybe Text
-  -- ^ An optional context label, used by the Query.measure profiler
-  }
-
--- | 'QueryM' is a concret newtype so that we get better error message,
---   but it is really a simpler Reader over IO
-newtype QueryM a = QueryM {unTenant :: ReaderT QueryEnv IO a}
-  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadFail, MonadThrow)
-  deriving newtype (MonadReader QueryEnv)
-  deriving newtype (MonadUnliftIO, MonadMonitor)
-
-instance HasLogger QueryM where
-  getLogger = glLogger <$> asks tEnv
-  withContext ctx = local (\env -> env {tEnv = (tEnv env) {glLogger = addCtx ctx (glLogger (tEnv env))}})
-  logIO = liftIO
-
--- | We can derive a MonadBH from QueryM, we just needs to read the BHEnv from the tEnv
-instance BH.MonadBH QueryM where
-  getBHEnv = QueryM (asks $ bhEnv . tEnv)
-
--- | The QueryMonad is the main constraint used by the Queries module. Note that it implies ElasticMonad.
-class (Functor m, Applicative m, Monad m, HasLogger m, MonadReader QueryEnv m, ElasticMonad m, BH.MonadBH m) => QueryMonad m where
-  -- | Get the current (UTC) time.
-  getCurrentTime' :: m UTCTime
-
-instance QueryMonad QueryM where
-  getCurrentTime' = liftIO getCurrentTime
-
--- | A type class that defines the method available to query elastic
-class ElasticMonad m where
-  elasticSearch :: (ToJSON body, FromJSONField resp) => BH.IndexName -> body -> BHR.ScrollRequest -> m (BH.SearchResult resp)
-  elasticCountByIndex :: BH.IndexName -> BH.CountQuery -> m (Either BH.EsError BH.CountResponse)
-  elasticSearchHit :: ToJSON body => BH.IndexName -> body -> m [Json.Value]
-  elasticAdvance :: FromJSON resp => BH.ScrollId -> m (BH.SearchResult resp)
-  elasticDeleteByQuery :: BH.IndexName -> BH.Query -> m BH.Reply
-
-instance ElasticMonad QueryM where
-  elasticSearch = BHR.search
-  elasticSearchHit = BHR.searchHit
-  elasticAdvance = BHR.advance
-  elasticCountByIndex = BH.countByIndex
-  elasticDeleteByQuery = BH.deleteByQuery
-
--- | Run a 'QueryM' with an existing BHEnv
-runQueryM' :: forall a. BH.BHEnv -> Config.Index -> QueryM a -> IO a
-runQueryM' bhEnv ws = runQueryTarget bhEnv (QueryWorkspace ws)
-
-runQueryTarget :: forall a. BH.BHEnv -> QueryTarget -> QueryM a -> IO a
-runQueryTarget bhEnv tenant tenantM = withLogger $ \glLogger ->
-  let tEnv = Env {..}
-      tQuery = mkQuery []
-      tContext = Nothing
-   in runReaderT (unTenant tenantM) (QueryEnv {..})
 
 -- | Create the bloodhound environment
 mkEnv :: MonadIO m => Text -> m BH.BHEnv
@@ -151,25 +59,6 @@ envToIndexName target = do
   tenantIndexName :: Config.Index -> BH.IndexName
   tenantIndexName Config.Index {..} = BH.IndexName $ "monocle.changes.1." <> name
 
--- | Utility function to hide the ReaderT layer
-getIndexName :: QueryMonad m => m BH.IndexName
-getIndexName = envToIndexName <$> asks tenant
-
--- | Utility function to hide the ReaderT layer
-getIndexConfig :: QueryMonad m => m Config.Index
-getIndexConfig = do
-  queryTarget <- asks tenant
-  pure $ case queryTarget of
-    QueryWorkspace ws -> ws
-    QueryConfig _ -> error "Config has no index config"
-
--- | Utility function to hide the ReaderT layer
-getQuery :: QueryMonad m => m Q.Query
-getQuery = asks tQuery
-
-getContext :: QueryMonad m => m (Maybe Text)
-getContext = asks tContext
-
 -- | 'mkQuery' creates a Q.Query from a BH.Query
 mkQuery :: [BH.Query] -> Q.Query
 mkQuery bhq =
@@ -178,20 +67,10 @@ mkQuery bhq =
       queryMinBoundsSet = False
    in Q.Query {..}
 
-mkFinalQuery :: QueryMonad m => Maybe Q.QueryFlavor -> m (Maybe BH.Query)
-mkFinalQuery flavorM = mkFinalQuery' flavorM <$> getQuery
-
-mkFinalQuery' :: Maybe Q.QueryFlavor -> Q.Query -> Maybe BH.Query
-mkFinalQuery' flavorM query = toBoolQuery $ Q.queryGet query id flavorM
+mkFinalQuery :: Maybe Q.QueryFlavor -> Q.Query -> Maybe BH.Query
+mkFinalQuery flavorM query = toBoolQuery $ Q.queryGet query id flavorM
  where
   toBoolQuery = \case
     [] -> Nothing
     [x] -> Just x
     xs -> Just $ BH.QueryBoolQuery $ BH.mkBoolQuery [] (BH.Filter <$> xs) [] []
-
-withCallStackContext :: QueryMonad m => HasCallStack => Text -> m a -> m a
-withCallStackContext context = local setContext
- where
-  setContext (QueryEnv tenant tEnv query _) = QueryEnv tenant tEnv query (Just contextName)
-  contextName = maybe context getLoc $ headMaybe (getCallStack callStack)
-  getLoc (_, loc) = "[" <> context <> " " <> from (srcLocFile loc) <> ":" <> show (srcLocStartLine loc) <> "]"

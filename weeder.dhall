@@ -7,7 +7,6 @@
   , "^Monocle.Prelude.toVector\$"
   , "^Monocle.Prelude.utctime\$"
   , "^Monocle.Main.defaultApiConfig\$"
-  , "^Monocle.Env.withCallStackContext\$"
   , "^Monocle.Client.Api.*\$"
   , "^Monocle.Backend.Test.showEvents\$"
   , "^Monocle.Backend.Provisioner.fakeETaskData\$"
