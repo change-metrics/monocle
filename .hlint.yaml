@@ -1,2 +1,4 @@
 - arguments: [-XQuasiQuotes, -XOverloadedRecordDot]
 - ignore: {name: "Use if"}
+- ignore: {name: "Use tuple-section"}
+- ignore: {name: "Avoid lambda using `infix`"}

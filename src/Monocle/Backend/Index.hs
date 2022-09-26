@@ -673,7 +673,7 @@ getOrphanTaskDataByChangeURL :: forall es. [ElasticEffect, MonoQuery] :>> es => 
 getOrphanTaskDataByChangeURL urls = do
   index <- getIndexName
   results <- scanSearch index
-  pure $ catMaybes $ BH.hitSource <$> results
+  pure $ mapMaybe BH.hitSource results
  where
   scanSearch :: BH.IndexName -> Eff es [BH.Hit EChangeOrphanTD]
   scanSearch index = esScanSearch index search

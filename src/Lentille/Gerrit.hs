@@ -371,14 +371,14 @@ streamChange' env identCB serverUrl query prefixM = go 0
     ghostIdent' = ghostIdent $ getHostFromURL serverUrl
     getCommitMessage = maybe "" (from . cMessage . grCommit) revision
     getFilesCount = from $ maybe 0 (length . M.keys . grFiles) revision
-    getFiles = maybe [] (fmap toChangeFile) $ M.toList . grFiles <$> revision
+    getFiles = maybe [] (fmap toChangeFile . M.toList . grFiles) revision
      where
       toChangeFile (fp, details) =
         let changedFileAdditions = maybe 0 from $ gfLinesInserted details
             changedFileDeletions = maybe 0 from $ gfLinesDeleted details
             changedFilePath = from fp
          in ChangePB.ChangedFile {..}
-    getCommits sha = maybe [] toCommit $ grCommit <$> revision
+    getCommits sha = maybe [] (toCommit . grCommit) revision
      where
       toCommit GerritCommit {..} =
         let commitSha = from sha

@@ -1180,8 +1180,8 @@ testTaskDataAdoption = withTenant doTest
 
       -- Index a change and related events
       let scenario = nominalMerge (SProject "openstack/nova" [alice, bob] [alice] [eve]) "42" fakeDate 3600
-          events = catMaybes $ getScenarioEvtObj <$> scenario
-          changes = catMaybes $ getScenarioChangeObj <$> scenario
+          events = mapMaybe getScenarioEvtObj scenario
+          changes = mapMaybe getScenarioChangeObj scenario
       indexScenario scenario
       I.updateChangesAndEventsFromOrphanTaskData changes events
       -- Check that the matching task data has been adopted
@@ -1191,9 +1191,8 @@ testTaskDataAdoption = withTenant doTest
       changes' <- I.runScanSearch $ I.getChangesByURL [changeUrl]
       events' <- I.runScanSearch $ I.getChangesEventsByURL [changeUrl]
       let haveTDs =
-            all
-              (== True)
-              $ (isJust . echangeTasksData <$> changes')
+            and $
+              (isJust . echangeTasksData <$> changes')
                 <> (isJust . echangeeventTasksData <$> events')
       assertEqual' "Check objects related to change 42 got the Tasks data" True haveTDs
    where
@@ -1280,7 +1279,7 @@ data ScenarioEvent
   | SMerge EChangeEvent
 
 indexScenario :: QEffects es => [ScenarioEvent] -> Eff es ()
-indexScenario xs = sequence_ $ indexDoc <$> xs
+indexScenario = mapM_ indexDoc
  where
   indexDoc = \case
     SChange d -> I.indexChanges [d]

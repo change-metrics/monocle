@@ -70,7 +70,7 @@ import Data.Aeson.Encoding (encodingToLazyByteString)
 import Monocle.Prelude hiding (Reader, ask, local)
 import System.Log.FastLogger qualified as FastLogger
 
-import Control.Exception (throwIO, try)
+import Control.Exception (finally, throwIO, try)
 import Monocle.Client qualified
 import Monocle.Config qualified
 import Network.HTTP.Client (HttpException (..))
@@ -83,10 +83,8 @@ import Monocle.Effects.Compat ()
 
 import Monocle.Logging hiding (logInfo, withContext)
 
-import Monocle.Config (ConfigStatus)
-
-import Control.Exception (finally)
 import GHC.IO.Handle (hClose)
+import Monocle.Config (ConfigStatus)
 import System.Directory
 import System.Posix.Temp (mkstemp)
 import Test.Tasty
@@ -184,7 +182,7 @@ runMonoConfig fp action = do
   evalStaticRep (MonoConfigEffect mkReload) action
 
 runMonoConfigFromEnv :: IOE :> es => IO ConfigStatus -> Eff (MonoConfigEffect : es) a -> Eff es a
-runMonoConfigFromEnv reload action = evalStaticRep (MonoConfigEffect reload) action
+runMonoConfigFromEnv reload = evalStaticRep (MonoConfigEffect reload)
 
 -- | The lifted version of Monocle.Config.reloadConfig
 getReloadConfig :: MonoConfigEffect :> es => Eff es ConfigStatus
@@ -406,7 +404,7 @@ esDocumentExists iname doc = do
   ElasticEffect env <- getStaticRep
   unsafeEff_ $ BH.runBH env $ BH.documentExists iname doc
 
-esBulk :: ElasticEffect :> es => V.Vector BulkOperation -> Eff es (BH.Reply)
+esBulk :: ElasticEffect :> es => V.Vector BulkOperation -> Eff es BH.Reply
 esBulk ops = do
   ElasticEffect env <- getStaticRep
   unsafeEff_ $ BH.runBH env $ BH.bulk ops
@@ -577,7 +575,7 @@ demoServant =
   runEff $ runLoggerEffect do
     unsafeEff $ \es ->
       Warp.run 8080 $ Servant.serve (Proxy @TestApi) $ liftServer es
-demoCrawler = runEff $ runLoggerEffect $ runHttpEffect $ crawlerDemo
+demoCrawler = runEff $ runLoggerEffect $ runHttpEffect crawlerDemo
 
 type CrawlerEffect' es = [IOE, HttpEffect, LoggerEffect] :>> es
 

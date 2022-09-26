@@ -12,7 +12,11 @@ import Monocle.Main
 import Monocle.Prelude
 import Network.HTTP.Mock (withMockedManager)
 import Network.Wai
-import Servant.Auth.Server (defaultJWTSettings, generateKey)
+import Servant.Auth.Server (
+  defaultCookieSettings,
+  defaultJWTSettings,
+  generateKey,
+ )
 
 import Database.Bloodhound qualified as BH
 import Effectful.Error.Static qualified as E
@@ -20,10 +24,9 @@ import Effectful.Fail qualified as E
 import Effectful.Reader.Static qualified as E
 import Monocle.Effects
 import Servant (Context (..), ServerError)
-import Servant.Auth.Server (defaultCookieSettings)
 
-import Effectful.Servant qualified
 import Effectful.Concurrent.MVar qualified as E
+import Effectful.Servant qualified
 
 -- Create the AppEnv, necesary to create the monocle api Wai Application
 mkAppEnv :: Config.Index -> IO AppEnv
@@ -38,7 +41,7 @@ mkAppEnv workspace = do
   pure $ AppEnv {..}
 
 -- | Run the test effects list using an existing AppEnv. This is useful for legacy test written for QueryM ()
-runAppEnv :: AppEnv -> Eff ('[ElasticEffect, MonoConfigEffect, E.Reader AppEnv, LoggerEffect, E.Error ServerError, E.Fail, E.Concurrent, IOE]) a -> IO a
+runAppEnv :: AppEnv -> Eff '[ElasticEffect, MonoConfigEffect, E.Reader AppEnv, LoggerEffect, E.Error ServerError, E.Fail, E.Concurrent, IOE] a -> IO a
 runAppEnv appEnv =
   runEff
     . E.runConcurrent

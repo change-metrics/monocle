@@ -237,7 +237,7 @@ transformResponse host identCB result = do
               Just resetAt -> RateLimit {..}
               Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAtText
             totalCount = Just totalCount'
-         in (PageInfo {..}, Just rateLimit, [], catMaybes $ transPR <$> catMaybes projectPRs)
+         in (PageInfo {..}, Just rateLimit, [], mapMaybe transPR (catMaybes projectPRs))
     _anyOtherResponse ->
       ( PageInfo False Nothing Nothing
       , Nothing
@@ -352,7 +352,7 @@ transformResponse host identCB result = do
       }
   getEventsFromTimeline :: Change -> RepositoryPullRequestsNodesTimelineItemsPullRequestTimelineItemsConnection -> [ChangeEvent]
   getEventsFromTimeline change (RepositoryPullRequestsNodesTimelineItemsPullRequestTimelineItemsConnection nodes) =
-    catMaybes $ toEventM <$> catMaybes (fromMaybe [] nodes)
+    mapMaybe toEventM (catMaybes (fromMaybe [] nodes))
    where
     getID (ID v) = v
     toEventM :: RepositoryPullRequestsNodesTimelineItemsNodesPullRequestTimelineItems -> Maybe ChangeEvent
@@ -439,7 +439,7 @@ transformResponse host identCB result = do
       getCommitter _ = getGhostIdent
   getCommentEvents :: Change -> RepositoryPullRequestsNodesCommentsIssueCommentConnection -> [ChangeEvent]
   getCommentEvents change (RepositoryPullRequestsNodesCommentsIssueCommentConnection nodes) =
-    catMaybes $ toEvent <$> catMaybes (fromMaybe [] nodes)
+    mapMaybe toEvent (catMaybes (fromMaybe [] nodes))
    where
     toEvent :: RepositoryPullRequestsNodesCommentsNodesIssueComment -> Maybe ChangeEvent
     toEvent
