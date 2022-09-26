@@ -12,7 +12,8 @@ import Monocle.Config qualified as Config
 import Monocle.Env
 import Monocle.Prelude
 import Monocle.Search.Query (loadAliases)
-import Monocle.Servant.HTTP (RootAPI, server)
+import Monocle.Servant.HTTP (server)
+import Monocle.Servant.HTTPAuth (RootAPI)
 import Network.HTTP.Types.Status qualified as HTTP
 import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp

@@ -24,7 +24,6 @@ import Servant.Auth.Server (defaultCookieSettings)
 
 import Effectful.Servant qualified
 import Effectful.Concurrent.MVar qualified as E
-import Effectful.Servant qualified
 
 -- Create the AppEnv, necesary to create the monocle api Wai Application
 mkAppEnv :: Config.Index -> IO AppEnv

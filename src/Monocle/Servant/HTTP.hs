@@ -5,11 +5,13 @@
 -- |
 -- Copyright: (c) 2021 Monocle authors
 -- SPDX-License-Identifier: AGPL-3.0-only
-module Monocle.Servant.HTTP (RootAPI, MonocleAPI, server) where
+module Monocle.Servant.HTTP (MonocleAPI, server) where
 
-import Data.Text
-import Monocle.Api.Jwt (AuthenticatedUser, LoginInUser (..))
+import Effectful (Eff, (:>>))
+import Effectful.Concurrent.MVar qualified as E
+import Monocle.Api.Jwt (AuthenticatedUser)
 import Monocle.Api.Server (authGetMagicJwt, authWhoAmi, configGetAbout, configGetGroupMembers, configGetGroups, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, loginLoginValidation, metricGet, metricInfo, metricList, searchAuthor, searchCheck, searchFields, searchQuery, searchSuggestions)
+import Monocle.Effects (ApiEffects)
 import Monocle.Protob.Auth (GetMagicJwtRequest, GetMagicJwtResponse, WhoAmiRequest, WhoAmiResponse)
 import Monocle.Protob.Config (GetAboutRequest, GetAboutResponse, GetGroupMembersRequest, GetGroupMembersResponse, GetGroupsRequest, GetGroupsResponse, GetProjectsRequest, GetProjectsResponse, GetWorkspacesRequest, GetWorkspacesResponse)
 import Monocle.Protob.Crawler (AddDocRequest, AddDocResponse, CommitInfoRequest, CommitInfoResponse, CommitRequest, CommitResponse)
@@ -19,11 +21,6 @@ import Monocle.Protob.Search (AuthorRequest, AuthorResponse, CheckRequest, Check
 import Monocle.Servant.PBJSON (PBJSON)
 import Servant
 import Servant.Auth.Server (Auth, Cookie, JWT)
-
-import Effectful (Eff, (:>>))
-import Effectful.Concurrent.MVar qualified as E
-import Monocle.Effects hiding (searchQuery)
-import Servant.HTML.Blaze (HTML)
 
 type MonocleAPI =
   "login" :> "username" :> "validate" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Login.LoginValidationRequest :> Post '[PBJSON, JSON] Monocle.Protob.Login.LoginValidationResponse
@@ -66,13 +63,3 @@ server =
     :<|> crawlerAddDoc
     :<|> crawlerCommit
     :<|> crawlerCommitInfo
-
--- | The API is served at both `/api/2/` (for backward compat with the legacy nginx proxy)
--- and `/` (for compat with crawler client)
-type MonocleAPI' = MonocleAPI :<|> AuthAPI
-
-type RootAPI = "api" :> "2" :> MonocleAPI' :<|> MonocleAPI'
-
-type AuthAPI =
-  "auth" :> "login" :> QueryParam "redirectUri" Text :> Get '[JSON] NoContent
-    :<|> "auth" :> "cb" :> QueryParam "error" Text :> QueryParam "code" Text :> QueryParam "state" Text :> Get '[HTML] LoginInUser

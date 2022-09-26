@@ -214,6 +214,7 @@ library
 
                      -- servant
                      , Monocle.Servant.HTTP
+                     , Monocle.Servant.HTTPAuth
                      , Monocle.Servant.PBJSON
 
                      -- bloodhound
