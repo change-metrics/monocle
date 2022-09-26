@@ -98,12 +98,12 @@ in  { GithubActions
             ''
         }
       , GithubActions.Step::{
+        , name = Some "Build monocle-exe container"
+        , run = Some "nix build .#containerMonocle; docker load < ./result"
+        }
+      , GithubActions.Step::{
         , name = Some "Build docker image"
-        , run = Some
-            ''
-            export MONOCLE_COMMIT=$(git show HEAD --format="format:%h" -q)
-            docker build -t quay.io/change-metrics/monocle:latest .
-            ''
+        , run = Some "docker build -t quay.io/change-metrics/monocle:latest ."
         }
       , GithubActions.Step::{
         , name = Some "Start Monocle compose"
@@ -205,7 +205,7 @@ in  { GithubActions
                 , name = Some "compose-tests"
                 , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
                 , steps =
-                      [ checkout-step ]
+                      boot "change-metrics"
                     # init-docker-steps
                     # [ el-sysctl-step ]
                     # steps
@@ -225,7 +225,7 @@ in  { GithubActions
                 , `if` = Some "github.repository_owner == 'change-metrics'"
                 , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
                 , steps =
-                      [ checkout-step ]
+                      boot "change-metrics"
                     # init-docker-steps
                     # [ el-sysctl-step ]
                     # steps
@@ -245,26 +245,10 @@ in  { GithubActions
                 , `if` = Some "github.repository_owner == 'change-metrics'"
                 , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
                 , steps =
-                      [ checkout-step ]
+                      boot "change-metrics"
                     # init-docker-steps
                     # [ el-sysctl-step ]
                     # steps
-                }
-              }
-          }
-    , makePublishBuilder =
-        \(steps : List GithubActions.Step.Type) ->
-          GithubActions.Workflow::{
-          , name = "Publish Builder Container"
-          , on = GithubActions.On::{
-            , workflow_dispatch = Some GithubActions.WorkflowDispatch::{=}
-            }
-          , jobs = toMap
-              { publish-master-container = GithubActions.Job::{
-                , name = Some "publish-builder-container"
-                , `if` = Some "github.repository_owner == 'change-metrics'"
-                , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
-                , steps = [ checkout-step ] # init-docker-steps # steps
                 }
               }
           }

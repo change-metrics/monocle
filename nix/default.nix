@@ -2,6 +2,11 @@
 let
   nixpkgsSrc = import nixpkgsPath;
 
+  rev = if self ? rev then
+    self.rev
+  else
+    throw "Refusing to build from a dirty Git tree!";
+
   mk-morpheus-lib = hpPrev: name:
     let
       morpheus-graphql-src = pkgs.fetchFromGitHub {
@@ -15,8 +20,7 @@ let
 
   # Add monocle and patch broken dependency to the haskell package set
   haskellExtend = hpFinal: hpPrev: {
-    monocle = (hpPrev.callCabal2nix "monocle" self { }).overrideAttrs
-      (_: { MONOCLE_COMMIT = builtins.getEnv "MONOCLE_COMMIT"; });
+    monocle = hpPrev.callCabal2nix "monocle" self { };
 
     # data-diverse is presently marked as broken because the test don't pass.
     data-diverse = pkgs.haskell.lib.dontCheck
@@ -385,12 +389,6 @@ in rec {
   # containers
   containerPrometheus = promContainer;
   containerGrafana = grafanaContainer;
-  containerBackend = pkgs.dockerTools.buildLayeredImage {
-    name = "quay.io/change-metrics/monocle-backend";
-    tag = "latest";
-    # created = "now";
-    contents = [ (pkgs.haskell.lib.justStaticExecutables hsPkgs.monocle) ];
-  };
 
   monocle-light =
     # Disable profiling, haddock and test to speedup the build
@@ -471,7 +469,34 @@ in rec {
 
   monocle = hsPkgs.monocle;
 
-  monocle-exe = pkgs.haskell.lib.justStaticExecutables hsPkgs.monocle;
+  monocle-exe = pkgs.haskell.lib.justStaticExecutables
+    (hsPkgs.monocle.overrideAttrs (_: { MONOCLE_COMMIT = rev; }));
+
+  containerMonocle = let
+    # Container user info
+    user = "monocle";
+    home = "var/lib/${user}";
+
+    # Create a passwd entry so that openssh can find the .ssh config
+    createPasswd = "echo ${user}:x:0:0:monocle:/${home}:/bin/bash > etc/passwd";
+
+    # Ensure the home directory is r/w for any uid
+    rwHome = "mkdir -p -m 1777 ${home}";
+  in pkgs.dockerTools.buildLayeredImage {
+    name = "quay.io/change-metrics/monocle-exe";
+    contents = [ pkgs.coreutils pkgs.cacert pkgs.bash monocle-exe ];
+    extraCommands = "${createPasswd} && ${rwHome}";
+    tag = "latest";
+    created = "now";
+    config = {
+      Env = [
+        "SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt"
+        "HOME=/${home}"
+        # Use fakeroot to avoid `No user exists for uid` error
+        "LD_PRELOAD=${pkgs.fakeroot}/lib/libfakeroot.so"
+      ];
+    };
+  };
 
   services = pkgs.stdenv.mkDerivation {
     name = "monocle-services";

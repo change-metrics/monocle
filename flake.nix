@@ -21,7 +21,7 @@
       devShells."x86_64-linux".ci = legacy.ci-shell;
       packages."x86_64-linux".default = legacy.monocle-exe;
       packages."x86_64-linux".env = legacy.monocle-light.env;
-      packages."x86_64-linux".containerBackend = legacy.containerBackend;
+      packages."x86_64-linux".containerMonocle = legacy.containerMonocle;
       packages."x86_64-linux".containerGrafana = legacy.containerGrafana;
       packages."x86_64-linux".containerPrometheus = legacy.containerPrometheus;
       apps."x86_64-linux".default = {
