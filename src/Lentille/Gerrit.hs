@@ -1,3 +1,6 @@
+-- disable redundant constraint warning for fake effect
+{-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
+
 -- |
 -- Copyright: (c) 2021 Monocle authors
 -- SPDX-License-Identifier: AGPL-3.0-only
@@ -11,7 +14,9 @@ module Lentille.Gerrit (
   G.GerritQuery (..),
 
   -- * The context
-  MonadGerrit (..),
+  GerritEffect,
+  runGerrit,
+  getGerritClient,
   GerritEnv (..),
   G.getClient,
 
@@ -40,30 +45,32 @@ import Proto3.Suite (Enumerated (..))
 import Streaming.Prelude qualified as S
 import Prelude (init, last)
 
+import Effectful (Dispatch (Static), DispatchOf)
+import Effectful.Dispatch.Static (SideEffects (..), evalStaticRep)
+import Effectful.Prometheus (PrometheusEffect)
+
 -------------------------------------------------------------------------------
 -- Gerrit context
 -------------------------------------------------------------------------------
+type GerritEffects es = [GerritEffect, LoggerEffect, PrometheusEffect, RetryEffect] :>> es
 
-class (MonadRetry m, MonadMonitor m) => MonadGerrit m where
-  getGerritClient :: Text -> Maybe (Text, Secret) -> m G.GerritClient
-  getProjects :: GerritEnv -> Int -> G.GerritProjectQuery -> Maybe Int -> m GerritProjectsMessage
-  queryChanges :: GerritEnv -> Int -> [GerritQuery] -> Maybe Int -> m [GerritChange]
+-- A dummy effect to replace the legacy MonadGerrit.
+-- TODO: re-implement on top of HttpEffect.
+data GerritEffect :: Effect
+type instance DispatchOf GerritEffect = 'Static 'WithSideEffects
+data instance StaticRep GerritEffect = GerritEffect
+runGerrit :: IOE :> es => Eff (GerritEffect : es) a -> Eff es a
+runGerrit = evalStaticRep GerritEffect
 
-instance MonadGerrit LoggerT where
-  getGerritClient url = liftIO . getGerritClient url
-  getProjects env count query = liftIO . getProjects env count query
-  queryChanges env count queries = liftIO . queryChanges env count queries
+getGerritClient :: GerritEffect :> es => Text -> Maybe (Text, Secret) -> Eff es G.GerritClient
+getGerritClient url Nothing = unsafeEff_ $ getClient url Nothing
+getGerritClient url (Just (user, Secret password)) = unsafeEff_ $ getClient url $ Just (user, password)
 
-instance MonadGerrit LentilleM where
-  getGerritClient url = liftIO . getGerritClient url
-  getProjects env count query = liftIO . getProjects env count query
-  queryChanges env count queries = liftIO . queryChanges env count queries
+getProjects :: GerritEffect :> es => GerritEnv -> Int -> G.GerritProjectQuery -> Maybe Int -> Eff es GerritProjectsMessage
+getProjects env count query startM = unsafeEff_ $ G.getProjects count query startM (client env)
 
-instance MonadGerrit IO where
-  getGerritClient url Nothing = getClient url Nothing
-  getGerritClient url (Just (user, Secret password)) = getClient url $ Just (user, password)
-  getProjects env count query startM = G.getProjects count query startM (client env)
-  queryChanges env count queries startM = G.queryChanges count queries startM (client env)
+queryChanges :: GerritEffects es => GerritEnv -> Int -> [GerritQuery] -> Maybe Int -> Eff es [GerritChange]
+queryChanges env count queries startM = unsafeEff_ $ G.queryChanges count queries startM (client env)
 
 getClient :: Text -> Maybe (Text, Text) -> IO G.GerritClient
 getClient url auth = do
@@ -86,18 +93,18 @@ data GerritEnv = GerritEnv
 -------------------------------------------------------------------------------
 
 getProjectsStream ::
-  (HasLogger m, MonadGerrit m) =>
+  GerritEffects es =>
   GerritEnv ->
   Text ->
-  S.Stream (S.Of CrawlerPB.Project) m ()
+  S.Stream (S.Of CrawlerPB.Project) (Eff es) ()
 getProjectsStream env reProject = streamProject env (G.Regexp reProject)
 
 getChangesStream ::
-  (HasLogger m, MonadGerrit m) =>
+  GerritEffects es =>
   GerritEnv ->
   UTCTime ->
   Text ->
-  S.Stream (S.Of (ChangePB.Change, [ChangePB.ChangeEvent])) m ()
+  S.Stream (S.Of (ChangePB.Change, [ChangePB.ChangeEvent])) (Eff es) ()
 getChangesStream env untilDate project = streamChange env [Project project, After untilDate]
 
 -------------------------------------------------------------------------------
@@ -179,10 +186,10 @@ getPrefix prefixM project =
    in from $ T.dropWhileEnd (== '/') $ prefix <> T.intercalate "/" parts'
 
 streamProject ::
-  (HasLogger m, MonadGerrit m) =>
+  GerritEffects es =>
   GerritEnv ->
   G.GerritProjectQuery ->
-  S.Stream (S.Of CrawlerPB.Project) m ()
+  S.Stream (S.Of CrawlerPB.Project) (Eff es) ()
 streamProject env query = go 0
  where
   size = 100
@@ -194,22 +201,22 @@ streamProject env query = go 0
     when (length pNames == size) $ go (offset + size)
 
 streamChange ::
-  (HasLogger m, MonadGerrit m) =>
+  GerritEffects es =>
   GerritEnv ->
   [GerritQuery] ->
-  S.Stream (S.Of (ChangePB.Change, [ChangePB.ChangeEvent])) m ()
+  S.Stream (S.Of (ChangePB.Change, [ChangePB.ChangeEvent])) (Eff es) ()
 streamChange env query =
   streamChange' env (identAliasCB env) (G.serverUrl $ client env) query (prefix env)
 
 streamChange' ::
-  (HasLogger m, MonadGerrit m) =>
+  GerritEffects es =>
   GerritEnv ->
   -- A callback to get Ident ID from an alias
   (Text -> Maybe Text) ->
   Text ->
   [GerritQuery] ->
   Maybe Text ->
-  S.Stream (S.Of (ChangePB.Change, [ChangePB.ChangeEvent])) m ()
+  S.Stream (S.Of (ChangePB.Change, [ChangePB.ChangeEvent])) (Eff es) ()
 streamChange' env identCB serverUrl query prefixM = go 0
  where
   size = 100
