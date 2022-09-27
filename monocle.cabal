@@ -274,6 +274,8 @@ library
                      , Paths_monocle
                      -- Remove after https://github.com/Kleidukos/servant-effectful/issues/5
                      , Effectful.Servant
+                     -- TODO: extract effects to standalone packages
+                     , Effectful.Prometheus
 
   autogen-modules:     Paths_monocle
 
