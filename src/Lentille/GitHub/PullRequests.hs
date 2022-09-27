@@ -1,7 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
 -- witch instance for Int32
 {-# OPTIONS_GHC -Wno-orphans #-}
 {-# OPTIONS_GHC -Wno-partial-fields #-}
@@ -185,13 +184,13 @@ instance From DateTime ChangeOptionalClosedAt where
 type Changes = (Change, [ChangeEvent])
 
 streamPullRequests ::
-  (HasLogger m, MonadGraphQLE m) =>
+  GraphEffects es =>
   GraphClient ->
   -- A callback to get Ident ID from an alias
   (Text -> Maybe Text) ->
   UTCTime ->
   Text ->
-  LentilleStream m Changes
+  LentilleStream es Changes
 streamPullRequests client cb untilDate repoFullname =
   breakOnDate $ streamFetch client mkArgs optParams transformResponse'
  where

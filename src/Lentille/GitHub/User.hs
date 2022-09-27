@@ -1,12 +1,10 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-overlapping-patterns #-}
 
 module Lentille.GitHub.User where
 
 import Data.Morpheus.Client
-import Lentille
 import Lentille.GitHub.RateLimit (retryCheck)
 import Lentille.GraphQL
 import Monocle.Prelude
@@ -69,7 +67,7 @@ transformResponse = \case
        in (rateLimit, IdentInfo {..})
   respOther -> error ("Invalid response: " <> show respOther)
 
-getUser :: (HasLogger m, MonadGraphQLE m) => GraphClient -> Text -> m IdentInfo
+getUser :: GraphEffects es => GraphClient -> Text -> Eff es IdentInfo
 getUser client login =
   do
     (_, info) <-
