@@ -35,6 +35,7 @@ import Network.URI qualified as URI
 import Streaming.Prelude qualified as S
 
 import Effectful.Concurrent.MVar qualified as E
+import Effectful.Error.Static qualified as E
 import Monocle.Effects
 
 type GraphEffects es = [LoggerEffect, HttpEffect, Error LentilleError, TimeEffect, RetryEffect, Concurrent, Fail] :>> es
@@ -151,7 +152,7 @@ doRequest client mkArgs retryCheckM depthM pageInfoM = retryCheck runFetch
     case resp of
       (Right x, _) -> pure x
       -- Throw an exception for the retryCheckM
-      (Left e, [req]) -> throwM $ GraphQLError (show e, req)
+      (Left e, [req]) -> E.throwError $ GraphQLError (show e, req)
       _ -> error $ "Unknown response: " <> show resp
    where
     aDepthM = decreaseValue retried <$> depthM

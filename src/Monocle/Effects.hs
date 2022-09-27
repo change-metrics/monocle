@@ -103,6 +103,10 @@ import Monocle.Search.Syntax (Expr)
 import Effectful.Error.Static qualified as E
 import Effectful.Fail qualified as E
 import Effectful.Reader.Static qualified as E
+import Monocle.Client (MonocleClient)
+import Monocle.Client.Api (crawlerAddDoc, crawlerCommit, crawlerCommitInfo)
+
+import Monocle.Protob.Crawler qualified as CrawlerPB
 
 -- the servant api, previously known as AppM
 type ApiEffects es = [IOE, E.Reader AppEnv, E.Error Servant.ServerError, MonoConfigEffect, LoggerEffect, ElasticEffect, E.Fail] :>> es
@@ -112,6 +116,9 @@ type IndexEffects es = [ElasticEffect, LoggerEffect] :>> es
 
 -- the query handler, previously known as QueryM
 type QEffects es = [ElasticEffect, LoggerEffect, MonoQuery] :>> es
+
+-- the macro handler, previously known as LentilleM
+type CrawlerEffects es = [LoggerEffect, MonoClientEffect] :>> es
 
 type TestEffects es = (E.Fail :> es, IOE :> es, QEffects es)
 
@@ -184,6 +191,36 @@ getReloadConfig :: MonoConfigEffect :> es => Eff es ConfigStatus
 getReloadConfig = do
   MonoConfigEffect reload <- getStaticRep
   unsafeEff_ reload
+
+------------------------------------------------------------------
+--
+
+-- | Monocle API Client
+
+------------------------------------------------------------------
+type MonoClientEnv = MonocleClient
+
+data MonoClientEffect :: Effect
+type instance DispatchOf MonoClientEffect = 'Static 'WithSideEffects
+newtype instance StaticRep MonoClientEffect = MonoClientEffect MonoClientEnv
+
+runMonoClient :: IOE :> es => MonocleClient -> Eff (MonoClientEffect : es) a -> Eff es a
+runMonoClient client = evalStaticRep (MonoClientEffect client)
+
+mCrawlerCommitInfo :: MonoClientEffect :> es => CrawlerPB.CommitInfoRequest -> Eff es CrawlerPB.CommitInfoResponse
+mCrawlerCommitInfo req = do
+  MonoClientEffect env <- getStaticRep
+  unsafeEff_ $ crawlerCommitInfo env req
+
+mCrawlerCommit :: MonoClientEffect :> es => CrawlerPB.CommitRequest -> Eff es CrawlerPB.CommitResponse
+mCrawlerCommit req = do
+  MonoClientEffect env <- getStaticRep
+  unsafeEff_ $ crawlerCommit env req
+
+mCrawlerAddDoc :: MonoClientEffect :> es => CrawlerPB.AddDocRequest -> Eff es CrawlerPB.AddDocResponse
+mCrawlerAddDoc req = do
+  MonoClientEffect env <- getStaticRep
+  unsafeEff_ $ crawlerAddDoc env req
 
 ------------------------------------------------------------------
 --
@@ -452,7 +489,7 @@ httpRequest ::
 httpRequest req = do
   HttpEffect manager <- getStaticRep
   respE <- unsafeEff $ \env ->
-    try $ Retry.recovering policy [httpHandler req env] (const $ HTTP.httpLbs req manager)
+    try $ Retry.recovering policy [httpHandler env] (const $ HTTP.httpLbs req manager)
   case respE of
     Right resp -> pure (Right resp)
     Left err -> case err of
@@ -468,9 +505,9 @@ policy = Retry.exponentialBackoff backoff <> Retry.limitRetries retryLimit
 retryLimit :: Int
 retryLimit = 7
 
-httpHandler :: LoggerEffect :> es => HTTP.Request -> EffStatic.Env es -> RetryStatus -> Handler IO Bool
-httpHandler req env (RetryStatus num _ _) = Handler $ \case
-  HttpExceptionRequest _req ctx -> do
+httpHandler :: LoggerEffect :> es => EffStatic.Env es -> RetryStatus -> Handler IO Bool
+httpHandler env (RetryStatus num _ _) = Handler $ \case
+  HttpExceptionRequest req ctx -> do
     let url = decodeUtf8 @Text $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
         arg = decodeUtf8 $ HTTP.queryString req
         loc = if num == 0 then url <> arg else url

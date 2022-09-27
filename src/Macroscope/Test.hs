@@ -1,7 +1,12 @@
 -- | Tests for the macroscope process
 module Macroscope.Test where
 
-import Lentille (runLentilleM)
+import Effectful.Env
+import Effectful.Prometheus
+import Effectful.Reader.Static qualified as E
+import Lentille
+import Lentille.Bugzilla (BZEffect)
+import Lentille.Gerrit (GerritEffect)
 import Macroscope.Main qualified as Macroscope
 import Macroscope.Worker qualified as Macroscope
 import Monocle.Api.Test (mkAppEnv, runAppEnv, withTestApi)
@@ -16,11 +21,15 @@ import Monocle.Config qualified as Config
 import Monocle.Effects
 import Monocle.Entity (CrawlerName (..))
 import Monocle.Env
-import Monocle.Logging
 import Monocle.Prelude
 import Streaming.Prelude qualified as Streaming
 import Test.Tasty
 import Test.Tasty.HUnit
+
+runLentilleM :: MonocleClient -> Eff [E.Reader CrawlerEnv, MonoClientEffect, LoggerEffect, GerritEffect, BZEffect, TimeEffect, RetryEffect, HttpEffect, PrometheusEffect, EnvEffect, Fail, Concurrent, IOE] a -> IO a
+runLentilleM client action = do
+  env <- CrawlerEnv client <$> newIORef False
+  runEff . Macroscope.runMacroEffects . runLoggerEffect . runMonoClient client . E.runReader env $ action
 
 testCrawlingPoint :: Assertion
 testCrawlingPoint = do
@@ -35,11 +44,11 @@ testCrawlingPoint = do
             }
         fakeChange2 = fakeChange1 {D.echangeId = "efake2", D.echangeUpdatedAt = BT.fakeDateAlt}
     I.indexChanges [fakeChange1, fakeChange2]
-  withTestApi (mkAppEnv fakeConfig) $ \client -> withLogger $ \logger -> do
+  withTestApi (mkAppEnv fakeConfig) $ \client -> do
     let stream date name
           | date == BT.fakeDateAlt && name == "opendev/neutron" = pure mempty
           | otherwise = error "Bad crawling point"
-    void $ runLentilleM logger client $ Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.Changes stream)
+    void $ runLentilleM client $ Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.Changes stream)
     assertEqual "Fetched at expected crawling point" True True
  where
   fakeConfig =
@@ -66,16 +75,16 @@ testCrawlingPoint = do
   crawlerName = "testy"
 
 testTaskDataMacroscope :: Assertion
-testTaskDataMacroscope = withTestApi appEnv $ \client -> withLogger $ \logger -> testAction client logger
+testTaskDataMacroscope = withTestApi appEnv $ \client -> testAction client
  where
-  testAction :: MonocleClient -> Logger -> IO ()
-  testAction client logger = do
+  testAction :: MonocleClient -> IO ()
+  testAction client = do
     -- Start the macroscope with a fake stream
     td <- Monocle.Backend.Provisioner.generateNonDeterministic Monocle.Backend.Provisioner.fakeTaskData
     let stream _untilDate project
           | project == "fake_product" = Streaming.each [td]
           | otherwise = error $ "Unexpected product entity: " <> show project
-    void $ runLentilleM logger client $ Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.TaskDatas stream)
+    void $ runLentilleM client $ Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.TaskDatas stream)
     -- Check task data got indexed
     withTenantConfig fakeConfig do
       count <- withQuery taskDataQuery $ Streaming.length_ Q.scanSearchId
@@ -133,9 +142,8 @@ testRunCrawlers = do
       expected = ["gl1", "gl2", "gr", "gl1", "gl2", "gr"]
 
   withClient "http://localhost" Nothing $ \client ->
-    withLogger $ \logger ->
-      runLentilleM logger client $
-        Macroscope.runCrawlers' 10_000 25_000 70_000 isReload streams
+    runLentilleM client $
+      Macroscope.runCrawlers' 10_000 25_000 70_000 isReload streams
 
   got <- reverse <$> readTVarIO logs
   assertEqual "Stream ran" expected got
@@ -145,15 +153,13 @@ testGetStream = do
   setEnv "CRAWLERS_API_KEY" "secret"
   setEnv "GITLAB_TOKEN" "42"
   setEnv "OTHER_TOKEN" "43"
-  runLentilleStreamTest do
-    (streams, clients) <- runStateT (traverse Macroscope.getCrawler (Macroscope.getCrawlers conf)) (from ())
+  withClient "http://localhost" Nothing $ \client -> runLentilleM client do
+    (streams, clients) <- runStateT (traverse Macroscope.getCrawler (Macroscope.getCrawlers conf)) (Macroscope.Clients mempty mempty mempty)
     assertEqual' "Two streams created" 3 (length streams)
     assertEqual' "Only two gitlab clients created" 2 (length $ toList $ Macroscope.clientsGraph clients)
     let expected = ["http://localhost-42 for crawler-for-org1, crawler-for-org2", "http://localhost-43 for crawler-for-org3"]
     assertEqual' "Stream group named" expected (map fst $ Macroscope.mkStreamsActions (catMaybes streams))
  where
-  runLentilleStreamTest action =
-    withLogger $ \logger -> runLentilleM logger (error "nop") action
   conf =
     [ (Config.mkTenant "test-stream")
         { Config.crawlers = [gl "org1" "GITLAB_TOKEN", gl "org2" "GITLAB_TOKEN", gl "org3" "OTHER_TOKEN"]

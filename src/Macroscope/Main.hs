@@ -7,6 +7,7 @@
 module Macroscope.Main (
   -- * entry point
   runMacroscope,
+  runMacroEffects,
 
   -- * helpers exported for testing
   getCrawler,
@@ -22,8 +23,8 @@ import Data.Map qualified as Map
 import Data.Text qualified as T
 import Gerrit (GerritClient)
 import Lentille
-import Lentille.Bugzilla (BugzillaSession, MonadBZ, getApikey, getBZData, getBugzillaSession)
-import Lentille.Gerrit (MonadGerrit (..))
+import Lentille.Bugzilla
+import Lentille.Gerrit hiding (crawlerName)
 import Lentille.Gerrit qualified as GerritCrawler (GerritEnv (..), getChangesStream, getProjectsStream)
 import Lentille.GitHub.Issues (streamLinkedIssue)
 import Lentille.GitHub.Organization (streamOrganizationProjects)
@@ -40,7 +41,13 @@ import Network.HTTP.Types.Status qualified as HTTP
 import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
 import Prometheus.Metric.GHC (ghcMetrics)
-import UnliftIO.Async qualified as Async
+
+import Effectful.Concurrent.Async qualified as E
+import Effectful.Concurrent.MVar qualified as E
+import Effectful.Env
+import Effectful.Prometheus
+import Effectful.Reader.Static qualified as E
+import Monocle.Effects
 
 -- | A structure to carry a single crawler information.
 data InfoCrawler = InfoCrawler
@@ -52,7 +59,7 @@ data InfoCrawler = InfoCrawler
   deriving (Eq, Show)
 
 -- | A crawler is defined from the config, using a tuple: (crawler, list of lentille)
-type Crawler m = (InfoCrawler, [DocumentStream m])
+type Crawler es = (InfoCrawler, [DocumentStream (Error LentilleError : es)])
 
 -- | Utility function to create a flat list of crawler from the whole configuration
 getCrawlers :: [Config.Index] -> [InfoCrawler]
@@ -67,21 +74,21 @@ getCrawlers xs = do
 crawlerName :: Config.Crawler -> Text
 crawlerName Config.Crawler {..} = name
 
-withMonitoringServer :: Int -> Logger -> IO () -> IO ()
-withMonitoringServer port logger action = do
+withMonitoringServer :: [IOE, LoggerEffect, E.Concurrent] :>> es => Int -> Eff es () -> Eff es ()
+withMonitoringServer port action = do
   -- Setup GHC metrics for prometheus
   void $ promRegister ghcMetrics
 
   -- Start the Wai application in the background with Warp
-  v <- newEmptyMVar
+  v <- E.newEmptyMVar
   let settings = Warp.setPort port $ Warp.setBeforeMainLoop (putMVar v ()) Warp.defaultSettings
-  withAsync (Warp.runSettings settings app) $ \warpPid -> do
-    runLogger logger $ logInfo "Starting monitoring service" ["port" .= port]
+  E.withAsync (liftIO $ Warp.runSettings settings app) $ \warpPid -> do
+    logInfo "Starting monitoring service" ["port" .= port]
     -- Wait for the warp service to be running
     takeMVar v
     -- Run the action
     action
-    cancel warpPid
+    E.cancel warpPid
  where
   app req resp = case Wai.rawPathInfo req of
     "/health" -> resp $ Wai.responseLBS HTTP.status200 [] "macroscope is running\n"
@@ -91,14 +98,25 @@ withMonitoringServer port logger action = do
 -- | 'runMacroscope is the entrypoint of the macroscope process
 -- withClient "http://localhost:8080" Nothing $ runMacroscope 9001 "../etc/config.yaml"
 runMacroscope :: Int -> FilePath -> MonocleClient -> IO ()
-runMacroscope port confPath client = withLogger $ \logger -> withMonitoringServer port logger $ runLentilleM logger client do
+runMacroscope port confPath client = do
+  crawlerEnv <- CrawlerEnv client <$> newIORef False
+  runEff
+    . runMacroEffects
+    . runLoggerEffect
+    . runMonoConfig confPath
+    . E.runReader crawlerEnv
+    . runMonoClient client
+    $ withMonitoringServer port runMacroscope'
+
+runMacroscope' :: forall es. [IOE, MonoConfigEffect] :>> es => MacroEffects es => Eff es ()
+runMacroscope' = do
   logInfo_ "Starting to fetch streams"
-  config <- Config.mReloadConfig confPath
-  loop config (from ())
+  loop (Clients mempty mempty mempty)
  where
-  loop config clients = do
+  loop :: Clients -> Eff es ()
+  loop clients = do
     -- Load the config
-    conf <- Config.csConfig <$> config
+    conf <- Config.csConfig <$> getReloadConfig
 
     -- Flatten each crawler from all workspaces
     let crawlerInfos = getCrawlers $ Config.getWorkspaces conf
@@ -107,31 +125,31 @@ runMacroscope port confPath client = withLogger $ \logger -> withMonitoringServe
     (streams, newClients) <- runStateT (traverse getCrawler crawlerInfos) clients
 
     -- Run the steams group
-    runCrawlers (Config.csReloaded <$> config) (mkStreamsActions $ catMaybes streams)
+    runCrawlers (Config.csReloaded <$> getReloadConfig) (mkStreamsActions $ catMaybes streams)
 
     -- Loop again
-    loop config newClients
+    loop newClients
 
 -- | A stream group is defined by a tuple: (group name, list of action)
-type StreamGroup m = (Text, NonEmpty (m ()))
+type StreamGroup es = (Text, NonEmpty (Eff es ()))
 
 -- | Creates the action `m ()` for each `DocumentStream m` using 'runCrawler'
-mkStreamsActions :: MonadMacro m => [(ClientKey, Crawler m)] -> [StreamGroup m]
+mkStreamsActions :: forall es. MacroEffects es => [(ClientKey, Crawler es)] -> [StreamGroup es]
 mkStreamsActions = map mkStreamGroup . groupByClient
  where
-  mkStreamGroup :: MonadMacro m => (ClientKey, NonEmpty (Crawler m)) -> StreamGroup m
+  mkStreamGroup :: (ClientKey, NonEmpty (Crawler es)) -> StreamGroup es
   mkStreamGroup (k, xs) = (k <> " for " <> crawlersName xs, fmap runCrawler xs)
 
-  crawlersName :: NonEmpty (Crawler m) -> Text
+  crawlersName :: NonEmpty (Crawler es) -> Text
   crawlersName = T.intercalate ", " . map (crawlerName . infoCrawler . fst) . toList
 
 -- | Continuously runs the stream groups in parallel until the config is reloaded
-runCrawlers :: (MonadUnliftIO m, MonadMacro m) => m Bool -> [StreamGroup m] -> m ()
+runCrawlers :: (IOE :> es, MacroEffects es) => Eff es Bool -> [StreamGroup es] -> Eff es ()
 runCrawlers = runCrawlers' 500_000 600_000_000 30_000_000
 
 -- | The runCrawler implementation with custom delay for testing purpose
 runCrawlers' ::
-  (MonadUnliftIO m, MonadMacro m) =>
+  (IOE :> es, MacroEffects es) =>
   -- | How long to wait before starting further crawler
   Int ->
   -- | How long to wait before restarting a crawler
@@ -139,17 +157,17 @@ runCrawlers' ::
   -- | How long to wait before checking if the config changed
   Int ->
   -- | The action to check if the config changed
-  m Bool ->
+  Eff es Bool ->
   -- | The list of stream group
-  [StreamGroup m] ->
-  m ()
+  [StreamGroup es] ->
+  Eff es ()
 runCrawlers' startDelay loopDelay watchDelay isReloaded groups = do
   logInfo "Starting crawlers" ["crawlers" .= map fst groups]
   -- Create a 'runGroup' thread for each stream group
-  let groupAsyncs = Async.mapConcurrently runGroup (zip [0 ..] groups)
+  let groupAsyncs = E.mapConcurrently runGroup (zip [0 ..] groups)
 
   -- Then watch for config change
-  Async.withAsync groupAsyncs watch
+  E.withAsync groupAsyncs watch
  where
   runGroup (delay, grp) = do
     -- Delay group start to avoid initial burst
@@ -184,11 +202,11 @@ runCrawlers' startDelay loopDelay watchDelay isReloaded groups = do
       then do
         -- Update the crawlerStop ref to True so that stream gracefully stops
         logInfo_ "Macroscope reloading begin"
-        ref <- asks crawlerStop
+        ref <- E.asks crawlerStop
         liftIO $ writeIORef ref True
 
         -- Wait for completion (TODO: use Async.poll for 1 hour, then force thread terminate)
-        _res <- Async.wait groupAsyncs
+        _res <- E.wait groupAsyncs
         -- TODO: log exceptions in _res
 
         -- Reset the stop ref
@@ -206,10 +224,6 @@ data Clients = Clients
   , clientsGraph :: Map (Text, Secret) GraphClient
   }
 
--- | Create a default Clients store from the unit
-instance From () Clients where
-  from _ = Clients mempty mempty mempty
-
 type ClientKey = Text
 
 -- | GetClient m a is a convenient alias that means:
@@ -217,10 +231,10 @@ type ClientKey = Text
 --     * needs a 'Clients' state,
 --     * produces a tuple (ClientKey, @a@)
 --     * using an inner context @m@
-type GetClient m a = StateT Clients m (ClientKey, a)
+type GetClient es a = StateT Clients (Eff es) (ClientKey, a)
 
 -- | Boilerplate function to retrieve a client from the store
-getClientGerrit :: MonadGerrit m => Text -> Maybe (Text, Secret) -> GetClient m GerritClient
+getClientGerrit :: GerritEffect :> es => Text -> Maybe (Text, Secret) -> GetClient es GerritClient
 getClientGerrit url auth = do
   clients <- gets clientsGerrit
   (client, newClients) <- mapMutate clients (url, auth) $ lift $ getGerritClient url auth
@@ -228,7 +242,7 @@ getClientGerrit url auth = do
   pure (url, client)
 
 -- | Boilerplate function to retrieve a client from the store
-getClientBZ :: MonadBZ m => Text -> Secret -> GetClient m BugzillaSession
+getClientBZ :: Text -> Secret -> GetClient es BugzillaSession
 getClientBZ url token = do
   clients <- gets clientsBugzilla
   (client, newClients) <-
@@ -240,7 +254,7 @@ getClientBZ url token = do
   pure (url, client)
 
 -- | Boilerplate function to retrieve a client from the store
-getClientGraphQL :: MonadGraphQL m => Text -> Secret -> GetClient m GraphClient
+getClientGraphQL :: [HttpEffect, Concurrent, Fail] :>> es => Text -> Secret -> GetClient es GraphClient
 getClientGraphQL url token = do
   clients <- gets clientsGraph
   (client, newClients) <- mapMutate clients (url, token) $ lift $ newGraphClient url token
@@ -268,10 +282,13 @@ groupByClient = grp >>> adapt
   keepOrder = fmap snd . NonEmpty.reverse
 
 -- | MonadMacro is an alias for a bunch of constraints required for the macroscope process
-type MonadMacro m = (HasLogger m, MonadCatch m, MonadGerrit m, MonadBZ m, LentilleMonad m, MonadReader CrawlerEnv m)
+type MacroEffects es = [GerritEffect, BZEffect, E.Reader CrawlerEnv, MonoClientEffect, HttpEffect, PrometheusEffect, LoggerEffect, TimeEffect, RetryEffect, EnvEffect, Concurrent, Fail] :>> es
+
+runMacroEffects :: IOE :> es => Eff (GerritEffect : BZEffect : TimeEffect : RetryEffect : HttpEffect : PrometheusEffect : EnvEffect : Fail : Concurrent : es) a -> Eff es a
+runMacroEffects = runConcurrent . runFailIO . runEnv . runPrometheus . runHttpEffect . runRetry . runTime . runBZ . runGerrit
 
 -- | 'runCrawler' evaluate a single crawler
-runCrawler :: MonadMacro m => Crawler m -> m ()
+runCrawler :: forall es. MacroEffects es => Crawler es -> Eff es ()
 runCrawler = safeCrawl
  where
   safeCrawl crawler = do
@@ -282,7 +299,7 @@ runCrawler = safeCrawl
         let (InfoCrawler index _ Config.Crawler {..} _, _) = crawler
          in logWarn "Skipping due to an unexpected exception" ["index" .= index, "crawler" .= name, "err" .= show @Text exc]
 
-  crawl :: MonadMacro m => Crawler m -> m ()
+  crawl :: Crawler es -> Eff es ()
   crawl (InfoCrawler index key crawler _, docStreams) = do
     logInfo "Starting crawler" ["index" .= index, "crawler" .= crawlerName crawler]
 
@@ -291,16 +308,17 @@ runCrawler = safeCrawl
 
 -- | 'getCrawler' converts a crawler configuration into a (ClientKey, streams)
 getCrawler ::
-  (HasLogger m, Config.MonadConfig m, MonadGerrit m, MonadGraphQL m, MonadThrow m, MonadBZ m) =>
+  forall es.
+  MacroEffects es =>
   InfoCrawler ->
-  StateT Clients m (Maybe (ClientKey, Crawler m))
+  StateT Clients (Eff es) (Maybe (ClientKey, Crawler es))
 getCrawler inf@(InfoCrawler _ _ crawler idents) = getCompose $ fmap addInfos (Compose getStreams)
  where
   addInfos (key, streams) = (key, (inf, streams))
   getStreams =
     case Config.provider crawler of
       Config.GitlabProvider Config.Gitlab {..} -> do
-        token <- lift $ Config.mGetSecret "GITLAB_TOKEN" gitlab_token
+        token <- lift $ Config.getSecret "GITLAB_TOKEN" gitlab_token
         (k, glClient) <-
           getClientGraphQL
             (fromMaybe "https://gitlab.com/api/graphql" gitlab_url)
@@ -313,7 +331,7 @@ getCrawler inf@(InfoCrawler _ _ crawler idents) = getCompose $ fmap addInfos (Co
       Config.GerritProvider Config.Gerrit {..} -> do
         auth <- lift $ case gerrit_login of
           Just login -> do
-            passwd <- Config.mGetSecret "GERRIT_PASSWORD" gerrit_password
+            passwd <- Config.getSecret "GERRIT_PASSWORD" gerrit_password
             pure $ Just (login, passwd)
           Nothing -> pure Nothing
         (k, gClient) <- getClientGerrit gerrit_url auth
@@ -323,12 +341,12 @@ getCrawler inf@(InfoCrawler _ _ crawler idents) = getCompose $ fmap addInfos (Co
                 <> [gerritChangesCrawler gerritEnv | isJust gerrit_repositories]
         pure $ Just (k, streams)
       Config.BugzillaProvider Config.Bugzilla {..} -> do
-        bzToken <- lift $ Config.mGetSecret "BUGZILLA_TOKEN" bugzilla_token
+        bzToken <- lift $ Config.getSecret "BUGZILLA_TOKEN" bugzilla_token
         (k, bzClient) <- getClientBZ bugzilla_url bzToken
         pure $ Just (k, [bzCrawler bzClient])
       Config.GithubProvider ghCrawler -> do
         let Config.Github {..} = ghCrawler
-        ghToken <- lift $ Config.mGetSecret "GITHUB_TOKEN" github_token
+        ghToken <- lift $ Config.getSecret "GITHUB_TOKEN" github_token
         (k, ghClient) <-
           getClientGraphQL
             (fromMaybe "https://api.github.com/graphql" github_url)
@@ -343,29 +361,29 @@ getCrawler inf@(InfoCrawler _ _ crawler idents) = getCompose $ fmap addInfos (Co
   getIdentByAliasCB :: Text -> Maybe Text
   getIdentByAliasCB = flip Config.getIdentByAliasFromIdents idents
 
-  glMRCrawler :: HasLogger m => MonadGraphQLE m => GraphClient -> (Text -> Maybe Text) -> DocumentStream m
+  glMRCrawler :: GraphClient -> (Text -> Maybe Text) -> DocumentStream (Error LentilleError : es)
   glMRCrawler glClient cb = Changes $ streamMergeRequests glClient cb
 
-  glOrgCrawler :: HasLogger m => MonadGraphQLE m => GraphClient -> DocumentStream m
+  glOrgCrawler :: GraphClient -> DocumentStream (Error LentilleError : es)
   glOrgCrawler glClient = Projects $ streamGroupProjects glClient
 
-  bzCrawler :: HasLogger m => MonadBZ m => BugzillaSession -> DocumentStream m
+  bzCrawler :: BugzillaSession -> DocumentStream (Error LentilleError : es)
   bzCrawler bzSession = TaskDatas $ getBZData bzSession
 
-  ghIssuesCrawler :: HasLogger m => MonadGraphQLE m => GraphClient -> DocumentStream m
+  ghIssuesCrawler :: GraphClient -> DocumentStream (Error LentilleError : es)
   ghIssuesCrawler ghClient = TaskDatas $ streamLinkedIssue ghClient
 
-  ghOrgCrawler :: HasLogger m => MonadGraphQLE m => GraphClient -> DocumentStream m
+  ghOrgCrawler :: GraphClient -> DocumentStream (Error LentilleError : es)
   ghOrgCrawler ghClient = Projects $ streamOrganizationProjects ghClient
 
-  ghPRCrawler :: forall m. HasLogger m => MonadGraphQLE m => GraphClient -> (Text -> Maybe Text) -> DocumentStream m
+  ghPRCrawler :: GraphClient -> (Text -> Maybe Text) -> DocumentStream (Error LentilleError : es)
   ghPRCrawler glClient cb = Changes $ streamPullRequests glClient cb
 
   gerritRegexProjects :: [Text] -> [Text]
   gerritRegexProjects = filter (T.isPrefixOf "^")
 
-  gerritREProjectsCrawler :: HasLogger m => MonadGerrit m => GerritCrawler.GerritEnv -> DocumentStream m
+  gerritREProjectsCrawler :: GerritCrawler.GerritEnv -> DocumentStream (Error LentilleError : es)
   gerritREProjectsCrawler gerritEnv = Projects $ GerritCrawler.getProjectsStream gerritEnv
 
-  gerritChangesCrawler :: HasLogger m => MonadGerrit m => GerritCrawler.GerritEnv -> DocumentStream m
+  gerritChangesCrawler :: GerritCrawler.GerritEnv -> DocumentStream (Error LentilleError : es)
   gerritChangesCrawler gerritEnv = Changes $ GerritCrawler.getChangesStream gerritEnv

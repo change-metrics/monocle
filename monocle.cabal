@@ -182,7 +182,6 @@ library
                      , th-env                     >= 0.1
                      , time
                      , transformers
-                     , unliftio-core
                      , unliftio
                      , unix
                      , vector                     >= 0.12
@@ -276,6 +275,7 @@ library
                      , Effectful.Servant
                      -- TODO: extract effects to standalone packages
                      , Effectful.Prometheus
+                     , Effectful.Env
 
   autogen-modules:     Paths_monocle
 

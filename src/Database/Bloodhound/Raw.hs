@@ -15,6 +15,7 @@ module Database.Bloodhound.Raw (
   mkTermsCompositeAgg,
 ) where
 
+import Control.Monad.Catch (MonadThrow)
 import Data.Aeson
 import Data.Aeson qualified as Aeson
 import Data.Aeson.Casing.Internal qualified as AesonCasing
@@ -27,7 +28,6 @@ import Json.Extras qualified as Json
 import Monocle.Prelude
 import Network.HTTP.Client qualified as HTTP
 import Network.HTTP.Types.Method qualified as HTTP
-import Control.Monad.Catch (MonadThrow)
 
 data ScrollRequest = NoScroll | GetScroll ByteString
 

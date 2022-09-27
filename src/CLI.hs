@@ -30,6 +30,9 @@ import Options.Applicative.Help.Pretty (string)
 import Streaming.Prelude qualified as S
 
 import Database.Bloodhound qualified as BH
+import Effectful.Prometheus
+import Lentille (LentilleError)
+import Monocle.Class
 import Monocle.Effects
 
 ---------------------------------------------------------------
@@ -171,35 +174,35 @@ usageLentille =
   gerritChangeUsage = io <$> parser
    where
     parser = (,) <$> urlOption <*> changeOption
-    io (url, change) = runLogger' do
+    io (url, change) = runStandaloneStream do
       env <- getGerritEnv url
       dump Nothing $ G.streamChange env [G.ChangeId $ show (change :: Int)]
 
   gerritProjectsUsage = io <$> parser
    where
     parser = (,) <$> urlOption <*> queryOption
-    io (url, query) = runLogger' do
+    io (url, query) = runStandaloneStream do
       env <- getGerritEnv url
       dump Nothing $ G.streamProject env $ G.Regexp query
 
   gerritChangesUsage = io <$> parser
    where
     parser = (,,,) <$> urlOption <*> projectOption <*> sinceOption <*> limitOption
-    io (url, project, since, limit) = runLogger' do
+    io (url, project, since, limit) = runStandaloneStream do
       env <- getGerritEnv url
       dump limit $ G.streamChange env [G.Project project, G.After (toSince since)]
 
   githubProjectsUsage = io <$> parser
    where
     parser = (,,) <$> urlOption <*> secretOption <*> orgOption
-    io (url, secret, org) = runLogger' do
+    io (url, secret, org) = runStandaloneStream do
       client <- getGraphClient url secret
       dump Nothing $ GH_ORG.streamOrganizationProjects client org
 
   githubWatchingUsage = io <$> parser
    where
     parser = (,,,) <$> urlOption <*> secretOption <*> userOption <*> limitOption
-    io (url, secret, user, limitM) = runLogger' do
+    io (url, secret, user, limitM) = runStandaloneStream do
       client <- getGraphClient url secret
       dump limitM $ Lentille.GitHub.Watching.streamWatchedProjects client user
 
@@ -212,14 +215,14 @@ usageLentille =
         <*> projectOption
         <*> sinceOption
         <*> limitOption
-    io (url, secret, repo, since, limitM) = runLogger' do
+    io (url, secret, repo, since, limitM) = runStandaloneStream do
       client <- getGraphClient url secret
       dump limitM $ GH_PR.streamPullRequests client (const Nothing) (toSince since) repo
 
   toSince txt = case Monocle.Search.Query.parseDateValue txt of
     Just x -> x
     Nothing -> error $ "Invalid date: " <> show txt
-  getGerritEnv url = runLogger' do
+  getGerritEnv url = do
     client <- G.getGerritClient url Nothing
     pure $ G.GerritEnv client Nothing (const Nothing) "cli"
   getGraphClient url secret = newGraphClient url (Secret secret)
@@ -234,7 +237,9 @@ usageLentille =
   sinceOption = strOption (long "since" <> O.help "Since date")
   limitOption = optional $ option auto (long "limit" <> O.help "Limit count")
 
-dump :: (MonadCatch m, MonadIO m, ToJSON a) => Maybe Int -> Stream (Of a) m () -> m ()
+  runStandaloneStream = runEff . runErrorIO @LentilleError . runConcurrent . runFailIO . runLoggerEffect . runTime . runRetry . runHttpEffect . G.runGerrit . runPrometheus
+
+dump :: (IOE :> es, ToJSON a) => Maybe Int -> Stream (Of a) (Eff es) () -> Eff es ()
 dump limitM stream = do
   xsE <- tryAny $ S.toList_ $ brk stream
   case xsE of
