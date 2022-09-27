@@ -27,15 +27,19 @@ import Effectful.Prometheus
 -------------------------------------------------------------------------------
 -- A time system
 
-class Monad m => MonadTime m where
-  mGetCurrentTime :: m UTCTime
-  mThreadDelay :: Int -> m ()
+data TimeEffect :: Effect
+type instance DispatchOf TimeEffect = 'Static 'WithSideEffects
+data instance StaticRep TimeEffect = TimeEffect
+runTime :: IOE :> es => Eff (TimeEffect : es) a -> Eff es a
+runTime = evalStaticRep TimeEffect
 
-instance MonadTime IO where
-  mGetCurrentTime = Data.Time.Clock.getCurrentTime
-  mThreadDelay = Control.Concurrent.threadDelay
+mGetCurrentTime :: TimeEffect :> es => Eff es UTCTime
+mGetCurrentTime = unsafeEff_ Data.Time.Clock.getCurrentTime
 
-holdOnUntil :: (MonadTime m) => UTCTime -> m ()
+mThreadDelay :: TimeEffect :> es => Int -> Eff es ()
+mThreadDelay = unsafeEff_ . Control.Concurrent.threadDelay
+
+holdOnUntil :: TimeEffect :> es => UTCTime -> Eff es ()
 holdOnUntil resetTime = do
   currentTime <- mGetCurrentTime
   let delaySec = diffTimeSec resetTime currentTime + 1
