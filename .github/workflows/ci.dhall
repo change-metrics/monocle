@@ -91,21 +91,4 @@ in  { Nix =
                 }
               ]
           )
-    , Publish-Builder-Image =
-        mk.makePublishBuilder
-          [ mk.GithubActions.Step::{
-            , name = Some "Build Builder image"
-            , run = Some
-                "docker build -f Dockerfile-builder -t quay.io/change-metrics/builder ."
-            }
-          , mk.GithubActions.Step::{
-            , name = Some "Login on quay.io"
-            , run = Some
-                "docker login -u \"\${{ secrets.QUAYIO_USERNAME }}\" -p \"\${{ secrets.QUAYIO_PASSWORD }}\" quay.io"
-            }
-          , mk.GithubActions.Step::{
-            , name = Some "Publish image to quay.io"
-            , run = Some "docker push quay.io/change-metrics/builder:latest"
-            }
-          ]
     }

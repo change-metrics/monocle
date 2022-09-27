@@ -14,19 +14,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-# base image
-FROM quay.io/change-metrics/builder
-
-# optional build argument
-ARG MONOCLE_COMMIT
-
-# Build project
-COPY . /build
-RUN echo "Building monocle '${MONOCLE_COMMIT}'" && \
-    env MONOCLE_COMMIT=$MONOCLE_COMMIT cabal v2-install -v1 exe:monocle
-
 # web build
-FROM registry.fedoraproject.org/fedora:35
+FROM registry.fedoraproject.org/fedora:35 as web-builder
 
 RUN dnf update -y && dnf install -y nodejs git
 
@@ -51,7 +40,6 @@ COPY web/src /monocle-webapp/src/
 RUN sed -e 's|-bs-no-version-header|-bs-no-version-header", "-warn-error -a+5+6+27+101+109|' -i bsconfig.json && npm run build
 
 ################################################################################
-FROM registry.fedoraproject.org/fedora:35
+FROM quay.io/change-metrics/monocle-exe:latest
 
-COPY --from=0 /root/.cabal/bin/monocle /bin/
-COPY --from=1 /monocle-webapp/build /usr/share/monocle/webapp/
+COPY --from=web-builder /monocle-webapp/build /usr/share/monocle/webapp/

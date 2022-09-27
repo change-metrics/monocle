@@ -4,6 +4,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: "actions/checkout@v2.4.0"
+      - uses: "cachix/install-nix-action@v15"
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      - uses: "cachix/cachix-action@v10"
+        with:
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+          name: change-metrics
       - name: Stop provided Docker
         run: sudo systemctl stop docker containerd
       - name: Remove provided Docker
@@ -38,10 +45,10 @@ jobs:
           CRAWLERS_API_KEY=secret
           GITHUB_TOKEN=123
           EOF
+      - name: Build monocle-exe container
+        run: "nix build .#containerMonocle; docker load < ./result"
       - name: Build docker image
-        run: |
-          export MONOCLE_COMMIT=$(git show HEAD --format="format:%h" -q)
-          docker build -t quay.io/change-metrics/monocle:latest .
+        run: docker build -t quay.io/change-metrics/monocle:latest .
       - name: Start Monocle compose
         run: docker-compose up -d
       - name: Wait for services to start
