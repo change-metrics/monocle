@@ -90,7 +90,10 @@ common common-options
                        TypeOperators,
                        ViewPatterns,
                        -- BlockArguments enables omiting `$` before do block
-                       BlockArguments
+                       BlockArguments,
+                       -- TypeFamilies enables effect dispatch definition
+                       TypeFamilies,
+                       PartialTypeSignatures
 
 common codegen
   default-language:    Haskell2010

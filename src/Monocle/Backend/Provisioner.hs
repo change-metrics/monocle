@@ -29,7 +29,6 @@ import Monocle.Backend.Documents
 import Monocle.Backend.Index qualified as I
 import Monocle.Backend.Test qualified as T
 import Monocle.Config (mkTenant)
-import Monocle.Effects (logInfo)
 import Monocle.Prelude
 import Monocle.Protob.Search (TaskData (..))
 

@@ -6,92 +6,90 @@
 -- And combined using mappend:
 --    key1 .= value1 <> key2 .= value2
 module Monocle.Logging (
-  -- * Logging effect
-  HasLogger (..),
-  LogLevel (..),
+  -- * Logger API
   logWarn,
   logWarn_,
   logInfo,
   logInfo_,
   logDebug,
   logDebug_,
+  withContext,
 
-  -- * The logger object
+  -- * Logger effect
+  LoggerEffect,
+  runLoggerEffect,
+
+  -- * Logger IO
   Logger (..),
-  addCtx,
   withLogger,
-
-  -- * Standalone logging implementation (for use outside of Monocle.Env or LentilleM)
-  LoggerT,
-  runLogger,
-  runLogger',
-
-  -- * Helper
-  getLocName,
 ) where
+
+import Control.Monad.IO.Class (liftIO)
+import GHC.Stack
+import Prelude
 
 import Data.Aeson (Series, pairs)
 import Data.Aeson.Encoding (encodingToLazyByteString)
-import Prometheus qualified
 import System.Log.FastLogger qualified as FastLogger
 
-import Monocle.Prelude
+import Effectful (Dispatch (Static), DispatchOf, Eff, Effect, IOE, withEffToIO, (:>))
+import Effectful.Dispatch.Static (SideEffects (..), StaticRep, evalStaticRep, getStaticRep, localStaticRep, unsafeEff_)
 
--- | The logger effect definition, to be implemented by custom monad such as LentilleM
-class Monad m => HasLogger m where
-  getLogger :: m Logger
-  withContext :: Series -> m () -> m ()
-  logIO :: IO () -> m ()
+import Data.ByteString (ByteString)
+import Data.Text (Text)
+import Data.Text.Encoding (encodeUtf8)
+import Witch (from)
 
 data LogLevel = LogWarning | LogInfo | LogDebug
 
-instance From LogLevel ByteString where
-  from = \case
-    LogWarning -> "WARNING "
-    LogInfo -> "INFO    "
-    LogDebug -> "DEBUG   "
+logLevelBS :: LogLevel -> ByteString
+logLevelBS = \case
+  LogWarning -> "WARNING "
+  LogInfo -> "INFO    "
+  LogDebug -> "DEBUG   "
 
 -- | doLog outputs a oneliner text message
-doLog :: HasLogger m => LogLevel -> ByteString -> Text -> [Series] -> m ()
+doLog :: LoggerEffect :> es => LogLevel -> ByteString -> Text -> [Series] -> Eff es ()
 doLog lvl loc msg attrs = do
-  Logger ctx logger <- getLogger
+  LoggerEffect (Logger ctx logger) <- getStaticRep
   let body :: ByteString
       body = case from . encodingToLazyByteString . pairs . mappend ctx . mconcat $ attrs of
         "{}" -> mempty
         x -> " " <> x
-  logIO $ logger (\time -> FastLogger.toLogStr $ time <> msgText <> body <> "\n")
+  -- `unsafeEff_` is equivalent to `liftIO`
+  unsafeEff_ $ logger (\time -> FastLogger.toLogStr $ time <> msgText <> body <> "\n")
  where
   msgText :: ByteString
-  msgText = from lvl <> loc <> ": " <> encodeUtf8 msg
+  msgText = logLevelBS lvl <> loc <> ": " <> encodeUtf8 msg
 
 -- | Get the `Module.Name:LINE` from the log* caller, jumping over the log* stack
 getLocName :: HasCallStack => ByteString
 getLocName = case getCallStack callStack of
-  (_logStack : (_, srcLoc) : _) -> from (srcLocModule srcLoc) <> ":" <> show (srcLocStartLine srcLoc)
+  (_logStack : (_, srcLoc) : _) -> from (srcLocModule srcLoc) <> ":" <> from (show $ srcLocStartLine srcLoc)
   _ -> "N/C"
 
 -- | Produce info log with attributes, for example:
 --
 -- logInfo "Starting" ["ip" .= addr, "port" .= 42]
-logInfo :: (HasCallStack, HasLogger m) => Text -> [Series] -> m ()
+logInfo :: (HasCallStack, LoggerEffect :> es) => Text -> [Series] -> Eff es ()
 logInfo = doLog LogInfo getLocName
 
 -- | Produce info log without attributes.
-logInfo_ :: (HasCallStack, HasLogger m) => Text -> m ()
+logInfo_ :: (HasCallStack, LoggerEffect :> es) => Text -> Eff es ()
 logInfo_ msg = doLog LogInfo getLocName msg []
 
 -- | Produce messages that need attention.
-logWarn :: (HasCallStack, HasLogger m) => Text -> [Series] -> m ()
+logWarn :: (HasCallStack, LoggerEffect :> es) => Text -> [Series] -> Eff es ()
 logWarn = doLog LogWarning getLocName
 
-logWarn_ :: (HasCallStack, HasLogger m) => Text -> m ()
+logWarn_ :: (HasCallStack, LoggerEffect :> es) => Text -> Eff es ()
 logWarn_ msg = doLog LogWarning getLocName msg []
 
 -- | Produce trace logs.
-logDebug :: (HasCallStack, HasLogger m) => Text -> [Series] -> m ()
+logDebug :: (HasCallStack, LoggerEffect :> es) => Text -> [Series] -> Eff es ()
 logDebug = doLog LogDebug getLocName
 
-logDebug_ :: (HasCallStack, HasLogger m) => Text -> m ()
+logDebug_ :: (HasCallStack, LoggerEffect :> es) => Text -> Eff es ()
 logDebug_ msg = doLog LogDebug getLocName msg []
 
 -- | The logger representation, it is opaque for users.
@@ -111,17 +109,19 @@ withLogger cb = do
  where
   logger = FastLogger.LogStderr 1024
 
--- | A standalone HasLogger implementation
-newtype LoggerT a = LoggerT (ReaderT Logger IO a)
-  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadReader Logger, MonadMask, MonadCatch, MonadThrow, MonadUnliftIO, Prometheus.MonadMonitor)
+-- | The effect definition
+type LoggerEnv = Logger
 
-instance HasLogger LoggerT where
-  getLogger = ask
-  withContext series = local (addCtx series)
-  logIO = liftIO
+data LoggerEffect :: Effect
+type instance DispatchOf LoggerEffect = 'Static 'WithSideEffects
+newtype instance StaticRep LoggerEffect = LoggerEffect LoggerEnv
 
-runLogger :: MonadIO m => Logger -> LoggerT a -> m a
-runLogger logger (LoggerT action) = liftIO $ runReaderT action logger
+runLoggerEffect :: IOE :> es => Eff (LoggerEffect : es) a -> Eff es a
+runLoggerEffect action =
+  -- `withEffToIO` and `unInIO` enables calling IO function like: `(Logger -> IO a) -> IO a`.
+  withEffToIO $ \runInIO ->
+    withLogger \logger ->
+      runInIO $ evalStaticRep (LoggerEffect logger) action
 
-runLogger' :: MonadIO m => LoggerT a -> m a
-runLogger' (LoggerT action) = liftIO $ withLogger (runReaderT action)
+withContext :: LoggerEffect :> es => Series -> Eff es a -> Eff es a
+withContext ctx = localStaticRep $ \(LoggerEffect logger) -> LoggerEffect (addCtx ctx logger)

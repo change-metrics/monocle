@@ -845,7 +845,9 @@ metricGet auth request = checkAuth auth response
       -- Unknown query
       _ -> handleError $ "Unknown metric: " <> from getRequestMetric
    where
+    runM :: Eff (MonoQuery : es) a -> Eff es a
     runM = runQueryM tenant (Q.ensureMinBound query)
+    runMetric :: (TrendPB a, TopPB a, NumPB a) => Q.Metric (MonoQuery : es) a -> Eff es MetricPB.GetResponse
     runMetric m = case getRequestOptions of
       Just (MetricPB.GetRequestOptionsTrend (MetricPB.Trend interval)) ->
         toTrendResult <$> runM (Q.runMetricTrend m $ fromPBTrendInterval $ from interval)

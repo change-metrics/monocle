@@ -7,7 +7,6 @@ import Control.Retry qualified as Retry
 import Data.Time.Clock qualified (getCurrentTime)
 import Monocle.Client (MonocleClient, mkManager)
 import Monocle.Client.Api (crawlerAddDoc, crawlerCommit, crawlerCommitInfo)
-import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Crawler (
   AddDocRequest,
@@ -19,7 +18,6 @@ import Monocle.Protob.Crawler (
  )
 import Network.HTTP.Client (HttpException (..))
 import Network.HTTP.Client qualified as HTTP
-import UnliftIO qualified
 
 -------------------------------------------------------------------------------
 -- A time system
@@ -31,10 +29,6 @@ class Monad m => MonadTime m where
 instance MonadTime IO where
   mGetCurrentTime = Data.Time.Clock.getCurrentTime
   mThreadDelay = Control.Concurrent.threadDelay
-
-instance MonadTime LoggerT where
-  mGetCurrentTime = liftIO mGetCurrentTime
-  mThreadDelay = liftIO . mThreadDelay
 
 holdOnUntil :: (MonadTime m) => UTCTime -> m ()
 holdOnUntil resetTime = do
@@ -53,10 +47,6 @@ instance MonadSync IO where
   mNewMVar = Control.Concurrent.newMVar
   mModifyMVar = Control.Concurrent.modifyMVar
 
-instance MonadSync LoggerT where
-  mNewMVar = liftIO . mNewMVar
-  mModifyMVar = UnliftIO.modifyMVar
-
 -------------------------------------------------------------------------------
 -- A GraphQL client system
 
@@ -67,10 +57,6 @@ class (MonadRetry m, MonadTime m, MonadSync m, MonadMonitor m) => MonadGraphQL m
 instance MonadGraphQL IO where
   httpRequest = HTTP.httpLbs
   newManager = mkManager
-
-instance MonadGraphQL LoggerT where
-  httpRequest req = liftIO . httpRequest req
-  newManager = liftIO mkManager
 
 -------------------------------------------------------------------------------
 -- The Monocle Crawler system
@@ -100,9 +86,6 @@ class Monad m => MonadRetry m where
 instance MonadRetry IO where
   retry = retry'
 
-instance MonadRetry LoggerT where
-  retry = retry'
-
 retryLimit :: Int
 retryLimit = 7
 
@@ -120,7 +103,7 @@ retry' policy handler baseAction =
   action (RetryStatus num _ _) = baseAction num
 
 -- | Retry HTTP network action, doubling backoff each time
-httpRetry :: (HasCallStack, HasLogger m, MonadMonitor m, MonadRetry m) => Text -> m a -> m a
+httpRetry :: (HasCallStack, MonadMonitor m, MonadRetry m) => Text -> m a -> m a
 httpRetry urlLabel baseAction = retry policy httpHandler (const action)
  where
   modName = case getCallStack callStack of
@@ -139,19 +122,20 @@ httpRetry urlLabel baseAction = retry policy httpHandler (const action)
       let url = decodeUtf8 @Text $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
           arg = decodeUtf8 $ HTTP.queryString req
           loc = if num == 0 then url <> arg else url
-      logWarn "network error" ["count" .= num, "limit" .= retryLimit, "loc" .= loc, "failed" .= show @Text ctx]
+      -- logWarn "network error" ["count" .= num, "limit" .= retryLimit, "loc" .= loc, "failed" .= show @Text ctx]
       incrementCounter httpFailureCounter label
       pure True
     InvalidUrlException _ _ -> pure False
 
 -- | A retry helper with a constant policy. This helper is in charge of low level logging
 -- and TODO: incrementCounter for graphql request and errors
-constantRetry :: (HasLogger m, MonadRetry m) => Text -> Handler m Bool -> (Int -> m a) -> m a
+constantRetry :: (MonadRetry m) => Text -> Handler m Bool -> (Int -> m a) -> m a
 constantRetry msg handler baseAction = retry policy (const handler) action
  where
   delay = 1_100_000 -- 1.1 seconds
   policy = Retry.constantDelay delay <> Retry.limitRetries retryLimit
   action num = do
     when (num > 0) $
-      logWarn "Retry failed" ["num" .= num, "max" .= retryLimit, "msg" .= msg]
+      -- logWarn "Retry failed" ["num" .= num, "max" .= retryLimit, "msg" .= msg]
+      pure ()
     baseAction num

@@ -57,11 +57,6 @@ newtype LentilleM a = LentilleM {unLentille :: ReaderT CrawlerEnv IO a}
   deriving newtype (MonadReader CrawlerEnv)
   deriving newtype (MonadUnliftIO, MonadMonitor)
 
-instance HasLogger LentilleM where
-  getLogger = asks crawlerLogger
-  withContext ctx = local (\env -> env {crawlerLogger = addCtx ctx (crawlerLogger env)})
-  logIO = liftIO
-
 data CrawlerEnv = CrawlerEnv
   { crawlerClient :: MonocleClient
   , crawlerLogger :: Logger

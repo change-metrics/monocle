@@ -219,7 +219,7 @@ createIndex indexName mapping = do
   res <- esIndexExists indexName
   case res of
     True -> pure ()
-    False -> logWarn' "Fail to create index" ["name" .= indexName]
+    False -> logWarn "Fail to create index" ["name" .= indexName]
  where
   indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0) BH.defaultIndexMappingsLimits
 

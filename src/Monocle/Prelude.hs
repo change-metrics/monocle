@@ -18,6 +18,9 @@ module Monocle.Prelude (
   Secret (..),
   (:::),
 
+  -- * logging
+  module Monocle.Logging,
+
   -- * effectful
   Effectful.Eff,
   Effectful.IOE,
@@ -242,6 +245,8 @@ import Test.Tasty.HUnit
 import UnliftIO.Async (cancel, withAsync)
 import UnliftIO.MVar (modifyMVar, modifyMVar_)
 import Witch hiding (over)
+
+import Monocle.Logging
 
 -- | Prometheus
 type CounterLabel = Prometheus.Vector (Text, Text) Prometheus.Counter

@@ -65,10 +65,7 @@ module Monocle.Effects where
 import Control.Retry (RetryStatus (..))
 import Control.Retry qualified as Retry
 
-import Data.Aeson (Series, pairs)
-import Data.Aeson.Encoding (encodingToLazyByteString)
 import Monocle.Prelude hiding (Reader, ask, local)
-import System.Log.FastLogger qualified as FastLogger
 
 import Control.Exception (finally, throwIO, try)
 import Monocle.Client qualified
@@ -80,8 +77,6 @@ import Effectful
 import Effectful.Dispatch.Static (SideEffects (..), StaticRep, evalStaticRep, getStaticRep, localStaticRep)
 import Effectful.Dispatch.Static.Primitive qualified as EffStatic
 import Monocle.Effects.Compat ()
-
-import Monocle.Logging hiding (logInfo, withContext)
 
 import GHC.IO.Handle (hClose)
 import Monocle.Config (ConfigStatus)
@@ -428,7 +423,7 @@ esSearchLegacy indexName search = do
     Right x -> pure x
  where
   handleError resp rawResp = do
-    logWarn' "Elastic response failed" ["status" .= BH.errorStatus resp, "message" .= BH.errorMessage resp]
+    logWarn "Elastic response failed" ["status" .= BH.errorStatus resp, "message" .= BH.errorMessage resp]
     error $ "Elastic response failed: " <> show rawResp
 
 ------------------------------------------------------------------
@@ -489,51 +484,6 @@ httpHandler req env (RetryStatus num _ _) = Handler $ \case
         ]
     pure True
   InvalidUrlException _ _ -> pure False
-
-------------------------------------------------------------------
---
-
--- | Logging effect based on the current Monocle.Logging.HasEffect
-
-------------------------------------------------------------------
-
-type LoggerEnv = Logger
-
-data LoggerEffect :: Effect
-type instance DispatchOf LoggerEffect = 'Static 'WithSideEffects
-newtype instance StaticRep LoggerEffect = LoggerEffect LoggerEnv
-
-runLoggerEffect :: IOE :> es => Eff (LoggerEffect : es) a -> Eff es a
-runLoggerEffect action =
-  -- `withEffToIO` and `unInIO` enables calling IO function like: `(Logger -> IO a) -> IO a`.
-  withEffToIO $ \runInIO ->
-    withLogger \logger ->
-      runInIO $ evalStaticRep (LoggerEffect logger) action
-
-withContext :: LoggerEffect :> es => Series -> Eff es a -> Eff es a
-withContext ctx = localStaticRep $ \(LoggerEffect (Logger prevCtx logger)) -> LoggerEffect (Logger (ctx <> prevCtx) logger)
-
-doLog :: LoggerEffect :> es => LogLevel -> ByteString -> Text -> [Series] -> Eff es ()
-doLog lvl loc msg attrs = do
-  LoggerEffect (Logger ctx logger) <- getStaticRep
-  let body :: ByteString
-      body = case from . encodingToLazyByteString . pairs . mappend ctx . mconcat $ attrs of
-        "{}" -> mempty
-        x -> " " <> x
-  -- `unsafeEff_` is equivalent to `liftIO`
-  unsafeEff_ $ logger (\time -> FastLogger.toLogStr $ time <> msgText <> body <> "\n")
- where
-  msgText :: ByteString
-  msgText = from lvl <> loc <> ": " <> encodeUtf8 msg
-
-logInfo :: (HasCallStack, LoggerEffect :> es) => Text -> [Series] -> Eff es ()
-logInfo = doLog LogInfo getLocName
-
-logInfo_ :: (HasCallStack, LoggerEffect :> es) => Text -> Eff es ()
-logInfo_ msg = doLog LogInfo getLocName msg []
-
-logWarn' :: (HasCallStack, LoggerEffect :> es) => Text -> [Series] -> Eff es ()
-logWarn' = doLog LogWarning getLocName
 
 ------------------------------------------------------------------
 --
