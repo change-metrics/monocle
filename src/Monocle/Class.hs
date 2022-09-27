@@ -60,17 +60,6 @@ instance MonadSync IO where
   mModifyMVar = Control.Concurrent.modifyMVar
 
 -------------------------------------------------------------------------------
--- A GraphQL client system
-
-class (MonadRetry m, MonadTime m, MonadSync m, MonadMonitor m) => MonadGraphQL m where
-  httpRequest :: HTTP.Request -> HTTP.Manager -> m (HTTP.Response LByteString)
-  newManager :: m HTTP.Manager
-
-instance MonadGraphQL IO where
-  httpRequest = HTTP.httpLbs
-  newManager = mkManager
-
--------------------------------------------------------------------------------
 -- The Monocle Crawler system
 
 class Monad m => MonadCrawler m where

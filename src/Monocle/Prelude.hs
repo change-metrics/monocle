@@ -24,6 +24,8 @@ module Monocle.Prelude (
   -- * effectful
   Effectful.Eff,
   Effectful.IOE,
+  Effectful.Error.Static.Error,
+  Effectful.Concurrent.Concurrent,
   Effectful.Effect,
   (:>>),
   (:>),
@@ -221,7 +223,9 @@ import Data.Vector (Vector)
 import Database.Bloodhound qualified as BH
 import Effectful ((:>), (:>>))
 import Effectful qualified
+import Effectful.Concurrent qualified
 import Effectful.Dispatch.Static qualified
+import Effectful.Error.Static qualified
 import Effectful.Fail qualified
 import GHC.Float (double2Float)
 import GHC.Generics (C, D, K1, M1, R, Rep, S, Selector, U1, selName, (:*:), (:+:))

@@ -18,6 +18,7 @@ module Lentille.GraphQL (
   doRequest,
 
   -- * Some data types
+  GraphEffects,
   GraphResponse,
   RateLimit (..),
   PageInfo (..),
@@ -32,6 +33,11 @@ import Monocle.Prelude
 import Network.HTTP.Client qualified as HTTP
 import Network.URI qualified as URI
 import Streaming.Prelude qualified as S
+
+import Effectful.Concurrent.MVar qualified as E
+import Monocle.Effects
+
+type GraphEffects es = [LoggerEffect, HttpEffect, Error LentilleError, TimeEffect, RetryEffect, Concurrent, Fail] :>> es
 
 type GraphResponse a = (PageInfo, Maybe RateLimit, [Text], a)
 
@@ -51,21 +57,19 @@ ghDefaultURL = "https://api.github.com/graphql"
 -- HTTP Client
 -------------------------------------------------------------------------------
 data GraphClient = GraphClient
-  { manager :: HTTP.Manager
-  , url :: Text
+  { url :: Text
   , host :: Text
   , token :: Secret
   , rateLimitMVar :: MVar (Maybe RateLimit)
   }
 
 newGraphClient ::
-  MonadGraphQL m =>
+  [HttpEffect, Concurrent, Fail] :>> es =>
   "url" ::: Text ->
   Secret ->
-  m GraphClient
+  Eff es GraphClient
 newGraphClient url token = do
-  manager <- newManager
-  rateLimitMVar <- mNewMVar Nothing
+  rateLimitMVar <- E.newMVar Nothing
   let host =
         maybe
           (error "Unable to parse provided url")
@@ -74,11 +78,11 @@ newGraphClient url token = do
   pure $ GraphClient {..}
 
 -- | A log of http request and response
-type DoFetch m = LBS.ByteString -> WriterT [RequestLog] m LBS.ByteString
+type DoFetch es = LBS.ByteString -> WriterT [RequestLog] (Eff es) LBS.ByteString
 
 -- | The morpheus-graphql-client fetch callback,
 -- doc: https://hackage.haskell.org/package/morpheus-graphql-client-0.17.0/docs/Data-Morpheus-Client.html
-doGraphRequest :: (HasLogger m, MonadGraphQL m) => GraphClient -> DoFetch m
+doGraphRequest :: [HttpEffect, LoggerEffect, Fail] :>> es => GraphClient -> DoFetch es
 doGraphRequest GraphClient {..} jsonBody = do
   -- Prepare the request
   let initRequest = HTTP.parseRequest_ (from url)
@@ -94,7 +98,7 @@ doGraphRequest GraphClient {..} jsonBody = do
           }
 
   -- Do the request (and retry on HttpException raised by the http-client)
-  response <- lift $ httpRetry url $ httpRequest request manager
+  Right response <- lift (httpRequest request)
 
   -- Record the event
   let responseBody = HTTP.responseBody response
@@ -104,7 +108,7 @@ doGraphRequest GraphClient {..} jsonBody = do
   pure responseBody
 
 -- | Helper function to adapt the morpheus client fetch with a WriterT context
-fetchWithLog :: (Monad m, FromJSON a, Fetch a) => DoFetch m -> Args a -> m (Either (FetchError a) a, [RequestLog])
+fetchWithLog :: (FromJSON a, Fetch a) => DoFetch es -> Args a -> Eff es (Either (FetchError a) a, [RequestLog])
 fetchWithLog cb = runWriterT . fetch cb
 
 -------------------------------------------------------------------------------
@@ -123,14 +127,14 @@ instance From RateLimit Text where
 -- based on the returned data inspection via a provided function (see RetryCheck).
 -- In case of retry the depth parameter of mkArgs is decreased (see adaptDepth)
 doRequest ::
-  forall a m.
-  (HasLogger m, MonadGraphQLE m, Fetch a, FromJSON a, Show a) =>
+  forall a es.
+  (GraphEffects es, Fetch a, FromJSON a, Show a) =>
   GraphClient ->
   (Maybe Int -> Maybe Text -> Args a) ->
-  Maybe (Handler m Bool) ->
+  Maybe (Handler (Eff es) Bool) ->
   Maybe Int ->
   Maybe PageInfo ->
-  m a
+  Eff es a
 doRequest client mkArgs retryCheckM depthM pageInfoM = retryCheck runFetch
  where
   retryCheck action = case retryCheckM of
@@ -138,7 +142,7 @@ doRequest client mkArgs retryCheckM depthM pageInfoM = retryCheck runFetch
     Nothing -> runFetch 0
   -- TODO: Take the retryMessage as a doRequest argument
   retryMessage = "Faulty response - retrying request"
-  runFetch :: Int -> m a
+  runFetch :: Int -> Eff es a
   runFetch retried = do
     resp <-
       fetchWithLog
@@ -175,20 +179,21 @@ defaultStreamFetchOptParams :: StreamFetchOptParams m a
 defaultStreamFetchOptParams = StreamFetchOptParams Nothing Nothing Nothing
 
 streamFetch ::
-  (HasLogger m, MonadGraphQLE m, Fetch a, FromJSON a, Show a) =>
+  forall es a b.
+  (GraphEffects es, Fetch a, FromJSON a, Show a) =>
   GraphClient ->
   -- | query Args constructor, the function takes a Maybe depth and a Maybe cursor
   (Maybe Int -> Maybe Text -> Args a) ->
-  StreamFetchOptParams m a ->
+  StreamFetchOptParams (Eff es) a ->
   -- | query result adapter
   (a -> (PageInfo, Maybe RateLimit, [Text], [b])) ->
-  Stream (Of b) m ()
+  LentilleStream es b
 streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformResponse = go Nothing 0
  where
-  holdOnIfNeeded :: (MonadTime m, HasLogger m) => Maybe RateLimit -> m ()
+  holdOnIfNeeded :: Maybe RateLimit -> Eff es ()
   holdOnIfNeeded = mapM_ toDelay
    where
-    toDelay :: (MonadTime m, HasLogger m) => RateLimit -> m ()
+    toDelay :: RateLimit -> Eff es ()
     toDelay rl = when (remaining rl <= 0) do
       let resetAtTime = resetAt rl
       logWarn "Reached Quota limit. Waiting until reset date" ["reset" .= resetAtTime]
@@ -213,7 +218,7 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
     --- Perform a pre GraphQL request to gather rateLimit
     case fpGetRatelimit of
       Just getRateLimit -> lift $
-        mModifyMVar rateLimitMVar $
+        E.modifyMVar rateLimitMVar $
           const do
             rl <- getRateLimit client
             -- Wait few moment to delay the next call
@@ -223,7 +228,7 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
 
     -- Perform the GraphQL request
     (pageInfo, rateLimitM, decodingErrors, xs) <-
-      lift $ mModifyMVar rateLimitMVar $ request pageInfoM
+      lift $ E.modifyMVar rateLimitMVar $ request pageInfoM
 
     -- Log crawling status
     logStep pageInfo rateLimitM xs totalFetched
