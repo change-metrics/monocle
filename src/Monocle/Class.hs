@@ -24,6 +24,9 @@ import Effectful.Dispatch.Static (SideEffects (..), StaticRep, evalStaticRep)
 
 import Effectful.Prometheus
 
+runMonitoring :: IOE :> es => Eff (LoggerEffect : PrometheusEffect : TimeEffect : RetryEffect : es) a -> Eff es a
+runMonitoring = runRetry . runTime . runPrometheus . runLoggerEffect
+
 -------------------------------------------------------------------------------
 -- A time system
 
