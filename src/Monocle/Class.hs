@@ -19,6 +19,11 @@ import Monocle.Protob.Crawler (
 import Network.HTTP.Client (HttpException (..))
 import Network.HTTP.Client qualified as HTTP
 
+import Effectful (Dispatch (Static), DispatchOf)
+import Effectful.Dispatch.Static (SideEffects (..), StaticRep, evalStaticRep)
+
+import Effectful.Prometheus
+
 -------------------------------------------------------------------------------
 -- A time system
 
@@ -76,15 +81,33 @@ instance MonadCrawler IO where
 -------------------------------------------------------------------------------
 -- A network retry system
 
-class Monad m => MonadRetry m where
-  retry ::
-    "policy" ::: RetryPolicyM m ->
-    "handler" ::: (RetryStatus -> Handler m Bool) ->
-    "action" ::: (Int -> m a) ->
-    m a
+data RetryEffect :: Effect
 
-instance MonadRetry IO where
-  retry = retry'
+type instance DispatchOf RetryEffect = 'Static 'WithSideEffects
+data instance StaticRep RetryEffect = RetryEffect
+
+runRetry :: IOE :> es => Eff (RetryEffect : es) a -> Eff es a
+runRetry = evalStaticRep RetryEffect
+
+retry ::
+  forall es a.
+  (RetryEffect :> es) =>
+  "policy" ::: RetryPolicyM (Eff es) ->
+  "handler" ::: (RetryStatus -> Handler (Eff es) Bool) ->
+  "action" ::: (Int -> Eff es a) ->
+  Eff es a
+retry (Retry.RetryPolicyM policy) handler action =
+  unsafeEff $ \env ->
+    let actionIO :: RetryStatus -> IO a
+        actionIO (RetryStatus num _ _) = unEff (action num) env
+        policyIO :: RetryPolicyM IO
+        policyIO = Retry.RetryPolicyM $ \s -> unEff (policy s) env
+        convertHandler :: Handler (Eff es) Bool -> Handler IO Bool
+        convertHandler (Handler handlerEff) =
+          Handler $ \e -> unEff (handlerEff e) env
+        handlerIO :: RetryStatus -> Handler IO Bool
+        handlerIO s = convertHandler (handler s)
+     in Retry.recovering policyIO [handlerIO] actionIO
 
 retryLimit :: Int
 retryLimit = 7
@@ -92,18 +115,8 @@ retryLimit = 7
 counterT :: Int -> Int -> Text
 counterT count max' = show count <> "/" <> show max'
 
--- | Use this retry' to implement MonadRetry in IO.
-retry' :: (MonadMask m, MonadIO m) => RetryPolicyM m -> (RetryStatus -> Handler m Bool) -> (Int -> m a) -> m a
-retry' policy handler baseAction =
-  Retry.recovering
-    policy
-    [handler]
-    action
- where
-  action (RetryStatus num _ _) = baseAction num
-
 -- | Retry HTTP network action, doubling backoff each time
-httpRetry :: (HasCallStack, MonadMonitor m, MonadRetry m) => Text -> m a -> m a
+httpRetry :: (HasCallStack, [PrometheusEffect, RetryEffect] :>> es) => Text -> Eff es a -> Eff es a
 httpRetry urlLabel baseAction = retry policy httpHandler (const action)
  where
   modName = case getCallStack callStack of
@@ -115,7 +128,7 @@ httpRetry urlLabel baseAction = retry policy httpHandler (const action)
   policy = Retry.exponentialBackoff backoff <> Retry.limitRetries retryLimit
   action = do
     res <- baseAction
-    incrementCounter httpRequestCounter label
+    promIncrCounter httpRequestCounter label
     pure res
   httpHandler (RetryStatus num _ _) = Handler $ \case
     HttpExceptionRequest req ctx -> do
@@ -123,13 +136,13 @@ httpRetry urlLabel baseAction = retry policy httpHandler (const action)
           arg = decodeUtf8 $ HTTP.queryString req
           loc = if num == 0 then url <> arg else url
       -- logWarn "network error" ["count" .= num, "limit" .= retryLimit, "loc" .= loc, "failed" .= show @Text ctx]
-      incrementCounter httpFailureCounter label
+      promIncrCounter httpFailureCounter label
       pure True
     InvalidUrlException _ _ -> pure False
 
 -- | A retry helper with a constant policy. This helper is in charge of low level logging
 -- and TODO: incrementCounter for graphql request and errors
-constantRetry :: (MonadRetry m) => Text -> Handler m Bool -> (Int -> m a) -> m a
+constantRetry :: RetryEffect :> es => Text -> Handler (Eff es) Bool -> (Int -> Eff es a) -> Eff es a
 constantRetry msg handler baseAction = retry policy (const handler) action
  where
   delay = 1_100_000 -- 1.1 seconds
