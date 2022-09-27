@@ -1,7 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
 {-# OPTIONS_GHC -Wno-missing-pattern-synonym-signatures -Wno-partial-fields #-}
 {-# OPTIONS_GHC -Wno-unused-matches -Wno-unused-imports -Wno-orphans #-}
@@ -104,18 +103,18 @@ defineByDocumentFile
 
 type Changes = (Change, [ChangeEvent])
 
-fetchMergeRequest :: (HasLogger m, MonadGraphQL m) => GraphClient -> Text -> Text -> m (Either (FetchError GetProjectMergeRequests) GetProjectMergeRequests, [RequestLog])
+fetchMergeRequest :: GraphEffects es => GraphClient -> Text -> Text -> Eff es (Either (FetchError GetProjectMergeRequests) GetProjectMergeRequests, [RequestLog])
 fetchMergeRequest client project mrID =
   fetchWithLog (doGraphRequest client) (GetProjectMergeRequestsArgs (ID project) (Just [mrID]) Nothing)
 
 streamMergeRequests ::
-  (HasLogger m, MonadGraphQLE m) =>
+  GraphEffects es =>
   GraphClient ->
   -- A callback to get Ident ID from an alias
   (Text -> Maybe Text) ->
   UTCTime ->
   Text ->
-  LentilleStream m Changes
+  LentilleStream es Changes
 streamMergeRequests client getIdentIdCb untilDate project =
   breakOnDate $ streamFetch client mkArgs defaultStreamFetchOptParams transformResponse'
  where

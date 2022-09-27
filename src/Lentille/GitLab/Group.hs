@@ -1,7 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
 {-# OPTIONS_GHC -Wno-partial-fields #-}
 {-# OPTIONS_GHC -Wno-unused-matches -Wno-unused-imports -Wno-orphans #-}
@@ -34,15 +33,11 @@ defineByDocumentFile
     }
   |]
 
-fetchGroupProjects :: (HasLogger m, MonadGraphQLE m) => GraphClient -> Text -> m (Either (FetchError GetGroupProjects) GetGroupProjects, [RequestLog])
+fetchGroupProjects :: GraphEffects es => GraphClient -> Text -> Eff es (Either (FetchError GetGroupProjects) GetGroupProjects, [RequestLog])
 fetchGroupProjects client fullPath =
   fetchWithLog (doGraphRequest client) (GetGroupProjectsArgs (ID fullPath) Nothing)
 
-streamGroupProjects ::
-  (HasLogger m, MonadGraphQLE m) =>
-  GraphClient ->
-  Text ->
-  LentilleStream m Project
+streamGroupProjects :: GraphEffects es => GraphClient -> Text -> LentilleStream es Project
 streamGroupProjects client fullPath =
   streamFetch client mkArgs defaultStreamFetchOptParams transformResponse
  where
