@@ -29,7 +29,7 @@ spec:
           env:
             - name: MONOCLE_ELASTIC_URL
               value: http://elastic:9200
-          image: quay.io/change-metrics/monocle:latest
+          image: quay.io/change-metrics/monocle:1.7.0
           livenessProbe:
             httpGet:
               path: /health
