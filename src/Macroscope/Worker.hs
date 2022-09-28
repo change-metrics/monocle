@@ -25,6 +25,7 @@ import Streaming qualified as S
 import Streaming.Prelude qualified as S
 
 import Effectful qualified as E
+import Effectful.Prometheus (PrometheusEffect)
 import Effectful.Reader.Static qualified as E
 import Monocle.Effects
 
@@ -106,7 +107,7 @@ process logFunc postFunc =
 -- | Run is the main function used by macroscope
 runStream ::
   forall es.
-  [LoggerEffect, E.Reader CrawlerEnv, MonoClientEffect, TimeEffect] :>> es =>
+  [LoggerEffect, RetryEffect, PrometheusEffect, E.Reader CrawlerEnv, MonoClientEffect, TimeEffect] :>> es =>
   ApiKey ->
   IndexName ->
   CrawlerName ->
@@ -119,7 +120,7 @@ runStream apiKey indexName crawlerName documentStream = do
 
 runStream' ::
   forall es.
-  [E.Reader CrawlerEnv, LoggerEffect, MonoClientEffect] :>> es =>
+  [E.Reader CrawlerEnv, LoggerEffect, RetryEffect, PrometheusEffect, MonoClientEffect] :>> es =>
   UTCTime ->
   ApiKey ->
   IndexName ->
@@ -249,7 +250,7 @@ runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream =
 
 -- | Adapt the API response
 getStreamOldestEntity ::
-  MonoClientEffect :> es =>
+  [PrometheusEffect, LoggerEffect, RetryEffect, MonoClientEffect] :>> es =>
   LText ->
   LText ->
   CrawlerPB.EntityType ->

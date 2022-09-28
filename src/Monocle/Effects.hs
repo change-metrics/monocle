@@ -95,6 +95,9 @@ import Database.Bloodhound.Raw qualified as BHR
 import Json.Extras qualified as Json
 
 -- for MonoQuery
+
+import Effectful.Prometheus (PrometheusEffect)
+import Monocle.Class (RetryEffect, httpRetry)
 import Monocle.Env (AppEnv)
 import Monocle.Env qualified
 import Monocle.Search.Query qualified as SearchQuery
@@ -207,20 +210,20 @@ newtype instance StaticRep MonoClientEffect = MonoClientEffect MonoClientEnv
 runMonoClient :: IOE :> es => MonocleClient -> Eff (MonoClientEffect : es) a -> Eff es a
 runMonoClient client = evalStaticRep (MonoClientEffect client)
 
-mCrawlerCommitInfo :: MonoClientEffect :> es => CrawlerPB.CommitInfoRequest -> Eff es CrawlerPB.CommitInfoResponse
+mCrawlerCommitInfo :: [PrometheusEffect, LoggerEffect, MonoClientEffect, RetryEffect] :>> es => CrawlerPB.CommitInfoRequest -> Eff es CrawlerPB.CommitInfoResponse
 mCrawlerCommitInfo req = do
   MonoClientEffect env <- getStaticRep
-  unsafeEff_ $ crawlerCommitInfo env req
+  httpRetry "api/commit/info" $ unsafeEff_ $ crawlerCommitInfo env req
 
-mCrawlerCommit :: MonoClientEffect :> es => CrawlerPB.CommitRequest -> Eff es CrawlerPB.CommitResponse
+mCrawlerCommit :: [PrometheusEffect, LoggerEffect, MonoClientEffect, RetryEffect] :>> es => CrawlerPB.CommitRequest -> Eff es CrawlerPB.CommitResponse
 mCrawlerCommit req = do
   MonoClientEffect env <- getStaticRep
-  unsafeEff_ $ crawlerCommit env req
+  httpRetry "api/commit" $ unsafeEff_ $ crawlerCommit env req
 
-mCrawlerAddDoc :: MonoClientEffect :> es => CrawlerPB.AddDocRequest -> Eff es CrawlerPB.AddDocResponse
+mCrawlerAddDoc :: [PrometheusEffect, LoggerEffect, MonoClientEffect, RetryEffect] :>> es => CrawlerPB.AddDocRequest -> Eff es CrawlerPB.AddDocResponse
 mCrawlerAddDoc req = do
   MonoClientEffect env <- getStaticRep
-  unsafeEff_ $ crawlerAddDoc env req
+  httpRetry "api/commit/add" $ unsafeEff_ $ crawlerAddDoc env req
 
 ------------------------------------------------------------------
 --
