@@ -7,9 +7,11 @@
 -- SPDX-License-Identifier: AGPL-3.0-only
 module Monocle.Servant.HTTP (MonocleAPI, server) where
 
+import Effectful (Eff, (:>>))
+import Effectful.Concurrent.MVar qualified as E
 import Monocle.Api.Jwt (AuthenticatedUser)
 import Monocle.Api.Server (authGetMagicJwt, authWhoAmi, configGetAbout, configGetGroupMembers, configGetGroups, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, loginLoginValidation, metricGet, metricInfo, metricList, searchAuthor, searchCheck, searchFields, searchQuery, searchSuggestions)
-import Monocle.Env
+import Monocle.Effects (ApiEffects)
 import Monocle.Protob.Auth (GetMagicJwtRequest, GetMagicJwtResponse, WhoAmiRequest, WhoAmiResponse)
 import Monocle.Protob.Config (GetAboutRequest, GetAboutResponse, GetGroupMembersRequest, GetGroupMembersResponse, GetGroupsRequest, GetGroupsResponse, GetProjectsRequest, GetProjectsResponse, GetWorkspacesRequest, GetWorkspacesResponse)
 import Monocle.Protob.Crawler (AddDocRequest, AddDocResponse, CommitInfoRequest, CommitInfoResponse, CommitRequest, CommitResponse)
@@ -40,7 +42,7 @@ type MonocleAPI =
     :<|> "crawler" :> "add" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.AddDocRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.AddDocResponse
     :<|> "crawler" :> "commit" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.CommitRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.CommitResponse
     :<|> "crawler" :> "get_commit_info" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.CommitInfoRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.CommitInfoResponse
-server :: ServerT MonocleAPI AppM
+server :: ApiEffects es => '[E.Concurrent] :>> es => ServerT MonocleAPI (Eff es)
 server =
   loginLoginValidation
     :<|> authGetMagicJwt

@@ -11,7 +11,6 @@ import Monocle.Client (MonocleClient (tokenM))
 import Monocle.Client.Api (authGetMagicJwt, authWhoAmi, configGetGroupMembers, configGetGroups, crawlerCommitInfo)
 import Monocle.Config qualified as Config
 import Monocle.Env
-import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Auth
 import Monocle.Protob.Config (
@@ -31,6 +30,8 @@ import Proto3.Suite (Enumerated (Enumerated, enumerated))
 import Servant.Auth.Server (defaultJWTSettings, generateKey)
 import Test.Tasty
 import Test.Tasty.HUnit
+
+import Monocle.Effects
 
 main :: IO ()
 main = withOpenSSL do
@@ -67,7 +68,7 @@ main = withOpenSSL do
 
 -- Create an AppEnv where the supply of a new config can be controled
 mkAppEnvWithSideEffect :: Config.Config -> Config.Config -> TVar Bool -> IO AppEnv
-mkAppEnvWithSideEffect config' newConfig reloadedRef = withLogger \glLogger -> do
+mkAppEnvWithSideEffect config' newConfig reloadedRef = do
   bhEnv <- mkEnv'
   ws <- newMVar $ Config.mkWorkspaceStatus config'
   newWs <- newMVar $ Config.mkWorkspaceStatus newConfig
@@ -75,7 +76,6 @@ mkAppEnvWithSideEffect config' newConfig reloadedRef = withLogger \glLogger -> d
   Config.setWorkspaceStatus Config.Ready ws
   let config = configSE (config', ws) (newConfig, newWs)
       aOIDC = OIDC Nothing (defaultJWTSettings jwk)
-      aEnv = Env {..}
   pure $ AppEnv {..}
  where
   configSE conf confNew = do
@@ -134,7 +134,7 @@ monocleApiTests =
     let appEnv = mkAppEnv $ Config.mkTenant "ws"
     let adminToken = "test"
     setEnv "MONOCLE_ADMIN_TOKEN" adminToken
-    withTestApi appEnv $ \_logger client -> do
+    withTestApi appEnv $ \client -> do
       resp <- authGetMagicJwt client $ GetMagicJwtRequest $ from adminToken
       case resp of
         GetMagicJwtResponse (Just (GetMagicJwtResponseResultJwt jwt)) -> do
@@ -160,7 +160,7 @@ monocleApiTests =
                     , Config.Ident [] (Just ["grp2", "grp3"]) "Jane"
                     ]
               }
-    withTestApi appEnv $ \_logger client ->
+    withTestApi appEnv $ \client ->
       do
         GetGroupsResponse {..} <- configGetGroups client $ GetGroupsRequest "ws"
         assertEqual
@@ -190,19 +190,17 @@ monocleApiTests =
                 ]
             )
             reloadedRef
-    withTestApi appEnv $ \_logger client ->
+    withTestApi appEnv $ \client ->
       do
         -- Run a commitInfo and expect an Entity
         resp1 <- crawlerCommitInfo client $ mkReq wsName1 0
-        if not $ isEntityNeutron resp1
-          then error "Expected entity name 'openstack/neutron'"
-          else pure ()
+        unless (isEntityNeutron resp1) $ error "Expected entity name 'openstack/neutron'"
         -- Run a commitInfo (with an offset) on first workspace and expect noEntity
         resp2 <- crawlerCommitInfo client $ mkReq wsName1 1
-        if not $ isNoEntity resp2 then error "Expected noEntity response" else pure ()
+        unless (isNoEntity resp2) $ error "Expected noEntity response"
         -- Also perform the Req on an unknown workspace (and expect failure)
         resp3 <- crawlerCommitInfo client $ mkReq wsName2 0
-        if not $ isUnknownIndex resp3 then error "Expected UnknownIndex response" else pure ()
+        unless (isUnknownIndex resp3) $ error "Expected UnknownIndex response"
 
         -- Now set: config has been reloaded and serve the alternate config
         atomically $ writeTVar reloadedRef True
@@ -210,13 +208,11 @@ monocleApiTests =
         -- as the new config as been handled and crawler MD has been refreshed)
         resp1' <- crawlerCommitInfo client $ mkReq wsName1 0
         resp2' <- crawlerCommitInfo client $ mkReq wsName1 1
-        if resp1' == resp2' then error "Expected different response" else pure ()
-        if isNoEntity resp2' then error "Expected an Entity" else pure ()
+        when (resp1' == resp2') $ error "Expected different response"
+        when (isNoEntity resp2') $ error "Expected an Entity"
         -- Also verify that the new workspace was initilized
         resp3' <- crawlerCommitInfo client $ mkReq wsName2 0
-        if not $ isEntitySwift resp3'
-          then error "Expected entity named 'openstack/swift'"
-          else pure ()
+        unless (isEntitySwift resp3') $ error "Expected entity named 'openstack/swift'"
     assertEqual "Crawler MD reload when config change" True True
    where
     isUnknownIndex UnknownIndexResp = True
@@ -519,8 +515,7 @@ monocleSearchLanguage =
     , testCase "QueryM dropDate" testDropDate
     ]
  where
-  mkQueryM code = testQueryM testTenant . withQuery (mkCodeQuery code)
-
+  mkQueryM code action = runEff $ runMonoQueryConfig (mkCodeQuery code) action
   testWithFlavor :: Assertion
   testWithFlavor = mkQueryM "from:2021" do
     withFlavor (Q.QueryFlavor Q.Author Q.OnCreatedAndCreated) do
@@ -545,7 +540,7 @@ monocleSearchLanguage =
 
   testEnsureMinBound :: Assertion
   testEnsureMinBound = do
-    testQueryM testTenant do
+    runEff $ runEmptyQueryM testTenant do
       withQuery (Q.ensureMinBound $ mkCodeQuery "author:alice") do
         got <- prettyQuery
         let expected = "{\"bool\":{\"must\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2021-05-10T00:00:00Z\"}}},{\"regexp\":{\"author.muid\":{\"flags\":\"ALL\",\"value\":\"alice\"}}}]}}"
@@ -565,7 +560,7 @@ monocleSearchLanguage =
       liftIO $ assertEqual "drop date worked" (Just "{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"zuul\"}}}") newQ
 
   -- Get pretty query
-  prettyQuery :: QueryM (Maybe LByteString)
+  prettyQuery :: MonoQuery :> es => Eff es (Maybe LByteString)
   prettyQuery = fmap encodePretty <$> getQueryBH
 
   -- Create a Query object

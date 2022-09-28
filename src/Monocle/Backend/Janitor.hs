@@ -18,9 +18,9 @@ import Monocle.Backend.Index (crawlerMDQuery)
 import Monocle.Backend.Index qualified as I
 import Monocle.Backend.Queries as Q
 import Monocle.Config qualified as Config
+import Monocle.Effects
 import Monocle.Entity (Entity (Project))
 import Monocle.Env
-import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Crawler qualified as CrawlerPB
 import Streaming.Prelude qualified as Streaming
@@ -37,36 +37,28 @@ updateAuthor index author@D.Author {..} = case getIdent of
   -- Remove the host prefix
   newMuid = T.drop 1 $ T.dropWhile (/= '/') (from authorUid)
 
-updateIdentsOnWorkspace :: QueryM ()
+updateIdentsOnWorkspace :: QEffects es => Eff es ()
 updateIdentsOnWorkspace = do
-  target <- asks tenant
+  target <- getQueryTarget
   workspaceName <- case target of
     QueryWorkspace ws -> pure $ Config.getWorkspaceName ws
     QueryConfig _ -> error "Config can't be updated"
   changesCount <- withQuery (mkQuery [Q.documentType D.EChangeDoc]) Q.countDocs
   eventsCount <- withQuery (mkQuery [Q.documentTypes $ fromList D.allEventTypes]) Q.countDocs
-  print @Text $
-    "Workspace "
-      <> workspaceName
-      <> " - Janitor will process on "
-      <> show changesCount
-      <> " changes and "
-      <> show eventsCount
-      <> " events."
-  print @Text "Processing (this may take some time) ..."
+  logInfo "Janitor will process changes and event" ["workspace" .= workspaceName, "changes" .= changesCount, "events" .= eventsCount]
   updatedChangesCount <- updateIdentsOnChanges
-  print @Text $ "Updated " <> show updatedChangesCount <> " changes."
+  logInfo "Updated changes" ["count" .= updatedChangesCount]
   updatedEventsCount <- updateIdentsOnEvents
-  print @Text $ "Updated " <> show updatedEventsCount <> " events."
+  logInfo "Updated events" ["count" .= updatedEventsCount]
   populatedCount <- I.populateAuthorCache
-  print @Text $ "Author cache re-populated with " <> show populatedCount <> " entries."
+  logInfo "Author cache re-populated with entries" ["count" .= populatedCount]
 
 -- | Apply identities according to the configuration on Changes
 -- Try this on the REPL with:
 -- λ> testQueryM (defaultTenant "sf-team-workspace") $ updateIdentsOnChanges
-updateIdentsOnChanges :: QueryM Int
+updateIdentsOnChanges :: QEffects es => Eff es Int
 updateIdentsOnChanges = do
-  target <- asks tenant
+  target <- getQueryTarget
   indexName <- getIndexName
   case target of
     QueryWorkspace index -> doUpdateIdentsOnChanges indexName (updateAuthor index)
@@ -88,7 +80,7 @@ instance ToJSON EChangeAuthors where
 instance FromJSON EChangeAuthors where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
-doUpdateIdentsOnChanges :: BH.IndexName -> (D.Author -> D.Author) -> QueryM Int
+doUpdateIdentsOnChanges :: forall es. QEffects es => BH.IndexName -> (D.Author -> D.Author) -> Eff es Int
 doUpdateIdentsOnChanges indexName updateAuthor' = do
   withQuery changeQuery $
     scanChanges
@@ -97,7 +89,7 @@ doUpdateIdentsOnChanges indexName updateAuthor' = do
             >>> I.bulkStream
         )
  where
-  scanChanges :: Stream (Of EChangeAuthors) QueryM ()
+  scanChanges :: Stream (Of EChangeAuthors) (Eff es) ()
   scanChanges = Q.scanSearchHit
   changeQuery = mkQuery [Q.documentType D.EChangeDoc]
   updateChange :: EChangeAuthors -> Maybe EChangeAuthors
@@ -127,9 +119,9 @@ doUpdateIdentsOnChanges indexName updateAuthor' = do
 -- | Apply identities according to the configuration on Events
 -- Try this on the REPL with:
 -- λ> testQueryM (defaultTenant "sf-team-workspace") $ updateIdentsOnEvents
-updateIdentsOnEvents :: QueryM Int
+updateIdentsOnEvents :: QEffects es => Eff es Int
 updateIdentsOnEvents = do
-  target <- asks tenant
+  target <- getQueryTarget
   indexName <- getIndexName
   case target of
     QueryWorkspace index -> doUpdateIdentsOnEvents indexName (updateAuthor index)
@@ -149,7 +141,7 @@ instance ToJSON EChangeEventAuthors where
 instance FromJSON EChangeEventAuthors where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
-doUpdateIdentsOnEvents :: BH.IndexName -> (D.Author -> D.Author) -> QueryM Int
+doUpdateIdentsOnEvents :: forall es. QEffects es => BH.IndexName -> (D.Author -> D.Author) -> Eff es Int
 doUpdateIdentsOnEvents indexName updateAuthor' =
   withQuery eventQuery $
     scanEvents
@@ -158,7 +150,7 @@ doUpdateIdentsOnEvents indexName updateAuthor' =
             >>> I.bulkStream
         )
  where
-  scanEvents :: Stream (Of EChangeEventAuthors) QueryM ()
+  scanEvents :: Stream (Of EChangeEventAuthors) (Eff es) ()
   scanEvents = Q.scanSearchHit
   eventQuery = mkQuery [Q.documentTypes $ fromList allEventTypes]
 
@@ -181,7 +173,7 @@ doUpdateIdentsOnEvents indexName updateAuthor' =
 -- | Remove changes and events associated with a crawler name
 -- Try this on the REPL with:
 -- λ> testQueryM (mkConfig "zuul") $ wipeCrawlerData "custom"
-wipeCrawlerData :: Text -> QueryM ()
+wipeCrawlerData :: forall es. QEffects es => Text -> Eff es ()
 wipeCrawlerData crawlerName = do
   -- Get index from QueryM
   config <- getIndexConfig
@@ -199,7 +191,7 @@ wipeCrawlerData crawlerName = do
   -- Finally remove crawler metadata objects
   deleteCrawlerMDs
  where
-  getProjectsCrawler :: QueryM [Text]
+  getProjectsCrawler :: Eff es [Text]
   getProjectsCrawler = do
     projectCrawlerMDs <- withQuery sQuery Q.scanSearchSimple
     pure $ mapMaybe getValue projectCrawlerMDs
@@ -213,7 +205,7 @@ wipeCrawlerData crawlerName = do
     getValue (ECrawlerMetadata ECrawlerMetadataObject {ecmCrawlerEntity}) = case ecmCrawlerEntity of
       Project n -> Just n
       _ -> Nothing
-  deleteDocsByRepoName :: Text -> QueryM ()
+  deleteDocsByRepoName :: Text -> Eff es ()
   deleteDocsByRepoName fullname = do
     logInfo "Deleting" ["fullname" .= fullname]
     withQuery sQuery Q.deleteDocs
@@ -223,7 +215,7 @@ wipeCrawlerData crawlerName = do
         [ mkTerm "repository_fullname" fullname
         , documentTypes . fromList $ D.allEventTypes <> [D.EChangeDoc]
         ]
-  deleteCrawlerMDs :: QueryM ()
+  deleteCrawlerMDs :: Eff es ()
   deleteCrawlerMDs = do
     logInfo "Deleting crawling metadata objects" ["crawler" .= crawlerName]
     withQuery sQuery Q.deleteDocs
@@ -233,7 +225,7 @@ wipeCrawlerData crawlerName = do
 -- | Remove all the taskdata associated with a crawler name
 -- Try this on the REPL with:
 -- λ> testQueryM (mkConfig "zuul") $ removeTDCrawlerData "custom"
-removeTDCrawlerData :: Text -> QueryM ()
+removeTDCrawlerData :: forall es. QEffects es => Text -> Eff es ()
 removeTDCrawlerData crawlerName = do
   index <- getIndexName
   tdDeletedCount <- removeOrphanTaskDatas index
@@ -249,7 +241,7 @@ removeTDCrawlerData crawlerName = do
   -- - the initial `withQuery` needs to be applied first, since it operate on `QueryM`, not on `Stream`
   -- - the `scanSearchXXX` value does take argument, thus we uses `&` to insert it in the pipeline
   -- - the Streaming.map composition is more natural using `>>>` instead of `.`.
-  removeChangeTaskDatas :: BH.IndexName -> QueryM Int
+  removeChangeTaskDatas :: BH.IndexName -> Eff es Int
   removeChangeTaskDatas index =
     withQuery changeTaskDataQuery $ -- filter on changes which have a task data from that crawler
       Q.scanSearchHit -- scan the Hit (get a Stream (Of EChange))
@@ -276,7 +268,7 @@ removeTDCrawlerData crawlerName = do
         | tdCrawlerName etd == Just crawlerName = False
         | otherwise = True
 
-  removeOrphanTaskDatas :: BH.IndexName -> QueryM Int
+  removeOrphanTaskDatas :: BH.IndexName -> Eff es Int
   removeOrphanTaskDatas index =
     withQuery taskDataQuery $ -- filter on orphaned task data from that crawler
       Q.scanSearchId -- scan the DocId
@@ -290,10 +282,10 @@ removeTDCrawlerData crawlerName = do
         , Q.documentType D.EOrphanTaskData
         ]
 
-removeProjectMD :: Text -> QueryM ()
+removeProjectMD :: QEffects es => Text -> Eff es ()
 removeProjectMD = removeMD CrawlerPB.EntityTypeENTITY_TYPE_PROJECT
 
-removeMD :: CrawlerPB.EntityType -> Text -> QueryM ()
+removeMD :: QEffects es => CrawlerPB.EntityType -> Text -> Eff es ()
 removeMD entity crawlerName = do
   logInfo "Will delete crawler md" ["crawler" .= crawlerName, "entity" .= entity]
   index <- getIndexName

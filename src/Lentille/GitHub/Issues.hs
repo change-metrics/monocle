@@ -1,27 +1,18 @@
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 {-# OPTIONS_GHC -Wno-missing-export-lists #-}
 {-# OPTIONS_GHC -Wno-missing-pattern-synonym-signatures -Wno-partial-fields #-}
-{-# OPTIONS_GHC -Wno-unused-matches -Wno-unused-imports #-}
 
 module Lentille.GitHub.Issues where
 
-import Data.Aeson (decode)
-import Data.ByteString.Lazy qualified as LBS
 import Data.Morpheus.Client
-import Data.Time.Calendar
 import Data.Time.Clock
 import Data.Time.Format
 import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
-import Lentille (MonadGraphQLE)
 import Lentille.GitHub.RateLimit (getRateLimit)
 import Lentille.GraphQL
-import Monocle.Entity (Entity (TaskDataEntity))
-import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Search (TaskData (..))
 
@@ -84,11 +75,11 @@ defineByDocumentFile
   |]
 
 streamLinkedIssue ::
-  (HasLogger m, MonadGraphQLE m) =>
+  GraphEffects es =>
   GraphClient ->
   UTCTime ->
   Text ->
-  Stream (Of TaskData) m ()
+  Stream (Of TaskData) (Eff es) ()
 streamLinkedIssue client time repo =
   streamFetch client mkArgs optParams transformResponse
  where

@@ -1,107 +1,76 @@
+-- disable redundant constraint warning for fake effect
+{-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
+
 -- | Monocle simple effect system based on mtl and PandocMonad
 module Monocle.Class where
 
-import Control.Concurrent qualified (modifyMVar, newMVar, threadDelay)
+import Control.Concurrent (threadDelay)
 import Control.Retry (RetryPolicyM, RetryStatus (..))
 import Control.Retry qualified as Retry
 import Data.Time.Clock qualified (getCurrentTime)
-import Monocle.Client (MonocleClient, mkManager)
-import Monocle.Client.Api (crawlerAddDoc, crawlerCommit, crawlerCommitInfo)
-import Monocle.Logging
 import Monocle.Prelude
-import Monocle.Protob.Crawler (
-  AddDocRequest,
-  AddDocResponse,
-  CommitInfoRequest,
-  CommitInfoResponse,
-  CommitRequest,
-  CommitResponse,
- )
 import Network.HTTP.Client (HttpException (..))
 import Network.HTTP.Client qualified as HTTP
-import UnliftIO qualified
+
+import Effectful (Dispatch (Static), DispatchOf)
+import Effectful.Dispatch.Static (SideEffects (..), StaticRep, evalStaticRep)
+
+import Effectful.Prometheus
+
+runMonitoring :: IOE :> es => Eff (LoggerEffect : PrometheusEffect : TimeEffect : RetryEffect : es) a -> Eff es a
+runMonitoring = runRetry . runTime . runPrometheus . runLoggerEffect
 
 -------------------------------------------------------------------------------
 -- A time system
 
-class Monad m => MonadTime m where
-  mGetCurrentTime :: m UTCTime
-  mThreadDelay :: Int -> m ()
+data TimeEffect :: Effect
+type instance DispatchOf TimeEffect = 'Static 'WithSideEffects
+data instance StaticRep TimeEffect = TimeEffect
+runTime :: IOE :> es => Eff (TimeEffect : es) a -> Eff es a
+runTime = evalStaticRep TimeEffect
 
-instance MonadTime IO where
-  mGetCurrentTime = Data.Time.Clock.getCurrentTime
-  mThreadDelay = Control.Concurrent.threadDelay
+mGetCurrentTime :: TimeEffect :> es => Eff es UTCTime
+mGetCurrentTime = unsafeEff_ Data.Time.Clock.getCurrentTime
 
-instance MonadTime LoggerT where
-  mGetCurrentTime = liftIO mGetCurrentTime
-  mThreadDelay = liftIO . mThreadDelay
+mThreadDelay :: TimeEffect :> es => Int -> Eff es ()
+mThreadDelay = unsafeEff_ . threadDelay
 
-holdOnUntil :: (MonadTime m) => UTCTime -> m ()
+holdOnUntil :: TimeEffect :> es => UTCTime -> Eff es ()
 holdOnUntil resetTime = do
   currentTime <- mGetCurrentTime
   let delaySec = diffTimeSec resetTime currentTime + 1
   mThreadDelay $ delaySec * 1_000_000
 
 -------------------------------------------------------------------------------
--- A concurrent system handled via Control.Concurrent.MVar
-
-class Monad m => MonadSync m where
-  mNewMVar :: a -> m (MVar a)
-  mModifyMVar :: MVar a -> (a -> m (a, b)) -> m b
-
-instance MonadSync IO where
-  mNewMVar = Control.Concurrent.newMVar
-  mModifyMVar = Control.Concurrent.modifyMVar
-
-instance MonadSync LoggerT where
-  mNewMVar = liftIO . mNewMVar
-  mModifyMVar = UnliftIO.modifyMVar
-
--------------------------------------------------------------------------------
--- A GraphQL client system
-
-class (MonadRetry m, MonadTime m, MonadSync m, MonadMonitor m) => MonadGraphQL m where
-  httpRequest :: HTTP.Request -> HTTP.Manager -> m (HTTP.Response LByteString)
-  newManager :: m HTTP.Manager
-
-instance MonadGraphQL IO where
-  httpRequest = HTTP.httpLbs
-  newManager = mkManager
-
-instance MonadGraphQL LoggerT where
-  httpRequest req = liftIO . httpRequest req
-  newManager = liftIO mkManager
-
--------------------------------------------------------------------------------
--- The Monocle Crawler system
-
-class Monad m => MonadCrawler m where
-  mReadIORef :: IORef a -> m a
-  mCrawlerAddDoc :: MonocleClient -> AddDocRequest -> m AddDocResponse
-  mCrawlerCommit :: MonocleClient -> CommitRequest -> m CommitResponse
-  mCrawlerCommitInfo :: MonocleClient -> CommitInfoRequest -> m CommitInfoResponse
-
-instance MonadCrawler IO where
-  mReadIORef = readIORef
-  mCrawlerAddDoc = crawlerAddDoc
-  mCrawlerCommit = crawlerCommit
-  mCrawlerCommitInfo = crawlerCommitInfo
-
--------------------------------------------------------------------------------
 -- A network retry system
 
-class Monad m => MonadRetry m where
-  retry ::
-    "policy" ::: RetryPolicyM m ->
-    "handler" ::: (RetryStatus -> Handler m Bool) ->
-    "action" ::: (Int -> m a) ->
-    m a
+data RetryEffect :: Effect
 
-instance MonadRetry IO where
-  retry = retry'
+type instance DispatchOf RetryEffect = 'Static 'WithSideEffects
+data instance StaticRep RetryEffect = RetryEffect
 
-instance MonadRetry LoggerT where
-  retry = retry'
+runRetry :: IOE :> es => Eff (RetryEffect : es) a -> Eff es a
+runRetry = evalStaticRep RetryEffect
+
+retry ::
+  forall es a.
+  (RetryEffect :> es) =>
+  "policy" ::: RetryPolicyM (Eff es) ->
+  "handler" ::: (RetryStatus -> Handler (Eff es) Bool) ->
+  "action" ::: (Int -> Eff es a) ->
+  Eff es a
+retry (Retry.RetryPolicyM policy) handler action =
+  unsafeEff $ \env ->
+    let actionIO :: RetryStatus -> IO a
+        actionIO (RetryStatus num _ _) = unEff (action num) env
+        policyIO :: RetryPolicyM IO
+        policyIO = Retry.RetryPolicyM $ \s -> unEff (policy s) env
+        convertHandler :: Handler (Eff es) Bool -> Handler IO Bool
+        convertHandler (Handler handlerEff) =
+          Handler $ \e -> unEff (handlerEff e) env
+        handlerIO :: RetryStatus -> Handler IO Bool
+        handlerIO s = convertHandler (handler s)
+     in Retry.recovering policyIO [handlerIO] actionIO
 
 retryLimit :: Int
 retryLimit = 7
@@ -109,18 +78,8 @@ retryLimit = 7
 counterT :: Int -> Int -> Text
 counterT count max' = show count <> "/" <> show max'
 
--- | Use this retry' to implement MonadRetry in IO.
-retry' :: (MonadMask m, MonadIO m) => RetryPolicyM m -> (RetryStatus -> Handler m Bool) -> (Int -> m a) -> m a
-retry' policy handler baseAction =
-  Retry.recovering
-    policy
-    [handler]
-    action
- where
-  action (RetryStatus num _ _) = baseAction num
-
 -- | Retry HTTP network action, doubling backoff each time
-httpRetry :: (HasCallStack, HasLogger m, MonadMonitor m, MonadRetry m) => Text -> m a -> m a
+httpRetry :: (HasCallStack, [PrometheusEffect, RetryEffect, LoggerEffect] :>> es) => Text -> Eff es a -> Eff es a
 httpRetry urlLabel baseAction = retry policy httpHandler (const action)
  where
   modName = case getCallStack callStack of
@@ -132,7 +91,7 @@ httpRetry urlLabel baseAction = retry policy httpHandler (const action)
   policy = Retry.exponentialBackoff backoff <> Retry.limitRetries retryLimit
   action = do
     res <- baseAction
-    incrementCounter httpRequestCounter label
+    promIncrCounter httpRequestCounter label
     pure res
   httpHandler (RetryStatus num _ _) = Handler $ \case
     HttpExceptionRequest req ctx -> do
@@ -140,13 +99,13 @@ httpRetry urlLabel baseAction = retry policy httpHandler (const action)
           arg = decodeUtf8 $ HTTP.queryString req
           loc = if num == 0 then url <> arg else url
       logWarn "network error" ["count" .= num, "limit" .= retryLimit, "loc" .= loc, "failed" .= show @Text ctx]
-      incrementCounter httpFailureCounter label
+      promIncrCounter httpFailureCounter label
       pure True
     InvalidUrlException _ _ -> pure False
 
 -- | A retry helper with a constant policy. This helper is in charge of low level logging
 -- and TODO: incrementCounter for graphql request and errors
-constantRetry :: (HasLogger m, MonadRetry m) => Text -> Handler m Bool -> (Int -> m a) -> m a
+constantRetry :: [LoggerEffect, RetryEffect] :>> es => Text -> Handler (Eff es) Bool -> (Int -> Eff es a) -> Eff es a
 constantRetry msg handler baseAction = retry policy (const handler) action
  where
   delay = 1_100_000 -- 1.1 seconds

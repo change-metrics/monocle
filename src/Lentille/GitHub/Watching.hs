@@ -1,17 +1,14 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 {-# OPTIONS_GHC -Wno-partial-fields #-}
 
 module Lentille.GitHub.Watching where
 
 import Data.Morpheus.Client qualified
-import Lentille qualified
 import Lentille.GitHub.RateLimit qualified
 import Lentille.GraphQL qualified
-import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Crawler qualified
 
@@ -76,10 +73,10 @@ transformResponse result = do
   getRepos r = Monocle.Protob.Crawler.Project . from . unURI . url <$> catMaybes r
 
 streamWatchedProjects ::
-  (HasLogger m, Lentille.MonadGraphQLE m) =>
+  Lentille.GraphQL.GraphEffects es =>
   Lentille.GraphQL.GraphClient ->
   Text ->
-  Stream (Of Monocle.Protob.Crawler.Project) m ()
+  Stream (Of Monocle.Protob.Crawler.Project) (Eff es) ()
 streamWatchedProjects client login =
   Lentille.GraphQL.streamFetch client mkArgs optParams transformResponse
  where

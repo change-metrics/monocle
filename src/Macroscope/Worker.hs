@@ -24,17 +24,22 @@ import Proto3.Suite (Enumerated (Enumerated))
 import Streaming qualified as S
 import Streaming.Prelude qualified as S
 
+import Effectful qualified as E
+import Effectful.Prometheus (PrometheusEffect)
+import Effectful.Reader.Static qualified as E
+import Monocle.Effects
+
 -- | A crawler is defined as a DocumentStream:
-data DocumentStream m
+data DocumentStream es
   = -- | Fetch projects for a organization name
-    Projects (Text -> LentilleStream m Project)
+    Projects (Text -> LentilleStream es Project)
   | -- | Fetch recent changes from a project
-    Changes (UTCTime -> Text -> LentilleStream m (Change, [ChangeEvent]))
+    Changes (UTCTime -> Text -> LentilleStream es (Change, [ChangeEvent]))
   | -- | Fetch recent task data
-    TaskDatas (UTCTime -> Text -> LentilleStream m TaskData)
+    TaskDatas (UTCTime -> Text -> LentilleStream es TaskData)
 
 -- | Get the entity type managed by a given stream
-streamEntity :: DocumentStream m -> CrawlerPB.EntityType
+streamEntity :: DocumentStream es -> CrawlerPB.EntityType
 streamEntity = \case
   Projects _ -> EntityTypeENTITY_TYPE_ORGANIZATION
   Changes _ -> EntityTypeENTITY_TYPE_PROJECT
@@ -76,23 +81,22 @@ type OldestEntity = CommitInfoResponse_OldestEntity
 
 -- | 'process' read the stream of document and post to the monocle API
 process ::
-  forall m.
-  Monad m =>
+  forall es.
   -- | Funtion to log about the processing
-  (Int -> m ()) ->
+  (Int -> Eff es ()) ->
   -- | Function to post on the Monocle API
-  ([DocumentType] -> m AddDocResponse) ->
+  ([DocumentType] -> Eff es AddDocResponse) ->
   -- | The stream of documents to read
-  Stream (Of DocumentType) m () ->
+  Stream (Of DocumentType) (Eff es) () ->
   -- | The processing results
-  m [ProcessResult]
+  Eff es [ProcessResult]
 process logFunc postFunc =
   S.toList_
     . S.mapM processBatch
     . S.mapped S.toList
     . S.chunksOf 500
  where
-  processBatch :: [DocumentType] -> m ProcessResult
+  processBatch :: [DocumentType] -> Eff es ProcessResult
   processBatch docs = do
     logFunc (length docs)
     resp <- postFunc docs
@@ -100,44 +104,47 @@ process logFunc postFunc =
       AddDocResponse Nothing -> AddOk
       AddDocResponse (Just err) -> AddError (show err)
 
-type MonadCrawlerE m = (MonadCrawler m, MonadReader CrawlerEnv m)
-
 -- | Run is the main function used by macroscope
 runStream ::
-  (HasLogger m, MonadTime m, MonadCatch m, MonadRetry m, MonadMonitor m, MonadCrawlerE m) =>
+  forall es.
+  [LoggerEffect, RetryEffect, PrometheusEffect, E.Reader CrawlerEnv, MonoClientEffect, TimeEffect] :>> es =>
   ApiKey ->
   IndexName ->
   CrawlerName ->
-  DocumentStream m ->
-  m ()
+  DocumentStream (Error LentilleError : es) ->
+  Eff es ()
 runStream apiKey indexName crawlerName documentStream = do
   startTime <- mGetCurrentTime
   withContext ("index" .= indexName <> "crawler" .= crawlerName <> "stream" .= streamName documentStream) do
     runStream' startTime apiKey indexName crawlerName documentStream
 
 runStream' ::
-  forall m.
-  (HasLogger m, MonadCatch m, MonadRetry m, MonadMonitor m, MonadCrawlerE m) =>
+  forall es.
+  [E.Reader CrawlerEnv, LoggerEffect, RetryEffect, PrometheusEffect, MonoClientEffect] :>> es =>
   UTCTime ->
   ApiKey ->
   IndexName ->
   CrawlerName ->
-  DocumentStream m ->
-  m ()
+  DocumentStream (Error LentilleError : es) ->
+  Eff es ()
 runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream = drainEntities (0 :: Word32)
  where
+  drainEntities :: Word32 -> Eff es ()
   drainEntities offset =
-    unlessStopped $
-      safeDrainEntities offset `catch` handleStreamError offset
+    unlessStopped do
+      -- TODO: simplify stream error handling by using a `Stream (Of (Either Error a))`
+      -- to avoid using exceptions.
+      res <- runErrorNoCallStack (safeDrainEntities offset)
+      case res of
+        Right () -> pure ()
+        Left e -> handleStreamError offset e
 
+  safeDrainEntities :: Word32 -> Eff (Error LentilleError : es) ()
   safeDrainEntities offset = do
     logInfo "Looking for oldest entity" ["offset" .= offset]
-    monocleBaseUrl <- getClientBaseUrl
-    let retryHttp :: m a -> m a
-        retryHttp = httpRetry monocleBaseUrl
 
     -- Query the monocle api for the oldest entity to be updated.
-    oldestEntityM <- retryHttp $ getStreamOldestEntity indexName (from crawlerName) (streamEntity documentStream) offset
+    oldestEntityM <- getStreamOldestEntity indexName (from crawlerName) (streamEntity documentStream) offset
     case oldestEntityM of
       Nothing -> logInfo_ "Unable to find entity to update"
       Just (oldestAge, entity)
@@ -152,21 +159,23 @@ runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream =
             postResult <-
               process
                 processLogFunc
-                (retryHttp . addDoc entity)
+                (addDoc entity)
                 (getStream oldestAge entity)
             case foldr collectPostFailure [] postResult of
               [] -> do
                 -- Post the commit date
-                res <- retryHttp $ commitTimestamp entity
+                res <- commitTimestamp entity
                 case res of
                   Nothing -> do
                     logInfo_ "Continuing on next entity"
-                    drainEntities offset
+                    -- Note: to call the error handler (drainEntities Eff es) from (Error : es) we need
+                    -- to Lift it with the error effect using 'raise'.
+                    E.raise (drainEntities offset)
                   Just (err :: Text) -> do
                     logWarn "Commit date failed" ["err" .= err]
               xs -> logWarn "Postt documents tailed" ["errors" .= xs]
 
-  handleStreamError :: Word32 -> LentilleError -> m ()
+  handleStreamError :: Word32 -> LentilleError -> Eff es ()
   handleStreamError offset err = do
     logWarn "Error occured when consuming the document stream" ["err" .= show @Text err]
     -- TODO: log a structured error on filesystem or audit index in elastic
@@ -193,10 +202,9 @@ runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream =
       fromMaybe (error $ "Entity is not the right shape: " <> show entity) $
         preview prism entity
 
-  addDoc :: Entity -> [DocumentType] -> m AddDocResponse
-  addDoc entity xs = do
-    client <- asks crawlerClient
-    mCrawlerAddDoc client $ mkRequest entity xs
+  addDoc :: Entity -> [DocumentType] -> Eff (Error LentilleError : es) AddDocResponse
+  addDoc entity xs = mCrawlerAddDoc $ mkRequest entity xs
+
   -- 'mkRequest' creates the 'AddDocRequests' for a given oldest entity and a list of documenttype
   -- this is used by the processBatch function.
   mkRequest :: Entity -> [DocumentType] -> AddDocRequest
@@ -226,10 +234,8 @@ runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream =
 
   -- 'commitTimestamp' post the commit date.
   commitTimestamp entity = do
-    client <- asks crawlerClient
     commitResp <-
       mCrawlerCommit
-        client
         ( CommitRequest
             indexName
             (from crawlerName)
@@ -244,17 +250,15 @@ runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream =
 
 -- | Adapt the API response
 getStreamOldestEntity ::
-  (MonadCrawler m, MonadReader CrawlerEnv m) =>
+  [PrometheusEffect, LoggerEffect, RetryEffect, MonoClientEffect] :>> es =>
   LText ->
   LText ->
   CrawlerPB.EntityType ->
   Word32 ->
-  m (Maybe (UTCTime, Monocle.Entity.Entity))
+  Eff es (Maybe (UTCTime, Monocle.Entity.Entity))
 getStreamOldestEntity indexName crawlerName entityType offset = do
-  client <- asks crawlerClient
   resp <-
     mCrawlerCommitInfo
-      client
       ( CommitInfoRequest
           indexName
           crawlerName

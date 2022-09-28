@@ -11,14 +11,12 @@ import Data.Map qualified as Map
 import Data.Time
 import Data.Vector qualified as V
 import Database.Bloodhound qualified as BH
-import Database.Bloodhound.Raw qualified as BHR
 import Google.Protobuf.Timestamp as T
 import Monocle.Backend.Documents
 import Monocle.Backend.Queries qualified as Q
 import Monocle.Config qualified as Config
 import Monocle.Entity
 import Monocle.Env
-import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Change qualified as ChangePB
 import Monocle.Protob.Crawler qualified as CrawlerPB
@@ -29,6 +27,9 @@ import Proto3.Suite.Types qualified as PT (Enumerated (..))
 import Streaming qualified as S (chunksOf)
 import Streaming.Prelude qualified as S
 import Streaming.Prelude qualified as Streaming
+
+import Effectful.Fail qualified as E
+import Monocle.Effects
 
 data ConfigIndexMapping = ConfigIndexMapping deriving (Eq, Show)
 
@@ -209,14 +210,16 @@ instance ToJSON ChangesIndexMapping where
             )
       ]
 
-createIndex :: (BH.MonadBH m, ToJSON mapping, MonadFail m) => BH.IndexName -> mapping -> m ()
+createIndex :: IndexEffects es => ToJSON mapping => BH.IndexName -> mapping -> Eff es ()
 createIndex indexName mapping = do
-  _respCI <- BH.createIndex indexSettings indexName
+  esCreateIndex indexSettings indexName
   -- print respCI
-  _respPM <- BH.putMapping indexName mapping
+  esPutMapping indexName mapping
   -- print respPM
-  True <- BH.indexExists indexName
-  pure ()
+  res <- esIndexExists indexName
+  case res of
+    True -> pure ()
+    False -> logWarn "Fail to create index" ["name" .= indexName]
  where
   indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0) BH.defaultIndexMappingsLimits
 
@@ -232,11 +235,11 @@ configDoc = BH.DocId "config"
 -- | Upgrade to config v1 (migrate legacy GH crawler to the new API)
 -- | This function looks for GitHub project crawler metadata docs and reset the
 -- | lastCommitAt to the lastUpdatedAt date of the most recent change of the repository.
-upgradeConfigV1 :: QueryM ()
+upgradeConfigV1 :: forall es. '[E.Fail, LoggerEffect, MonoQuery] :>> es => IndexEffects es => Eff es ()
 upgradeConfigV1 = do
   indexName <- getIndexName
   logInfo "Applying migration to schema V1 on workspace" ["index" .= indexName]
-  QueryWorkspace ws <- asks tenant
+  QueryWorkspace ws <- getQueryTarget
   -- Get GitHub crawler names
   let ghCrawlerNames = getGHCrawlerNames ws
   -- Get all the GH crawler project metadata.
@@ -253,7 +256,7 @@ upgradeConfigV1 = do
           _otherwise -> False
      in Config.getCrawlerName
           <$> filter isGHProvider (Config.crawlers ws)
-  getProjectCrawlerMDByName :: Text -> QueryM [ECrawlerMetadata]
+  getProjectCrawlerMDByName :: Text -> Eff es [ECrawlerMetadata]
   getProjectCrawlerMDByName crawlerName = do
     let entity = CrawlerPB.EntityTypeENTITY_TYPE_PROJECT
         search = BH.mkSearch (Just $ crawlerMDQuery entity crawlerName) Nothing
@@ -269,7 +272,7 @@ upgradeConfigV1 = do
       case Config.lookupCrawler ws (from ecmCrawlerName) of
         Nothing -> False
         Just crawler -> getWorkerUpdatedSince crawler == ecmLastCommitAt
-  setLastUpdatedDate :: ECrawlerMetadata -> QueryM ()
+  setLastUpdatedDate :: ECrawlerMetadata -> Eff es ()
   setLastUpdatedDate
     (ECrawlerMetadata ECrawlerMetadataObject {ecmCrawlerName, ecmCrawlerEntity}) = do
       case ecmCrawlerEntity of
@@ -283,18 +286,18 @@ upgradeConfigV1 = do
                 lastUpdatedAt
                 ecmCrawlerEntity
         otherEntity -> do
-          putTextLn $ "Unexpected entity: " <> show otherEntity
+          logInfo "Unexpected entity" ["other" .= otherEntity]
 
-upgradeConfigV2 :: QueryM ()
+upgradeConfigV2 :: forall es. '[E.Fail, LoggerEffect, MonoQuery] :>> es => IndexEffects es => Eff es ()
 upgradeConfigV2 = do
   indexName <- getIndexName
   logInfo "Applying migration to schema V2 on workspace" ["index" .= indexName]
-  void $ BH.putMapping indexName CachedAuthorIndexMapping
+  void $ esPutMapping indexName CachedAuthorIndexMapping
   added <- populateAuthorCache
   logInfo "Authors cache populated monocle uid" ["added" .= added]
 
 -- | Add self_merged data to event of type ChangeMergedEvent
-upgradeConfigV3 :: QueryM Int
+upgradeConfigV3 :: forall es. '[E.Fail, LoggerEffect, MonoQuery] :>> es => IndexEffects es => Eff es Int
 upgradeConfigV3 = do
   indexName <- getIndexName
   logInfo "Applying migration to schema V3 on workspace" ["index" .= indexName]
@@ -308,7 +311,7 @@ upgradeConfigV3 = do
   logInfo "Migration to schema V3 affected documents" ["count" .= count]
   pure count
  where
-  scanEvents :: Stream (Of EChangeEvent) QueryM ()
+  scanEvents :: Stream (Of EChangeEvent) (Eff es) ()
   scanEvents = Q.scanSearchHit
   eventQuery = mkQuery [Q.documentType EChangeMergedEvent]
   updateEvent :: EChangeEvent -> Maybe EChangeEvent
@@ -320,7 +323,7 @@ upgradeConfigV3 = do
     BulkUpdate indexName (getEventDocId ev) $ toJSON ev
 
 -- | Fix duration computation that was computed in the reverse order giving negative durations
-upgradeConfigV4 :: QueryM Int
+upgradeConfigV4 :: forall es. '[E.Fail, LoggerEffect, MonoQuery] :>> es => IndexEffects es => Eff es Int
 upgradeConfigV4 = do
   indexName <- getIndexName
   logInfo "Applying migration to schema V4 on workspace " ["index" .= indexName]
@@ -334,7 +337,7 @@ upgradeConfigV4 = do
   logInfo "Migration to schema V4 affected documents" ["count" .= count]
   pure count
  where
-  scanChanges :: Stream (Of EChange) QueryM ()
+  scanChanges :: Stream (Of EChange) (Eff es) ()
   scanChanges = Q.scanSearchHit
   changeQuery =
     mkQuery
@@ -348,7 +351,7 @@ upgradeConfigV4 = do
   mkChangeBulkUpdate indexName change =
     BulkUpdate indexName (getChangeDocId change) $ toJSON change
 
-upgrades :: [(ConfigVersion, QueryM ())]
+upgrades :: forall es. '[E.Fail, LoggerEffect, MonoQuery] :>> es => IndexEffects es => [(ConfigVersion, Eff es ())]
 upgrades =
   [ (ConfigVersion 1, upgradeConfigV1)
   , (ConfigVersion 2, upgradeConfigV2)
@@ -378,15 +381,15 @@ getVersion = ConfigVersion . fromMaybe 0 . preview (_Object . at "version" . tra
 setVersion :: ConfigVersion -> Value -> Value
 setVersion (ConfigVersion v) = set (_Object . at "version") (Just . Number . fromInteger $ v)
 
-getConfigVersion :: QueryM (ConfigVersion, Value)
+getConfigVersion :: forall es. '[E.Fail, LoggerEffect, MonoQuery] :>> es => IndexEffects es => Eff es (ConfigVersion, Value)
 getConfigVersion = do
-  QueryConfig _ <- asks tenant
-  currentConfig <- fromMaybe (object []) <$> getDocumentById' configIndex configDoc
+  QueryConfig _ <- getQueryTarget
+  currentConfig <- fromMaybe (object []) <$> getDocumentById configDoc
   pure (getVersion currentConfig, currentConfig)
 
-ensureConfigIndex :: QueryM ()
+ensureConfigIndex :: forall es. '[E.Fail, LoggerEffect, MonoQuery] :>> es => IndexEffects es => Eff es ()
 ensureConfigIndex = do
-  QueryConfig conf <- asks tenant
+  QueryConfig conf <- getQueryTarget
 
   -- Ensure index and index mapping
   createIndex configIndex ConfigIndexMapping
@@ -404,44 +407,43 @@ ensureConfigIndex = do
 
   -- Write new config version in config index
   let newConfig = setVersion configVersion currentConfig
-  void $ BH.indexDocument configIndex BH.defaultIndexDocumentSettings newConfig configDoc
+  void $ esIndexDocument configIndex BH.defaultIndexDocumentSettings newConfig configDoc
   logInfo "Ensure schema version" ["version" .= configVersion]
  where
   -- traverseWorkspace replace the QueryEnv tenant attribute from QueryConfig to QueryWorkspace
   traverseWorkspace action conf = do
-    traverse_ (\ws -> local (setTenant ws) action) (Config.getWorkspaces conf)
-  setTenant ws e = e {tenant = QueryWorkspace ws}
+    traverse_ (\ws -> localQueryTarget (QueryWorkspace ws) action) (Config.getWorkspaces conf)
 
-ensureIndexSetup :: QueryM ()
+ensureIndexSetup :: '[MonoQuery, LoggerEffect, ElasticEffect] :>> es => Eff es ()
 ensureIndexSetup = do
   indexName <- getIndexName
   logInfo "Ensure workspace " ["index" .= indexName]
   createIndex indexName ChangesIndexMapping
-  BHR.settings indexName (object ["index" .= object ["max_regex_length" .= (50_000 :: Int)]])
+  esSettings indexName (object ["index" .= object ["max_regex_length" .= (50_000 :: Int)]])
 
-ensureIndexCrawlerMetadata :: QueryM ()
+ensureIndexCrawlerMetadata :: [E.Fail, LoggerEffect, ElasticEffect, MonoQuery] :>> es => Eff es ()
 ensureIndexCrawlerMetadata = do
-  config <- getIndexConfig
+  QueryWorkspace config <- getQueryTarget
   traverse_ initCrawlerMetadata $ Config.crawlers config
 
-withRefresh :: HasCallStack => QueryM BH.Reply -> QueryM ()
+withRefresh :: HasCallStack => MonoQuery :> es => IndexEffects es => Eff es BH.Reply -> Eff es ()
 withRefresh action = do
   index <- getIndexName
   resp <- action
   unless (BH.isSuccess resp) (error $ "Unable to add or update: " <> show resp)
-  refreshResp <- BH.refreshIndex index
+  refreshResp <- esRefreshIndex index
   unless (BH.isSuccess refreshResp) (error $ "Unable to refresh index: " <> show resp)
 
-ensureIndex :: QueryM ()
+ensureIndex :: '[E.Fail, LoggerEffect, MonoQuery, ElasticEffect] :>> es => Eff es ()
 ensureIndex = do
   ensureIndexSetup
   ensureIndexCrawlerMetadata
 
-removeIndex :: QueryM ()
+removeIndex :: '[E.Fail, LoggerEffect, MonoQuery, ElasticEffect] :>> es => Eff es ()
 removeIndex = do
   indexName <- getIndexName
-  _resp <- BH.deleteIndex indexName
-  False <- BH.indexExists indexName
+  _resp <- esDeleteIndex indexName
+  False <- esIndexExists indexName
   pure ()
 
 toAuthor :: Maybe ChangePB.Ident -> Monocle.Backend.Documents.Author
@@ -519,49 +521,50 @@ toETaskData crawlerName SearchPB.TaskData {..} =
   defaultDate = [utctime|1960-01-01 00:00:00|]
 
 -- | Apply a stream of bulk operation by chunk
-bulkStream :: Stream (Of BH.BulkOperation) QueryM () -> QueryM Int
+bulkStream :: MonoQuery :> es => IndexEffects es => Stream (Of BH.BulkOperation) (Eff es) () -> Eff es Int
 bulkStream s = do
   (count :> _) <- S.sum . S.mapM callBulk . S.mapped S.toList . S.chunksOf 500 $ s
   when (count > 0) $
     -- TODO: check for refresh errors ?
     void $
-      BH.refreshIndex =<< getIndexName
+      esRefreshIndex =<< getIndexName
   pure count
  where
-  callBulk :: [BH.BulkOperation] -> QueryM Int
+  callBulk :: IndexEffects es => [BH.BulkOperation] -> Eff es Int
   callBulk ops = do
     let vector = V.fromList ops
-    _ <- BH.bulk vector
+    _ <- esBulk vector
     -- TODO: check for error
     pure $ V.length vector
 
 runAddDocsBulkOPs ::
+  (MonoQuery :> es, IndexEffects es) =>
   -- | The helper function to create the bulk operation
   (BH.IndexName -> (Value, BH.DocId) -> BH.BulkOperation) ->
   -- | The docs payload
   [(Value, BH.DocId)] ->
-  QueryM ()
+  Eff es ()
 runAddDocsBulkOPs bulkOp docs = do
   index <- getIndexName
   let stream = V.fromList $ fmap (bulkOp index) docs
-  _ <- BH.bulk stream
+  _ <- esBulk stream
   -- Bulk loads require an index refresh before new data is loaded.
-  _ <- BH.refreshIndex index
+  _ <- esRefreshIndex index
   pure ()
 
-indexDocs :: [(Value, BH.DocId)] -> QueryM ()
+indexDocs :: MonoQuery :> es => IndexEffects es => [(Value, BH.DocId)] -> Eff es ()
 indexDocs = runAddDocsBulkOPs toBulkIndex
  where
   -- BulkIndex operation: Create the document, replacing it if it already exists.
   toBulkIndex index (doc, docId) = BH.BulkIndex index docId doc
 
-updateDocs :: [(Value, BH.DocId)] -> QueryM ()
+updateDocs :: MonoQuery :> es => IndexEffects es => [(Value, BH.DocId)] -> Eff es ()
 updateDocs = runAddDocsBulkOPs toBulkUpdate
  where
   -- BulkUpdate operation: Update the document, merging the new value with the existing one.
   toBulkUpdate index (doc, docId) = BH.BulkUpdate index docId doc
 
-upsertDocs :: [(Value, BH.DocId)] -> QueryM ()
+upsertDocs :: MonoQuery :> es => IndexEffects es => [(Value, BH.DocId)] -> Eff es ()
 upsertDocs = runAddDocsBulkOPs toBulkUpsert
  where
   -- BulkUpsert operation: Update the document if it already exists, otherwise insert it.
@@ -576,13 +579,13 @@ getBHDocID :: Text -> BH.DocId
 getBHDocID = BH.DocId . getDocID
 
 -- | A simple scan search that loads all the results in memory
-runScanSearch :: forall a. FromJSONField a => BH.Query -> QueryM [a]
+runScanSearch :: MonoQuery :> es => IndexEffects es => forall a. FromJSONField a => BH.Query -> Eff es [a]
 runScanSearch query = withQuery (mkQuery [query]) Q.scanSearchSimple
 
 getChangeDocId :: EChange -> BH.DocId
 getChangeDocId change = BH.DocId . from $ echangeId change
 
-indexChanges :: [EChange] -> QueryM ()
+indexChanges :: MonoQuery :> es => IndexEffects es => [EChange] -> Eff es ()
 indexChanges changes = indexDocs $ fmap (toDoc . ensureType) changes
  where
   toDoc change = (toJSON change, getChangeDocId change)
@@ -591,7 +594,7 @@ indexChanges changes = indexDocs $ fmap (toDoc . ensureType) changes
 getEventDocId :: EChangeEvent -> BH.DocId
 getEventDocId event = BH.DocId . from $ echangeeventId event
 
-indexEvents :: [EChangeEvent] -> QueryM ()
+indexEvents :: MonoQuery :> es => IndexEffects es => [EChangeEvent] -> Eff es ()
 indexEvents events = indexDocs (fmap toDoc events)
  where
   toDoc ev = (toJSON ev, getEventDocId ev)
@@ -602,14 +605,14 @@ statusCheck prd = prd . NHTS.statusCode . HTTP.responseStatus
 isNotFound :: BH.Reply -> Bool
 isNotFound = statusCheck (== 404)
 
-checkDocExists :: BH.DocId -> QueryM Bool
+checkDocExists :: MonoQuery :> es => IndexEffects es => BH.DocId -> Eff es Bool
 checkDocExists docId = do
   index <- getIndexName
-  BH.documentExists index docId
+  esDocumentExists index docId
 
-getDocumentById' :: (BH.MonadBH m, FromJSON a, MonadThrow m) => BH.IndexName -> BH.DocId -> m (Maybe a)
+getDocumentById' :: IndexEffects es => FromJSON a => BH.IndexName -> BH.DocId -> Eff es (Maybe a)
 getDocumentById' index docId = do
-  resp <- BH.getDocument index docId
+  resp <- esGetDocument index docId
   if isNotFound resp
     then pure Nothing
     else do
@@ -621,15 +624,15 @@ getDocumentById' index docId = do
   getHit (Just (BH.EsResultFound _ cm)) = Just cm
   getHit Nothing = Nothing
 
-getDocumentById :: FromJSON a => BH.DocId -> QueryM (Maybe a)
+getDocumentById :: MonoQuery :> es => IndexEffects es => FromJSON a => BH.DocId -> Eff es (Maybe a)
 getDocumentById docId = do
   index <- getIndexName
   getDocumentById' index docId
 
-getChangeById :: BH.DocId -> QueryM (Maybe EChange)
+getChangeById :: MonoQuery :> es => IndexEffects es => BH.DocId -> Eff es (Maybe EChange)
 getChangeById = getDocumentById
 
-getChangeEventById :: BH.DocId -> QueryM (Maybe EChangeEvent)
+getChangeEventById :: MonoQuery :> es => IndexEffects es => BH.DocId -> Eff es (Maybe EChangeEvent)
 getChangeEventById = getDocumentById
 
 getChangesByURL ::
@@ -666,14 +669,14 @@ data TaskDataDoc = TaskDataDoc
 
 type TaskDataOrphanDoc = TaskDataDoc
 
-getOrphanTaskDataByChangeURL :: [Text] -> QueryM [EChangeOrphanTD]
+getOrphanTaskDataByChangeURL :: forall es. [ElasticEffect, MonoQuery] :>> es => [Text] -> Eff es [EChangeOrphanTD]
 getOrphanTaskDataByChangeURL urls = do
   index <- getIndexName
   results <- scanSearch index
-  pure $ catMaybes $ BH.hitSource <$> results
+  pure $ mapMaybe BH.hitSource results
  where
-  scanSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> m [BH.Hit EChangeOrphanTD]
-  scanSearch index = BH.scanSearch index search
+  scanSearch :: BH.IndexName -> Eff es [BH.Hit EChangeOrphanTD]
+  scanSearch index = esScanSearch index search
   search = BH.mkSearch (Just query) Nothing
   query =
     mkAnd
@@ -684,7 +687,7 @@ getOrphanTaskDataByChangeURL urls = do
           ]
       ]
 
-getOrphanTaskDataAndDeclareAdoption :: [Text] -> QueryM [EChangeOrphanTD]
+getOrphanTaskDataAndDeclareAdoption :: [ElasticEffect, MonoQuery] :>> es => IndexEffects es => [Text] -> Eff es [EChangeOrphanTD]
 getOrphanTaskDataAndDeclareAdoption urls = do
   oTDs <- getOrphanTaskDataByChangeURL urls
   void $ updateDocs $ toAdoptedDoc <$> oTDs
@@ -696,7 +699,7 @@ getOrphanTaskDataAndDeclareAdoption urls = do
     , BH.DocId id'
     )
 
-updateChangesAndEventsFromOrphanTaskData :: [EChange] -> [EChangeEvent] -> QueryM ()
+updateChangesAndEventsFromOrphanTaskData :: MonoQuery :> es => IndexEffects es => [EChange] -> [EChangeEvent] -> Eff es ()
 updateChangesAndEventsFromOrphanTaskData changes events = do
   let mapping = uMapping Map.empty getFlatMapping
   adoptedTDs <- getOrphanTaskDataAndDeclareAdoption $ from <$> Map.keys mapping
@@ -740,7 +743,7 @@ orphanTaskDataDocToBHDoc TaskDataDoc {..} =
       , BH.DocId $ from tddId
       )
 
-taskDataAdd :: Text -> [SearchPB.TaskData] -> QueryM ()
+taskDataAdd :: MonoQuery :> es => IndexEffects es => Text -> [SearchPB.TaskData] -> Eff es ()
 taskDataAdd crawlerName tds = do
   -- extract change URLs from input TDs
   let urls = from . SearchPB.taskDataChangeUrl <$> tds
@@ -749,14 +752,14 @@ taskDataAdd crawlerName tds = do
   -- get change events that matches those URLs
   changeEvents <- runScanSearch $ getChangesEventsByURL urls
   -- Init the HashTable that we are going to use as a facility for processing
-  changesHT <- liftIO $ initHT changes
+  changesHT <- unsafeEff_ $ initHT changes
   -- Update the HashTable based on incomming TDs and return orphan TDs
-  orphanTaskDataDocs <- liftIO $ updateChangesWithTD changesHT
+  orphanTaskDataDocs <- unsafeEff_ $ updateChangesWithTD changesHT
   -- Get TDs from the HashTable
-  taskDataDocs <- fmap snd <$> liftIO (H.toList changesHT)
+  taskDataDocs <- fmap snd <$> unsafeEff_ (H.toList changesHT)
   -- Get TDs from matching change events
   taskDataDocs' <-
-    liftIO $
+    unsafeEff_ $
       fmap catMaybes <$> sequence $
         getTDforEventFromHT changesHT <$> changeEvents
   -- Let's push the data
@@ -834,7 +837,7 @@ crawlerMDQuery entity crawlerName =
     , BH.TermQuery (BH.Term "crawler_metadata.crawler_type" (entityTypeName entity)) Nothing
     ]
 
-getLastUpdated :: Config.Crawler -> CrawlerPB.EntityType -> Word32 -> QueryM (Maybe ECrawlerMetadataObject)
+getLastUpdated :: MonoQuery :> es => IndexEffects es => Config.Crawler -> CrawlerPB.EntityType -> Word32 -> Eff es (Maybe ECrawlerMetadataObject)
 getLastUpdated crawler entity offset = do
   index <- getIndexName
   resp <- fmap BH.hitSource <$> Q.simpleSearchLegacy index search
@@ -856,16 +859,13 @@ getLastUpdated crawler entity offset = do
   getRespFromMetadata (ECrawlerMetadata e) = e
   crawlerName = getWorkerName crawler
 
--- | The following entityRequest are a bit bizarre, this is because we are re-using
--- the entity info response defined in protobuf. When requesting the last updated, we provide
--- an empty entity.
-ensureCrawlerMetadata :: CrawlerName -> QueryM UTCTime -> Entity -> QueryM ()
+ensureCrawlerMetadata :: forall es. MonoQuery :> es => IndexEffects es => CrawlerName -> Eff es UTCTime -> Entity -> Eff es ()
 ensureCrawlerMetadata crawlerName getDate entity = do
   index <- getIndexName
-  exists <- BH.documentExists index getId
+  exists <- esDocumentExists index getId
   unless exists do
     lastUpdatedDate <- getDate
-    withRefresh $ BH.indexDocument index BH.defaultIndexDocumentSettings (cm lastUpdatedDate) getId
+    withRefresh $ esIndexDocument index BH.defaultIndexDocumentSettings (cm lastUpdatedDate) getId
  where
   cm lastUpdatedDate =
     ECrawlerMetadata
@@ -874,7 +874,7 @@ ensureCrawlerMetadata crawlerName getDate entity = do
       }
   getId = entityDocID crawlerName entity
 
-getMostRecentUpdatedChange :: QueryMonad m => Text -> m [EChange]
+getMostRecentUpdatedChange :: MonoQuery :> es => IndexEffects es => Text -> Eff es [EChange]
 getMostRecentUpdatedChange fullname = do
   withFilter [mkTerm "repository_fullname" fullname] $ Q.changes (Just order) 1
  where
@@ -885,17 +885,17 @@ getMostRecentUpdatedChange fullname = do
       }
 
 -- | Maybe return the most recent updatedAt date for a repository full name
-getLastUpdatedDate :: QueryMonad m => Text -> m (Maybe UTCTime)
+getLastUpdatedDate :: MonoQuery :> es => IndexEffects es => Text -> Eff es (Maybe UTCTime)
 getLastUpdatedDate fullname = do
   recents <- getMostRecentUpdatedChange fullname
   pure $ case recents of
     [] -> Nothing
     (c : _) -> Just $ c & echangeUpdatedAt
 
-setLastUpdated :: CrawlerName -> UTCTime -> Entity -> QueryM ()
+setLastUpdated :: MonoQuery :> es => IndexEffects es => CrawlerName -> UTCTime -> Entity -> Eff es ()
 setLastUpdated crawlerName lastUpdatedDate entity = do
   index <- getIndexName
-  withRefresh $ BH.updateDocument index BH.defaultIndexDocumentSettings cm getId
+  withRefresh $ esUpdateDocument index BH.defaultIndexDocumentSettings cm getId
  where
   getId = entityDocID crawlerName entity
   cm =
@@ -904,10 +904,10 @@ setLastUpdated crawlerName lastUpdatedDate entity = do
           ECrawlerMetadataObject (coerce crawlerName) entity lastUpdatedDate
       }
 
-initCrawlerEntities :: [Entity] -> Config.Crawler -> QueryM ()
+initCrawlerEntities :: forall es. MonoQuery :> es => IndexEffects es => [Entity] -> Config.Crawler -> Eff es ()
 initCrawlerEntities entities worker = traverse_ run entities
  where
-  run :: Entity -> QueryM ()
+  run :: Entity -> (Eff es) ()
   run entity = do
     let updated_since =
           fromMaybe defaultUpdatedSince <$> case entity of
@@ -925,7 +925,7 @@ getOrganizationEntityFromCrawler worker = Organization <$> Config.getCrawlerOrga
 getTaskDataEntityFromCrawler :: Config.Crawler -> [Entity]
 getTaskDataEntityFromCrawler worker = TaskDataEntity <$> Config.getCrawlerTaskData worker
 
-initCrawlerMetadata :: Config.Crawler -> QueryM ()
+initCrawlerMetadata :: MonoQuery :> es => IndexEffects es => Config.Crawler -> Eff es ()
 initCrawlerMetadata crawler =
   initCrawlerEntities
     ( getProjectEntityFromCrawler crawler
@@ -942,7 +942,7 @@ toCachedAuthorValue muid = toJSON $ CachedAuthor ECachedAuthor (from muid)
 
 -- | Wipe then fill the author cache
 -- The CachedAuthor list is built from all uniq Author in the EL index
-populateAuthorCache :: QueryM Int
+populateAuthorCache :: MonoQuery :> es => IndexEffects es => Eff es Int
 populateAuthorCache = do
   indexName <- getIndexName
   -- First wipe the cache
@@ -963,33 +963,33 @@ populateAuthorCache = do
     BulkIndex indexName (getBHDocID muid) $ toCachedAuthorValue muid
 
 -- | This function extacts authors from events and adds them to the author cache
-addCachedAuthors :: [EChangeEvent] -> QueryM ()
+addCachedAuthors :: MonoQuery :> es => IndexEffects es => [EChangeEvent] -> Eff es ()
 addCachedAuthors events = do
   indexName <- getIndexName
   let muids = from . authorMuid <$> mapMaybe echangeeventAuthor events
       bulkOps = mkECachedAuthorBulkUpsert indexName <$> muids
-  void $ BH.bulk $ fromList bulkOps
-  void $ BH.refreshIndex indexName
+  void $ esBulk $ fromList bulkOps
+  void $ esRefreshIndex indexName
  where
   mkECachedAuthorBulkUpsert indexName muid =
     BulkUpsert indexName (getBHDocID muid) (BH.UpsertDoc $ toCachedAuthorValue muid) []
 
 -- | This function returns the author cache contents
-getAuthorCache :: QueryM [CachedAuthor]
+getAuthorCache :: MonoQuery :> es => IndexEffects es => Eff es [CachedAuthor]
 getAuthorCache =
   withFilter
     [Q.documentType ECachedAuthor]
     Q.scanSearchSimple
 
 -- | This function returns matched author muid(s) based on the match query
-searchAuthorCache :: Text -> QueryM [Text]
+searchAuthorCache :: forall es. MonoQuery :> es => IndexEffects es => Text -> Eff es [Text]
 searchAuthorCache matchQuery = do
   indexName <- getIndexName
   ret <- runSearch indexName
   pure $ mapMaybe trans ret
  where
-  runSearch :: (MonadBH m, MonadThrow m) => BH.IndexName -> m [BH.Hit CachedAuthor]
-  runSearch index = BH.scanSearch index search
+  runSearch :: BH.IndexName -> Eff es [BH.Hit CachedAuthor]
+  runSearch index = esScanSearch index search
   search = BH.mkSearch (Just query) Nothing
   query =
     BH.QueryMatchQuery . BH.mkMatchQuery (BH.FieldName "cached_author_muid") $

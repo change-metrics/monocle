@@ -1,4 +1,3 @@
---
 module Monocle.Backend.Test where
 
 import Control.Exception (bracket_)
@@ -30,6 +29,9 @@ import Monocle.Search.Query qualified as Q
 import Relude.Unsafe ((!!))
 import Streaming.Prelude qualified as Streaming
 import Test.Tasty.HUnit ((@?=))
+
+import Effectful.Fail qualified as E
+import Monocle.Effects
 
 fakeDate, fakeDateAlt :: UTCTime
 fakeDate = [utctime|2021-05-31 10:00:00|]
@@ -80,37 +82,49 @@ fakeChange =
     , echangeDraft = False
     }
 
-withTenant :: QueryM () -> IO ()
+-- | TODO: rename 'withTenant' into 'runTenantEffects', this is a test helper
+withTenant :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] () -> IO ()
 withTenant = withTenantConfig index
  where
   -- todo: generate random name
   index = Config.mkTenant "test-tenant"
 
-withTenantConfig :: Config.Index -> QueryM () -> IO ()
-withTenantConfig index cb = bracket_ create delete run
- where
-  create = testQueryM index I.ensureIndex
-  delete = testQueryM index I.removeIndex
-  run = testQueryM index cb
+testQueryM' :: Config.Index -> Eff [MonoQuery, ElasticEffect, LoggerEffect, E.Fail, IOE] a -> IO a
+testQueryM' config action = do
+  bhEnv <- mkEnv'
+  runEff $ E.runFailIO $ runLoggerEffect $ runElasticEffect bhEnv $ runEmptyQueryM config action
 
-checkEChangeField :: (Show a, Eq a) => BH.DocId -> (EChange -> a) -> a -> QueryM ()
+runQueryTarget' :: BH.BHEnv -> QueryTarget -> Eff es a -> IO a
+runQueryTarget' = error "TODO"
+
+withTenantConfig :: Config.Index -> Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] () -> IO ()
+withTenantConfig ws action = do
+  bhEnv <- mkEnv'
+  runEff $ runLoggerEffect $ runElasticEffect bhEnv $ runEmptyQueryM ws do
+    withEffToIO $ \runInIO ->
+      bracket_ (runInIO create) (runInIO delete) (runInIO action)
+ where
+  create = E.runFailIO I.ensureIndex
+  delete = E.runFailIO I.removeIndex
+
+checkEChangeField :: TestEffects es => (Show a, Eq a) => BH.DocId -> (EChange -> a) -> a -> Eff es ()
 checkEChangeField = _checkField
 
-checkEChangeEventField :: (Show a, Eq a) => BH.DocId -> (EChangeEvent -> a) -> a -> QueryM ()
+checkEChangeEventField :: TestEffects es => (Show a, Eq a) => BH.DocId -> (EChangeEvent -> a) -> a -> Eff es ()
 checkEChangeEventField = _checkField
 
-_checkField :: (FromJSON t, Show a, Eq a) => BH.DocId -> (t -> a) -> a -> QueryM ()
+_checkField :: TestEffects es => (FromJSON t, Show a, Eq a) => BH.DocId -> (t -> a) -> a -> (Eff es) ()
 _checkField docId field value = do
   docM <- I.getDocumentById docId
   case docM of
     Just doc -> assertEqual' "Check field match" (field doc) value
     Nothing -> error "Document not found"
 
-checkChangesCount :: Int -> QueryM ()
+checkChangesCount :: TestEffects es => Int -> (Eff es) ()
 checkChangesCount expectedCount = do
   index <- getIndexName
   resp <-
-    BH.countByIndex
+    esCountByIndex
       index
       ( BH.CountQuery (BH.TermQuery (BH.Term "type" "Change") Nothing)
       )
@@ -121,8 +135,8 @@ checkChangesCount expectedCount = do
 testIndexChanges :: Assertion
 testIndexChanges = withTenant doTest
  where
-  doTest :: QueryM ()
-  doTest = do
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
+  doTest = E.runFailIO do
     -- Index two Changes and check present in database
     I.indexChanges [fakeChange1, fakeChange2]
     checkDocExists' $ I.getChangeDocId fakeChange1
@@ -175,7 +189,7 @@ testIndexChanges = withTenant doTest
 testProjectCrawlerMetadata :: Assertion
 testProjectCrawlerMetadata = withTenant doTest
  where
-  doTest :: QueryM ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     -- Init default crawler metadata and ensure we get the default updated date
     I.initCrawlerMetadata workerGitlab
@@ -253,7 +267,7 @@ testProjectCrawlerMetadata = withTenant doTest
 testOrganizationCrawlerMetadata :: Assertion
 testOrganizationCrawlerMetadata = withTenant doTest
  where
-  doTest :: QueryM ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     -- Init crawler entities metadata and check we get the default date
     I.initCrawlerMetadata worker
@@ -292,7 +306,7 @@ testOrganizationCrawlerMetadata = withTenant doTest
 testTaskDataCrawlerMetadata :: Assertion
 testTaskDataCrawlerMetadata = withTenant doTest
  where
-  doTest :: QueryM ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     -- Init default crawler metadata and ensure we get the default updated date
     I.initCrawlerMetadata workerGithub
@@ -328,29 +342,19 @@ testTaskDataCrawlerMetadata = withTenant doTest
     fakeDateB = [utctime|2021-05-31 10:00:00|]
 
 testEnsureConfig :: Assertion
-testEnsureConfig = bracket_ create delete doTest
+testEnsureConfig = withTenantConfig tenantConfig $ localQueryTarget target $ E.runFailIO do
+  I.ensureIndexSetup
+  I.ensureConfigIndex
+  (currentVersion, _) <- I.getConfigVersion
+  assertEqual' "Check expected Config Index" I.configVersion currentVersion
  where
-  wrap :: QueryM () -> IO ()
-  wrap action = do
-    bhEnv <- mkEnv'
-    let qt = QueryConfig $ Config.Config Nothing Nothing [tenantConfig]
-    runQueryTarget bhEnv qt action
-
-  create = do
-    testQueryM tenantConfig I.ensureIndexSetup
-    wrap I.ensureConfigIndex
-  delete = do
-    testQueryM tenantConfig I.removeIndex
-    wrap I.removeIndex
-  doTest = wrap do
-    (currentVersion, _) <- I.getConfigVersion
-    assertEqual' "Check expected Config Index" I.configVersion currentVersion
   tenantConfig = Config.mkTenant "test-index"
+  target = QueryConfig $ Config.Config Nothing Nothing [tenantConfig]
 
 testUpgradeConfigV3 :: Assertion
 testUpgradeConfigV3 = do
   -- Index some events, run upgradeConfigV3, and check self_merged added on EChangeMergedEvent
-  withTenant do
+  withTenant $ E.runFailIO do
     let evt1 = emptyEvent {echangeeventType = EChangeCommentedEvent, echangeeventId = "1"}
         -- emptyEvent set the same author for author and onAuthor attribute
         evt2 = emptyEvent {echangeeventType = EChangeMergedEvent, echangeeventId = "2"}
@@ -373,7 +377,7 @@ testUpgradeConfigV3 = do
 testUpgradeConfigV4 :: Assertion
 testUpgradeConfigV4 = do
   -- Index a change with negative duration, run upgradeConfigV4, and check for absolute value
-  withTenant do
+  withTenant $ E.runFailIO do
     let change1 =
           emptyChange
             { echangeId = "change1"
@@ -395,7 +399,7 @@ testUpgradeConfigV4 = do
 testUpgradeConfigV1 :: Assertion
 testUpgradeConfigV1 = do
   -- Index docs, run upgradeConfigV1, and check project crawler MD state
-  withTenantConfig tenantConfig do
+  withTenantConfig tenantConfig $ E.runFailIO $ do
     -- Index some events and set lastCommitAt for the first (repoGH1 and repoGL1) project crawler MD
     setDocs crawlerGH crawlerGHName "org/repoGH1" "org/repoGH2"
     setDocs crawlerGL crawlerGLName "org/repoGL1" "org/repoGL2"
@@ -414,17 +418,17 @@ testUpgradeConfigV1 = do
     crawlerMDrepoGL2 <- getCrawlerProjectMD crawlerGLName "org/repoGL2"
     assertCommitAtDate crawlerMDrepoGL2 defaultCrawlerDate
  where
-  assertCommitAtDate :: Maybe ECrawlerMetadata -> UTCTime -> QueryM ()
+  -- assertCommitAtDate :: IOE :> es => Maybe ECrawlerMetadata -> UTCTime -> (Eff es) ()
   assertCommitAtDate (Just (ECrawlerMetadata ECrawlerMetadataObject {ecmLastCommitAt, ecmCrawlerEntity})) d =
     assertEqual' ("Check crawler Metadata lastCommitAt for repo: " <> show ecmCrawlerEntity) d ecmLastCommitAt
   assertCommitAtDate Nothing _ = error "Unexpected missing lastCommitAt date"
-  getCrawlerProjectMD :: Text -> Text -> QueryM (Maybe ECrawlerMetadata)
+  -- getCrawlerProjectMD :: Text -> Text -> (Eff es) (Maybe ECrawlerMetadata)
   getCrawlerProjectMD crawlerName repoName = I.getDocumentById getCrawlerProjectMDDocID
    where
     getCrawlerProjectMDDocID =
       let entity = Project repoName
        in entityDocID (CrawlerName crawlerName) entity
-  setDocs :: Config.Crawler -> Text -> Text -> Text -> QueryM ()
+  setDocs :: [MonoQuery, ElasticEffect, LoggerEffect] :>> es => Config.Crawler -> Text -> Text -> Text -> (Eff es) ()
   setDocs crawler crawlerName repo1 repo2 = do
     -- Init crawler metadata
     I.initCrawlerMetadata crawler
@@ -465,7 +469,7 @@ testUpgradeConfigV1 = do
       }
 
 testJanitorWipeCrawler :: Assertion
-testJanitorWipeCrawler = withTenant $ local updateEnv doTest
+testJanitorWipeCrawler = withTenant $ localQueryTarget updateEnv doTest
  where
   crawlerGerrit = "test-crawler-gerrit"
   fakeDefaultDate = [utctime|2020-01-01 00:00:00|]
@@ -484,8 +488,8 @@ testJanitorWipeCrawler = withTenant $ local updateEnv doTest
                   ]
            in Config.GerritProvider Config.Gerrit {..}
      in Config.Crawler {..}
-  updateEnv :: QueryEnv -> QueryEnv
-  updateEnv orig = orig {tenant = QueryWorkspace tenant}
+  updateEnv :: QueryTarget
+  updateEnv = QueryWorkspace tenant
    where
     tenant =
       Config.Index
@@ -496,7 +500,7 @@ testJanitorWipeCrawler = withTenant $ local updateEnv doTest
         , idents = Nothing
         , search_aliases = Nothing
         }
-  doTest :: QueryM ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     I.initCrawlerMetadata workerGerrit
     I.indexChanges
@@ -542,8 +546,8 @@ testJanitorUpdateIdents = do
   mkIdent uid = Config.Ident uid Nothing
   expectedAuthor = Author "John Doe" "github.com/john"
 
-  doUpdateIndentOnEventsTest :: QueryM ()
-  doUpdateIndentOnEventsTest = do
+  doUpdateIndentOnEventsTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
+  doUpdateIndentOnEventsTest = E.runFailIO do
     I.indexEvents [evt1, evt2]
     count <- J.updateIdentsOnEvents
     assertEqual' "Ensure updated events count" 1 count
@@ -565,8 +569,8 @@ testJanitorUpdateIdents = do
     mkEventWithAuthor eid eAuthor =
       mkEvent 0 fakeDate EChangeCommentedEvent eAuthor eAuthor (from eid) mempty
 
-  doUpdateIndentOnChangesTest :: QueryM ()
-  doUpdateIndentOnChangesTest = do
+  doUpdateIndentOnChangesTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
+  doUpdateIndentOnChangesTest = E.runFailIO do
     I.indexChanges [change1, change2, change3]
     count <- J.updateIdentsOnChanges
     -- change1 and change3 will be updated
@@ -623,7 +627,7 @@ scenarioProject name =
 testAchievements :: Assertion
 testAchievements = withTenant doTest
  where
-  doTest :: QueryM ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     indexScenario (nominalMerge (scenarioProject "openstack/nova") "42" fakeDate 3600)
 
@@ -650,7 +654,7 @@ defaultQuery =
 
 testGetInfoMetric :: Assertion
 testGetInfoMetric = withTenantConfig tenant do
-  liftIO . Monocle.Api.Test.withTestApi env $ \_logger client -> do
+  liftIO . Monocle.Api.Test.withTestApi env $ \client -> do
     -- Get basic metric
     resp <- Monocle.Client.Api.metricInfo client (MetricPB.InfoRequest "time_to_merge")
     assertEqual
@@ -671,7 +675,7 @@ testGetMetrics = withTenantConfig tenant do
   indexScenario (nominalMerge (scenarioProject "openstack/nova") "42" fakeDate 1800)
 
   -- Start the API
-  liftIO . Monocle.Api.Test.withTestApi env $ \_logger client -> do
+  liftIO . Monocle.Api.Test.withTestApi env $ \client -> do
     -- Get basic metric
     resp <- Monocle.Client.Api.metricGet client (mkReq "time_to_merge")
     assertEqual
@@ -702,7 +706,7 @@ testGetMetrics = withTenantConfig tenant do
 testReposSummary :: Assertion
 testReposSummary = withTenant doTest
  where
-  doTest :: QueryM ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     indexScenario (nominalMerge (scenarioProject "openstack/nova") "42" fakeDate 3600)
     indexScenario (nominalMerge (scenarioProject "openstack/neutron") "43" fakeDate 3600)
@@ -742,7 +746,7 @@ testReposSummary = withTenant doTest
 testTopAuthors :: Assertion
 testTopAuthors = withTenant doTest
  where
-  doTest :: QueryM ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     -- Prapare data
     let nova = SProject "openstack/nova" [alice] [alice] [eve]
@@ -790,7 +794,7 @@ testTopAuthors = withTenant doTest
 testGetAuthorsPeersStrength :: Assertion
 testGetAuthorsPeersStrength = withTenant doTest
  where
-  doTest :: QueryM ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     -- Prapare data
     let nova = SProject "openstack/nova" [bob] [alice] [eve]
@@ -822,7 +826,7 @@ testGetNewContributors :: Assertion
 testGetNewContributors = withTenant doTest
  where
   indexScenario' project fakeDate' cid = indexScenario (nominalMerge project cid fakeDate' 3600)
-  doTest :: QueryM ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     -- Prapare data
     let sn1 = SProject "openstack/nova" [bob] [alice] [eve]
@@ -851,7 +855,7 @@ testGetNewContributors = withTenant doTest
 testLifecycleStats :: Assertion
 testLifecycleStats = withTenant doTest
  where
-  doTest :: QueryM ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     traverse_ (indexScenarioNM (SProject "openstack/nova" [alice] [bob] [eve])) ["42", "43"]
     let query =
@@ -870,7 +874,7 @@ testLifecycleStats = withTenant doTest
 testGetActivityStats :: Assertion
 testGetActivityStats = withTenant doTest
  where
-  doTest :: QueryM ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     -- Prapare data
     let nova = SProject "openstack/nova" [alice] [alice] [eve]
@@ -919,7 +923,7 @@ testGetActivityStats = withTenant doTest
 testGetChangesTops :: Assertion
 testGetChangesTops = withTenant doTest
  where
-  doTest :: QueryM ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     let nova = SProject "openstack/nova" [alice] [alice] [eve]
     let neutron = SProject "openstack/neutron" [bob] [alice] [eve]
@@ -981,14 +985,14 @@ testGetChangesTops = withTenant doTest
 testGetSuggestions :: Assertion
 testGetSuggestions = withTenant doTest
  where
-  doTest :: QueryM ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
-    tEnv <- ask
+    target <- getQueryTarget
     let nova = SProject "openstack/nova" [alice] [alice] [eve]
     let neutron = SProject "openstack/neutron" [eve] [alice] [bob]
     traverse_ (indexScenarioNM nova) ["42", "43"]
     traverse_ (indexScenarioNO neutron) ["142", "143"]
-    let ws = case tenant tEnv of
+    let ws = case target of
           QueryWorkspace x -> x
           QueryConfig _ -> error "Can't get config suggestions"
 
@@ -1011,7 +1015,7 @@ testGetSuggestions = withTenant doTest
 testGetAllAuthorsMuid :: Assertion
 testGetAllAuthorsMuid = withTenant doTest
  where
-  doTest :: QueryM ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     traverse_ (indexScenarioNM $ SProject "openstack/nova" [alice] [alice] [eve]) ["42", "43"]
     withQuery defaultQuery do
@@ -1082,7 +1086,7 @@ mkTaskData changeId =
 testTaskDataAdd :: Assertion
 testTaskDataAdd = withTenant doTest
  where
-  doTest :: QueryM ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest = do
     let nova = SProject "openstack/nova" [alice] [alice] [eve]
     traverse_ (indexScenarioNM nova) ["42", "43", "44"]
@@ -1158,13 +1162,13 @@ testTaskDataAdd = withTenant doTest
       )
       orphanTdM'
 
-  getOrphanTd :: Text -> QueryM (Maybe EChangeOrphanTD)
+  getOrphanTd :: Text -> Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] (Maybe EChangeOrphanTD)
   getOrphanTd url = I.getDocumentById $ I.getBHDocID url
 
 testTaskDataAdoption :: Assertion
 testTaskDataAdoption = withTenant doTest
  where
-  doTest :: QueryM ()
+  doTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doTest =
     do
       -- Send Task data w/o a matching change (orphan task data)
@@ -1176,8 +1180,8 @@ testTaskDataAdoption = withTenant doTest
 
       -- Index a change and related events
       let scenario = nominalMerge (SProject "openstack/nova" [alice, bob] [alice] [eve]) "42" fakeDate 3600
-          events = catMaybes $ getScenarioEvtObj <$> scenario
-          changes = catMaybes $ getScenarioChangeObj <$> scenario
+          events = mapMaybe getScenarioEvtObj scenario
+          changes = mapMaybe getScenarioChangeObj scenario
       indexScenario scenario
       I.updateChangesAndEventsFromOrphanTaskData changes events
       -- Check that the matching task data has been adopted
@@ -1187,9 +1191,8 @@ testTaskDataAdoption = withTenant doTest
       changes' <- I.runScanSearch $ I.getChangesByURL [changeUrl]
       events' <- I.runScanSearch $ I.getChangesEventsByURL [changeUrl]
       let haveTDs =
-            all
-              (== True)
-              $ (isJust . echangeTasksData <$> changes')
+            and $
+              (isJust . echangeTasksData <$> changes')
                 <> (isJust . echangeeventTasksData <$> events')
       assertEqual' "Check objects related to change 42 got the Tasks data" True haveTDs
    where
@@ -1275,8 +1278,8 @@ data ScenarioEvent
   | SComment EChangeEvent
   | SMerge EChangeEvent
 
-indexScenario :: [ScenarioEvent] -> QueryM ()
-indexScenario xs = sequence_ $ indexDoc <$> xs
+indexScenario :: QEffects es => [ScenarioEvent] -> Eff es ()
+indexScenario = mapM_ indexDoc
  where
   indexDoc = \case
     SChange d -> I.indexChanges [d]
@@ -1285,10 +1288,10 @@ indexScenario xs = sequence_ $ indexDoc <$> xs
     SComment d -> I.indexEvents [d]
     SMerge d -> I.indexEvents [d]
 
-indexScenarioNM :: ScenarioProject -> LText -> QueryM ()
+indexScenarioNM :: QEffects es => ScenarioProject -> LText -> Eff es ()
 indexScenarioNM project cid = indexScenario (nominalMerge project cid fakeDate 3600)
 
-indexScenarioNO :: ScenarioProject -> LText -> QueryM ()
+indexScenarioNO :: QEffects es => ScenarioProject -> LText -> Eff es ()
 indexScenarioNO project cid = indexScenario (nominalOpen project cid fakeDate 3600)
 
 mkDate :: Integer -> UTCTime -> UTCTime

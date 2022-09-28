@@ -1,61 +1,42 @@
 -- | The Monocle entry point.
-module Monocle.Main (run, app, ApiConfig (..), defaultApiConfig) where
+module Monocle.Main (run, rootServer, ApiConfig (..), defaultApiConfig, RootAPI) where
 
 import Data.List qualified
 import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
-import Lentille (httpRetry)
-import Monocle.Api.Jwt (LoginInUser (..), doGenJwk, initOIDCEnv)
+import Monocle.Api.Jwt (doGenJwk, initOIDCEnv)
 import Monocle.Api.Server (handleLoggedIn, handleLogin)
 import Monocle.Backend.Index qualified as I
 import Monocle.Config (getAuthProvider, opName)
 import Monocle.Config qualified as Config
 import Monocle.Env
-import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Search.Query (loadAliases)
-import Monocle.Servant.HTTP (MonocleAPI, server)
+import Monocle.Servant.HTTP (server)
+import Monocle.Servant.HTTPAuth (RootAPI)
 import Network.HTTP.Types.Status qualified as HTTP
 import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
-import Network.Wai.Logger (withStdoutLogger)
+import Network.Wai.Logger (ApacheLogger, withStdoutLogger)
 import Network.Wai.Middleware.Cors (cors, corsRequestHeaders, simpleCorsResourcePolicy)
 import Network.Wai.Middleware.Prometheus (def, prometheus)
 import Prometheus (register)
 import Prometheus.Metric.GHC (ghcMetrics)
 import Servant
-import Servant.Auth.Server (CookieSettings, JWTSettings, defaultCookieSettings, defaultJWTSettings)
-import Servant.HTML.Blaze (HTML)
+import Servant.Auth.Server (defaultCookieSettings, defaultJWTSettings)
 import System.Directory qualified
 
--- | The API is served at both `/api/2/` (for backward compat with the legacy nginx proxy)
--- and `/` (for compat with crawler client)
-type MonocleAPI' = MonocleAPI :<|> AuthAPI
+import Effectful qualified as E
+import Effectful.Concurrent.MVar qualified as E
+import Effectful.Fail qualified as E
+import Effectful.Reader.Static qualified as E
+import Effectful.Servant qualified
+import Monocle.Effects
 
-type RootAPI = "api" :> "2" :> MonocleAPI' :<|> MonocleAPI'
-
-type AuthAPI =
-  "auth" :> "login" :> QueryParam "redirectUri" Text :> Get '[JSON] NoContent
-    :<|> "auth" :> "cb" :> QueryParam "error" Text :> QueryParam "code" Text :> QueryParam "state" Text :> Get '[HTML] LoginInUser
-
-serverAuth :: ServerT AuthAPI AppM
-serverAuth = handleLogin :<|> handleLoggedIn
-
--- | Create the underlying Monocle web application interface, for integration or testing purpose.
-app :: AppEnv -> Wai.Application
-app env = do
-  let server' = server :<|> serverAuth
-  serveWithContext (Proxy @RootAPI) cfg $
-    hoistServerWithContext
-      (Proxy @RootAPI)
-      (Proxy :: Proxy '[CookieSettings, JWTSettings])
-      mkAppM
-      (server' :<|> server')
+rootServer :: ApiEffects es => '[E.Concurrent] :>> es => Servant.ServerT RootAPI (Eff es)
+rootServer = app :<|> app
  where
-  jwtCfg = localJWTSettings $ aOIDC env
-  cfg = jwtCfg :. defaultCookieSettings :. EmptyContext
-  mkAppM :: AppM x -> Servant.Handler x
-  mkAppM apM = runReaderT (unApp apM) env
+  app = server :<|> handleLogin :<|> handleLoggedIn
 
 fallbackWebAppPath :: FilePath
 fallbackWebAppPath = "web/build/"
@@ -127,9 +108,15 @@ defaultApiConfig port elasticUrl configFile =
 
 -- | Start the API in the foreground.
 run :: ApiConfig -> IO ()
-run ApiConfig {..} = withLogger $ \glLogger -> do
-  config <- Config.reloadConfig configFile
-  conf <- Config.csConfig <$> config
+run cfg =
+  withStdoutLogger $ \aplogger ->
+    runEff
+      . runMonoConfig (configFile cfg)
+      $ run' cfg aplogger
+
+run' :: '[IOE, MonoConfigEffect] :>> es => ApiConfig -> ApacheLogger -> Eff es ()
+run' ApiConfig {..} aplogger = E.runConcurrent $ runLoggerEffect do
+  conf <- Config.csConfig <$> getReloadConfig
   let workspaces = Config.getWorkspaces conf
 
   -- Check alias and abort if they are not usable
@@ -141,49 +128,53 @@ run ApiConfig {..} = withLogger $ \glLogger -> do
 
   -- TODO: add the aliases to the AppM env to avoid parsing them for each request
 
-  staticMiddleware <- mkStaticMiddleware publicUrl title webAppPath
+  staticMiddleware <- liftIO (mkStaticMiddleware publicUrl title webAppPath)
 
   -- Monitoring
   void $ register ghcMetrics
   let monitoringMiddleware = prometheus def
 
   -- Initialize workspace status to ready since we are starting
-  wsRef <- Config.csWorkspaceStatus <$> config
-  Config.setWorkspaceStatus Config.Ready wsRef
+  wsRef <- Config.csWorkspaceStatus <$> getReloadConfig
+  liftIO (Config.setWorkspaceStatus Config.Ready wsRef)
 
   -- Init OIDC
   -- Initialise JWT settings for locally issuing JWT (local provider)
-  localJwk <- doGenJwk $ from <$> jwkKey
-  providerM <- getAuthProvider publicUrl conf
+  localJwk <- liftIO . doGenJwk $ from <$> jwkKey
+  providerM <- liftIO (getAuthProvider publicUrl conf)
   let localJWTSettings = defaultJWTSettings localJwk
   -- Initialize env to talk with OIDC provider
   oidcEnv <- case providerM of
     Just provider -> do
-      runLogger glLogger $ logInfo "AuthSystemReady" ["provider" .= opName provider]
-      pure <$> initOIDCEnv provider
+      logInfo "AuthSystemReady" ["provider" .= opName provider]
+      pure <$> liftIO (initOIDCEnv provider)
     _ -> pure Nothing
   let aOIDC = OIDC {..}
 
   bhEnv <- mkEnv elasticUrl
-  let aEnv = Env {..}
-  runLogger glLogger do
-    httpRetry elasticUrl $
-      liftIO $
-        traverse_ (\tenant -> runQueryM' bhEnv tenant I.ensureIndex) workspaces
-    httpRetry elasticUrl $
-      liftIO $
-        runQueryTarget bhEnv (QueryConfig conf) I.ensureConfigIndex
-  liftIO $
-    withStdoutLogger $ \aplogger -> do
-      let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
-      runLogger glLogger $ logInfo "SystemReady" ["workspace" .= length workspaces, "port" .= port, "elastic" .= elasticUrl]
-      Warp.runSettings
-        settings
-        . cors (const $ Just policy)
-        . monitoringMiddleware
-        . healthMiddleware
-        . staticMiddleware
-        $ app AppEnv {..}
+  r <- E.runFail $ runElasticEffect bhEnv do
+    traverse_ (`runEmptyQueryM` I.ensureIndex) workspaces
+    runMonoQuery (MonoQueryEnv (QueryConfig conf) (mkQuery [])) I.ensureConfigIndex
+
+    let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
+        jwtCfg = localJWTSettings
+        cfg = jwtCfg :. defaultCookieSettings :. EmptyContext
+        middleware =
+          cors (const $ Just corsPolicy)
+            . monitoringMiddleware
+            . healthMiddleware
+            . staticMiddleware
+    logInfo "SystemReady" ["workspace" .= length workspaces, "port" .= port, "elastic" .= elasticUrl]
+
+    appEnv <- E.withEffToIO $ \effToIO -> do
+      let configIO = effToIO getReloadConfig
+      pure AppEnv {bhEnv, aOIDC, config = configIO}
+
+    E.runReader appEnv $
+      Effectful.Servant.runWarpServerSettingsContext @RootAPI settings cfg rootServer middleware
+  case r of
+    Left e -> error (show e)
+    Right e -> error (show e)
  where
-  policy =
+  corsPolicy =
     simpleCorsResourcePolicy {corsRequestHeaders = ["content-type"]}

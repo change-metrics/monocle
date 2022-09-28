@@ -15,6 +15,7 @@
 module Monocle.Config (
   -- * Data types imported from dhall
   Config (..),
+  Workspace,
   Index (..),
   Project (..),
   Ident (..),
@@ -46,7 +47,6 @@ module Monocle.Config (
   setWorkspaceStatus,
 
   -- * The Config Monad
-  MonadConfig (..),
   getSecret,
 
   -- * Functions to handle a Config
@@ -87,6 +87,7 @@ import Dhall.Core qualified
 import Dhall.Src qualified
 import Dhall.TH qualified
 import Dhall.YamlToDhall qualified as Dhall
+import Effectful.Env
 import Monocle.Prelude
 import System.Directory (getModificationTime)
 
@@ -124,6 +125,9 @@ Dhall.TH.makeHaskellTypes
           Dhall.TH.SingleConstructor "Index" "Index" $ mainPath "Workspace"
         ]
   )
+
+-- | Workspace are not index name.
+type Workspace = Index
 
 -- | Embed the expected configuration schema
 configurationSchema :: Dhall.Core.Expr Dhall.Src.Src Void
@@ -280,28 +284,17 @@ reloadConfig fp = do
 
 -- | Return a 'Secret' based on environment variable
 getSecret ::
-  MonadIO m =>
+  EnvEffect :> es =>
   -- | Default environment key name
   Text ->
   -- | The environment key name
   Maybe Text ->
-  m Secret
+  Eff es Secret
 getSecret def keyM =
-  Secret . from . fromMaybe (error $ "Missing environment: " <> env)
-    <$> lookupEnv (from env)
+  Secret . decodeUtf8 . fromMaybe (error $ "Missing environment: " <> env)
+    <$> envGet (from env)
  where
   env = fromMaybe def keyM
-
-class MonadConfig m where
-  -- | Return a 'Secret' based on environment variable
-  mGetSecret :: Text -> Maybe Text -> m Secret
-
-  -- | An IO action that reload the config if needed
-  mReloadConfig :: FilePath -> m (m ConfigStatus)
-
-instance MonadConfig IO where
-  mGetSecret = getSecret
-  mReloadConfig = reloadConfig
 
 data OIDCProviderConfig = OIDCProviderConfig
   { opIssuerURL :: Text

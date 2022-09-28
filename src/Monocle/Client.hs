@@ -21,7 +21,7 @@ import Network.HTTP.Client (
   httpLbs,
   method,
   newManager,
-  parseUrlThrow,
+  parseRequest_,
   requestBody,
   requestHeaders,
   responseBody,
@@ -82,15 +82,15 @@ withClient url managerM callBack =
   baseUrl = T.dropWhileEnd (== '/') url <> "/"
 
 monocleReq ::
-  (MonadIO m, MonadThrow m, Show body, ToJSONPB body, FromJSONPB a) =>
+  (MonadIO m, Show body, ToJSONPB body, FromJSONPB a) =>
   Text ->
   MonocleClient ->
   body ->
   m a
 monocleReq path MonocleClient {..} body =
   do
-    initRequest <- parseUrlThrow (T.unpack $ baseUrl <> path)
-    let request =
+    let initRequest = parseRequest_ (T.unpack $ baseUrl <> path)
+        request =
           initRequest
             { requestHeaders =
                 [ ("Accept", "*/*")

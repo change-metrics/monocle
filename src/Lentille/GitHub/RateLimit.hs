@@ -1,19 +1,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-overlapping-patterns #-}
 
 module Lentille.GitHub.RateLimit where
 
 import Data.Morpheus.Client
-import Lentille (
-  LentilleError (GraphQLError),
-  MonadGraphQLE,
-  MonadTime (mThreadDelay),
-  RequestLog (..),
- )
+import Lentille
 import Lentille.GraphQL
-import Monocle.Logging
 import Monocle.Prelude
 import Network.HTTP.Client (Response, responseBody, responseStatus)
 import Network.HTTP.Types (Status, badGateway502, forbidden403, ok200)
@@ -42,7 +35,7 @@ transformResponse = \case
       Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAt'
   respOther -> error ("Invalid response: " <> show respOther)
 
-getRateLimit :: (HasLogger m, MonadGraphQLE m) => GraphClient -> m RateLimit
+getRateLimit :: GraphEffects es => GraphClient -> Eff es RateLimit
 getRateLimit client = do
   transformResponse
     <$> doRequest client mkRateLimitArgs (Just retryCheck) Nothing Nothing
@@ -57,12 +50,12 @@ retryResultToBool :: RetryResult -> Bool
 retryResultToBool DoRetry = True
 retryResultToBool DontRetry = False
 
-retryCheck :: MonadTime m => HasLogger m => Handler m Bool
+retryCheck :: forall es. GraphEffects es => Handler (Eff es) Bool
 retryCheck = Handler $ \case
   GraphQLError (err, RequestLog _req _body resp _rbody) -> retryResultToBool <$> checkResp err resp
   _anyOtherExceptionAreNotRetried -> pure False
  where
-  checkResp :: (Show a, MonadTime m, HasLogger m) => a -> Response LByteString -> m RetryResult
+  checkResp :: Show a => a -> Response LByteString -> Eff es RetryResult
   checkResp err resp
     | isTimeoutError status body = do
         logWarn_ "Server side timeout error. Will retry with lower query depth ..."

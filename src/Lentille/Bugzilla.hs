@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}
+{-# OPTIONS_GHC -fno-warn-redundant-constraints #-}
 
 -- |
 -- Copyright: (c) 2021 Monocle authors
@@ -13,7 +13,10 @@ module Lentille.Bugzilla (
   getBugzillaSession,
   getBugWithScore,
   getBugsWithScore,
-  MonadBZ,
+
+  -- * The context
+  BZEffect,
+  runBZ,
   BugzillaSession,
   BugWithScore,
   BZ.BugzillaApiKey (..),
@@ -32,14 +35,25 @@ import Web.RedHatBugzilla qualified as BZ
 import Web.RedHatBugzilla.Search ((.&&.), (.==.))
 import Web.RedHatBugzilla.Search qualified as BZS
 
-class (MonadRetry m, MonadMonitor m) => MonadBZ m where
-  bzRequest :: FromJSON bugs => BZ.Request -> m bugs
+import Effectful (Dispatch (Static), DispatchOf)
+import Effectful.Dispatch.Static (SideEffects (..), evalStaticRep)
+import Effectful.Prometheus (PrometheusEffect)
 
-instance MonadBZ LentilleM where
-  bzRequest = liftIO . bzRequest
+-------------------------------------------------------------------------------
+-- BugZilla context
+-------------------------------------------------------------------------------
+type BZEffects es = [BZEffect, LoggerEffect, PrometheusEffect, RetryEffect] :>> es
 
-instance MonadBZ IO where
-  bzRequest = BZ.sendBzRequest
+-- A dummy effect to replace the legacy MonadGerrit.
+-- TODO: re-implement on top of HttpEffect.
+data BZEffect :: Effect
+type instance DispatchOf BZEffect = 'Static 'WithSideEffects
+data instance StaticRep BZEffect = BZEffect
+runBZ :: IOE :> es => Eff (BZEffect : es) a -> Eff es a
+runBZ = evalStaticRep BZEffect
+
+bzRequest :: BZEffect :> es => FromJSON bugs => BZ.Request -> Eff es bugs
+bzRequest = unsafeEff_ . BZ.sendBzRequest
 
 -------------------------------------------------------------------------------
 -- BugZilla system
@@ -111,12 +125,12 @@ getApikey :: Text -> BZ.BugzillaApiKey
 getApikey = BZ.BugzillaApiKey
 
 -- getBugs unwraps the 'BugsWithScore' newtype wrapper
-getBugs :: MonadBZ m => BZ.Request -> m [BugWithScore]
+getBugs :: BZEffects es => BZ.Request -> Eff es [BugWithScore]
 getBugs request = do
   BugsWithScore bugs <- bzRequest request
   pure bugs
 
-getBugWithScore :: MonadBZ m => BugzillaSession -> BZ.BugId -> m BugWithScore
+getBugWithScore :: BZEffects es => BugzillaSession -> BZ.BugId -> Eff es BugWithScore
 getBugWithScore bzSession bugId' = do
   let request = BZ.newBzRequest bzSession ["bug", show bugId'] bugWithScoreIncludeFieldQuery
   bugs <- getBugs request
@@ -125,7 +139,7 @@ getBugWithScore bzSession bugId' = do
     xs -> error $ "Got more or less than one bug " <> show xs
 
 getBugsWithScore ::
-  MonadBZ m =>
+  BZEffects es =>
   BugzillaSession ->
   -- | The last changed date
   UTCTime ->
@@ -135,7 +149,7 @@ getBugsWithScore ::
   Int ->
   -- | The offset
   Int ->
-  m [BugWithScore]
+  Eff es [BugWithScore]
 getBugsWithScore bzSession sinceTS product'' limit offset = do
   let request = BZ.newBzRequest bzSession ["bug"] (bugWithScoreIncludeFieldQuery <> page <> searchQuery)
       page = [("limit", Just $ show limit), ("offset", Just $ show offset), ("order", Just "changeddate")]
@@ -166,11 +180,11 @@ toTaskData bz = map mkTaskData ebugs
       "rhbz#"
 
 -- | Stream task data from a starting date by incrementing the offset until the result count is less than the limit
-getBZData :: (HasLogger m, MonadBZ m) => BugzillaSession -> UTCTime -> Text -> Stream (Of TaskData) m ()
+getBZData :: BZEffects es => BugzillaSession -> UTCTime -> Text -> Stream (Of TaskData) (Eff es) ()
 getBZData bzSession sinceTS productName = go 0
  where
   limit = 100
-  doGet :: MonadBZ m => Int -> m [BugWithScore]
+  doGet :: BZEffects es => Int -> Eff es [BugWithScore]
   doGet = getBugsWithScore bzSession sinceTS productName limit
   go offset = do
     -- Retrieve rhbz

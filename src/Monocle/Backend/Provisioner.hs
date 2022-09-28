@@ -29,18 +29,17 @@ import Monocle.Backend.Documents
 import Monocle.Backend.Index qualified as I
 import Monocle.Backend.Test qualified as T
 import Monocle.Config (mkTenant)
-import Monocle.Env (testQueryM)
 import Monocle.Prelude
 import Monocle.Protob.Search (TaskData (..))
 
 -- | Provision fakedata for a tenant
 runProvisioner :: Text -> IO ()
-runProvisioner tenantName = testQueryM (mkTenant tenantName) do
+runProvisioner tenantName = T.withTenantConfig (mkTenant tenantName) $ runFailIO $ do
   I.ensureIndex
   events <- liftIO createFakeEvents
-  putTextLn $ "[provisioner] Adding " <> show (length events) <> " events to " <> tenantName <> "."
+  logInfo ("[provisioner] Adding " <> show (length events) <> " events to " <> tenantName <> ".") []
   T.indexScenario events
-  putTextLn "[provisioner] Done."
+  logInfo "[provisioner] Done." []
 
 -- | Ensure changes have a unique ID
 setChangeID :: [EChange] -> IO [EChange]

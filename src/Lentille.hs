@@ -1,21 +1,16 @@
 -- | A shared library between lentilles and macroscope
 module Lentille (
   -- * The lentille context
-  LentilleM (..),
   CrawlerEnv (..),
   LentilleStream,
-  LentilleMonad,
-  runLentilleM,
   stopLentille,
   unlessStopped,
 
   -- * Lentille Errors
-  MonadGraphQLE,
   LentilleError (..),
   RequestLog (..),
 
   -- * Facilities
-  getClientBaseUrl,
   getChangeId,
   isMerged,
   isClosed,
@@ -34,8 +29,7 @@ module Lentille (
 import Data.Text qualified as T
 import Google.Protobuf.Timestamp qualified as T
 import Monocle.Class
-import Monocle.Client (MonocleClient, baseUrl, mkManager)
-import Monocle.Config qualified as Config
+import Monocle.Client (MonocleClient)
 import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Change (
@@ -49,46 +43,27 @@ import Monocle.Protob.Change (
 import Network.HTTP.Client qualified as HTTP
 import Proto3.Suite (Enumerated (Enumerated))
 
+import Effectful.Error.Static qualified as E
+import Effectful.Reader.Static qualified as E
+
 -------------------------------------------------------------------------------
 -- The Lentille context
 
-newtype LentilleM a = LentilleM {unLentille :: ReaderT CrawlerEnv IO a}
-  deriving newtype (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadMask)
-  deriving newtype (MonadReader CrawlerEnv)
-  deriving newtype (MonadUnliftIO, MonadMonitor)
-
-instance HasLogger LentilleM where
-  getLogger = asks crawlerLogger
-  withContext ctx = local (\env -> env {crawlerLogger = addCtx ctx (crawlerLogger env)})
-  logIO = liftIO
-
 data CrawlerEnv = CrawlerEnv
   { crawlerClient :: MonocleClient
-  , crawlerLogger :: Logger
   , crawlerStop :: IORef Bool
   }
 
-getClientBaseUrl :: MonadReader CrawlerEnv m => m Text
-getClientBaseUrl = do
-  env <- asks crawlerClient
-  pure $ baseUrl env
-
 -- | unlessStopped skips the action when the config is changed
-unlessStopped :: MonadCrawler m => MonadReader CrawlerEnv m => m () -> m ()
+unlessStopped :: E.Reader CrawlerEnv :> es => Eff es () -> Eff es ()
 unlessStopped action = do
-  stopRef <- asks crawlerStop
-  stopped <- mReadIORef stopRef
+  stopRef <- E.asks crawlerStop
+  -- TODO: replace IORef with Concurrent TVar
+  stopped <- unsafeEff_ (readIORef stopRef)
   unless stopped action
 
-runLentilleM :: MonadIO m => Logger -> MonocleClient -> LentilleM a -> m a
-runLentilleM logger client lm = do
-  r <- liftIO $ newIORef False
-  liftIO . flip runReaderT (env r) . unLentille $ lm
- where
-  env = CrawlerEnv client logger
-
-stopLentille :: MonadThrow m => LentilleError -> LentilleStream m a
-stopLentille = lift . throwM
+stopLentille :: E.Error LentilleError :> es => LentilleError -> LentilleStream es a
+stopLentille = lift . E.throwError
 
 data RequestLog = RequestLog
   { rlRequest :: HTTP.Request
@@ -100,7 +75,6 @@ data RequestLog = RequestLog
 
 data LentilleError
   = DecodeError [Text]
-  | GetRateLimitError (Text, HTTP.Request, HTTP.Response LByteString)
   | -- | GraphQLError is a wrapper around the morpheus's FetchError.
     -- TODO: keep the original error data type (instead of the Text)
     GraphQLError (Text, RequestLog)
@@ -108,43 +82,7 @@ data LentilleError
 
 instance Exception LentilleError
 
--- | Here we create the different class instance by using the LentilleM inner IO
-instance MonadTime LentilleM where
-  mGetCurrentTime = liftIO mGetCurrentTime
-  mThreadDelay de = liftIO $ mThreadDelay de
-
-instance MonadSync LentilleM where
-  mNewMVar = newMVar
-  mModifyMVar = modifyMVar
-
-instance MonadRetry LentilleM where
-  retry = retry'
-
-instance MonadCrawler LentilleM where
-  mReadIORef = liftIO . mReadIORef
-  mCrawlerAddDoc client = liftIO . mCrawlerAddDoc client
-  mCrawlerCommit client = liftIO . mCrawlerCommit client
-  mCrawlerCommitInfo client = liftIO . mCrawlerCommitInfo client
-
-instance MonadGraphQL LentilleM where
-  httpRequest req = liftIO . HTTP.httpLbs req
-  newManager = liftIO mkManager
-
-type MonadGraphQLE m = (MonadGraphQL m, MonadThrow m)
-
-instance Config.MonadConfig LentilleM where
-  mReloadConfig fp = do
-    reloader <- liftIO $ Config.reloadConfig fp
-    pure $ liftIO reloader
-  mGetSecret def = liftIO . Config.getSecret def
-
-type LentilleStream m a = Stream (Of a) m ()
-
-type LentilleMonad m =
-  ( MonadTime m
-  , MonadCrawler m -- for monocle crawler http api
-  , Config.MonadConfig m
-  )
+type LentilleStream es a = Stream (Of a) (Eff es) ()
 
 -------------------------------------------------------------------------------
 -- Utility functions for crawlers

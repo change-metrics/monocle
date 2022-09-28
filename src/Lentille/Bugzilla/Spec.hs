@@ -3,8 +3,9 @@ module Lentille.Bugzilla.Spec (bzClientTests) where
 import Data.Vector qualified as V
 import Lentille.Bugzilla
 import Lentille.Bugzilla.Mock
+import Monocle.Class (runMonitoring)
+import Monocle.Prelude
 import Monocle.Protob.Search (TaskData (..))
-import Relude
 import Test.Tasty
 import Test.Tasty.HUnit
 import Web.RedHatBugzilla qualified as BZ
@@ -29,7 +30,7 @@ testBugToTaskData = testCase "bugToTaskData" go
  where
   go = do
     bzSession <- bugzillaMockClient
-    bz <- getBugWithScore bzSession 1791815
+    bz <- runEff $ runMonitoring $ runBZ $ getBugWithScore bzSession 1791815
     case toTaskData bz of
       (td : _tds) ->
         sequence_

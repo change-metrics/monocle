@@ -1,15 +1,11 @@
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-overlapping-patterns #-}
 
 module Lentille.GitHub.Organization where
 
 import Data.Morpheus.Client
-import Lentille (MonadGraphQLE)
 import Lentille.GitHub.RateLimit (getRateLimit, retryCheck)
 import Lentille.GraphQL
-import Monocle.Logging
 import Monocle.Prelude
 import Monocle.Protob.Crawler (Project (..))
 
@@ -67,7 +63,7 @@ transformResponse result = do
   getRepos :: [Maybe OrganizationRepositoriesNodesRepository] -> [Project]
   getRepos r = Project . from . nameWithOwner <$> catMaybes r
 
-streamOrganizationProjects :: (HasLogger m, MonadGraphQLE m) => GraphClient -> Text -> Stream (Of Project) m ()
+streamOrganizationProjects :: GraphEffects es => GraphClient -> Text -> Stream (Of Project) (Eff es) ()
 streamOrganizationProjects client login =
   streamFetch client mkArgs optParams transformResponse
  where
