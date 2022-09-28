@@ -27,6 +27,7 @@ import Json.Extras qualified as Json
 import Monocle.Prelude
 import Network.HTTP.Client qualified as HTTP
 import Network.HTTP.Types.Method qualified as HTTP
+import Control.Monad.Catch (MonadThrow)
 
 data ScrollRequest = NoScroll | GetScroll ByteString
 

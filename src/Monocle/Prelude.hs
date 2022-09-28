@@ -25,7 +25,10 @@ module Monocle.Prelude (
   Effectful.Eff,
   Effectful.IOE,
   Effectful.Error.Static.Error,
+  Effectful.Error.Static.runErrorNoCallStack,
+  runErrorIO,
   Effectful.Concurrent.Concurrent,
+  Effectful.Concurrent.runConcurrent,
   Effectful.Effect,
   (:>>),
   (:>),
@@ -75,15 +78,11 @@ module Monocle.Prelude (
   hoist,
 
   -- * mtl
-  MonadError (..),
   MonadWriter (..),
   WriterT,
   runWriterT,
 
   -- * exceptions
-  MonadThrow (..),
-  MonadMask,
-  MonadCatch (..),
   Handler (Handler),
   tryAny,
 
@@ -203,9 +202,7 @@ module Monocle.Prelude (
 import Control.Exception.Safe (tryAny)
 import Control.Foldl qualified as L
 import Control.Lens (Lens', at, lens, mapMOf, over, preview, set, view)
-import Control.Monad.Catch (Handler (Handler), MonadCatch (catch), MonadMask, MonadThrow (throwM))
-import Control.Monad.Except (MonadError, catchError, throwError)
-import Control.Monad.IO.Unlift (MonadUnliftIO)
+import Control.Monad.Catch (Handler (Handler))
 import Control.Monad.Morph (hoist)
 import Control.Monad.Writer (MonadWriter, WriterT, runWriterT, tell)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (Number, String), encode, object, withText, (.=))
@@ -221,8 +218,7 @@ import Data.Time
 import Data.Time.Clock (getCurrentTime)
 import Data.Vector (Vector)
 import Database.Bloodhound qualified as BH
-import Effectful ((:>), (:>>))
-import Effectful qualified
+import Effectful
 import Effectful.Concurrent qualified
 import Effectful.Dispatch.Static qualified
 import Effectful.Error.Static qualified
@@ -558,3 +554,10 @@ instance FromJSON AnyJSON where
 
 instance From Text Value where
   from = String
+
+runErrorIO :: Show err => Eff (Effectful.Error.Static.Error err : es) a -> Eff es a
+runErrorIO action = do
+  res <- Effectful.Error.Static.runErrorNoCallStack action
+  case res of
+    Left e -> error (show e)
+    Right x -> pure x

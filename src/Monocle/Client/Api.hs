@@ -7,7 +7,6 @@
 -- SPDX-License-Identifier: AGPL-3.0-only
 module Monocle.Client.Api where
 
-import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Class (MonadIO)
 import Monocle.Client (MonocleClient, monocleReq)
 import Monocle.Protob.Auth
@@ -17,59 +16,59 @@ import Monocle.Protob.Login
 import Monocle.Protob.Metric
 import Monocle.Protob.Search
 
-loginLoginValidation :: (MonadThrow m, MonadIO m) => MonocleClient -> LoginValidationRequest -> m LoginValidationResponse
+loginLoginValidation :: MonadIO m => MonocleClient -> LoginValidationRequest -> m LoginValidationResponse
 loginLoginValidation = monocleReq "api/2/login/username/validate"
 
-authGetMagicJwt :: (MonadThrow m, MonadIO m) => MonocleClient -> GetMagicJwtRequest -> m GetMagicJwtResponse
+authGetMagicJwt :: MonadIO m => MonocleClient -> GetMagicJwtRequest -> m GetMagicJwtResponse
 authGetMagicJwt = monocleReq "api/2/auth/get"
 
-authWhoAmi :: (MonadThrow m, MonadIO m) => MonocleClient -> WhoAmiRequest -> m WhoAmiResponse
+authWhoAmi :: MonadIO m => MonocleClient -> WhoAmiRequest -> m WhoAmiResponse
 authWhoAmi = monocleReq "api/2/auth/whoami"
 
-configGetWorkspaces :: (MonadThrow m, MonadIO m) => MonocleClient -> GetWorkspacesRequest -> m GetWorkspacesResponse
+configGetWorkspaces :: MonadIO m => MonocleClient -> GetWorkspacesRequest -> m GetWorkspacesResponse
 configGetWorkspaces = monocleReq "api/2/get_workspaces"
 
-configGetProjects :: (MonadThrow m, MonadIO m) => MonocleClient -> GetProjectsRequest -> m GetProjectsResponse
+configGetProjects :: MonadIO m => MonocleClient -> GetProjectsRequest -> m GetProjectsResponse
 configGetProjects = monocleReq "api/2/get_projects"
 
-configGetGroups :: (MonadThrow m, MonadIO m) => MonocleClient -> GetGroupsRequest -> m GetGroupsResponse
+configGetGroups :: MonadIO m => MonocleClient -> GetGroupsRequest -> m GetGroupsResponse
 configGetGroups = monocleReq "api/2/get_groups"
 
-configGetGroupMembers :: (MonadThrow m, MonadIO m) => MonocleClient -> GetGroupMembersRequest -> m GetGroupMembersResponse
+configGetGroupMembers :: MonadIO m => MonocleClient -> GetGroupMembersRequest -> m GetGroupMembersResponse
 configGetGroupMembers = monocleReq "api/2/get_group_members"
 
-configGetAbout :: (MonadThrow m, MonadIO m) => MonocleClient -> GetAboutRequest -> m GetAboutResponse
+configGetAbout :: MonadIO m => MonocleClient -> GetAboutRequest -> m GetAboutResponse
 configGetAbout = monocleReq "api/2/about"
 
-searchSuggestions :: (MonadThrow m, MonadIO m) => MonocleClient -> SuggestionsRequest -> m SuggestionsResponse
+searchSuggestions :: MonadIO m => MonocleClient -> SuggestionsRequest -> m SuggestionsResponse
 searchSuggestions = monocleReq "api/2/suggestions"
 
-searchFields :: (MonadThrow m, MonadIO m) => MonocleClient -> FieldsRequest -> m FieldsResponse
+searchFields :: MonadIO m => MonocleClient -> FieldsRequest -> m FieldsResponse
 searchFields = monocleReq "api/2/search/fields"
 
-searchCheck :: (MonadThrow m, MonadIO m) => MonocleClient -> CheckRequest -> m CheckResponse
+searchCheck :: MonadIO m => MonocleClient -> CheckRequest -> m CheckResponse
 searchCheck = monocleReq "api/2/search/check"
 
-searchQuery :: (MonadThrow m, MonadIO m) => MonocleClient -> QueryRequest -> m QueryResponse
+searchQuery :: MonadIO m => MonocleClient -> QueryRequest -> m QueryResponse
 searchQuery = monocleReq "api/2/search/query"
 
-searchAuthor :: (MonadThrow m, MonadIO m) => MonocleClient -> AuthorRequest -> m AuthorResponse
+searchAuthor :: MonadIO m => MonocleClient -> AuthorRequest -> m AuthorResponse
 searchAuthor = monocleReq "api/2/search/author"
 
-metricList :: (MonadThrow m, MonadIO m) => MonocleClient -> ListRequest -> m ListResponse
+metricList :: MonadIO m => MonocleClient -> ListRequest -> m ListResponse
 metricList = monocleReq "api/2/metric/list"
 
-metricGet :: (MonadThrow m, MonadIO m) => MonocleClient -> GetRequest -> m GetResponse
+metricGet :: MonadIO m => MonocleClient -> GetRequest -> m GetResponse
 metricGet = monocleReq "api/2/metric/get"
 
-metricInfo :: (MonadThrow m, MonadIO m) => MonocleClient -> InfoRequest -> m InfoResponse
+metricInfo :: MonadIO m => MonocleClient -> InfoRequest -> m InfoResponse
 metricInfo = monocleReq "api/2/metric/info"
 
-crawlerAddDoc :: (MonadThrow m, MonadIO m) => MonocleClient -> AddDocRequest -> m AddDocResponse
+crawlerAddDoc :: MonadIO m => MonocleClient -> AddDocRequest -> m AddDocResponse
 crawlerAddDoc = monocleReq "api/2/crawler/add"
 
-crawlerCommit :: (MonadThrow m, MonadIO m) => MonocleClient -> CommitRequest -> m CommitResponse
+crawlerCommit :: MonadIO m => MonocleClient -> CommitRequest -> m CommitResponse
 crawlerCommit = monocleReq "api/2/crawler/commit"
 
-crawlerCommitInfo :: (MonadThrow m, MonadIO m) => MonocleClient -> CommitInfoRequest -> m CommitInfoResponse
+crawlerCommitInfo :: MonadIO m => MonocleClient -> CommitInfoRequest -> m CommitInfoResponse
 crawlerCommitInfo = monocleReq "api/2/crawler/get_commit_info"
