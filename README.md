@@ -83,11 +83,13 @@ the configuration.
 
 ### Start docker-compose
 
-By default docker-compose will fetch the latest published container images.
-Indeed, we produce container images for the master version of Monocle.
-If running master does not fit your needs, you could still use the last release
-by setting the MONOCLE_VERSION to 1.7.0 in the .env file. Please refer
-to [System configuration section](#system).
+The docker-compose file is set to use the container image of the latest stable
+release of Monocle (1.7.0). It is adviced to use the latest stable Monocle version.
+However, as our CI publishes the latest (devel) container image then it is possible
+to run the very last version. To do so set `COMPOSE_MONOCLE_VERSION` to `latest` in
+the `.env` file.
+
+Please refer to the [Environment variables section](#environment-variables).
 
 Start Monocle:
 
@@ -128,7 +130,7 @@ propose configuration changes. The Monocle API automatically reload the configur
 
 For a local deployment, default settings are fine.
 
-The following settings are available in the `.env` file:
+The following settings are available in the `.env` file (See `.env.sample` for a sample file):
 
 - `COMPOSE_ES_XMS and COMPOSE_ES_XMX` to change the ElasticSearch JVM HEAP SIZE. By default 512m.
 - `COMPOSE_MONOCLE_VERSION` to use a specific version. By default it uses `latest`.
