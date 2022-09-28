@@ -480,12 +480,17 @@ in rec {
     # Create a passwd entry so that openssh can find the .ssh config
     createPasswd = "echo ${user}:x:0:0:monocle:/${home}:/bin/bash > etc/passwd";
 
+    # Make ca-bundles.crt available to HSOpenSSL as plain file
+    # https://hackage.haskell.org/package/HsOpenSSL-x509-system-0.1.0.4/docs/src/OpenSSL.X509.SystemStore.Unix.html#contextLoadSystemCerts
+    fixCABundle =
+      "mkdir -p etc/pki/tls/certs/ && cp etc/ssl/certs/ca-bundle.crt etc/pki/tls/certs/ca-bundle.crt";
+
     # Ensure the home directory is r/w for any uid
     rwHome = "mkdir -p -m 1777 ${home}";
   in pkgs.dockerTools.buildLayeredImage {
     name = "quay.io/change-metrics/monocle-exe";
     contents = [ pkgs.coreutils pkgs.cacert pkgs.bash monocle-exe ];
-    extraCommands = "${createPasswd} && ${rwHome}";
+    extraCommands = "${createPasswd} && ${fixCABundle} && ${rwHome}";
     tag = "latest";
     created = "now";
     config = {
