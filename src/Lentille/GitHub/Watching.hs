@@ -83,6 +83,6 @@ streamWatchedProjects client login =
   mkArgs _ = GetWatchedArgs login
   optParams =
     Lentille.GraphQL.defaultStreamFetchOptParams
-      { Lentille.GraphQL.fpRetryCheck = Just Lentille.GitHub.RateLimit.retryCheck
+      { Lentille.GraphQL.fpRetryCheck = Lentille.GitHub.RateLimit.retryCheck
       , Lentille.GraphQL.fpGetRatelimit = Just Lentille.GitHub.RateLimit.getRateLimit
       }

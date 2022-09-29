@@ -9,6 +9,7 @@ module Lentille (
   -- * Lentille Errors
   LentilleError (..),
   RequestLog (..),
+  GraphQLError (..),
 
   -- * Facilities
   getChangeId,
@@ -73,11 +74,17 @@ data RequestLog = RequestLog
   }
   deriving (Show)
 
+-- | ErrorGraphQL is a wrapper around the morpheus's FetchError.
+data GraphQLError = GraphQLError
+  { -- TODO: keep the original error data type (instead of the Text)
+    err :: Text
+  , request :: RequestLog
+  }
+  deriving (Show)
+
 data LentilleError
   = DecodeError [Text]
-  | -- | GraphQLError is a wrapper around the morpheus's FetchError.
-    -- TODO: keep the original error data type (instead of the Text)
-    GraphQLError (Text, RequestLog)
+  | GraphError GraphQLError
   deriving (Show)
 
 instance Exception LentilleError

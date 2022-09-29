@@ -27,6 +27,7 @@ import Data.Aeson
 import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Lentille
+import Monocle.Effects (httpRetry)
 import Monocle.Prelude
 import Monocle.Protob.Search (TaskData (..))
 import Streaming.Prelude qualified as S

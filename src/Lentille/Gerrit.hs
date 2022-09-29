@@ -37,6 +37,7 @@ import Gerrit.Data.Project (GerritProjectsMessage)
 import Google.Protobuf.Timestamp qualified as T
 import Lentille
 import Monocle.Client (mkManager)
+import Monocle.Effects (httpRetry)
 import Monocle.Prelude hiding (all, id)
 import Monocle.Protob.Change qualified as ChangePB
 import Monocle.Protob.Crawler qualified as CrawlerPB

@@ -47,8 +47,9 @@ defineByDocumentFile
     }
   |]
 
-transformResponse :: GetUser -> (RateLimit, IdentInfo)
-transformResponse = \case
+transformResponse :: GraphResp GetUser -> (RateLimit, IdentInfo)
+transformResponse (Left err) = error (show err)
+transformResponse (Right resp) = case resp of
   GetUser
     (Just (RateLimitRateLimit used remaining (DateTime resetAtText)))
     ( Just
@@ -72,7 +73,7 @@ getUser client login =
   do
     (_, info) <-
       transformResponse
-        <$> doRequest client mkArgs (Just retryCheck) Nothing Nothing
+        <$> doRequest client mkArgs retryCheck Nothing Nothing
     pure info
  where
   mkArgs _ _ = GetUserArgs login

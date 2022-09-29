@@ -73,6 +73,6 @@ streamOrganizationProjects client login =
   mkArgs _ = GetProjectsArgs login
   optParams =
     defaultStreamFetchOptParams
-      { fpRetryCheck = Just retryCheck
+      { fpRetryCheck = retryCheck
       , fpGetRatelimit = Just getRateLimit
       }

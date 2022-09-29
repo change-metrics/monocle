@@ -8,8 +8,10 @@ import Data.Morpheus.Client
 import Lentille
 import Lentille.GraphQL
 import Monocle.Prelude
-import Network.HTTP.Client (Response, responseBody, responseStatus)
+import Network.HTTP.Client (responseBody, responseStatus)
 import Network.HTTP.Types (Status, badGateway502, forbidden403, ok200)
+
+import Effectful.Retry
 
 newtype DateTime = DateTime Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 
@@ -36,49 +38,38 @@ transformResponse = \case
   GetRateLimit Nothing -> Nothing
   respOther -> error ("Invalid response: " <> show respOther)
 
-getRateLimit :: GraphEffects es => GraphClient -> Eff es (Maybe RateLimit)
+getRateLimit :: GraphEffects es => GraphClient -> Eff es (Either GraphQLError (Maybe RateLimit))
 getRateLimit client = do
-  transformResponse
-    <$> doRequest client mkRateLimitArgs (Just retryCheck) Nothing Nothing
+  fmap transformResponse
+    <$> doRequest client mkRateLimitArgs retryCheck Nothing Nothing
  where
   mkRateLimitArgs = const . const $ ()
 
-data RetryResult
-  = DoRetry
-  | DontRetry
-
-retryResultToBool :: RetryResult -> Bool
-retryResultToBool DoRetry = True
-retryResultToBool DontRetry = False
-
-retryCheck :: forall es. GraphEffects es => Handler (Eff es) Bool
-retryCheck = Handler $ \case
-  GraphQLError (err, RequestLog _req _body resp _rbody) -> retryResultToBool <$> checkResp err resp
-  _anyOtherExceptionAreNotRetried -> pure False
- where
-  checkResp :: Show a => a -> Response LByteString -> Eff es RetryResult
-  checkResp err resp
-    | isTimeoutError status body = do
+retryCheck :: forall es a. GraphEffects es => Either GraphQLError a -> Eff es RetryAction
+retryCheck = \case
+  Right _ -> pure DontRetry
+  Left (GraphQLError err (RequestLog _ _ resp _))
+    | isTimeoutError status body -> do
         logWarn_ "Server side timeout error. Will retry with lower query depth ..."
-        pure DoRetry
-    | isSecondaryRateLimitError status body = do
+        pure ConsultPolicy
+    | isSecondaryRateLimitError status body -> do
         logWarn_ "Secondary rate limit error. Will retry after 60 seconds ..."
-        mThreadDelay $ 60 * 1_000_000
-        pure DoRetry
-    | isRepoNotFound status body = do
+        pure (ConsultPolicyOverrideDelay $ 60 * 1_000_000)
+    | isRepoNotFound status body -> do
         logWarn_ "Repository not found. Will not retry."
         pure DontRetry
-    | otherwise = do
+    | otherwise -> do
         logWarn "Unexpected error" ["err" .= show @Text err]
-        pure DoRetry
+        pure ConsultPolicy
    where
     status = responseStatus resp
     body = decodeUtf8 $ responseBody resp
-
+ where
   isTimeoutError :: Status -> Text -> Bool
   isTimeoutError status body =
     let msg = "Something went wrong while executing your query. This may be the result of a timeout"
      in status == badGateway502 && inText msg body
+
   -- https://docs.github.com/en/rest/overview/resources-in-the-rest-api#secondary-rate-limits
   isSecondaryRateLimitError :: Status -> Text -> Bool
   isSecondaryRateLimitError status body =
