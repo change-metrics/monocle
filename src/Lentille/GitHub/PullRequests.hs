@@ -220,29 +220,33 @@ transformResponse ::
   GetProjectPullRequests ->
   (PageInfo, Maybe RateLimit, [Text], [(Change, [ChangeEvent])])
 transformResponse host identCB result = do
+  let process resp rateLimit = case resp of
+        ( Just
+            ( RepositoryRepository
+                ( RepositoryPullRequestsPullRequestConnection
+                    totalCount'
+                    (RepositoryPullRequestsPageInfoPageInfo hasNextPage endCursor)
+                    (Just projectPRs)
+                  )
+              )
+          ) ->
+            let totalCount = Just totalCount'
+             in (PageInfo {..}, rateLimit, [], mapMaybe transPR (catMaybes projectPRs))
+        _anyOtherResponse ->
+          ( PageInfo False Nothing Nothing
+          , Nothing
+          , ["Unknown GetProjectPullRequests response: " <> show result]
+          , []
+          )
   case result of
     GetProjectPullRequests
       (Just (RateLimitRateLimit used remaining (DateTime resetAtText)))
-      ( Just
-          ( RepositoryRepository
-              ( RepositoryPullRequestsPullRequestConnection
-                  totalCount'
-                  (RepositoryPullRequestsPageInfoPageInfo hasNextPage endCursor)
-                  (Just projectPRs)
-                )
-            )
-        ) ->
+      resp -> do
         let rateLimit = case parseDateValue $ from resetAtText of
               Just resetAt -> RateLimit {..}
               Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAtText
-            totalCount = Just totalCount'
-         in (PageInfo {..}, Just rateLimit, [], mapMaybe transPR (catMaybes projectPRs))
-    _anyOtherResponse ->
-      ( PageInfo False Nothing Nothing
-      , Nothing
-      , ["Unknown GetProjectPullRequests response: " <> show result]
-      , []
-      )
+        process resp (Just rateLimit)
+    GetProjectPullRequests Nothing resp -> process resp Nothing
  where
   getIdent :: Text -> Ident
   getIdent = toIdent host identCB

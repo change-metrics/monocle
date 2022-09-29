@@ -172,7 +172,7 @@ data StreamFetchOptParams m a = StreamFetchOptParams
   -- ^ an optional exception handler
   , fpDepth :: Maybe Int
   -- ^ an optional starting value for the depth
-  , fpGetRatelimit :: Maybe (GraphClient -> m RateLimit)
+  , fpGetRatelimit :: Maybe (GraphClient -> m (Maybe RateLimit))
   -- ^ an optional action to get a RateLimit record
   }
 
@@ -224,7 +224,7 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
             rl <- getRateLimit client
             -- Wait few moment to delay the next call
             mThreadDelay retryDelay
-            pure (Just rl, ())
+            pure (rl, ())
       Nothing -> pure ()
 
     -- Perform the GraphQL request
