@@ -94,22 +94,25 @@ streamLinkedIssue client time repo =
 pattern IssueLabels :: [Maybe SearchNodesLabelsNodesLabel] -> SearchNodesSearchResultItem
 pattern IssueLabels nodesLabel <- SearchNodesIssue _ _ _ _ _ _ (Just (SearchNodesLabelsLabelConnection (Just nodesLabel))) _
 
+transformRateLimit :: RateLimitRateLimit -> RateLimit
+transformRateLimit (RateLimitRateLimit used remaining (DateTime resetAtText)) =
+  case parseDateValue $ from resetAtText of
+    Just resetAt -> RateLimit {..}
+    Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAtText
+
 transformResponse :: GetLinkedIssues -> (PageInfo, Maybe RateLimit, [Text], [TaskData])
 transformResponse searchResult =
   case searchResult of
     GetLinkedIssues
-      (Just (RateLimitRateLimit used remaining (DateTime resetAtText)))
+      rateLimitM
       ( SearchSearchResultItemConnection
           issueCount'
           (SearchPageInfoPageInfo hasNextPage' endCursor')
           (Just issues)
         ) ->
         let newTaskDataE = concatMap mkTaskData issues
-            rateLimit = case parseDateValue $ from resetAtText of
-              Just resetAt -> RateLimit {..}
-              Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAtText
          in ( PageInfo hasNextPage' endCursor' (Just issueCount')
-            , Just rateLimit
+            , transformRateLimit <$> rateLimitM
             , lefts newTaskDataE
             , rights newTaskDataE
             )

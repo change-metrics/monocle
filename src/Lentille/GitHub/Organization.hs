@@ -31,11 +31,17 @@ defineByDocumentFile
     }
   |]
 
+transformRateLimit :: RateLimitRateLimit -> RateLimit
+transformRateLimit (RateLimitRateLimit used remaining (DateTime resetAtText)) =
+  case parseDateValue $ from resetAtText of
+    Just resetAt -> RateLimit {..}
+    Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAtText
+
 transformResponse :: GetProjects -> (PageInfo, Maybe RateLimit, [Text], [Project])
 transformResponse result = do
   case result of
     GetProjects
-      (Just (RateLimitRateLimit used remaining (DateTime resetAtText)))
+      rateLimitM
       ( Just
           ( OrganizationOrganization
               ( OrganizationRepositoriesRepositoryConnection
@@ -45,14 +51,11 @@ transformResponse result = do
                 )
             )
         ) ->
-        let rateLimit = case parseDateValue $ from resetAtText of
-              Just resetAt -> RateLimit {..}
-              Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAtText
-         in ( PageInfo hasNextPage endCursor (Just totalCount)
-            , Just rateLimit
-            , []
-            , getRepos orgRepositories
-            )
+        ( PageInfo hasNextPage endCursor (Just totalCount)
+        , transformRateLimit <$> rateLimitM
+        , []
+        , getRepos orgRepositories
+        )
     _anyOtherResponse ->
       ( PageInfo False Nothing Nothing
       , Nothing
