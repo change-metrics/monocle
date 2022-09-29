@@ -41,11 +41,12 @@ mkAppEnv workspace = do
   pure $ AppEnv {..}
 
 -- | Run the test effects list using an existing AppEnv. This is useful for legacy test written for QueryM ()
-runAppEnv :: AppEnv -> Eff '[ElasticEffect, MonoConfigEffect, E.Reader AppEnv, LoggerEffect, E.Error ServerError, E.Fail, E.Concurrent, IOE] a -> IO a
+runAppEnv :: AppEnv -> Eff '[ElasticEffect, MonoConfigEffect, E.Reader AppEnv, LoggerEffect, E.Error ServerError, Retry, E.Fail, E.Concurrent, IOE] a -> IO a
 runAppEnv appEnv =
   runEff
     . E.runConcurrent
     . E.runFailIO
+    . runRetry
     . (fmap (fromRight (error "oops")) . E.runErrorNoCallStack)
     . runLoggerEffect
     . E.runReader appEnv

@@ -25,7 +25,6 @@ import Streaming qualified as S
 import Streaming.Prelude qualified as S
 
 import Effectful qualified as E
-import Effectful.Prometheus (PrometheusEffect)
 import Effectful.Reader.Static qualified as E
 import Monocle.Effects
 
@@ -107,7 +106,7 @@ process logFunc postFunc =
 -- | Run is the main function used by macroscope
 runStream ::
   forall es.
-  [LoggerEffect, RetryEffect, PrometheusEffect, E.Reader CrawlerEnv, MonoClientEffect, TimeEffect] :>> es =>
+  [LoggerEffect, Retry, PrometheusEffect, E.Reader CrawlerEnv, MonoClientEffect, TimeEffect] :>> es =>
   ApiKey ->
   IndexName ->
   CrawlerName ->
@@ -120,7 +119,7 @@ runStream apiKey indexName crawlerName documentStream = do
 
 runStream' ::
   forall es.
-  [E.Reader CrawlerEnv, LoggerEffect, RetryEffect, PrometheusEffect, MonoClientEffect] :>> es =>
+  [E.Reader CrawlerEnv, LoggerEffect, Retry, PrometheusEffect, MonoClientEffect] :>> es =>
   UTCTime ->
   ApiKey ->
   IndexName ->
@@ -159,12 +158,12 @@ runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream =
             postResult <-
               process
                 processLogFunc
-                (addDoc entity)
+                (httpRetry "api/commit/add" . addDoc entity)
                 (getStream oldestAge entity)
             case foldr collectPostFailure [] postResult of
               [] -> do
                 -- Post the commit date
-                res <- commitTimestamp entity
+                res <- httpRetry "api/commit" $ commitTimestamp entity
                 case res of
                   Nothing -> do
                     logInfo_ "Continuing on next entity"
@@ -250,21 +249,15 @@ runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream =
 
 -- | Adapt the API response
 getStreamOldestEntity ::
-  [PrometheusEffect, LoggerEffect, RetryEffect, MonoClientEffect] :>> es =>
+  [PrometheusEffect, LoggerEffect, Retry, MonoClientEffect] :>> es =>
   LText ->
   LText ->
   CrawlerPB.EntityType ->
   Word32 ->
   Eff es (Maybe (UTCTime, Monocle.Entity.Entity))
 getStreamOldestEntity indexName crawlerName entityType offset = do
-  resp <-
-    mCrawlerCommitInfo
-      ( CommitInfoRequest
-          indexName
-          crawlerName
-          (toPBEnum entityType)
-          offset
-      )
+  let commitRequest = CommitInfoRequest indexName crawlerName (toPBEnum entityType) offset
+  resp <- httpRetry "api/commit/info" $ mCrawlerCommitInfo commitRequest
   case resp of
     CommitInfoResponse
       ( Just

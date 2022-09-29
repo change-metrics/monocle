@@ -37,12 +37,11 @@ import Web.RedHatBugzilla.Search qualified as BZS
 
 import Effectful (Dispatch (Static), DispatchOf)
 import Effectful.Dispatch.Static (SideEffects (..), evalStaticRep)
-import Effectful.Prometheus (PrometheusEffect)
 
 -------------------------------------------------------------------------------
 -- BugZilla context
 -------------------------------------------------------------------------------
-type BZEffects es = [BZEffect, LoggerEffect, PrometheusEffect, RetryEffect] :>> es
+type BZEffects es = [BZEffect, LoggerEffect, PrometheusEffect, Retry] :>> es
 
 -- A dummy effect to replace the legacy MonadGerrit.
 -- TODO: re-implement on top of HttpEffect.

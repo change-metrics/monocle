@@ -26,7 +26,7 @@ import Streaming.Prelude qualified as Streaming
 import Test.Tasty
 import Test.Tasty.HUnit
 
-runLentilleM :: MonocleClient -> Eff [E.Reader CrawlerEnv, MonoClientEffect, LoggerEffect, GerritEffect, BZEffect, TimeEffect, RetryEffect, HttpEffect, PrometheusEffect, EnvEffect, Fail, Concurrent, IOE] a -> IO a
+runLentilleM :: MonocleClient -> Eff [E.Reader CrawlerEnv, MonoClientEffect, LoggerEffect, GerritEffect, BZEffect, TimeEffect, HttpEffect, PrometheusEffect, EnvEffect, Fail, Retry, Concurrent, IOE] a -> IO a
 runLentilleM client action = do
   env <- CrawlerEnv client <$> newIORef False
   runEff . Macroscope.runMacroEffects . runLoggerEffect . runMonoClient client . E.runReader env $ action

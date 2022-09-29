@@ -81,7 +81,7 @@ updateIndex index wsRef = E.modifyMVar_ wsRef doUpdateIfNeeded
   refreshIndex :: Eff es ()
   refreshIndex = do
     logInfo "RefreshIndex" ["index" .= Config.getWorkspaceName index]
-    I.ensureIndexSetup
+    runRetry I.ensureIndexSetup
     traverse_ I.initCrawlerMetadata $ Config.crawlers index
 
 checkAuth :: forall a es. ApiEffects es => AuthResult AuthenticatedUser -> (Maybe AuthenticatedUser -> Eff es a) -> Eff es a

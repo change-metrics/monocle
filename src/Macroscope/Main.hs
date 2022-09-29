@@ -282,10 +282,10 @@ groupByClient = grp >>> adapt
   keepOrder = fmap snd . NonEmpty.reverse
 
 -- | MonadMacro is an alias for a bunch of constraints required for the macroscope process
-type MacroEffects es = [GerritEffect, BZEffect, E.Reader CrawlerEnv, MonoClientEffect, HttpEffect, PrometheusEffect, LoggerEffect, TimeEffect, RetryEffect, EnvEffect, Concurrent, Fail] :>> es
+type MacroEffects es = [GerritEffect, BZEffect, E.Reader CrawlerEnv, MonoClientEffect, HttpEffect, PrometheusEffect, LoggerEffect, TimeEffect, EnvEffect, Retry, Concurrent, Fail] :>> es
 
-runMacroEffects :: IOE :> es => Eff (GerritEffect : BZEffect : TimeEffect : RetryEffect : HttpEffect : PrometheusEffect : EnvEffect : Fail : Concurrent : es) a -> Eff es a
-runMacroEffects = runConcurrent . runFailIO . runEnv . runPrometheus . runHttpEffect . runRetry . runTime . runBZ . runGerrit
+runMacroEffects :: IOE :> es => Eff (GerritEffect : BZEffect : TimeEffect : HttpEffect : PrometheusEffect : EnvEffect : Fail : Retry : Concurrent : es) a -> Eff es a
+runMacroEffects = runConcurrent . runRetry . runFailIO . runEnv . runPrometheus . runHttpEffect . runTime . runBZ . runGerrit
 
 -- | 'runCrawler' evaluate a single crawler
 runCrawler :: forall es. MacroEffects es => Crawler es -> Eff es ()
