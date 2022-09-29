@@ -25,17 +25,18 @@ defineByDocumentFile
     }
   |]
 
-transformResponse :: GetRateLimit -> RateLimit
+transformResponse :: GetRateLimit -> Maybe RateLimit
 transformResponse = \case
   GetRateLimit
     ( Just
         (RateLimitRateLimit used remaining (DateTime resetAt'))
       ) -> case parseDateValue $ from resetAt' of
-      Just resetAt -> RateLimit {..}
+      Just resetAt -> Just RateLimit {..}
       Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAt'
+  GetRateLimit Nothing -> Nothing
   respOther -> error ("Invalid response: " <> show respOther)
 
-getRateLimit :: GraphEffects es => GraphClient -> Eff es RateLimit
+getRateLimit :: GraphEffects es => GraphClient -> Eff es (Maybe RateLimit)
 getRateLimit client = do
   transformResponse
     <$> doRequest client mkRateLimitArgs (Just retryCheck) Nothing Nothing
