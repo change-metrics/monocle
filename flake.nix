@@ -1,6 +1,24 @@
+# Note: [Nix Flake Usage]:
+#
+# The flake location can be defined as:
+#   `github:change-metrics/monocle`, or `path:/absolute/path`, or `.`
+#
+# Package output can be accessed using their #name:
+#   nix show-derivation '.#containerMonocle'
+#
+# For non packages, the full qualified name can be used:
+#   nix show derivation '.#devShells."x86_64-linux".ci'
+#
+# Inspect context using nix-tree, for example:
+#   nix run github:utdemir/nix-tree -- --derivation .#devShell."x86_64-linux"
 {
   description = "Monocle";
   nixConfig.bash-prompt = "[nix(monocle)] ";
+
+  nixConfig = {
+    extra-substituters = "https://change-metrics.cachix.org";
+    extra-trusted-public-keys = "change-metrics.cachix.org-1:dCe8jx9vptiF6DCdZ5y2QouvDsxgFRZnbHowhPnS4C0=";
+  };
 
   inputs = {
     nixpkgs.url =
