@@ -152,7 +152,7 @@ run' ApiConfig {..} aplogger = E.runConcurrent $ runLoggerEffect do
   let aOIDC = OIDC {..}
 
   bhEnv <- mkEnv elasticUrl
-  r <- E.runFail $ runElasticEffect bhEnv do
+  r <- runRetry $ E.runFail $ runElasticEffect bhEnv do
     traverse_ (`runEmptyQueryM` I.ensureIndex) workspaces
     runMonoQuery (MonoQueryEnv (QueryConfig conf) (mkQuery [])) I.ensureConfigIndex
 

@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 
 -- | Helper module to define graphql client
 module Lentille.GraphQL (
@@ -18,8 +19,10 @@ module Lentille.GraphQL (
   doRequest,
 
   -- * Some data types
+  LentilleStream,
   GraphEffects,
   GraphResponse,
+  GraphResp,
   RateLimit (..),
   PageInfo (..),
   StreamFetchOptParams (..),
@@ -35,10 +38,10 @@ import Network.URI qualified as URI
 import Streaming.Prelude qualified as S
 
 import Effectful.Concurrent.MVar qualified as E
-import Effectful.Error.Static qualified as E
+import Effectful.Retry
 import Monocle.Effects
 
-type GraphEffects es = [LoggerEffect, HttpEffect, Error LentilleError, TimeEffect, RetryEffect, Concurrent, Fail] :>> es
+type GraphEffects es = [LoggerEffect, HttpEffect, PrometheusEffect, TimeEffect, Retry, Concurrent, Fail] :>> es
 
 type GraphResponse a = (PageInfo, Maybe RateLimit, [Text], a)
 
@@ -83,7 +86,7 @@ type DoFetch es = LBS.ByteString -> WriterT [RequestLog] (Eff es) LBS.ByteString
 
 -- | The morpheus-graphql-client fetch callback,
 -- doc: https://hackage.haskell.org/package/morpheus-graphql-client-0.17.0/docs/Data-Morpheus-Client.html
-doGraphRequest :: [HttpEffect, LoggerEffect, Fail] :>> es => GraphClient -> DoFetch es
+doGraphRequest :: [HttpEffect, PrometheusEffect, LoggerEffect, Retry] :>> es => GraphClient -> DoFetch es
 doGraphRequest GraphClient {..} jsonBody = do
   -- Prepare the request
   let initRequest = HTTP.parseRequest_ (from url)
@@ -99,7 +102,7 @@ doGraphRequest GraphClient {..} jsonBody = do
           }
 
   -- Do the request (and retry on HttpException raised by the http-client)
-  Right response <- lift (httpRequest request)
+  response <- lift (httpRetry url $ httpRequest request)
 
   -- Record the event
   let responseBody = HTTP.responseBody response
@@ -124,6 +127,8 @@ data RateLimit = RateLimit {used :: Int, remaining :: Int, resetAt :: UTCTime}
 instance From RateLimit Text where
   from RateLimit {..} = "remains:" <> show remaining <> ", reset at: " <> show resetAt
 
+type GraphResp a = Either GraphQLError a
+
 -- | wrapper around fetchWithLog than can optionaly handle fetch retries
 -- based on the returned data inspection via a provided function (see RetryCheck).
 -- In case of retry the depth parameter of mkArgs is decreased (see adaptDepth)
@@ -132,27 +137,29 @@ doRequest ::
   (GraphEffects es, Fetch a, FromJSON a, Show a) =>
   GraphClient ->
   (Maybe Int -> Maybe Text -> Args a) ->
-  Maybe (Handler (Eff es) Bool) ->
+  (GraphResp a -> Eff es RetryAction) ->
   Maybe Int ->
   Maybe PageInfo ->
-  Eff es a
-doRequest client mkArgs retryCheckM depthM pageInfoM = retryCheck runFetch
+  Eff es (GraphResp a)
+doRequest client mkArgs retryCheck depthM pageInfoM =
+  retryingDynamic policy (const retryCheck) $ \rs -> do
+    when (rs.rsIterNumber > 0) $
+      logWarn "Faulty response" ["num" .= rs.rsIterNumber]
+    runFetch rs.rsIterNumber
  where
-  retryCheck action = case retryCheckM of
-    Just rc -> constantRetry retryMessage rc action
-    Nothing -> runFetch 0
-  -- TODO: Take the retryMessage as a doRequest argument
-  retryMessage = "Faulty response - retrying request"
-  runFetch :: Int -> Eff es a
+  delay = 1_100_000 -- 1.1 seconds
+  policy = constantDelay delay <> limitRetries 7
+
+  runFetch :: Int -> Eff es (GraphResp a)
   runFetch retried = do
     resp <-
       fetchWithLog
         (doGraphRequest client)
         (mkArgs aDepthM $ (Just . fromMaybe (error "Missing endCursor from page info") . endCursor) =<< pageInfoM)
-    case resp of
-      (Right x, _) -> pure x
+    pure $ case resp of
+      (Right x, _) -> Right x
       -- Throw an exception for the retryCheckM
-      (Left e, [req]) -> E.throwError $ GraphQLError (show e, req)
+      (Left e, [req]) -> Left $ GraphQLError (show e) req
       _ -> error $ "Unknown response: " <> show resp
    where
     aDepthM = decreaseValue retried <$> depthM
@@ -167,17 +174,17 @@ decreaseValue retried depth =
   let decValue = truncate @Float . (* (fromIntegral retried * 0.3)) . fromIntegral $ depth
    in max 1 $ depth - decValue
 
-data StreamFetchOptParams m a = StreamFetchOptParams
-  { fpRetryCheck :: Maybe (Handler m Bool)
-  -- ^ an optional exception handler
+data StreamFetchOptParams es a = StreamFetchOptParams
+  { fpRetryCheck :: GraphResp a -> Eff es RetryAction
+  -- ^ Check if the result action needs to be retried
   , fpDepth :: Maybe Int
   -- ^ an optional starting value for the depth
-  , fpGetRatelimit :: Maybe (GraphClient -> m (Maybe RateLimit))
+  , fpGetRatelimit :: Maybe (GraphClient -> Eff es (GraphResp (Maybe RateLimit)))
   -- ^ an optional action to get a RateLimit record
   }
 
 defaultStreamFetchOptParams :: StreamFetchOptParams m a
-defaultStreamFetchOptParams = StreamFetchOptParams Nothing Nothing Nothing
+defaultStreamFetchOptParams = StreamFetchOptParams (const $ pure DontRetry) Nothing Nothing
 
 streamFetch ::
   forall es a b.
@@ -185,11 +192,11 @@ streamFetch ::
   GraphClient ->
   -- | query Args constructor, the function takes a Maybe depth and a Maybe cursor
   (Maybe Int -> Maybe Text -> Args a) ->
-  StreamFetchOptParams (Eff es) a ->
+  StreamFetchOptParams es a ->
   -- | query result adapter
   (a -> (PageInfo, Maybe RateLimit, [Text], [b])) ->
   LentilleStream es b
-streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformResponse = go Nothing 0
+streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformResponse = startFetch
  where
   holdOnIfNeeded :: Maybe RateLimit -> Eff es ()
   holdOnIfNeeded = mapM_ toDelay
@@ -202,9 +209,12 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
 
   request pageInfoM storedRateLimitM = do
     holdOnIfNeeded storedRateLimitM
-    resp <- doRequest client mkArgs fpRetryCheck fpDepth pageInfoM
-    let (pageInfo, rateLimitM, decodingErrors, xs) = transformResponse resp
-    pure (rateLimitM, (pageInfo, rateLimitM, decodingErrors, xs))
+    respE <- doRequest client mkArgs fpRetryCheck fpDepth pageInfoM
+    pure $ case respE of
+      Left err -> Left err
+      Right resp ->
+        let (pageInfo, rateLimitM, decodingErrors, xs) = transformResponse resp
+         in Right (rateLimitM, (pageInfo, rateLimitM, decodingErrors, xs))
 
   logStep pageInfo rateLimitM xs totalFetched = do
     lift . logInfo "Fetched from current page" $
@@ -212,33 +222,49 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
 
   retryDelay = 1_100_000
 
+  startFetch = do
+    --- Perform a pre GraphQL request to gather rateLimit
+    fpRespE <- case fpGetRatelimit of
+      Just getRateLimit -> lift $
+        E.modifyMVar rateLimitMVar $
+          const do
+            rlE <- getRateLimit client
+            case rlE of
+              Left err -> do
+                logWarn_ "Could not fetch the current rate limit"
+                pure (Nothing, Just err)
+              Right rl -> pure (rl, Nothing)
+      Nothing -> pure Nothing
+
+    case fpRespE of
+      Just err -> S.yield (Left $ GraphError err)
+      Nothing -> go Nothing 0
+
   go pageInfoM totalFetched = do
     --- Start by waiting for a few moment if we request a new page
     when (isJust pageInfoM) $ lift $ mThreadDelay retryDelay
 
-    --- Perform a pre GraphQL request to gather rateLimit
-    case fpGetRatelimit of
-      Just getRateLimit -> lift $
-        E.modifyMVar rateLimitMVar $
-          const do
-            rl <- getRateLimit client
-            -- Wait few moment to delay the next call
-            mThreadDelay retryDelay
-            pure (rl, ())
-      Nothing -> pure ()
-
     -- Perform the GraphQL request
-    (pageInfo, rateLimitM, decodingErrors, xs) <-
-      lift $ E.modifyMVar rateLimitMVar $ request pageInfoM
+    respE <- lift $ E.modifyMVar rateLimitMVar $ \rl -> do
+      resE <- request pageInfoM rl
+      pure $ case resE of
+        Left err -> (rl, Left err)
+        Right (newRL, x) -> (newRL, Right x)
 
-    -- Log crawling status
-    logStep pageInfo rateLimitM xs totalFetched
+    -- Handle the response
+    case respE of
+      Left e ->
+        -- Yield the error and stop the stream
+        S.yield (Left $ GraphError e)
+      Right (pageInfo, rateLimitM, decodingErrors, xs) -> do
+        -- Log crawling status
+        logStep pageInfo rateLimitM xs totalFetched
 
-    -- Yield the results
-    S.each xs
+        case decodingErrors of
+          _ : _ -> S.yield (Left $ DecodeError decodingErrors)
+          [] -> do
+            -- Yield the results
+            S.each (Right <$> xs)
 
-    -- Abort the stream when there are errors
-    unless (null decodingErrors) (stopLentille $ DecodeError decodingErrors)
-
-    -- Call recursively when response has a next page
-    when (hasNextPage pageInfo) $ go (Just pageInfo) (totalFetched + length xs)
+            -- Call recursively when response has a next page
+            when (hasNextPage pageInfo) $ go (Just pageInfo) (totalFetched + length xs)

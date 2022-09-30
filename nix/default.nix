@@ -22,6 +22,14 @@ let
   haskellExtend = hpFinal: hpPrev: {
     monocle = hpPrev.callCabal2nix "monocle" self { };
 
+    retry-effectful = hpPrev.callCabal2nix "retry-effectful"
+      (pkgs.fetchFromGitHub {
+        owner = "change-metrics";
+        repo = "retry-effectful";
+        rev = "5a9e4751a916a0d1b160f2390f286d8c82247ec3";
+        sha256 = "sha256-CIuV3qsJ/xy24BVGrMYPKjIjK8dyA76dG3Wpi9vVriA=";
+      }) { };
+
     # data-diverse is presently marked as broken because the test don't pass.
     data-diverse = pkgs.haskell.lib.dontCheck
       (pkgs.haskell.lib.overrideCabal hpPrev.data-diverse { broken = false; });

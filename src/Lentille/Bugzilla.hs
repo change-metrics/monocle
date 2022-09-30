@@ -27,6 +27,7 @@ import Data.Aeson
 import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Lentille
+import Monocle.Effects (httpRetry)
 import Monocle.Prelude
 import Monocle.Protob.Search (TaskData (..))
 import Streaming.Prelude qualified as S
@@ -37,12 +38,11 @@ import Web.RedHatBugzilla.Search qualified as BZS
 
 import Effectful (Dispatch (Static), DispatchOf)
 import Effectful.Dispatch.Static (SideEffects (..), evalStaticRep)
-import Effectful.Prometheus (PrometheusEffect)
 
 -------------------------------------------------------------------------------
 -- BugZilla context
 -------------------------------------------------------------------------------
-type BZEffects es = [BZEffect, LoggerEffect, PrometheusEffect, RetryEffect] :>> es
+type BZEffects es = [BZEffect, LoggerEffect, PrometheusEffect, Retry] :>> es
 
 -- A dummy effect to replace the legacy MonadGerrit.
 -- TODO: re-implement on top of HttpEffect.
@@ -180,7 +180,7 @@ toTaskData bz = map mkTaskData ebugs
       "rhbz#"
 
 -- | Stream task data from a starting date by incrementing the offset until the result count is less than the limit
-getBZData :: BZEffects es => BugzillaSession -> UTCTime -> Text -> Stream (Of TaskData) (Eff es) ()
+getBZData :: BZEffects es => BugzillaSession -> UTCTime -> Text -> LentilleStream es TaskData
 getBZData bzSession sinceTS productName = go 0
  where
   limit = 100
@@ -192,7 +192,7 @@ getBZData bzSession sinceTS productName = go 0
       logInfo "Getting bugs" ["since" .= sinceTS, "offset" .= offset, "limit" .= limit]
       httpRetry "https://bugzilla.redhat.com/show_bug.cgi" . doGet $ offset
     -- Create a flat stream of tracker data
-    S.each (concatMap toTaskData bugs)
+    S.each (Right <$> concatMap toTaskData bugs)
     -- Keep on retrieving the rest
     unless (length bugs < limit) (go (offset + length bugs))
 

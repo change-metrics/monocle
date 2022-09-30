@@ -22,10 +22,14 @@ module Monocle.Prelude (
   module Monocle.Logging,
 
   -- * effectful
+  Effectful.Retry.Retry,
+  Effectful.Retry.runRetry,
+  Effectful.Prometheus.PrometheusEffect,
   Effectful.Eff,
   Effectful.IOE,
   Effectful.Error.Static.Error,
   Effectful.Error.Static.runErrorNoCallStack,
+  Effectful.Error.Static.throwError,
   runErrorIO,
   Effectful.Concurrent.Concurrent,
   Effectful.Concurrent.runConcurrent,
@@ -223,6 +227,8 @@ import Effectful.Concurrent qualified
 import Effectful.Dispatch.Static qualified
 import Effectful.Error.Static qualified
 import Effectful.Fail qualified
+import Effectful.Prometheus qualified
+import Effectful.Retry (Retry, runRetry)
 import GHC.Float (double2Float)
 import GHC.Generics (C, D, K1, M1, R, Rep, S, Selector, U1, selName, (:*:), (:+:))
 import GHC.Stack

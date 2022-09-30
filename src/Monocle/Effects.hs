@@ -62,12 +62,9 @@
 -- runFail :: Eff (Fail : es) a => Eff es (Either String a)
 module Monocle.Effects where
 
-import Control.Retry (RetryStatus (..))
-import Control.Retry qualified as Retry
-
 import Monocle.Prelude hiding (Reader, ask, local)
 
-import Control.Exception (finally, throwIO, try)
+import Control.Exception (finally)
 import Monocle.Client qualified
 import Monocle.Config qualified
 import Network.HTTP.Client (HttpException (..))
@@ -96,8 +93,6 @@ import Json.Extras qualified as Json
 
 -- for MonoQuery
 
-import Effectful.Prometheus (PrometheusEffect)
-import Monocle.Class (RetryEffect, httpRetry)
 import Monocle.Env (AppEnv)
 import Monocle.Env qualified
 import Monocle.Search.Query qualified as SearchQuery
@@ -105,7 +100,9 @@ import Monocle.Search.Syntax (Expr)
 
 import Effectful.Error.Static qualified as E
 import Effectful.Fail qualified as E
+import Effectful.Prometheus
 import Effectful.Reader.Static qualified as E
+import Effectful.Retry as Retry
 import Monocle.Client (MonocleClient)
 import Monocle.Client.Api (crawlerAddDoc, crawlerCommit, crawlerCommitInfo)
 
@@ -210,20 +207,20 @@ newtype instance StaticRep MonoClientEffect = MonoClientEffect MonoClientEnv
 runMonoClient :: IOE :> es => MonocleClient -> Eff (MonoClientEffect : es) a -> Eff es a
 runMonoClient client = evalStaticRep (MonoClientEffect client)
 
-mCrawlerCommitInfo :: [PrometheusEffect, LoggerEffect, MonoClientEffect, RetryEffect] :>> es => CrawlerPB.CommitInfoRequest -> Eff es CrawlerPB.CommitInfoResponse
+mCrawlerCommitInfo :: MonoClientEffect :> es => CrawlerPB.CommitInfoRequest -> Eff es CrawlerPB.CommitInfoResponse
 mCrawlerCommitInfo req = do
   MonoClientEffect env <- getStaticRep
-  httpRetry "api/commit/info" $ unsafeEff_ $ crawlerCommitInfo env req
+  unsafeEff_ $ crawlerCommitInfo env req
 
-mCrawlerCommit :: [PrometheusEffect, LoggerEffect, MonoClientEffect, RetryEffect] :>> es => CrawlerPB.CommitRequest -> Eff es CrawlerPB.CommitResponse
+mCrawlerCommit :: MonoClientEffect :> es => CrawlerPB.CommitRequest -> Eff es CrawlerPB.CommitResponse
 mCrawlerCommit req = do
   MonoClientEffect env <- getStaticRep
-  httpRetry "api/commit" $ unsafeEff_ $ crawlerCommit env req
+  unsafeEff_ $ crawlerCommit env req
 
-mCrawlerAddDoc :: [PrometheusEffect, LoggerEffect, MonoClientEffect, RetryEffect] :>> es => CrawlerPB.AddDocRequest -> Eff es CrawlerPB.AddDocResponse
+mCrawlerAddDoc :: MonoClientEffect :> es => CrawlerPB.AddDocRequest -> Eff es CrawlerPB.AddDocResponse
 mCrawlerAddDoc req = do
   MonoClientEffect env <- getStaticRep
-  httpRetry "api/commit/add" $ unsafeEff_ $ crawlerAddDoc env req
+  unsafeEff_ $ crawlerAddDoc env req
 
 ------------------------------------------------------------------
 --
@@ -350,7 +347,7 @@ getQueryBound = do
 ------------------------------------------------------------------
 --
 
--- | Elastic Effect to access elastic backend. TODO: make it use the HttpEffect retry capability.
+-- | Elastic Effect to access elastic backend.
 
 ------------------------------------------------------------------
 type ElasticEnv = BH.BHEnv
@@ -402,7 +399,8 @@ esDeleteByQuery iname q = do
 esCreateIndex :: ElasticEffect :> es => BH.IndexSettings -> BH.IndexName -> Eff es ()
 esCreateIndex is iname = do
   ElasticEffect env <- getStaticRep
-  unsafeEff_ $ void $ Retry.recoverAll policy (const $ BH.runBH env $ BH.createIndex is iname)
+  -- TODO: check for error
+  unsafeEff_ $ void $ BH.runBH env $ BH.createIndex is iname
 
 esIndexDocument :: ToJSON body => ElasticEffect :> es => BH.IndexName -> BH.IndexDocumentSettings -> body -> BH.DocId -> Eff es (HTTP.Response LByteString)
 esIndexDocument indexName docSettings body docId = do
@@ -469,7 +467,7 @@ esSearchLegacy indexName search = do
 ------------------------------------------------------------------
 --
 
--- | HTTP Effect that retries on exception
+-- | HTTP Effect
 
 ------------------------------------------------------------------
 type HttpEnv = HTTP.Manager
@@ -484,46 +482,45 @@ runHttpEffect action = do
   ctx <- liftIO Monocle.Client.mkManager
   evalStaticRep (HttpEffect ctx) action
 
--- | 'httpRequest' catches http exception and retries the requests.
+-- | 'httpRequest' catches http exceptions
 httpRequest ::
-  [LoggerEffect, HttpEffect] :>> es =>
+  HttpEffect :> es =>
   HTTP.Request ->
-  Eff es (Either HTTP.HttpExceptionContent (HTTP.Response LByteString))
-httpRequest req = do
+  Eff es (HTTP.Response LByteString)
+httpRequest request = do
   HttpEffect manager <- getStaticRep
-  respE <- unsafeEff $ \env ->
-    try $ Retry.recovering policy [httpHandler env] (const $ HTTP.httpLbs req manager)
-  case respE of
-    Right resp -> pure (Right resp)
-    Left err -> case err of
-      HttpExceptionRequest _ ctx -> pure (Left ctx)
-      _ -> unsafeEff_ (throwIO err)
+  unsafeEff_ $ HTTP.httpLbs request manager
 
-backoff :: Int
-backoff = 500000 -- 500ms
-
-policy :: Retry.RetryPolicyM IO
-policy = Retry.exponentialBackoff backoff <> Retry.limitRetries retryLimit
+-------------------------------------------------------------------------------
+-- A network retry system
 
 retryLimit :: Int
 retryLimit = 7
 
-httpHandler :: LoggerEffect :> es => EffStatic.Env es -> RetryStatus -> Handler IO Bool
-httpHandler env (RetryStatus num _ _) = Handler $ \case
-  HttpExceptionRequest req ctx -> do
-    let url = decodeUtf8 @Text $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
-        arg = decodeUtf8 $ HTTP.queryString req
-        loc = if num == 0 then url <> arg else url
-    flip unEff env $
-      logInfo
-        "network error"
-        [ "count" .= num
-        , "limit" .= retryLimit
-        , "loc" .= loc
-        , "error" .= show @Text ctx
-        ]
-    pure True
-  InvalidUrlException _ _ -> pure False
+-- | Retry HTTP network action, doubling backoff each time
+httpRetry :: (HasCallStack, [PrometheusEffect, Retry, LoggerEffect] :>> es) => Text -> Eff es a -> Eff es a
+httpRetry urlLabel baseAction = Retry.recovering policy [httpHandler] (const action)
+ where
+  modName = case getCallStack callStack of
+    ((_, srcLoc) : _) -> from (srcLocModule srcLoc)
+    _ -> "N/C"
+  label = (modName, urlLabel)
+
+  backoff = 500000 -- 500ms
+  policy = Retry.exponentialBackoff backoff <> Retry.limitRetries retryLimit
+  action = do
+    res <- baseAction
+    promIncrCounter httpRequestCounter label
+    pure res
+  httpHandler (RetryStatus num _ _) = Handler $ \case
+    HttpExceptionRequest req ctx -> do
+      let url = decodeUtf8 @Text $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
+          arg = decodeUtf8 $ HTTP.queryString req
+          loc = if num == 0 then url <> arg else url
+      logWarn "network error" ["count" .= num, "limit" .= retryLimit, "loc" .= loc, "failed" .= show @Text ctx]
+      promIncrCounter httpFailureCounter label
+      pure True
+    InvalidUrlException _ _ -> pure False
 
 ------------------------------------------------------------------
 --

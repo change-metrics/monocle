@@ -59,7 +59,7 @@ data InfoCrawler = InfoCrawler
   deriving (Eq, Show)
 
 -- | A crawler is defined from the config, using a tuple: (crawler, list of lentille)
-type Crawler es = (InfoCrawler, [DocumentStream (Error LentilleError : es)])
+type Crawler es = (InfoCrawler, [DocumentStream es])
 
 -- | Utility function to create a flat list of crawler from the whole configuration
 getCrawlers :: [Config.Index] -> [InfoCrawler]
@@ -282,10 +282,10 @@ groupByClient = grp >>> adapt
   keepOrder = fmap snd . NonEmpty.reverse
 
 -- | MonadMacro is an alias for a bunch of constraints required for the macroscope process
-type MacroEffects es = [GerritEffect, BZEffect, E.Reader CrawlerEnv, MonoClientEffect, HttpEffect, PrometheusEffect, LoggerEffect, TimeEffect, RetryEffect, EnvEffect, Concurrent, Fail] :>> es
+type MacroEffects es = [GerritEffect, BZEffect, E.Reader CrawlerEnv, MonoClientEffect, HttpEffect, PrometheusEffect, LoggerEffect, TimeEffect, EnvEffect, Retry, Concurrent, Fail] :>> es
 
-runMacroEffects :: IOE :> es => Eff (GerritEffect : BZEffect : TimeEffect : RetryEffect : HttpEffect : PrometheusEffect : EnvEffect : Fail : Concurrent : es) a -> Eff es a
-runMacroEffects = runConcurrent . runFailIO . runEnv . runPrometheus . runHttpEffect . runRetry . runTime . runBZ . runGerrit
+runMacroEffects :: IOE :> es => Eff (GerritEffect : BZEffect : TimeEffect : HttpEffect : PrometheusEffect : EnvEffect : Fail : Retry : Concurrent : es) a -> Eff es a
+runMacroEffects = runConcurrent . runRetry . runFailIO . runEnv . runPrometheus . runHttpEffect . runTime . runBZ . runGerrit
 
 -- | 'runCrawler' evaluate a single crawler
 runCrawler :: forall es. MacroEffects es => Crawler es -> Eff es ()
@@ -361,29 +361,29 @@ getCrawler inf@(InfoCrawler _ _ crawler idents) = getCompose $ fmap addInfos (Co
   getIdentByAliasCB :: Text -> Maybe Text
   getIdentByAliasCB = flip Config.getIdentByAliasFromIdents idents
 
-  glMRCrawler :: GraphClient -> (Text -> Maybe Text) -> DocumentStream (Error LentilleError : es)
+  glMRCrawler :: GraphClient -> (Text -> Maybe Text) -> DocumentStream es
   glMRCrawler glClient cb = Changes $ streamMergeRequests glClient cb
 
-  glOrgCrawler :: GraphClient -> DocumentStream (Error LentilleError : es)
+  glOrgCrawler :: GraphClient -> DocumentStream es
   glOrgCrawler glClient = Projects $ streamGroupProjects glClient
 
-  bzCrawler :: BugzillaSession -> DocumentStream (Error LentilleError : es)
+  bzCrawler :: BugzillaSession -> DocumentStream es
   bzCrawler bzSession = TaskDatas $ getBZData bzSession
 
-  ghIssuesCrawler :: GraphClient -> DocumentStream (Error LentilleError : es)
+  ghIssuesCrawler :: GraphClient -> DocumentStream es
   ghIssuesCrawler ghClient = TaskDatas $ streamLinkedIssue ghClient
 
-  ghOrgCrawler :: GraphClient -> DocumentStream (Error LentilleError : es)
+  ghOrgCrawler :: GraphClient -> DocumentStream es
   ghOrgCrawler ghClient = Projects $ streamOrganizationProjects ghClient
 
-  ghPRCrawler :: GraphClient -> (Text -> Maybe Text) -> DocumentStream (Error LentilleError : es)
+  ghPRCrawler :: GraphClient -> (Text -> Maybe Text) -> DocumentStream es
   ghPRCrawler glClient cb = Changes $ streamPullRequests glClient cb
 
   gerritRegexProjects :: [Text] -> [Text]
   gerritRegexProjects = filter (T.isPrefixOf "^")
 
-  gerritREProjectsCrawler :: GerritCrawler.GerritEnv -> DocumentStream (Error LentilleError : es)
+  gerritREProjectsCrawler :: GerritCrawler.GerritEnv -> DocumentStream es
   gerritREProjectsCrawler gerritEnv = Projects $ GerritCrawler.getProjectsStream gerritEnv
 
-  gerritChangesCrawler :: GerritCrawler.GerritEnv -> DocumentStream (Error LentilleError : es)
+  gerritChangesCrawler :: GerritCrawler.GerritEnv -> DocumentStream es
   gerritChangesCrawler gerritEnv = Changes $ GerritCrawler.getChangesStream gerritEnv

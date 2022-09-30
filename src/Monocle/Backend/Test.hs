@@ -104,7 +104,7 @@ withTenantConfig ws action = do
     withEffToIO $ \runInIO ->
       bracket_ (runInIO create) (runInIO delete) (runInIO action)
  where
-  create = E.runFailIO I.ensureIndex
+  create = runRetry $ E.runFailIO I.ensureIndex
   delete = E.runFailIO I.removeIndex
 
 checkEChangeField :: TestEffects es => (Show a, Eq a) => BH.DocId -> (EChange -> a) -> a -> Eff es ()
@@ -342,7 +342,7 @@ testTaskDataCrawlerMetadata = withTenant doTest
     fakeDateB = [utctime|2021-05-31 10:00:00|]
 
 testEnsureConfig :: Assertion
-testEnsureConfig = withTenantConfig tenantConfig $ localQueryTarget target $ E.runFailIO do
+testEnsureConfig = withTenantConfig tenantConfig $ localQueryTarget target $ runRetry $ E.runFailIO do
   I.ensureIndexSetup
   I.ensureConfigIndex
   (currentVersion, _) <- I.getConfigVersion

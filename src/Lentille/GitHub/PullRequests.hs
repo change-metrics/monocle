@@ -198,7 +198,7 @@ streamPullRequests client cb untilDate repoFullname =
   repo = Data.Text.takeWhileEnd (/= '/') repoFullname
   mkArgs = GetProjectPullRequestsArgs org repo
   optParams =
-    let fpRetryCheck = Just retryCheck
+    let fpRetryCheck = retryCheck
         fpDepth = Just defaultDepthCount
         fpGetRatelimit = Just getRateLimit
      in StreamFetchOptParams {..}
