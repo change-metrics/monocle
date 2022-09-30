@@ -66,7 +66,7 @@ transformResponse result = do
   getRepos :: [Maybe OrganizationRepositoriesNodesRepository] -> [Project]
   getRepos r = Project . from . nameWithOwner <$> catMaybes r
 
-streamOrganizationProjects :: GraphEffects es => GraphClient -> Text -> Stream (Of Project) (Eff es) ()
+streamOrganizationProjects :: GraphEffects es => GraphClient -> Text -> LentilleStream es Project
 streamOrganizationProjects client login =
   streamFetch client mkArgs optParams transformResponse
  where

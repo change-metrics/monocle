@@ -1,5 +1,4 @@
--- TEMP, to remove when org and task data are migrated to this new system
-{-# OPTIONS_GHC -Wno-unused-top-binds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 -- |
 -- Copyright: (c) 2021 Monocle authors
@@ -73,10 +72,12 @@ data DocumentType
   = DTProject Project
   | DTChanges (Change, [ChangeEvent])
   | DTTaskData TaskData
+  deriving (Generic, ToJSON)
 
 data ProcessResult = AddOk | AddError Text deriving stock (Show)
 
-type OldestEntity = CommitInfoResponse_OldestEntity
+-- | A stream error contains the first Left, and the rest of the stream
+type StreamError es = (LentilleError, LentilleStream es DocumentType)
 
 -- | 'process' read the stream of document and post to the monocle API
 process ::
@@ -103,43 +104,54 @@ process logFunc postFunc =
       AddDocResponse Nothing -> AddOk
       AddDocResponse (Just err) -> AddError (show err)
 
--- | Run is the main function used by macroscope
+-- | 'runStream' is the main function used by macroscope
 runStream ::
   forall es.
   [LoggerEffect, Retry, PrometheusEffect, E.Reader CrawlerEnv, MonoClientEffect, TimeEffect] :>> es =>
   ApiKey ->
   IndexName ->
   CrawlerName ->
-  DocumentStream (Error LentilleError : es) ->
+  DocumentStream es ->
   Eff es ()
 runStream apiKey indexName crawlerName documentStream = do
   startTime <- mGetCurrentTime
   withContext ("index" .= indexName <> "crawler" .= crawlerName <> "stream" .= streamName documentStream) do
-    runStream' startTime apiKey indexName crawlerName documentStream
+    go startTime 0
+ where
+  go :: UTCTime -> Word32 -> Eff es ()
+  go startTime offset =
+    unlessStopped do
+      res <-
+        runErrorNoCallStack do
+          runStreamError startTime apiKey indexName crawlerName documentStream offset
+      case res of
+        Right () -> pure ()
+        Left (x, xs) -> do
+          logWarn "Error occured when consuming the document stream" ["err" .= x]
+          S.toList_ xs >>= \case
+            [] -> pure ()
+            rest -> logWarn "Left over documents found after error" ["items" .= rest]
 
-runStream' ::
+          -- TODO: explains why TDStream don't support offset?
+          unless (isTDStream documentStream) do
+            -- Try the next entity by incrementing the offset
+            go startTime (offset + 1)
+
+-- | 'runStreamError' is the stream processor which throws an error to interupt the stream
+-- when it contains a Left.
+runStreamError ::
   forall es.
-  [E.Reader CrawlerEnv, LoggerEffect, Retry, PrometheusEffect, MonoClientEffect] :>> es =>
+  [LoggerEffect, Retry, PrometheusEffect, E.Reader CrawlerEnv, MonoClientEffect] :>> es =>
   UTCTime ->
   ApiKey ->
   IndexName ->
   CrawlerName ->
-  DocumentStream (Error LentilleError : es) ->
-  Eff es ()
-runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream = drainEntities (0 :: Word32)
+  DocumentStream es ->
+  Word32 ->
+  Eff (Error (StreamError es) : es) ()
+runStreamError startTime apiKey indexName (CrawlerName crawlerName) documentStream offset = go
  where
-  drainEntities :: Word32 -> Eff es ()
-  drainEntities offset =
-    unlessStopped do
-      -- TODO: simplify stream error handling by using a `Stream (Of (Either Error a))`
-      -- to avoid using exceptions.
-      res <- runErrorNoCallStack (safeDrainEntities offset)
-      case res of
-        Right () -> pure ()
-        Left e -> handleStreamError offset e
-
-  safeDrainEntities :: Word32 -> Eff (Error LentilleError : es) ()
-  safeDrainEntities offset = do
+  go = do
     logInfo "Looking for oldest entity" ["offset" .= offset]
 
     -- Query the monocle api for the oldest entity to be updated.
@@ -150,35 +162,29 @@ runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream =
         | -- add a 1 second delta to avoid Hysteresis
           addUTCTime 1 oldestAge >= startTime ->
             logInfo "Crawling entities completed" ["entity" .= entity, "age" .= oldestAge]
-        | otherwise -> do
-            let processLogFunc c = logInfo "Posting documents" ["count" .= c]
-            logInfo "Processing" ["entity" .= entity, "age" .= oldestAge]
+        | otherwise -> goStream oldestAge entity
 
-            -- Run the document stream for that entity
-            postResult <-
-              process
-                processLogFunc
-                (httpRetry "api/commit/add" . addDoc entity)
-                (getStream oldestAge entity)
-            case foldr collectPostFailure [] postResult of
-              [] -> do
-                -- Post the commit date
-                res <- httpRetry "api/commit" $ commitTimestamp entity
-                case res of
-                  Nothing -> do
-                    logInfo_ "Continuing on next entity"
-                    -- Note: to call the error handler (drainEntities Eff es) from (Error : es) we need
-                    -- to Lift it with the error effect using 'raise'.
-                    E.raise (drainEntities offset)
-                  Just (err :: Text) -> do
-                    logWarn "Commit date failed" ["err" .= err]
-              xs -> logWarn "Postt documents tailed" ["errors" .= xs]
+  goStream oldestAge entity = do
+    logInfo "Processing" ["entity" .= entity, "age" .= oldestAge]
 
-  handleStreamError :: Word32 -> LentilleError -> Eff es ()
-  handleStreamError offset err = do
-    logWarn "Error occured when consuming the document stream" ["err" .= show @Text err]
-    -- TODO: log a structured error on filesystem or audit index in elastic
-    unless (isTDStream documentStream) $ drainEntities (offset + 1)
+    -- Run the document stream for that entity
+    postResult <-
+      process
+        (\c -> logInfo "Posting documents" ["count" .= c])
+        (httpRetry "api/commit/add" . mCrawlerAddDoc . mkRequest entity)
+        (eitherStreamToError $ getStream oldestAge entity)
+
+    case foldr collectPostFailure [] postResult of
+      xs@(_ : _) -> logWarn "Post documents failed" ["errors" .= xs]
+      [] -> do
+        -- Post the commit date
+        res <- httpRetry "api/commit" $ commitTimestamp entity
+        case res of
+          Just (err :: Text) -> do
+            logWarn "Commit date failed" ["err" .= err]
+          Nothing -> do
+            logInfo_ "Continuing on next entity"
+            go
 
   collectPostFailure :: ProcessResult -> [Text] -> [Text]
   collectPostFailure res acc = case res of
@@ -189,20 +195,17 @@ runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream =
   getStream oldestAge entity = case documentStream of
     Changes s ->
       let project = extractEntityValue _Project
-       in S.map DTChanges (s oldestAge project)
+       in S.map (fmap DTChanges) (s oldestAge project)
     Projects s ->
       let organization = extractEntityValue _Organization
-       in S.map DTProject (s organization)
+       in S.map (fmap DTProject) (s organization)
     TaskDatas s ->
       let td = extractEntityValue _TaskDataEntity
-       in S.map DTTaskData (s oldestAge td)
+       in S.map (fmap DTTaskData) (s oldestAge td)
    where
     extractEntityValue prism =
       fromMaybe (error $ "Entity is not the right shape: " <> show entity) $
         preview prism entity
-
-  addDoc :: Entity -> [DocumentType] -> Eff (Error LentilleError : es) AddDocResponse
-  addDoc entity xs = mCrawlerAddDoc $ mkRequest entity xs
 
   -- 'mkRequest' creates the 'AddDocRequests' for a given oldest entity and a list of documenttype
   -- this is used by the processBatch function.
@@ -212,6 +215,9 @@ runStream' startTime apiKey indexName (CrawlerName crawlerName) documentStream =
         addDocRequestCrawler = from crawlerName
         addDocRequestApikey = apiKey
         addDocRequestEntity = Just (from entity)
+        -- TODO: add LentilleError here so that we don't have to throwError on Left
+        -- instead we should send the problematic value to the API so that it can be reported
+        -- and retried later when the code is fixed
         addDocRequestChanges = V.fromList $ mapMaybe getChanges xs
         addDocRequestEvents = V.fromList $ concat $ mapMaybe getEvents xs
         addDocRequestProjects = V.fromList $ mapMaybe getProject' xs
@@ -273,3 +279,21 @@ getStreamOldestEntity indexName crawlerName entityType offset = do
             )
         ) -> pure Nothing
     _ -> error $ "Could not get initial timestamp: " <> show resp
+
+-- | Remove the left part of the stream and throw an error when they occurs.
+-- The error contains the first left encountered, and the rest of the stream.
+eitherStreamToError ::
+  Stream (Of (Either err a)) (Eff es) () ->
+  Stream (Of a) (Eff (Error (err, Stream (Of (Either err a)) (Eff es) ()) : es)) ()
+eitherStreamToError stream = do
+  nextE <- hoist E.raise (lift (S.next stream))
+  case nextE of
+    -- The stream is over, stop here
+    Left () -> pure ()
+    Right (x, xs) -> do
+      case x of
+        -- TODO: should we continue after the first error?
+        Left e -> lift (throwError (e, xs))
+        Right v -> do
+          S.yield v
+          eitherStreamToError xs

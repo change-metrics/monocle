@@ -19,6 +19,7 @@ module Lentille.GraphQL (
   doRequest,
 
   -- * Some data types
+  LentilleStream,
   GraphEffects,
   GraphResponse,
   GraphResp,
@@ -37,11 +38,10 @@ import Network.URI qualified as URI
 import Streaming.Prelude qualified as S
 
 import Effectful.Concurrent.MVar qualified as E
-import Effectful.Error.Static qualified as E
 import Effectful.Retry
 import Monocle.Effects
 
-type GraphEffects es = [LoggerEffect, HttpEffect, Error LentilleError, PrometheusEffect, TimeEffect, Retry, Concurrent, Fail] :>> es
+type GraphEffects es = [LoggerEffect, HttpEffect, PrometheusEffect, TimeEffect, Retry, Concurrent, Fail] :>> es
 
 type GraphResponse a = (PageInfo, Maybe RateLimit, [Text], a)
 
@@ -196,7 +196,7 @@ streamFetch ::
   -- | query result adapter
   (a -> (PageInfo, Maybe RateLimit, [Text], [b])) ->
   LentilleStream es b
-streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformResponse = go Nothing 0
+streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformResponse = startFetch
  where
   holdOnIfNeeded :: Maybe RateLimit -> Eff es ()
   holdOnIfNeeded = mapM_ toDelay
@@ -222,13 +222,9 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
 
   retryDelay = 1_100_000
 
-  go pageInfoM totalFetched = do
-    --- Start by waiting for a few moment if we request a new page
-    when (isJust pageInfoM) $ lift $ mThreadDelay retryDelay
-
+  startFetch = do
     --- Perform a pre GraphQL request to gather rateLimit
-    --- TODO: explain why this this needs to be done before every request
-    case fpGetRatelimit of
+    fpRespE <- case fpGetRatelimit of
       Just getRateLimit -> lift $
         E.modifyMVar rateLimitMVar $
           const do
@@ -236,28 +232,39 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
             case rlE of
               Left err -> do
                 logWarn_ "Could not fetch the current rate limit"
-                E.throwError (GraphError err)
-              Right rl -> do
-                -- Wait few moment to delay the next call
-                mThreadDelay retryDelay
-                pure (Just rl, ())
-      Nothing -> pure ()
+                pure (Nothing, Just err)
+              Right rl -> pure (rl, Nothing)
+      Nothing -> pure Nothing
+
+    case fpRespE of
+      Just err -> S.yield (Left $ GraphError err)
+      Nothing -> go Nothing 0
+
+  go pageInfoM totalFetched = do
+    --- Start by waiting for a few moment if we request a new page
+    when (isJust pageInfoM) $ lift $ mThreadDelay retryDelay
 
     -- Perform the GraphQL request
-    (pageInfo, rateLimitM, decodingErrors, xs) <- lift $ E.modifyMVar rateLimitMVar $ \rl -> do
+    respE <- lift $ E.modifyMVar rateLimitMVar $ \rl -> do
       resE <- request pageInfoM rl
-      case resE of
-        Left err -> E.throwError (GraphError err)
-        Right x -> pure x
+      pure $ case resE of
+        Left err -> (rl, Left err)
+        Right (newRL, x) -> (newRL, Right x)
 
-    -- Log crawling status
-    logStep pageInfo rateLimitM xs totalFetched
+    -- Handle the response
+    case respE of
+      Left e ->
+        -- Yield the error and stop the stream
+        S.yield (Left $ GraphError e)
+      Right (pageInfo, rateLimitM, decodingErrors, xs) -> do
+        -- Log crawling status
+        logStep pageInfo rateLimitM xs totalFetched
 
-    -- Yield the results
-    S.each xs
+        case decodingErrors of
+          _ : _ -> S.yield (Left $ DecodeError decodingErrors)
+          [] -> do
+            -- Yield the results
+            S.each (Right <$> xs)
 
-    -- Abort the stream when there are errors
-    unless (null decodingErrors) (stopLentille $ DecodeError decodingErrors)
-
-    -- Call recursively when response has a next page
-    when (hasNextPage pageInfo) $ go (Just pageInfo) (totalFetched + length xs)
+            -- Call recursively when response has a next page
+            when (hasNextPage pageInfo) $ go (Just pageInfo) (totalFetched + length xs)

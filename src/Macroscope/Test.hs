@@ -82,7 +82,7 @@ testTaskDataMacroscope = withTestApi appEnv $ \client -> testAction client
     -- Start the macroscope with a fake stream
     td <- Monocle.Backend.Provisioner.generateNonDeterministic Monocle.Backend.Provisioner.fakeTaskData
     let stream _untilDate project
-          | project == "fake_product" = Streaming.each [td]
+          | project == "fake_product" = Streaming.each [Right td]
           | otherwise = error $ "Unexpected product entity: " <> show project
     void $ runLentilleM client $ Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.TaskDatas stream)
     -- Check task data got indexed

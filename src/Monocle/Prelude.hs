@@ -29,6 +29,7 @@ module Monocle.Prelude (
   Effectful.IOE,
   Effectful.Error.Static.Error,
   Effectful.Error.Static.runErrorNoCallStack,
+  Effectful.Error.Static.throwError,
   runErrorIO,
   Effectful.Concurrent.Concurrent,
   Effectful.Concurrent.runConcurrent,
