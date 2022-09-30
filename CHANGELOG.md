@@ -15,7 +15,7 @@ All notable changes to this project will be documented in this file.
 ### Removed
 ### Fixed
 
-- [crawler] Github crawler crash when rate limit is deactivated on GHE (#958).
+- [crawler] Github crawler no longer crash when rate limit is deactivated on GHE (#958).
 
 ## [1.7.0] - 2022-09-16
 
