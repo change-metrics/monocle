@@ -35,7 +35,7 @@ import Monocle.Protob.Search (TaskData (..))
 -- | Provision fakedata for a tenant
 runProvisioner :: Text -> IO ()
 runProvisioner tenantName = T.withTenantConfig (mkTenant tenantName) $ runFailIO $ do
-  I.ensureIndex
+  runRetry I.ensureIndex
   events <- liftIO createFakeEvents
   logInfo ("[provisioner] Adding " <> show (length events) <> " events to " <> tenantName <> ".") []
   T.indexScenario events

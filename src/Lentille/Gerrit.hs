@@ -37,6 +37,7 @@ import Gerrit.Data.Project (GerritProjectsMessage)
 import Google.Protobuf.Timestamp qualified as T
 import Lentille
 import Monocle.Client (mkManager)
+import Monocle.Effects (httpRetry)
 import Monocle.Prelude hiding (all, id)
 import Monocle.Protob.Change qualified as ChangePB
 import Monocle.Protob.Crawler qualified as CrawlerPB
@@ -47,12 +48,11 @@ import Prelude (init, last)
 
 import Effectful (Dispatch (Static), DispatchOf)
 import Effectful.Dispatch.Static (SideEffects (..), evalStaticRep)
-import Effectful.Prometheus (PrometheusEffect)
 
 -------------------------------------------------------------------------------
 -- Gerrit context
 -------------------------------------------------------------------------------
-type GerritEffects es = [GerritEffect, LoggerEffect, PrometheusEffect, RetryEffect] :>> es
+type GerritEffects es = [GerritEffect, LoggerEffect, PrometheusEffect, Retry] :>> es
 
 -- A dummy effect to replace the legacy MonadGerrit.
 -- TODO: re-implement on top of HttpEffect.
@@ -96,7 +96,7 @@ getProjectsStream ::
   GerritEffects es =>
   GerritEnv ->
   Text ->
-  S.Stream (S.Of CrawlerPB.Project) (Eff es) ()
+  LentilleStream es CrawlerPB.Project
 getProjectsStream env reProject = streamProject env (G.Regexp reProject)
 
 getChangesStream ::
@@ -104,7 +104,7 @@ getChangesStream ::
   GerritEnv ->
   UTCTime ->
   Text ->
-  S.Stream (S.Of (ChangePB.Change, [ChangePB.ChangeEvent])) (Eff es) ()
+  LentilleStream es (ChangePB.Change, [ChangePB.ChangeEvent])
 getChangesStream env untilDate project = streamChange env [Project project, After untilDate]
 
 -------------------------------------------------------------------------------
@@ -189,7 +189,7 @@ streamProject ::
   GerritEffects es =>
   GerritEnv ->
   G.GerritProjectQuery ->
-  S.Stream (S.Of CrawlerPB.Project) (Eff es) ()
+  LentilleStream es CrawlerPB.Project
 streamProject env query = go 0
  where
   size = 100
@@ -197,14 +197,14 @@ streamProject env query = go 0
   go offset = do
     projects <- lift do httpRetry (G.serverUrl $ client env) . doGet $ offset
     let pNames = M.keys projects
-    S.each $ CrawlerPB.Project . from <$> pNames
+    S.each $ Right . CrawlerPB.Project . from <$> pNames
     when (length pNames == size) $ go (offset + size)
 
 streamChange ::
   GerritEffects es =>
   GerritEnv ->
   [GerritQuery] ->
-  S.Stream (S.Of (ChangePB.Change, [ChangePB.ChangeEvent])) (Eff es) ()
+  LentilleStream es (ChangePB.Change, [ChangePB.ChangeEvent])
 streamChange env query =
   streamChange' env (identAliasCB env) (G.serverUrl $ client env) query (prefix env)
 
@@ -216,13 +216,13 @@ streamChange' ::
   Text ->
   [GerritQuery] ->
   Maybe Text ->
-  S.Stream (S.Of (ChangePB.Change, [ChangePB.ChangeEvent])) (Eff es) ()
+  LentilleStream es (ChangePB.Change, [ChangePB.ChangeEvent])
 streamChange' env identCB serverUrl query prefixM = go 0
  where
   size = 100
   go offset = do
     changes <- lift $ do httpRetry (G.serverUrl $ client env) . doGet $ offset
-    S.each $ (\c -> let cT = toMChange c in (cT, toMEvents cT (messages c))) <$> changes
+    S.each $ (\c -> let cT = toMChange c in Right (cT, toMEvents cT (messages c))) <$> changes
     when (length changes == size) $ go (offset + size)
   doGet offset = queryChanges env size query (Just offset)
   getIdent :: GerritAuthor -> ChangePB.Ident

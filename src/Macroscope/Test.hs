@@ -26,7 +26,7 @@ import Streaming.Prelude qualified as Streaming
 import Test.Tasty
 import Test.Tasty.HUnit
 
-runLentilleM :: MonocleClient -> Eff [E.Reader CrawlerEnv, MonoClientEffect, LoggerEffect, GerritEffect, BZEffect, TimeEffect, RetryEffect, HttpEffect, PrometheusEffect, EnvEffect, Fail, Concurrent, IOE] a -> IO a
+runLentilleM :: MonocleClient -> Eff [E.Reader CrawlerEnv, MonoClientEffect, LoggerEffect, GerritEffect, BZEffect, TimeEffect, HttpEffect, PrometheusEffect, EnvEffect, Fail, Retry, Concurrent, IOE] a -> IO a
 runLentilleM client action = do
   env <- CrawlerEnv client <$> newIORef False
   runEff . Macroscope.runMacroEffects . runLoggerEffect . runMonoClient client . E.runReader env $ action
@@ -82,7 +82,7 @@ testTaskDataMacroscope = withTestApi appEnv $ \client -> testAction client
     -- Start the macroscope with a fake stream
     td <- Monocle.Backend.Provisioner.generateNonDeterministic Monocle.Backend.Provisioner.fakeTaskData
     let stream _untilDate project
-          | project == "fake_product" = Streaming.each [td]
+          | project == "fake_product" = Streaming.each [Right td]
           | otherwise = error $ "Unexpected product entity: " <> show project
     void $ runLentilleM client $ Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.TaskDatas stream)
     -- Check task data got indexed

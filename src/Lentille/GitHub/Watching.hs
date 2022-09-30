@@ -76,13 +76,13 @@ streamWatchedProjects ::
   Lentille.GraphQL.GraphEffects es =>
   Lentille.GraphQL.GraphClient ->
   Text ->
-  Stream (Of Monocle.Protob.Crawler.Project) (Eff es) ()
+  Lentille.GraphQL.LentilleStream es Monocle.Protob.Crawler.Project
 streamWatchedProjects client login =
   Lentille.GraphQL.streamFetch client mkArgs optParams transformResponse
  where
   mkArgs _ = GetWatchedArgs login
   optParams =
     Lentille.GraphQL.defaultStreamFetchOptParams
-      { Lentille.GraphQL.fpRetryCheck = Just Lentille.GitHub.RateLimit.retryCheck
+      { Lentille.GraphQL.fpRetryCheck = Lentille.GitHub.RateLimit.retryCheck
       , Lentille.GraphQL.fpGetRatelimit = Just Lentille.GitHub.RateLimit.getRateLimit
       }

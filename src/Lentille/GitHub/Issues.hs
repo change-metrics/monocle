@@ -79,7 +79,7 @@ streamLinkedIssue ::
   GraphClient ->
   UTCTime ->
   Text ->
-  Stream (Of TaskData) (Eff es) ()
+  LentilleStream es TaskData
 streamLinkedIssue client time repo =
   streamFetch client mkArgs optParams transformResponse
  where

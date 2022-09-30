@@ -29,6 +29,7 @@ import Streaming.Prelude qualified as S
 import Streaming.Prelude qualified as Streaming
 
 import Effectful.Fail qualified as E
+import Effectful.Retry (exponentialBackoff, limitRetries, recoverAll)
 import Monocle.Effects
 
 data ConfigIndexMapping = ConfigIndexMapping deriving (Eq, Show)
@@ -210,9 +211,9 @@ instance ToJSON ChangesIndexMapping where
             )
       ]
 
-createIndex :: IndexEffects es => ToJSON mapping => BH.IndexName -> mapping -> Eff es ()
+createIndex :: (IndexEffects es, Retry :> es, ToJSON mapping) => BH.IndexName -> mapping -> Eff es ()
 createIndex indexName mapping = do
-  esCreateIndex indexSettings indexName
+  recoverAll retryPolicy $ const $ esCreateIndex indexSettings indexName
   -- print respCI
   esPutMapping indexName mapping
   -- print respPM
@@ -222,6 +223,7 @@ createIndex indexName mapping = do
     False -> logWarn "Fail to create index" ["name" .= indexName]
  where
   indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0) BH.defaultIndexMappingsLimits
+  retryPolicy = exponentialBackoff 500_000 <> limitRetries 7
 
 configVersion :: ConfigVersion
 configVersion = ConfigVersion 4
@@ -387,7 +389,7 @@ getConfigVersion = do
   currentConfig <- fromMaybe (object []) <$> getDocumentById configDoc
   pure (getVersion currentConfig, currentConfig)
 
-ensureConfigIndex :: forall es. '[E.Fail, LoggerEffect, MonoQuery] :>> es => IndexEffects es => Eff es ()
+ensureConfigIndex :: forall es. '[E.Fail, LoggerEffect, MonoQuery, Retry] :>> es => IndexEffects es => Eff es ()
 ensureConfigIndex = do
   QueryConfig conf <- getQueryTarget
 
@@ -414,7 +416,7 @@ ensureConfigIndex = do
   traverseWorkspace action conf = do
     traverse_ (\ws -> localQueryTarget (QueryWorkspace ws) action) (Config.getWorkspaces conf)
 
-ensureIndexSetup :: '[MonoQuery, LoggerEffect, ElasticEffect] :>> es => Eff es ()
+ensureIndexSetup :: '[MonoQuery, LoggerEffect, ElasticEffect, Retry] :>> es => Eff es ()
 ensureIndexSetup = do
   indexName <- getIndexName
   logInfo "Ensure workspace " ["index" .= indexName]
@@ -434,7 +436,7 @@ withRefresh action = do
   refreshResp <- esRefreshIndex index
   unless (BH.isSuccess refreshResp) (error $ "Unable to refresh index: " <> show resp)
 
-ensureIndex :: '[E.Fail, LoggerEffect, MonoQuery, ElasticEffect] :>> es => Eff es ()
+ensureIndex :: '[E.Fail, LoggerEffect, MonoQuery, ElasticEffect, Retry] :>> es => Eff es ()
 ensureIndex = do
   ensureIndexSetup
   ensureIndexCrawlerMetadata

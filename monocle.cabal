@@ -165,7 +165,7 @@ library
                      , proto3-suite               >= 0.5.0
                      , qq-literals
                      , relude                     >= 1.0
-                     , retry                      >= 0.8
+                     , retry-effectful
                      , safe-exceptions            >= 0.1
                      , servant                    >= 0.18.2
                      , servant-server             >= 0.18.2

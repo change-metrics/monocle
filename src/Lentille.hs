@@ -1,14 +1,16 @@
+{-# LANGUAGE DeriveAnyClass #-}
+
 -- | A shared library between lentilles and macroscope
 module Lentille (
   -- * The lentille context
   CrawlerEnv (..),
   LentilleStream,
-  stopLentille,
   unlessStopped,
 
   -- * Lentille Errors
   LentilleError (..),
   RequestLog (..),
+  GraphQLError (..),
 
   -- * Facilities
   getChangeId,
@@ -43,7 +45,6 @@ import Monocle.Protob.Change (
 import Network.HTTP.Client qualified as HTTP
 import Proto3.Suite (Enumerated (Enumerated))
 
-import Effectful.Error.Static qualified as E
 import Effectful.Reader.Static qualified as E
 
 -------------------------------------------------------------------------------
@@ -62,9 +63,6 @@ unlessStopped action = do
   stopped <- unsafeEff_ (readIORef stopRef)
   unless stopped action
 
-stopLentille :: E.Error LentilleError :> es => LentilleError -> LentilleStream es a
-stopLentille = lift . E.throwError
-
 data RequestLog = RequestLog
   { rlRequest :: HTTP.Request
   , rlRequestBody :: LByteString
@@ -73,16 +71,27 @@ data RequestLog = RequestLog
   }
   deriving (Show)
 
+instance ToJSON RequestLog where
+  toJSON (RequestLog _ body _ resp) =
+    object
+      ["body" .= decodeUtf8 @Text body, "resp" .= decodeUtf8 @Text resp]
+
+-- | ErrorGraphQL is a wrapper around the morpheus's FetchError.
+data GraphQLError = GraphQLError
+  { -- TODO: keep the original error data type (instead of the Text)
+    err :: Text
+  , request :: RequestLog
+  }
+  deriving (Show, Generic, ToJSON)
+
 data LentilleError
   = DecodeError [Text]
-  | -- | GraphQLError is a wrapper around the morpheus's FetchError.
-    -- TODO: keep the original error data type (instead of the Text)
-    GraphQLError (Text, RequestLog)
-  deriving (Show)
+  | GraphError GraphQLError
+  deriving (Show, Generic, ToJSON)
 
 instance Exception LentilleError
 
-type LentilleStream es a = Stream (Of a) (Eff es) ()
+type LentilleStream es a = Stream (Of (Either LentilleError a)) (Eff es) ()
 
 -------------------------------------------------------------------------------
 -- Utility functions for crawlers
@@ -117,8 +126,9 @@ toIdent host cb username = Ident {..}
 ghostIdent :: Text -> Ident
 ghostIdent host = toIdent host (const Nothing) nobody
 
-isChangeTooOld :: UTCTime -> (Change, [ChangeEvent]) -> Bool
-isChangeTooOld date (change, _) =
+isChangeTooOld :: UTCTime -> Either LentilleError (Change, [ChangeEvent]) -> Bool
+isChangeTooOld _ (Left _) = True
+isChangeTooOld date (Right (change, _)) =
   case changeUpdatedAt change of
     Just changeDate -> T.toUTCTime changeDate < date
     _ -> True
