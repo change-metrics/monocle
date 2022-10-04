@@ -5,7 +5,7 @@ import Data.List qualified
 import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
 import Monocle.Api.Jwt (doGenJwk, initOIDCEnv)
-import Monocle.Api.Server (handleLoggedIn, handleLogin)
+import Monocle.Api.Server (handleLoggedIn, handleLogin, searchAuthorsHTMXHandler)
 import Monocle.Backend.Index qualified as I
 import Monocle.Config (getAuthProvider, opName)
 import Monocle.Config qualified as Config
@@ -33,10 +33,12 @@ import Effectful.Reader.Static qualified as E
 import Effectful.Servant qualified
 import Monocle.Effects
 
+-- import Monocle.Protob.Search qualified as SearchPB
+
 rootServer :: ApiEffects es => '[E.Concurrent] :>> es => Servant.ServerT RootAPI (Eff es)
 rootServer = app :<|> app
  where
-  app = server :<|> handleLogin :<|> handleLoggedIn
+  app = server :<|> searchAuthorsHTMXHandler :<|> handleLogin :<|> handleLoggedIn
 
 fallbackWebAppPath :: FilePath
 fallbackWebAppPath = "web/build/"

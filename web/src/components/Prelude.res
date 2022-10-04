@@ -689,7 +689,7 @@ module HTMXGetHook = {
   @react.component
   let make = (~children, ~url: string, ~trigger: string) => {
     let htmxSend = elm => {
-      React.cloneElement(elm, {"hx-get": url, "hx-trigger": trigger})
+      React.cloneElement(elm, {"hx-get": url, "hx-trigger": trigger, "hx-target": "closest div"})
     }
     React.useEffect(() => {
       %raw(`htmx.process(htmx.find("#htmx-component"))`)

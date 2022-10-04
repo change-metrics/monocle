@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-unused-imports #-}
+
 -- | The servant endpoint implementation.
 -- This module provides an interface between the backend and the frontend
 module Monocle.Api.Server where
@@ -12,7 +14,7 @@ import Data.Maybe (fromJust)
 import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Monocle.Api.Jwt (
-  AuthenticatedUser (aDefaultMuid, aMuidMap),
+  AuthenticatedUser (AUser, aDefaultMuid, aMuidMap),
   LoginInUser (..),
   OIDCEnv (..),
   OIDCState (OIDCState),
@@ -56,10 +58,15 @@ import Text.Blaze.Renderer.Utf8 (renderMarkup)
 import Web.OIDC.Client (sub)
 import Web.OIDC.Client qualified as O
 
+import Data.String.Interpolate (iii)
 import Effectful.Concurrent.MVar qualified as E
 import Effectful.Error.Static qualified as E
 import Effectful.Reader.Static (asks)
+import Lucid (Attribute, Html)
+import Lucid.Base (ToHtml (toHtml), makeAttribute)
+import Lucid.Html5
 import Monocle.Effects
+import Monocle.Protob.Search (AuthorRequest (..), AuthorResponse (..))
 
 -- | 'getWorkspaces' returns the list of workspace, reloading the config when the file changed.
 getWorkspaces :: '[MonoConfigEffect] :>> es => Eff es [Config.Index]
@@ -486,6 +493,57 @@ searchAuthor auth request = checkAuth auth . const $ do
     Nothing -> pure []
 
   pure . SearchPB.AuthorResponse $ V.fromList authors
+
+hxGet, hxTrigger, hxTarget :: Text -> Attribute
+hxGet = makeAttribute "hx-get"
+hxTrigger = makeAttribute "hx-trigger"
+hxTarget = makeAttribute "hx-target"
+
+searchAuthorsHTMXHandler :: ApiEffects es => Maybe Text -> Eff es (Html ())
+searchAuthorsHTMXHandler queryM = do
+  let index = "test"
+  case queryM of
+    Just query -> do
+      (SearchPB.AuthorResponse results) <-
+        searchAuthor
+          (Authenticated (AUser mempty ""))
+          (AuthorRequest index (from query))
+      case toList results of
+        [] -> pure $ div_ "No Results"
+        _xs -> pure $ mapM_ authorToMarkup results
+    Nothing -> pure $ do
+      div_ [class_ "pf-c-card__body"] $ do
+        div_ [class_ "pf-l-stack pf-m-gutter"] $ do
+          div_ [class_ "pf-l-stack__item"] $ do
+            div_ [id_ "search-input"] $
+              input_
+                [ type_ "text"
+                , name_ "search"
+                , class_ "pf-c-form-control"
+                , placeholder_ "Start typing to search authors"
+                , hxGet "/htmx/authors_search"
+                , hxTrigger "keyup changed delay:500ms, search"
+                , hxTarget "#search-results"
+                ]
+          div_ [class_ "pf-l-stack__item"] $ do
+            div_ [id_ "search-results"] ""
+          script_ pushToRouter
+ where
+  pushToRouter =
+    [iii|function pushToRouter(index, author) {
+    return RescriptReactRouter.push("/" + index + "/author/" + encodeURIComponent(author))}|]
+  authorToMarkup :: SearchPB.Author -> Html ()
+  authorToMarkup (SearchPB.Author muid _aliases _groups) = do
+    div_ [class_ "pf-c-card pf-m-compact"] $ do
+      div_ [class_ "pf-c-card__body"] $ do
+        div_ [class_ "pf-l-flex"] $ do
+          span_ $ do
+            a_ [onclick_ "pushToRouter(\"test\", \"sipa\")"] $ toHtml muid
+
+-- a_ [onclick_ $ pushToRouter "bitcoin" (from muid)] $ toHtml muid
+
+-- span_ $ toHtml $ aliases
+-- span_ $ toHtml groups
 
 getMuidByIndexName :: Text -> AuthenticatedUser -> Maybe Text
 getMuidByIndexName index = Map.lookup index . aMuidMap

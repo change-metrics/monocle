@@ -147,10 +147,12 @@ library
                      , http-client-openssl        >= 0.3
                      , http-mock                  >= 0.1
                      , http-types                 >=0.12
+                     , http-api-data
                      , json-syntax                >= 0.2
                      , jose                       >= 0.9
                      , lens
                      , lens-aeson
+                     , lucid                      >= 2.11.1
                      , megaparsec                 >= 9
                      , morpheus-graphql-client    ^>= 0.19
                      , mmorph
@@ -171,6 +173,7 @@ library
                      , servant-server             >= 0.18.2
                      , servant-auth-server        >= 0.4.1.0
                      , servant-blaze              >= 0.9.1
+                     , servant-lucid              >= 0.9.0.5
                      -- , servant-effectful (enabled after https://github.com/Kleidukos/servant-effectful/issues/5)
                      , streaming                  >= 0.2
                      , string-interpolate         >= 0.3.1.2
