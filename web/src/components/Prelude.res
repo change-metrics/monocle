@@ -695,9 +695,12 @@ module MonoTabs = {
 
 module HTMXGetHook = {
   @react.component
-  let make = (~children, ~url: string, ~trigger: string) => {
+  let make = (~children, ~url: string, ~trigger: string, ~hxVals: string) => {
     let htmxSend = elm => {
-      React.cloneElement(elm, {"hx-get": url, "hx-trigger": trigger})
+      React.cloneElement(
+        elm,
+        {"hx-get": url, "hx-trigger": trigger, "hx-target": "closest div", "hx-vals": hxVals},
+      )
     }
     React.useEffect(() => {
       %raw(`htmx.process(htmx.find("#htmx-component"))`)
