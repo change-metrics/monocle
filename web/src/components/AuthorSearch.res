@@ -76,19 +76,14 @@ let make = (~store: Store.t) => {
   let toAuthorsResults = (resp: SearchTypes.author_response) =>
     resp.authors->Belt.List.map(author => <AuthorItem key={author.muid} store author />)
 
-  let tokenM = state->Store.Store.getAuthenticatedUserJWT
-
   let results =
     <Patternfly.Layout.StackItem>
       <NetworkRender
         get={() =>
-          WebApi.Search.author(
-            {
-              SearchTypes.index: state.index,
-              SearchTypes.query: matchQuery,
-            },
-            tokenM,
-          )}
+          WebApi.Search.author({
+            SearchTypes.index: state.index,
+            SearchTypes.query: matchQuery,
+          })}
         trigger
         render={(resp: SearchTypes.author_response) => {
           resp.authors->Belt.List.length > 0

@@ -57,9 +57,7 @@ module BaseHistoBox = {
       ->Belt.List.toArray
       ->React.array
 
-    let tokenM = state->Store.Store.getAuthenticatedUserJWT
-
-    <QueryRenderCard tokenM title tooltip_content icon request trigger match childrenBuilder />
+    <QueryRenderCard title tooltip_content icon request trigger match childrenBuilder />
   }
 }
 

@@ -41,20 +41,16 @@ module Column = {
       let handleOk = (resp: WebApi.axiosResponse<SearchTypes.query_response>) =>
         setResult(_ => resp.data->Some)->Js.Promise.resolve
       let query = addQuery(column.query, state.query)
-      let tokenM = state->Store.Store.getAuthenticatedUserJWT
       React.useEffect1(() => {
         switch query {
         | "" => ignore()
         | _ =>
           ignore(
-            WebApi.Search.query(
-              {
-                ...Store.mkSearchRequest(state, SearchTypes.Query_change),
-                query: query,
-                order: column.order,
-              },
-              tokenM,
-            ) |> Js.Promise.then_(handleOk),
+            WebApi.Search.query({
+              ...Store.mkSearchRequest(state, SearchTypes.Query_change),
+              query: query,
+              order: column.order,
+            }) |> Js.Promise.then_(handleOk),
           )
         }
         None
@@ -100,20 +96,16 @@ module Column = {
     let handleOk = (resp: WebApi.axiosResponse<SearchTypes.query_response>) =>
       setResult(_ => resp.data->Some)->Js.Promise.resolve
     let query = addQuery(column.query, state.query)
-    let tokenM = state->Store.Store.getAuthenticatedUserJWT
     React.useEffect1(() => {
       switch query {
       | "" => ignore()
       | _ =>
         ignore(
-          WebApi.Search.query(
-            {
-              ...Store.mkSearchRequest(state, SearchTypes.Query_change),
-              query: query,
-              order: column.order,
-            },
-            tokenM,
-          ) |> Js.Promise.then_(handleOk),
+          WebApi.Search.query({
+            ...Store.mkSearchRequest(state, SearchTypes.Query_change),
+            query: query,
+            order: column.order,
+          }) |> Js.Promise.then_(handleOk),
         )
       }
       None

@@ -83,16 +83,21 @@ data LoginInUser = LoginInUser
   }
   deriving (Show, Eq, Ord)
 
+-- TODO - Add the Set-Cookie Header "Set-Cookie: JWT-Cookie=...."
+
 instance ToMarkup LoginInUser where
   toMarkup LoginInUser {..} = H.docTypeHtml do
     H.head $
-      H.title "Redirecting after succesfull login ..."
+      H.title "Redirecting after a successful login ..."
     H.body do
       H.script
         ( H.toHtml
             ( "localStorage.setItem('api-key','"
                 <> liJWT
                 <> "');"
+                <> "document.cookie = \"JWT-Cookie="
+                <> liJWT
+                <> ";path=/\";"
                 <> "window.location='"
                 <> liRedirectURI
                 <> "';"

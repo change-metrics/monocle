@@ -47,7 +47,6 @@ module ChangesLifeCycleStats = {
       | None => baseRequest.query
       },
     }
-    let tokenM = state->Store.Store.getAuthenticatedUserJWT
     let trigger = state.query ++ extraQuery->Belt.Option.getWithDefault("")
     let title = "Changes lifecycle stats"
     let tooltip_content = "This shows trends of change related metrics such as the evolution of the amount of change created"
@@ -157,7 +156,7 @@ module ChangesLifeCycleStats = {
         </Layout.Grid>
       <GraphWithStats graph stats />
     }
-    <QueryRenderCard request tokenM trigger title tooltip_content icon match childrenBuilder />
+    <QueryRenderCard request trigger title tooltip_content icon match childrenBuilder />
   }
 }
 
@@ -180,7 +179,6 @@ module ChangesReviewStats = {
       | None => baseRequest.query
       },
     }
-    let tokenM = state->Store.Store.getAuthenticatedUserJWT
     let trigger = state.query ++ extraQuery->Belt.Option.getWithDefault("")
     let title = "Changes review stats"
     let tooltip_content = "This shows trends of reviews and comments"
@@ -238,7 +236,7 @@ module ChangesReviewStats = {
         </Layout.Grid>
       <GraphWithStats graph stats />
     }
-    <QueryRenderCard request tokenM trigger title tooltip_content icon match childrenBuilder />
+    <QueryRenderCard request trigger title tooltip_content icon match childrenBuilder />
   }
 }
 
@@ -256,7 +254,6 @@ module ChangesMergedDuration = {
       ...Store.mkSearchRequest(state, SearchTypes.Query_change),
       query: query,
     }
-    let tokenM = state->Store.Store.getAuthenticatedUserJWT
     let onClick = changeId => {
       let link = "/" ++ state.index ++ "/change/" ++ changeId
       link->RescriptReactRouter.push
@@ -275,7 +272,7 @@ module ChangesMergedDuration = {
       <GraphWithStats graph stats=React.null />
     }
 
-    <QueryRenderCard request tokenM trigger title tooltip_content icon match childrenBuilder />
+    <QueryRenderCard request trigger title tooltip_content icon match childrenBuilder />
   }
 }
 
@@ -296,7 +293,6 @@ module AuthorHistoStats = {
     let title = "Active authors"
     let tooltip_content = "This shows trends of review and comment activities"
     let icon = <Patternfly.Icons.Users />
-    let tokenM = state->Store.Store.getAuthenticatedUserJWT
 
     let match = resp =>
       switch resp {
@@ -325,7 +321,7 @@ module AuthorHistoStats = {
         </Layout.Grid>
       <GraphWithStats graph stats />
     }
-    <QueryRenderCard request tokenM trigger title tooltip_content icon match childrenBuilder />
+    <QueryRenderCard request trigger title tooltip_content icon match childrenBuilder />
   }
 }
 

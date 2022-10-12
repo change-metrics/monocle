@@ -190,11 +190,7 @@ module Fetch = {
   let suggestions = ((state: Store.t, dispatch)) =>
     fetch(
       state.suggestions,
-      () =>
-        WebApi.Search.suggestions(
-          {SearchTypes.index: state.index},
-          state->Store.getAuthenticatedUserJWT,
-        ),
+      () => WebApi.Search.suggestions({SearchTypes.index: state.index}),
       res => Store.FetchSuggestions(res),
       dispatch,
     )
@@ -202,7 +198,7 @@ module Fetch = {
   let fields = ((state: Store.t, dispatch)) => {
     fetch(
       state.fields,
-      () => WebApi.Search.fields({version: "1"}, state->Store.getAuthenticatedUserJWT),
+      () => WebApi.Search.fields({version: "1"}),
       res => Store.FetchFields(res),
       dispatch,
     )
@@ -211,11 +207,7 @@ module Fetch = {
   let projects = ((state: Store.t, dispatch)) => {
     fetch(
       state.projects,
-      () =>
-        WebApi.Config.getProjects(
-          {ConfigTypes.index: state.index},
-          state->Store.getAuthenticatedUserJWT,
-        ),
+      () => WebApi.Config.getProjects({ConfigTypes.index: state.index}),
       res => Store.FetchProjects(res),
       dispatch,
     )

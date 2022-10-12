@@ -30,7 +30,6 @@ let make = (~group: string, ~store: Store.t) => {
   let tooltip_content = "This shows the list of group's members"
   let icon = <Patternfly.Icons.Users />
   let trigger = ""
-  let tokenM = state->Store.Store.getAuthenticatedUserJWT
 
   let toItems = (resp: ConfigTypes.get_group_members_response) => {
     resp.members->Belt.List.map(name => <UserItem store key={name} name />)
@@ -39,10 +38,7 @@ let make = (~group: string, ~store: Store.t) => {
   <MonoCard title tooltip_content icon>
     <NetworkRender
       get={() =>
-        WebApi.Config.getGroupMembers(
-          {ConfigTypes.index: state.index, ConfigTypes.group: group},
-          tokenM,
-        )}
+        WebApi.Config.getGroupMembers({ConfigTypes.index: state.index, ConfigTypes.group: group})}
       trigger
       render={resp => resp->toItems->Belt.List.toArray->React.array}
     />

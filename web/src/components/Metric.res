@@ -6,21 +6,16 @@ include Patternfly
 
 module MetricInfo = {
   @react.component
-  let make = (~store: Store.t, ~metric: string) => {
-    let (state, _dispatch) = store
+  let make = (~metric: string) => {
     let title = "Metric Info"
     let tooltip_content = ""
     let icon = <Patternfly.Icons.InfoAlt />
-    let tokenM = state->Store.Store.getAuthenticatedUserJWT
     <MonoCard title tooltip_content icon>
       <NetworkRender
         get={() =>
-          WebApi.Metric.info(
-            {
-              metric: metric,
-            },
-            tokenM,
-          )}
+          WebApi.Metric.info({
+            metric: metric,
+          })}
         trigger={""}
         render={(resp: MetricTypes.info_response) => {
           switch resp {
@@ -51,22 +46,18 @@ module MetricCompute = {
     let title = "Count"
     let tooltip_content = "The result of the metric computation"
     let icon = <Patternfly.Icons.Bundle />
-    let tokenM = state->Store.Store.getAuthenticatedUserJWT
     let compute: MetricTypes.compute = MetricTypes.default_compute()
     let trigger = state.query
     <MonoCard title tooltip_content icon>
       <NetworkRender
         get={() =>
-          WebApi.Metric.get(
-            {
-              index: state.index,
-              username: state.username->Belt.Option.getWithDefault(""),
-              query: state.query,
-              metric: metric,
-              options: Compute(compute),
-            },
-            tokenM,
-          )}
+          WebApi.Metric.get({
+            index: state.index,
+            username: state.username->Belt.Option.getWithDefault(""),
+            query: state.query,
+            metric: metric,
+            options: Compute(compute),
+          })}
         trigger
         render={(resp: MetricTypes.get_response) => {
           switch resp {
@@ -89,7 +80,6 @@ module MetricTop = {
     let title = "Top"
     let tooltip_content = "This show the top terms for metrics based on a term aggregation."
     let icon = <Patternfly.Icons.Bars />
-    let tokenM = state->Store.Store.getAuthenticatedUserJWT
     let columnNames = ["Name", "Count"]
     let link = ActivePeopleView.TopTermsTable.NoLink
     let limit_values = list{10, 25, 50, 100, 500}
@@ -99,16 +89,13 @@ module MetricTop = {
     <MonoCard title tooltip_content icon>
       <NetworkRender
         get={() =>
-          WebApi.Metric.get(
-            {
-              index: state.index,
-              username: state.username->Belt.Option.getWithDefault(""),
-              query: state.query,
-              metric: metric,
-              options: MetricTypes.Top(top),
-            },
-            tokenM,
-          )}
+          WebApi.Metric.get({
+            index: state.index,
+            username: state.username->Belt.Option.getWithDefault(""),
+            query: state.query,
+            metric: metric,
+            options: MetricTypes.Top(top),
+          })}
         trigger
         render={(resp: MetricTypes.get_response) => {
           <React.Fragment>
@@ -148,7 +135,6 @@ module MetricTrend = {
     let title = "Trend"
     let tooltip_content = "This shows the metric value trend over a customisable period"
     let icon = <Patternfly.Icons.TrendUp />
-    let tokenM = state->Store.Store.getAuthenticatedUserJWT
     let defaultInterval = {
       auto: false,
       hour: false,
@@ -188,16 +174,13 @@ module MetricTrend = {
     <MonoCard title tooltip_content icon>
       <NetworkRender
         get={() =>
-          WebApi.Metric.get(
-            {
-              index: state.index,
-              username: state.username->Belt.Option.getWithDefault(""),
-              query: state.query,
-              metric: metric,
-              options: MetricTypes.Trend(trend),
-            },
-            tokenM,
-          )}
+          WebApi.Metric.get({
+            index: state.index,
+            username: state.username->Belt.Option.getWithDefault(""),
+            query: state.query,
+            metric: metric,
+            options: MetricTypes.Trend(trend),
+          })}
         trigger
         render={(resp: MetricTypes.get_response) => {
           <React.Fragment>
@@ -273,7 +256,7 @@ let make = (~store: Store.t, ~name: string) => {
     <MStack>
       <MStackItem>
         <MGrid>
-          <MGridItemXl6> <MetricInfo store metric=name /> </MGridItemXl6>
+          <MGridItemXl6> <MetricInfo metric=name /> </MGridItemXl6>
           <MGridItemXl6> <MetricCompute store metric=name /> </MGridItemXl6>
         </MGrid>
       </MStackItem>

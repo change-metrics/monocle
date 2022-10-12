@@ -8,12 +8,10 @@ let make = (~store: Store.t, ~change: string) => {
     ...Store.mkSearchRequest(state, SearchTypes.Query_change_and_events),
     change_id: change,
   }
-  let tokenM = state->Store.Store.getAuthenticatedUserJWT
 
   <div className="container">
     <QueryRender
       request
-      tokenM
       trigger={state.query}
       render={resp =>
         switch resp {

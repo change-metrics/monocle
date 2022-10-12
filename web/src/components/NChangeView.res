@@ -219,10 +219,8 @@ module ChangesTopPies = {
       filter->Store.Store.SetFilter->dispatch
       href->RescriptReactRouter.push
     }
-    let tokenM = state->Store.Store.getAuthenticatedUserJWT
     <QueryRender
       request
-      tokenM
       trigger={query ++ extraQuery->Belt.Option.getWithDefault("")}
       render={resp =>
         switch resp {
@@ -310,7 +308,6 @@ let make = (
   let title = "Changes"
   let tooltip_content = "This shows the list of changes"
   let icon = <Patternfly.Icons.Integration />
-  let tokenM = state->Store.Store.getAuthenticatedUserJWT
   let match = resp =>
     switch resp {
     | SearchTypes.Changes(items) => items.changes->Some
@@ -321,7 +318,7 @@ let make = (
       store changesAll={changes->Belt.List.toArray} extraQuery hideAuthors disableHiddenChange
     />
 
-  <QueryRenderCard request tokenM trigger title tooltip_content icon match childrenBuilder />
+  <QueryRenderCard request trigger title tooltip_content icon match childrenBuilder />
 }
 
 let default = make

@@ -614,9 +614,9 @@ module MonoCard = {
 
 module QueryRender = {
   @react.component
-  let make = (~request, ~trigger, ~render, ~tokenM) =>
+  let make = (~request, ~trigger, ~render) =>
     <NetworkRender
-      get={() => WebApi.Search.query(request, tokenM)}
+      get={() => WebApi.Search.query(request)}
       trigger
       render={resp =>
         switch resp {
@@ -646,8 +646,6 @@ module QueryRenderCard = {
     // The request to perform by the card
     ~request: Web.SearchTypes.query_request,
     // An optional JWT
-    ~tokenM: option<string>,
-    // The string to watch for change to run the request
     ~trigger: string,
     // The title of the card
     ~title: string,
@@ -669,7 +667,7 @@ module QueryRenderCard = {
       | None => React.null
       }
     }
-    <QueryRender request trigger render tokenM />
+    <QueryRender request trigger render />
   }
 }
 
