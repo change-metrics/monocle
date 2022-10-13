@@ -1,6 +1,5 @@
 module Monocle.Api.Jwt (
   --- JWT
-  mkJwt,
   doGenJwk,
   AuthenticatedUser (..),
   --- OIDC Flow
@@ -15,7 +14,7 @@ module Monocle.Api.Jwt (
 import Control.Monad.Random (genByteString)
 import Control.Monad.Random qualified as Random
 import Crypto.Hash.SHA256 (hash)
-import Crypto.JWT (Error, JWK, fromOctets)
+import Crypto.JWT (JWK, fromOctets)
 import Data.Aeson (decode)
 import Data.ByteString qualified as BS
 import Data.ByteString.Base64 qualified as B64
@@ -26,9 +25,7 @@ import Monocle.Prelude hiding (Error)
 import Network.HTTP.Client (Manager)
 import Servant.Auth.Server (
   FromJWT,
-  JWTSettings,
   ToJWT,
-  makeJWT,
  )
 import Text.Blaze (ToMarkup (..))
 import Text.Blaze.Html5 qualified as H
@@ -63,9 +60,6 @@ instance ToJWT AuthenticatedUser
 
 instance FromJWT AuthenticatedUser
 
-mkJwt :: JWTSettings -> MUidMap -> Text -> Maybe UTCTime -> IO (Either Error BSL.ByteString)
-mkJwt settings aMuidMap aDefaultMuid = makeJWT (AUser {..}) settings
-
 --- $ OIDC Flow
 
 data OIDCEnv = OIDCEnv
@@ -77,13 +71,13 @@ data OIDCEnv = OIDCEnv
   , providerConfig :: OIDCProviderConfig
   }
 
+-- The WebApp requires a JWT in the local storage in order
+-- to extract the Monocle UID by index name and default UID.
 data LoginInUser = LoginInUser
   { liJWT :: Text
   , liRedirectURI :: Text
   }
-  deriving (Show, Eq, Ord)
-
--- TODO - Add the Set-Cookie Header "Set-Cookie: JWT-Cookie=...."
+  deriving (Show)
 
 instance ToMarkup LoginInUser where
   toMarkup LoginInUser {..} = H.docTypeHtml do
@@ -95,9 +89,6 @@ instance ToMarkup LoginInUser where
             ( "localStorage.setItem('api-key','"
                 <> liJWT
                 <> "');"
-                <> "document.cookie = \"JWT-Cookie="
-                <> liJWT
-                <> ";path=/\";"
                 <> "window.location='"
                 <> liRedirectURI
                 <> "';"

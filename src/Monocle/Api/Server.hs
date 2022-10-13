@@ -12,12 +12,11 @@ import Data.Maybe (fromJust)
 import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Monocle.Api.Jwt (
-  AuthenticatedUser (aDefaultMuid, aMuidMap),
+  AuthenticatedUser (AUser, aDefaultMuid, aMuidMap),
   LoginInUser (..),
   OIDCEnv (..),
   OIDCState (OIDCState),
   decodeOIDCState,
-  mkJwt,
   mkSessionStore,
  )
 import Monocle.Backend.Documents (
@@ -48,7 +47,7 @@ import Servant (
   err302,
   err403,
  )
-import Servant.Auth.Server (AuthResult (Authenticated))
+import Servant.Auth.Server (AuthResult (Authenticated), CookieSettings, SetCookie, cookieExpires)
 import Text.Blaze (ToMarkup (..))
 import Text.Blaze.Html qualified as H
 import Text.Blaze.Html5 qualified as H
@@ -60,6 +59,10 @@ import Effectful.Concurrent.MVar qualified as E
 import Effectful.Error.Static qualified as E
 import Effectful.Reader.Static (asks)
 import Monocle.Effects
+import Servant.API (Headers)
+import Servant.API.Header (Header)
+import Servant.Auth.Server.Internal.Cookie (acceptLogin)
+import Servant.Auth.Server.Internal.JWT (makeJWT)
 
 -- | 'getWorkspaces' returns the list of workspace, reloading the config when the file changed.
 getWorkspaces :: '[MonoConfigEffect] :>> es => Eff es [Config.Index]
@@ -108,7 +111,7 @@ authGetMagicJwt _auth (AuthPB.GetMagicJwtRequest inputAdminToken) = do
   oidc <- asks aOIDC
   -- The generated JWT does not have any expiry
   -- An API restart generates new JWK that will invalidate the token
-  jwtE <- liftIO $ mkJwt (localJWTSettings oidc) Map.empty "bot" Nothing
+  jwtE <- liftIO $ makeJWT (AUser Map.empty "bot") (localJWTSettings oidc) Nothing
   adminTokenM <- liftIO $ lookupEnv "MONOCLE_ADMIN_TOKEN"
   case (jwtE, adminTokenM) of
     (Right jwt, Just adminToken) | inputAdminToken == from adminToken -> pure . genSuccess $ decodeUtf8 jwt
@@ -907,14 +910,15 @@ handleLogin uriM = do
 
 handleLoggedIn ::
   ApiEffects es =>
+  CookieSettings ->
   -- | error
   Maybe Text ->
   -- | code
   Maybe Text ->
   -- | state
   Maybe Text ->
-  Eff es LoginInUser
-handleLoggedIn err codeM stateM = do
+  Eff es (Headers '[Header "Set-Cookie" SetCookie, Header "Set-Cookie" SetCookie] LoginInUser)
+handleLoggedIn cookieSettings err codeM stateM = do
   aOIDC <- asks aOIDC
   Config.ConfigStatus _ config _ <- getReloadConfig
   logInfo "OIDCCallbackCall" ["err" .= err, "code" .= codeM, "state" .= stateM]
@@ -934,24 +938,31 @@ handleLoggedIn err codeM stateM = do
             (from oauthCode)
       now <- liftIO Monocle.Prelude.getCurrentTime
       let idToken = O.idToken tokens
-          expiry = addUTCTime (24 * 3600) now
+          expiry = Just (addUTCTime (24 * 3600) now)
           userId = aUserId oidcEnv idToken
           mUidMap = getIdents config $ "AuthProviderUID:" <> userId
+          authenticatedUser = AUser mUidMap userId
+          jwtCfg = localJWTSettings aOIDC
       logInfo "OIDCProviderTokenRequested" ["id" .= show @Text idToken]
-      jwtE <- liftIO $ mkJwt (localJWTSettings aOIDC) mUidMap userId (Just expiry)
-      case jwtE of
-        Right jwt -> do
+      mApplyCookies <-
+        liftIO $
+          acceptLogin
+            (cookieSettings {cookieExpires = expiry})
+            jwtCfg
+            authenticatedUser
+      jwtE <- liftIO $ makeJWT authenticatedUser jwtCfg expiry
+      case (mApplyCookies, jwtE) of
+        (Just applyCookies, Right jwt) -> do
           incCounter monocleAuthSuccessCounter
           logInfo "JWTCreated" ["uid" .= mUidMap, "redir" .= unsafeInto @Text (redirectUri oidcEnv)]
-          let liJWT = decodeUtf8 jwt
-              liRedirectURI = case decodeOIDCState $ encodeUtf8 oauthState of
-                Just (OIDCState _ (Just uri)) -> uri
-                _ -> "/"
-          pure $ LoginInUser {..}
-        Left err' -> do
-          logInfo "JWTCreateFailed" ["uid" .= mUidMap, "err" .= show @Text err']
-          forbidden $ "Unable to generate user JWT due to: " <> show err'
+          pure $ applyCookies $ LoginInUser (decodeUtf8 jwt) (redirectURI oauthState)
+        _ -> do
+          logInfo "JWTCreateFailed" ["uid" .= mUidMap]
+          forbidden "Unable to generate user cookie"
  where
+  redirectURI oauthState = case decodeOIDCState $ encodeUtf8 oauthState of
+    Just (OIDCState _ (Just uri)) -> uri
+    _ -> "/"
   -- Get the Token's claim that identify an unique user
   aUserId :: OIDCEnv -> O.IdTokenClaims Value -> Text
   aUserId OIDCEnv {providerConfig} idToken = case opUserClaim providerConfig of
