@@ -144,7 +144,7 @@ monocleApiTests =
             WhoAmiResponse (Just (WhoAmiResponseResultUid au)) ->
               assertEqual
                 "Assert expected WhoAmI response"
-                "AUser {aMuidMap = fromList [], aDefaultMuid = \"bot\"}"
+                "AUser {aMuidMap = fromList [], aDefaultMuid = \"bot\", aAuthUntil = -1}"
                 au
             _ -> error "Unexpected WhoAmI Response"
         _ -> error "Unexpected GetMagicJWT reponse"

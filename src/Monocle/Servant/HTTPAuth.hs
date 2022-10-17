@@ -25,6 +25,7 @@ type AuthAPI =
           ( Headers
               '[ Header "Set-Cookie" SetCookie
                , Header "Set-Cookie" SetCookie
+               , Header "Set-Cookie" SetCookie
                ]
               LoginInUser
           )

@@ -31,6 +31,16 @@ let replaceWindowLocation = (location: string) => windowLocationReplace(location
 let readWindowLocationFull = () =>
   readWindowLocationPathname() ++ readWindowLocationSearch() ++ readWindowLocationHash()
 
+@val @scope("document")
+external cookies: string = "cookie"
+let getCookies = () => cookies
+
+let delCookie: string => unit = %raw(`
+function (name) {
+  document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+}
+`)
+
 // Bindings for moment
 %%raw(`
 import moment from 'moment'

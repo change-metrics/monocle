@@ -23,7 +23,7 @@ import Network.Wai.Middleware.Prometheus (def, prometheus)
 import Prometheus (register)
 import Prometheus.Metric.GHC (ghcMetrics)
 import Servant
-import Servant.Auth.Server (CookieSettings, defaultCookieSettings, defaultJWTSettings)
+import Servant.Auth.Server (CookieSettings (..), cookieXsrfSetting, defaultCookieSettings, defaultJWTSettings)
 import System.Directory qualified
 
 import Effectful qualified as E
@@ -158,7 +158,7 @@ run' ApiConfig {..} aplogger = E.runConcurrent $ runLoggerEffect do
 
     let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
         jwtCfg = localJWTSettings
-        cookieCfg = defaultCookieSettings
+        cookieCfg = defaultCookieSettings {cookieXsrfSetting = Nothing}
         cfg = jwtCfg :. cookieCfg :. EmptyContext
         middleware =
           cors (const $ Just corsPolicy)

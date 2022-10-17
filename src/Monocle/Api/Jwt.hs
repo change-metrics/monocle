@@ -49,6 +49,8 @@ data AuthenticatedUser = AUser
     aMuidMap :: MUidMap
   , -- A default Monocle UID to be used when aMuidMap is empty
     aDefaultMuid :: Text
+  , -- Epoch value after which a user session must be considered outdated
+    aAuthUntil :: Int
   }
   deriving (Generic, Show)
 
@@ -71,29 +73,14 @@ data OIDCEnv = OIDCEnv
   , providerConfig :: OIDCProviderConfig
   }
 
--- The WebApp requires a JWT in the local storage in order
--- to extract the Monocle UID by index name and default UID.
-data LoginInUser = LoginInUser
-  { liJWT :: Text
-  , liRedirectURI :: Text
-  }
-  deriving (Show)
+newtype LoginInUser = LoginInUser {liRedirectURI :: Text} deriving (Show)
 
 instance ToMarkup LoginInUser where
   toMarkup LoginInUser {..} = H.docTypeHtml do
     H.head $
       H.title "Redirecting after a successful login ..."
     H.body do
-      H.script
-        ( H.toHtml
-            ( "localStorage.setItem('api-key','"
-                <> liJWT
-                <> "');"
-                <> "window.location='"
-                <> liRedirectURI
-                <> "';"
-            )
-        )
+      H.script (H.toHtml ("window.location='" <> liRedirectURI <> "';"))
 
 initOIDCEnv :: OIDCProviderConfig -> IO OIDCEnv
 initOIDCEnv providerConfig@OIDCProviderConfig {..} = do

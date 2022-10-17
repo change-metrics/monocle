@@ -86,11 +86,21 @@ module Store = {
 
   type dispatch = action => unit
 
-  let getAuthenticatedUser = () => {
-    Dom.Storage.getItem("api-key", Dom.Storage.localStorage)->Belt.Option.flatMap(jwt =>
-      jwt->jwtToAuthenticatedUser
+  let getMonocleCookie = () =>
+    Js.String.split(";", Prelude.getCookies())
+    ->Belt.Array.keep(cookie => {
+      Js.String.split("=", cookie)
+      ->Belt.Array.get(0)
+      ->Belt.Option.getWithDefault("")
+      ->Js.String.trim == "Monocle"
+    })
+    ->Belt.Array.map(cookie =>
+      Js.String.split("=", cookie)->Belt.Array.get(1)->Belt.Option.getWithDefault("")
     )
-  }
+    ->Belt.Array.get(0)
+
+  let getAuthenticatedUser = () =>
+    getMonocleCookie()->Belt.Option.flatMap(jwt => jwt->jwtToAuthenticatedUser)
 
   let getAuthenticatedUserJWT = (state: t) =>
     state.authenticated_user->Belt.Option.flatMap(au => au.jwt->Some)
@@ -154,7 +164,7 @@ module Store = {
         {...state, username: None}
       }
     | AuthenticatedLogout => {
-        Dom.Storage.localStorage |> Dom.Storage.removeItem("api-key")
+        Prelude.delCookie("Monocle")
         {...state, authenticated_user: None}
       }
     }
