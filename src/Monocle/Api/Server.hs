@@ -71,7 +71,7 @@ import Monocle.Effects
 import Servant.API (Headers)
 import Servant.API.Header (Header)
 import Servant.Auth.Server.Internal.JWT (makeJWT)
-import Web.Cookie (SetCookie (..), defaultSetCookie, sameSiteLax)
+import Web.Cookie (SetCookie (..), defaultSetCookie, sameSiteStrict)
 
 -- | 'getWorkspaces' returns the list of workspace, reloading the config when the file changed.
 getWorkspaces :: '[MonoConfigEffect] :>> es => Eff es [Config.Index]
@@ -924,7 +924,7 @@ makeMonocleCookie jwt = do
     { setCookieValue = LBS.toStrict jwt
     , setCookieHttpOnly = False -- This make the cookie readable from the Web APP
     , setCookieName = "Monocle"
-    , setCookieSameSite = Just sameSiteLax
+    , setCookieSameSite = Just sameSiteStrict
     , setCookieSecure = True
     , setCookiePath = Just "/"
     }
