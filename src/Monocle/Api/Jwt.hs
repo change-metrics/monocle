@@ -1,6 +1,5 @@
 module Monocle.Api.Jwt (
   --- JWT
-  mkJwt,
   doGenJwk,
   AuthenticatedUser (..),
   --- OIDC Flow
@@ -15,7 +14,7 @@ module Monocle.Api.Jwt (
 import Control.Monad.Random (genByteString)
 import Control.Monad.Random qualified as Random
 import Crypto.Hash.SHA256 (hash)
-import Crypto.JWT (Error, JWK, fromOctets)
+import Crypto.JWT (JWK, fromOctets)
 import Data.Aeson (decode)
 import Data.ByteString qualified as BS
 import Data.ByteString.Base64 qualified as B64
@@ -26,9 +25,7 @@ import Monocle.Prelude hiding (Error)
 import Network.HTTP.Client (Manager)
 import Servant.Auth.Server (
   FromJWT,
-  JWTSettings,
   ToJWT,
-  makeJWT,
  )
 import Text.Blaze (ToMarkup (..))
 import Text.Blaze.Html5 qualified as H
@@ -52,6 +49,8 @@ data AuthenticatedUser = AUser
     aMuidMap :: MUidMap
   , -- A default Monocle UID to be used when aMuidMap is empty
     aDefaultMuid :: Text
+  , -- Epoch value after which a user session must be considered outdated
+    aAuthUntil :: Int
   }
   deriving (Generic, Show)
 
@@ -62,9 +61,6 @@ instance FromJSON AuthenticatedUser
 instance ToJWT AuthenticatedUser
 
 instance FromJWT AuthenticatedUser
-
-mkJwt :: JWTSettings -> MUidMap -> Text -> Maybe UTCTime -> IO (Either Error BSL.ByteString)
-mkJwt settings aMuidMap aDefaultMuid = makeJWT (AUser {..}) settings
 
 --- $ OIDC Flow
 
@@ -77,27 +73,14 @@ data OIDCEnv = OIDCEnv
   , providerConfig :: OIDCProviderConfig
   }
 
-data LoginInUser = LoginInUser
-  { liJWT :: Text
-  , liRedirectURI :: Text
-  }
-  deriving (Show, Eq, Ord)
+newtype LoginInUser = LoginInUser {liRedirectURI :: Text} deriving (Show)
 
 instance ToMarkup LoginInUser where
   toMarkup LoginInUser {..} = H.docTypeHtml do
     H.head $
-      H.title "Redirecting after succesfull login ..."
+      H.title "Redirecting after a successful login ..."
     H.body do
-      H.script
-        ( H.toHtml
-            ( "localStorage.setItem('api-key','"
-                <> liJWT
-                <> "');"
-                <> "window.location='"
-                <> liRedirectURI
-                <> "';"
-            )
-        )
+      H.script (H.toHtml ("window.location='" <> liRedirectURI <> "';"))
 
 initOIDCEnv :: OIDCProviderConfig -> IO OIDCEnv
 initOIDCEnv providerConfig@OIDCProviderConfig {..} = do

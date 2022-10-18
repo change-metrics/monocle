@@ -487,7 +487,7 @@ Furthermore, two additional settings ([environment variables](#environment-varia
 Monocle API generates the following log line when the Authentication provider has been properly set up:
 
 ```
-2022-06-14 09:53:25 Authentication provider (my provider) ready
+2022-10-11 10:39:11 INFO    Monocle.Main:149: AuthSystemReady {"provider":"my provider"}
 ```
 
 Monocle issues its own JWTs to the WEB Application users. JWTs issued by the OIDC provider are used to get

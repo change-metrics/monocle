@@ -20,15 +20,13 @@ module MetricList = {
 
 @react.component
 let make = (~store: Store.t) => {
-  let (state, _) = store
   let title = "Metrics"
   let tooltip_content = "This shows the list of available metrics"
   let icon = <Patternfly.Icons.Bundle />
-  let tokenM = state->Store.Store.getAuthenticatedUserJWT
   <MCenteredContent>
     <MonoCard title tooltip_content icon>
       <NetworkRender
-        get={() => WebApi.Metric.list({void: ""}, tokenM)}
+        get={() => WebApi.Metric.list({void: ""})}
         trigger={""}
         render={(resp: MetricTypes.list_response) => <MetricList store items=resp.metrics />}
       />

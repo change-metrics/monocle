@@ -31,6 +31,16 @@ let replaceWindowLocation = (location: string) => windowLocationReplace(location
 let readWindowLocationFull = () =>
   readWindowLocationPathname() ++ readWindowLocationSearch() ++ readWindowLocationHash()
 
+@val @scope("document")
+external cookies: string = "cookie"
+let getCookies = () => cookies
+
+let delCookie: string => unit = %raw(`
+function (name) {
+  document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+}
+`)
+
 // Bindings for moment
 %%raw(`
 import moment from 'moment'
@@ -614,9 +624,9 @@ module MonoCard = {
 
 module QueryRender = {
   @react.component
-  let make = (~request, ~trigger, ~render, ~tokenM) =>
+  let make = (~request, ~trigger, ~render) =>
     <NetworkRender
-      get={() => WebApi.Search.query(request, tokenM)}
+      get={() => WebApi.Search.query(request)}
       trigger
       render={resp =>
         switch resp {
@@ -646,8 +656,6 @@ module QueryRenderCard = {
     // The request to perform by the card
     ~request: Web.SearchTypes.query_request,
     // An optional JWT
-    ~tokenM: option<string>,
-    // The string to watch for change to run the request
     ~trigger: string,
     // The title of the card
     ~title: string,
@@ -669,7 +677,7 @@ module QueryRenderCard = {
       | None => React.null
       }
     }
-    <QueryRender request trigger render tokenM />
+    <QueryRender request trigger render />
   }
 }
 

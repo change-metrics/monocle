@@ -9,15 +9,15 @@ import Data.ByteString.Lazy qualified as LBS
 import Data.List (lookup)
 import Data.Map qualified as Map
 import Data.Maybe (fromJust)
+import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
 import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Monocle.Api.Jwt (
-  AuthenticatedUser (aDefaultMuid, aMuidMap),
+  AuthenticatedUser (AUser, aDefaultMuid, aMuidMap),
   LoginInUser (..),
   OIDCEnv (..),
   OIDCState (OIDCState),
   decodeOIDCState,
-  mkJwt,
   mkSessionStore,
  )
 import Monocle.Backend.Documents (
@@ -45,10 +45,17 @@ import Proto3.Suite (Enumerated (..))
 import Servant (
   NoContent (..),
   ServerError (errBody, errHeaders, errReasonPhrase),
+  addHeader,
   err302,
   err403,
  )
-import Servant.Auth.Server (AuthResult (Authenticated))
+import Servant.Auth.Server (
+  AuthResult (Authenticated),
+  CookieSettings,
+  SetCookie,
+  acceptLogin,
+  cookieExpires,
+ )
 import Text.Blaze (ToMarkup (..))
 import Text.Blaze.Html qualified as H
 import Text.Blaze.Html5 qualified as H
@@ -60,6 +67,11 @@ import Effectful.Concurrent.MVar qualified as E
 import Effectful.Error.Static qualified as E
 import Effectful.Reader.Static (asks)
 import Monocle.Effects
+
+import Servant.API (Headers)
+import Servant.API.Header (Header)
+import Servant.Auth.Server.Internal.JWT (makeJWT)
+import Web.Cookie (SetCookie (..), defaultSetCookie, sameSiteStrict)
 
 -- | 'getWorkspaces' returns the list of workspace, reloading the config when the file changed.
 getWorkspaces :: '[MonoConfigEffect] :>> es => Eff es [Config.Index]
@@ -108,7 +120,7 @@ authGetMagicJwt _auth (AuthPB.GetMagicJwtRequest inputAdminToken) = do
   oidc <- asks aOIDC
   -- The generated JWT does not have any expiry
   -- An API restart generates new JWK that will invalidate the token
-  jwtE <- liftIO $ mkJwt (localJWTSettings oidc) Map.empty "bot" Nothing
+  jwtE <- liftIO $ makeJWT (AUser Map.empty "bot" (-1)) (localJWTSettings oidc) Nothing
   adminTokenM <- liftIO $ lookupEnv "MONOCLE_ADMIN_TOKEN"
   case (jwtE, adminTokenM) of
     (Right jwt, Just adminToken) | inputAdminToken == from adminToken -> pure . genSuccess $ decodeUtf8 jwt
@@ -905,16 +917,37 @@ handleLogin uriM = do
     loc <- O.prepareAuthenticationRequestUrl (mkSessionStore oidcenv Nothing uriM) oidc [O.openId] mempty
     return (show loc)
 
+-- This session cookie is made for the Monocle Web APP to figure out the authenticated user context
+makeMonocleCookie :: LBS.ByteString -> SetCookie
+makeMonocleCookie jwt = do
+  defaultSetCookie
+    { setCookieValue = LBS.toStrict jwt
+    , setCookieHttpOnly = False -- This make the cookie readable from the Web APP
+    , setCookieName = "Monocle"
+    , setCookieSameSite = Just sameSiteStrict
+    , setCookieSecure = True
+    , setCookiePath = Just "/"
+    }
+
 handleLoggedIn ::
   ApiEffects es =>
+  CookieSettings ->
   -- | error
   Maybe Text ->
   -- | code
   Maybe Text ->
   -- | state
   Maybe Text ->
-  Eff es LoginInUser
-handleLoggedIn err codeM stateM = do
+  Eff
+    es
+    ( Headers
+        '[ Header "Set-Cookie" SetCookie
+         , Header "Set-Cookie" SetCookie
+         , Header "Set-Cookie" SetCookie
+         ]
+        LoginInUser
+    )
+handleLoggedIn cookieSettings err codeM stateM = do
   aOIDC <- asks aOIDC
   Config.ConfigStatus _ config _ <- getReloadConfig
   logInfo "OIDCCallbackCall" ["err" .= err, "code" .= codeM, "state" .= stateM]
@@ -934,24 +967,37 @@ handleLoggedIn err codeM stateM = do
             (from oauthCode)
       now <- liftIO Monocle.Prelude.getCurrentTime
       let idToken = O.idToken tokens
-          expiry = addUTCTime (24 * 3600) now
+          dayS = 24 * 3600
+          expiry = addUTCTime dayS now
           userId = aUserId oidcEnv idToken
           mUidMap = getIdents config $ "AuthProviderUID:" <> userId
+          authenticatedUser = AUser mUidMap userId (truncate $ nominalDiffTimeToSeconds $ utcTimeToPOSIXSeconds expiry)
+          jwtCfg = localJWTSettings aOIDC
       logInfo "OIDCProviderTokenRequested" ["id" .= show @Text idToken]
-      jwtE <- liftIO $ mkJwt (localJWTSettings aOIDC) mUidMap userId (Just expiry)
-      case jwtE of
-        Right jwt -> do
+      -- Here we create the JWT Session Cookie that will be used by the browser to authenticate requests
+      mApplyCookies <-
+        liftIO $
+          acceptLogin
+            -- The nested JWT owns the expiry
+            (cookieSettings {cookieExpires = Just expiry})
+            jwtCfg
+            authenticatedUser
+      -- Here we create a already expired JWT to be set as the Monocle Cookie. This cookie is used by web app
+      -- to extract non sensible authenticated user info
+      jwtE <- liftIO $ makeJWT authenticatedUser jwtCfg (Just $ addUTCTime (-dayS) now)
+      case (mApplyCookies, jwtE) of
+        (Just applyCookies, Right jwt) -> do
           incCounter monocleAuthSuccessCounter
           logInfo "JWTCreated" ["uid" .= mUidMap, "redir" .= unsafeInto @Text (redirectUri oidcEnv)]
-          let liJWT = decodeUtf8 jwt
-              liRedirectURI = case decodeOIDCState $ encodeUtf8 oauthState of
-                Just (OIDCState _ (Just uri)) -> uri
-                _ -> "/"
-          pure $ LoginInUser {..}
-        Left err' -> do
-          logInfo "JWTCreateFailed" ["uid" .= mUidMap, "err" .= show @Text err']
-          forbidden $ "Unable to generate user JWT due to: " <> show err'
+          let resp = addHeader (makeMonocleCookie jwt) $ LoginInUser (redirectURI oauthState)
+          pure $ applyCookies resp
+        _ -> do
+          logInfo "JWTCreateFailed" ["uid" .= mUidMap]
+          forbidden "Unable to generate user cookie"
  where
+  redirectURI oauthState = case decodeOIDCState $ encodeUtf8 oauthState of
+    Just (OIDCState _ (Just uri)) -> uri
+    _ -> "/"
   -- Get the Token's claim that identify an unique user
   aUserId :: OIDCEnv -> O.IdTokenClaims Value -> Text
   aUserId OIDCEnv {providerConfig} idToken = case opUserClaim providerConfig of

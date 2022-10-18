@@ -23,10 +23,9 @@ type authenticatedUser = {
 let jwtToAuthenticatedUser = jwt => {
   try {
     let decodedJwt = jwtDecode(jwt)
-    let exp = decodedJwt["exp"]->Belt.Float.fromString->Belt.Option.getExn
     {
       jwt: jwt,
-      jwt_exp: (exp *. 1000.0)->Js.Date.fromFloat,
+      jwt_exp: (decodedJwt["dat"]["aAuthUntil"] *. 1000.0)->Js.Date.fromFloat,
       defaultMuid: decodedJwt["dat"]["aDefaultMuid"],
       muidMap: decodedJwt["dat"]["aMuidMap"],
     }->Some

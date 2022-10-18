@@ -86,11 +86,21 @@ module Store = {
 
   type dispatch = action => unit
 
-  let getAuthenticatedUser = () => {
-    Dom.Storage.getItem("api-key", Dom.Storage.localStorage)->Belt.Option.flatMap(jwt =>
-      jwt->jwtToAuthenticatedUser
+  let getMonocleCookie = () =>
+    Js.String.split(";", Prelude.getCookies())
+    ->Belt.Array.keep(cookie => {
+      Js.String.split("=", cookie)
+      ->Belt.Array.get(0)
+      ->Belt.Option.getWithDefault("")
+      ->Js.String.trim == "Monocle"
+    })
+    ->Belt.Array.map(cookie =>
+      Js.String.split("=", cookie)->Belt.Array.get(1)->Belt.Option.getWithDefault("")
     )
-  }
+    ->Belt.Array.get(0)
+
+  let getAuthenticatedUser = () =>
+    getMonocleCookie()->Belt.Option.flatMap(jwt => jwt->jwtToAuthenticatedUser)
 
   let getAuthenticatedUserJWT = (state: t) =>
     state.authenticated_user->Belt.Option.flatMap(au => au.jwt->Some)
@@ -154,7 +164,7 @@ module Store = {
         {...state, username: None}
       }
     | AuthenticatedLogout => {
-        Dom.Storage.localStorage |> Dom.Storage.removeItem("api-key")
+        Prelude.delCookie("Monocle")
         {...state, authenticated_user: None}
       }
     }
@@ -190,11 +200,7 @@ module Fetch = {
   let suggestions = ((state: Store.t, dispatch)) =>
     fetch(
       state.suggestions,
-      () =>
-        WebApi.Search.suggestions(
-          {SearchTypes.index: state.index},
-          state->Store.getAuthenticatedUserJWT,
-        ),
+      () => WebApi.Search.suggestions({SearchTypes.index: state.index}),
       res => Store.FetchSuggestions(res),
       dispatch,
     )
@@ -202,7 +208,7 @@ module Fetch = {
   let fields = ((state: Store.t, dispatch)) => {
     fetch(
       state.fields,
-      () => WebApi.Search.fields({version: "1"}, state->Store.getAuthenticatedUserJWT),
+      () => WebApi.Search.fields({version: "1"}),
       res => Store.FetchFields(res),
       dispatch,
     )
@@ -211,11 +217,7 @@ module Fetch = {
   let projects = ((state: Store.t, dispatch)) => {
     fetch(
       state.projects,
-      () =>
-        WebApi.Config.getProjects(
-          {ConfigTypes.index: state.index},
-          state->Store.getAuthenticatedUserJWT,
-        ),
+      () => WebApi.Config.getProjects({ConfigTypes.index: state.index}),
       res => Store.FetchProjects(res),
       dispatch,
     )

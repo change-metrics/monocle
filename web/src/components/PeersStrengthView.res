@@ -80,7 +80,6 @@ let make = (~store: Store.t, ~stacked: bool, ~extraQuery: option<string>=?) => {
   let limitSelector = <LimitSelector limit setLimit default=25 values=limit_values />
   let title = "Peers Strength"
   let icon = <Patternfly.Icons.Integration />
-  let tokenM = state->Store.Store.getAuthenticatedUserJWT
   let match = resp =>
     switch resp {
     | SearchTypes.Authors_peers(tps) => Some(tps)
@@ -101,9 +100,7 @@ let make = (~store: Store.t, ~stacked: bool, ~extraQuery: option<string>=?) => {
           </MGridItemXl7>
         </MGrid>
 
-  <QueryRenderCard
-    request tokenM trigger title tooltip_content icon limitSelector match childrenBuilder
-  />
+  <QueryRenderCard request trigger title tooltip_content icon limitSelector match childrenBuilder />
 }
 
 let default = make

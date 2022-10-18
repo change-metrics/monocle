@@ -23,7 +23,7 @@ import Network.Wai.Middleware.Prometheus (def, prometheus)
 import Prometheus (register)
 import Prometheus.Metric.GHC (ghcMetrics)
 import Servant
-import Servant.Auth.Server (defaultCookieSettings, defaultJWTSettings)
+import Servant.Auth.Server (CookieSettings (..), cookieXsrfSetting, defaultCookieSettings, defaultJWTSettings)
 import System.Directory qualified
 
 import Effectful qualified as E
@@ -33,10 +33,10 @@ import Effectful.Reader.Static qualified as E
 import Effectful.Servant qualified
 import Monocle.Effects
 
-rootServer :: ApiEffects es => '[E.Concurrent] :>> es => Servant.ServerT RootAPI (Eff es)
-rootServer = app :<|> app
+rootServer :: ApiEffects es => '[E.Concurrent] :>> es => CookieSettings -> Servant.ServerT RootAPI (Eff es)
+rootServer cookieSettings = app :<|> app
  where
-  app = server :<|> handleLogin :<|> handleLoggedIn
+  app = server :<|> handleLogin :<|> handleLoggedIn cookieSettings
 
 fallbackWebAppPath :: FilePath
 fallbackWebAppPath = "web/build/"
@@ -158,7 +158,8 @@ run' ApiConfig {..} aplogger = E.runConcurrent $ runLoggerEffect do
 
     let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
         jwtCfg = localJWTSettings
-        cfg = jwtCfg :. defaultCookieSettings :. EmptyContext
+        cookieCfg = defaultCookieSettings {cookieXsrfSetting = Nothing}
+        cfg = jwtCfg :. cookieCfg :. EmptyContext
         middleware =
           cors (const $ Just corsPolicy)
             . monitoringMiddleware
@@ -171,7 +172,11 @@ run' ApiConfig {..} aplogger = E.runConcurrent $ runLoggerEffect do
       pure AppEnv {bhEnv, aOIDC, config = configIO}
 
     E.runReader appEnv $
-      Effectful.Servant.runWarpServerSettingsContext @RootAPI settings cfg rootServer middleware
+      Effectful.Servant.runWarpServerSettingsContext @RootAPI
+        settings
+        cfg
+        (rootServer cookieCfg)
+        middleware
   case r of
     Left e -> error (show e)
     Right e -> error (show e)

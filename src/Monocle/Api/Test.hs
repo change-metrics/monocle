@@ -65,12 +65,14 @@ withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
     testSetup = do
       conf <- Config.csConfig <$> liftIO (appEnv.config)
       let indexes = Config.getWorkspaces conf
-          cfg = appEnv.aOIDC.localJWTSettings :. defaultCookieSettings :. EmptyContext
+          cookieCfg = defaultCookieSettings
+          jwtCfg = appEnv.aOIDC.localJWTSettings
+          cfg = jwtCfg :. cookieCfg :. EmptyContext
       traverse_
         (\index -> runEmptyQueryM index I.ensureIndex)
         indexes
       unsafeEff $ \es ->
-        let app = Effectful.Servant.hoistEff @RootAPI es cfg rootServer
+        let app = Effectful.Servant.hoistEff @RootAPI es cfg (rootServer cookieCfg)
             withManager manager = do
               withClient "http://localhost" (Just manager) $ \client -> do
                 testCb client

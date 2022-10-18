@@ -25,11 +25,9 @@ let make = (~store: Store.t) => {
     resp.items->Belt.List.map(group => <GroupItem store key={group.name} group />)
   }
 
-  let tokenM = state->Store.Store.getAuthenticatedUserJWT
-
   <MonoCard title tooltip_content icon>
     <NetworkRender
-      get={() => WebApi.Config.getGroups({ConfigTypes.index: state.index}, tokenM)}
+      get={() => WebApi.Config.getGroups({ConfigTypes.index: state.index})}
       trigger
       render={resp => resp->toItems->Belt.List.toArray->React.array}
     />
