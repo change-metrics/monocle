@@ -2,7 +2,7 @@ open Prelude
 
 @react.component
 let make = (~store: Store.t) => {
-  let title = "Search an author"
+  let title = "Search authors"
   let tooltip_content = "Use this form to search authors over all event authors"
   let icon = <Patternfly.Icons.Users />
   let (state, _) = store
