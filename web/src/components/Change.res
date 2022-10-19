@@ -7,7 +7,7 @@
 open Prelude
 open MLink
 
-let complexicity = (change: SearchTypes.change) =>
+let complexity = (change: SearchTypes.change) =>
   Int32.to_int(change.changed_files_count) +
   Int32.to_int(change.additions) +
   Int32.to_int(change.deletions)
@@ -307,8 +307,8 @@ module DataItem = {
               <ChangeLink store id={change.change_id} />
               <StatusButton store change status dispatchChange />
               <span style={ReactDOM.Style.make(~float="right", ())}>
-                {"Complexicity: "->str}
-                <Badge isRead={true}> {change->complexicity->string_of_int->str} </Badge>
+                {"Complexity: "->str}
+                <Badge isRead={true}> {change->complexity->string_of_int->str} </Badge>
               </span>
             </span>
           </CardHeader>
@@ -370,9 +370,7 @@ module RowItem = {
       <td role="cell"> <BranchLink store branch={change.target_branch} /> </td>
       <td role="cell"> <RelativeDate title="" date={change.created_at->getDate} /> </td>
       <td role="cell"> <RelativeDate title="" date={change.updated_at->getDate} /> </td>
-      <td role="cell">
-        <Badge isRead={true}> {change->complexicity->string_of_int->str} </Badge>
-      </td>
+      <td role="cell"> <Badge isRead={true}> {change->complexity->string_of_int->str} </Badge> </td>
       <td role="cell">
         <div> <Approvals withGroup={true} approvals={change.approval} /> </div>
         <div> <Tags withGroup={true} tags={change.labels} /> </div>
@@ -465,7 +463,7 @@ module ChangeDetailView = {
         </MStackItem>
         <MStackItem>
           {"Complexity of " ++
-          change->complexicity->string_of_int ++
+          change->complexity->string_of_int ++
           " in " ++
           change.commits_count->int32_str ++
           " commit(s) changing " ++
