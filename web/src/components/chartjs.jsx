@@ -403,7 +403,7 @@ class DurationComplexityGraph extends ComplexityGraph {
   }
 
   getData(x) {
-    // complexicity from Change.res
+    // complexity from Change.res
     x.duration = (x.merged_at - x.created_at) / 1000
     x.complexity = x.changed_files_count + x.additions + x.deletions
     return { x: x.duration, y: x.complexity, r: 5 }

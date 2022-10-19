@@ -324,7 +324,7 @@ in rec {
     fi
 
     export WEB_PORT=${toString web-port}
-    if [ "$MONOCLE_PUBLIC_URL" -eq "" ]; then
+    if [ -z "$MONOCLE_PUBLIC_URL" ]; then
       export REACT_APP_API_URL="http://localhost:${toString monocle-port}"
     else
       export REACT_APP_API_URL=$MONOCLE_PUBLIC_URL
