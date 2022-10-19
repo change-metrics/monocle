@@ -50,14 +50,20 @@ mkEnv' = do
 mkConfig :: Text -> Config.Index
 mkConfig = Config.mkTenant
 
+indexNamePrefix :: Text
+indexNamePrefix = "monocle.changes.1."
+
 envToIndexName :: QueryTarget -> BH.IndexName
 envToIndexName target = do
   case target of
-    QueryWorkspace ws -> tenantIndexName ws
+    QueryWorkspace ws -> indexName ws
     QueryConfig _ -> BH.IndexName "monocle.config"
  where
-  tenantIndexName :: Config.Index -> BH.IndexName
-  tenantIndexName Config.Index {..} = BH.IndexName $ "monocle.changes.1." <> name
+  indexName :: Config.Index -> BH.IndexName
+  indexName Config.Index {..} = tenantIndexName name
+
+tenantIndexName :: Text -> BH.IndexName
+tenantIndexName indexName = BH.IndexName $ indexNamePrefix <> indexName
 
 -- | 'mkQuery' creates a Q.Query from a BH.Query
 mkQuery :: [BH.Query] -> Q.Query

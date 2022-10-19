@@ -692,3 +692,19 @@ module MonoTabs = {
     ~onSelect: (unit, string) => unit=?,
   ) => React.element = "Tabs"
 }
+
+module HTMXGetHook = {
+  @react.component
+  let make = (~children, ~url: string, ~trigger: string, ~hxVals: string) => {
+    let htmxSend = elm => {
+      React.cloneElement(
+        elm,
+        {"hx-get": url, "hx-trigger": trigger, "hx-target": "closest div", "hx-vals": hxVals},
+      )
+    }
+    React.useEffect(() => {
+      %raw(`htmx.process(htmx.find("#htmx-component"))`)
+    })
+    <div id="htmx-component"> {htmxSend(children)} </div>
+  }
+}

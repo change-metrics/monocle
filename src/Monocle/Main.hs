@@ -6,6 +6,7 @@ import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
 import Monocle.Api.Jwt (doGenJwk, initOIDCEnv)
 import Monocle.Api.Server (handleLoggedIn, handleLogin)
+import Monocle.Api.ServerHTMX (searchAuthorsHandler)
 import Monocle.Backend.Index qualified as I
 import Monocle.Config (getAuthProvider, opName)
 import Monocle.Config qualified as Config
@@ -13,7 +14,7 @@ import Monocle.Env
 import Monocle.Prelude
 import Monocle.Search.Query (loadAliases)
 import Monocle.Servant.HTTP (server)
-import Monocle.Servant.HTTPAuth (RootAPI)
+import Monocle.Servant.HTTPMain (RootAPI)
 import Network.HTTP.Types.Status qualified as HTTP
 import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
@@ -36,7 +37,7 @@ import Monocle.Effects
 rootServer :: ApiEffects es => '[E.Concurrent] :>> es => CookieSettings -> Servant.ServerT RootAPI (Eff es)
 rootServer cookieSettings = app :<|> app
  where
-  app = server :<|> handleLogin :<|> handleLoggedIn cookieSettings
+  app = server :<|> searchAuthorsHandler :<|> handleLogin :<|> handleLoggedIn cookieSettings
 
 fallbackWebAppPath :: FilePath
 fallbackWebAppPath = "web/build/"
