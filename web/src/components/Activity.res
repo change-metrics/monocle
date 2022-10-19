@@ -241,7 +241,7 @@ module ChangesReviewStats = {
 }
 
 module ChangesMergedDuration = {
-  module DurationComplexicityGraph = {
+  module DurationComplexityGraph = {
     @react.component @module("./chartjs.jsx")
     external make: (~data: array<SearchTypes.change>, ~onClick: string => unit) => React.element =
       "ChangesReviewStats"
@@ -268,7 +268,7 @@ module ChangesMergedDuration = {
       | _ => None
       }
     let childrenBuilder = (data: Web.SearchTypes.changes) => {
-      let graph = <DurationComplexicityGraph data={data.changes->Belt.List.toArray} onClick />
+      let graph = <DurationComplexityGraph data={data.changes->Belt.List.toArray} onClick />
       <GraphWithStats graph stats=React.null />
     }
 
