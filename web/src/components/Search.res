@@ -276,7 +276,7 @@ module OrderSelectorModal = {
             SearchTypes.Asc
           }
         )
-      let fields = list{"created_at", "updated_at", "repo", "score"}
+      let fields = list{"created_at", "updated_at", "repo", "task.score"}
       <>
         <MSelect
           placeholder={"Pick a field"}
