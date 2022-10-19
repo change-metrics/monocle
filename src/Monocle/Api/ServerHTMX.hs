@@ -4,7 +4,7 @@ import Data.String.Interpolate (iii)
 import Data.Vector qualified as V
 import Lucid
 import Lucid.Base
-import Monocle.Api.Jwt (AuthenticatedUser (AUser))
+import Monocle.Api.Jwt (AuthenticatedUser)
 import Monocle.Api.Server (searchAuthor)
 import Monocle.Effects (ApiEffects)
 import Monocle.Prelude
@@ -18,15 +18,13 @@ hxTrigger = makeAttribute "hx-trigger"
 hxTarget = makeAttribute "hx-target"
 hxVals = makeAttribute "hx-vals"
 
-searchAuthorsHandler :: ApiEffects es => Maybe Text -> Maybe Text -> Eff es (Html ())
-searchAuthorsHandler Nothing _ = pure $ pure ()
-searchAuthorsHandler (Just index) queryM = do
+searchAuthorsHandler :: ApiEffects es => AuthResult AuthenticatedUser -> Maybe Text -> Maybe Text -> Eff es (Html ())
+searchAuthorsHandler _ Nothing _ = pure $ pure ()
+searchAuthorsHandler auth (Just index) queryM = do
   case queryM of
     Just query -> do
       (SearchPB.AuthorResponse results) <-
-        searchAuthor
-          (Authenticated (AUser mempty "" 0))
-          (AuthorRequest (from index) (from query))
+        searchAuthor auth (AuthorRequest (from index) (from query))
       case toList results of
         [] -> pure $ div_ "No Results"
         _xs -> pure $ mapM_ authorToMarkup results
