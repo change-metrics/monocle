@@ -308,7 +308,9 @@ module DataItem = {
               <StatusButton store change status dispatchChange />
               <span style={ReactDOM.Style.make(~float="right", ())}>
                 {"Complexity: "->str}
-                <Badge isRead={true}> {change->complexity->string_of_int->str} </Badge>
+                <Tooltip content="Count of lines changed + Count of files changed">
+                  <Badge isRead={true}> {change->complexity->string_of_int->str} </Badge>
+                </Tooltip>
               </span>
             </span>
           </CardHeader>
