@@ -1,7 +1,8 @@
-module Monocle.Servant.HTTPAuth where
+module Monocle.Servant.HTTPMain where
 
 import Data.Text
 import Monocle.Api.Jwt (LoginInUser (..))
+import Monocle.Servant.HTMX
 import Monocle.Servant.HTTP
 import Servant
 import Servant.Auth.Server (SetCookie)
@@ -9,7 +10,7 @@ import Servant.HTML.Blaze (HTML)
 
 -- | The API is served at both `/api/2/` (for backward compat with the legacy nginx proxy)
 -- and `/` (for compat with crawler client)
-type MonocleAPI' = MonocleAPI :<|> AuthAPI
+type MonocleAPI' = MonocleAPI :<|> HtmxAPI :<|> AuthAPI
 
 type RootAPI = "api" :> "2" :> MonocleAPI' :<|> MonocleAPI'
 
