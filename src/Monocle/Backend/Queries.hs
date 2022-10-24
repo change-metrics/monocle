@@ -378,11 +378,7 @@ instance BucketName NoSubBucket where
 
 instance (FromJSON a, BucketName a) => FromJSON (HistoBucket a) where
   parseJSON (Object v) = do
-    HistoBucket
-      <$> v .: "key"
-      <*> v .: "key_as_string"
-      <*> v .: "doc_count"
-      <*> parseSubBucket
+    HistoBucket <$> v .: "key" <*> v .: "key_as_string" <*> v .: "doc_count" <*> parseSubBucket
    where
     subKeyName = bucketName (Proxy @a)
     parseSubBucket
@@ -512,10 +508,7 @@ data EventProjectBucketAgg = EventProjectBucketAgg
 
 instance FromJSON EventProjectBucketAgg where
   parseJSON (Object v) =
-    EventProjectBucketAgg
-      <$> v .: "key"
-      <*> v .: "doc_count"
-      <*> (unProjectBuckets <$> v .: "project")
+    EventProjectBucketAgg <$> v .: "key" <*> v .: "doc_count" <*> (unProjectBuckets <$> v .: "project")
   parseJSON _ = mzero
 
 newtype EventProjectBucketAggs = EventProjectBucketAggs {unEPBuckets :: [EventProjectBucketAgg]} deriving (Eq, Show)
@@ -676,16 +669,6 @@ getReposSummary = do
 getChangeEventsTop :: QEffects es => Word32 -> NonEmpty EDocType -> Text -> QueryFlavor -> Eff es TermsResultWTH
 getChangeEventsTop limit docs qfield qf =
   withFlavor qf $ getDocTypeTopCountByField docs qfield (Just limit)
-
-getMostReviewedAuthor :: QEffects es => Word32 -> Eff es TermsResultWTH
-getMostReviewedAuthor limit =
-  withFlavor (QueryFlavor Author CreatedAt) $
-    getDocTypeTopCountByField (EChangeReviewedEvent :| []) "on_author.muid" (Just limit)
-
-getMostCommentedAuthor :: QEffects es => Word32 -> Eff es TermsResultWTH
-getMostCommentedAuthor limit =
-  withFlavor (QueryFlavor Author CreatedAt) $
-    getDocTypeTopCountByField (EChangeCommentedEvent :| []) "on_author.muid" (Just limit)
 
 -- | peer strength authors
 data PeerStrengthResult = PeerStrengthResult
@@ -1449,15 +1432,53 @@ metricComments = Metric mi compute computeTrend topNotSupported
   computeTrend interval = withDocType EChangeCommentedEvent qf $ countHisto CreatedAt interval
   qf = QueryFlavor Author CreatedAt
 
+metricChangeReviewedAuthors :: QEffects es => Metric es Word32
+metricChangeReviewedAuthors = Metric mi compute computeTrend computeTop
+ where
+  mi =
+    MetricInfo
+      "change_reviewed_authors"
+      "Change reviewed' authors count"
+      "The count of reviewed change's author"
+      [iii|The metric is the count of reviewed change's author aggregated by unique author. #{queryFlavorToDesc qf}|]
+  compute =
+    Num . countToWord
+      <$> withFilter [documentType ev] (withFlavor qf countOnAuthors)
+  computeTrend = onAuthorCountHisto ev
+  computeTop limit =
+    Just . toTermsCountWord32
+      <$> getChangeEventsTop limit (ev :| []) "on_author.muid" qf
+  qf = QueryFlavor OnAuthor CreatedAt
+  ev = EChangeReviewedEvent
+
+metricChangeCommentedAuthors :: QEffects es => Metric es Word32
+metricChangeCommentedAuthors = Metric mi compute computeTrend computeTop
+ where
+  mi =
+    MetricInfo
+      "change_commented_authors"
+      "Change commented' authors count"
+      "The count of commented change's author"
+      [iii|The metric is the count of commented change's author aggregated by unique author. #{queryFlavorToDesc qf}|]
+  compute =
+    Num . countToWord
+      <$> withFilter [documentType ev] (withFlavor qf countOnAuthors)
+  computeTrend = onAuthorCountHisto ev
+  computeTop limit =
+    Just . toTermsCountWord32
+      <$> getChangeEventsTop limit (ev :| []) "on_author.muid" qf
+  qf = QueryFlavor OnAuthor CreatedAt
+  ev = EChangeCommentedEvent
+
 metricReviewAuthors :: QEffects es => Metric es Word32
 metricReviewAuthors = Metric mi compute computeTrend computeTop
  where
   mi =
     MetricInfo
       "review_authors"
-      "Review authors count"
-      "The count of change's review authors"
-      [iii|The metric is the count of change' reviews aggregated by unique authors. #{queryFlavorToDesc qf}|]
+      "Review' authors count"
+      "The count of change's reviewer"
+      [iii|The metric is the count of change's review authors aggregated by unique author. #{queryFlavorToDesc qf}|]
   compute =
     Num . countToWord
       <$> withFilter [documentType ev] (withFlavor qf countAuthors)
@@ -1474,9 +1495,9 @@ metricCommentAuthors = Metric mi compute computeTrend computeTop
   mi =
     MetricInfo
       "comment_authors"
-      "Comment authors count"
-      "The count of change's comment authors"
-      [iii|The metric is the count of change' comments aggregated by unique authors. #{queryFlavorToDesc qf}|]
+      "Comment' authors count"
+      "The count of change's commenter"
+      [iii|The metric is the count of change's comment authors aggregated by unique author. #{queryFlavorToDesc qf}|]
   compute =
     Num . countToWord
       <$> withFilter [documentType ev] (withFlavor qf countAuthors)
@@ -1670,6 +1691,8 @@ allMetrics =
     , toJSON <$> metricCommentAuthors
     , toJSON <$> metricChangeAuthors
     , toJSON <$> metricChangeMergedAuthors
+    , toJSON <$> metricChangeReviewedAuthors
+    , toJSON <$> metricChangeCommentedAuthors
     , toJSON <$> metricTimeToMerge
     , toJSON <$> metricTimeToMergeVariance
     , toJSON <$> metricFirstCommentMeanTime

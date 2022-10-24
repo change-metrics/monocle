@@ -591,9 +591,11 @@ searchQuery auth request = checkAuth auth response
             termsCountWord32ToResult . fromJust
               <$> Q.runMetricTop Q.metricChangeMergedAuthors queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_REVIEWED_AUTHORS ->
-            handleTopAuthorsQ queryRequestLimit Q.getMostReviewedAuthor
+            termsCountWord32ToResult . fromJust
+              <$> Q.runMetricTop Q.metricChangeReviewedAuthors queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS ->
-            handleTopAuthorsQ queryRequestLimit Q.getMostCommentedAuthor
+            termsCountWord32ToResult . fromJust
+              <$> Q.runMetricTop Q.metricChangeCommentedAuthors queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS ->
             SearchPB.QueryResponse
               . Just
@@ -644,17 +646,6 @@ searchQuery auth request = checkAuth auth response
       . Just
       . SearchPB.QueryResponseResultTopAuthors
       . Q.toTermsCountPBInt
-
-  handleTopAuthorsQ :: Word32 -> (Word32 -> Eff es Q.TermsResultWTH) -> Eff es SearchPB.QueryResponse
-  handleTopAuthorsQ limit cb = do
-    results <- cb limit
-    pure
-      . SearchPB.QueryResponse
-      . Just
-      . SearchPB.QueryResponseResultTopAuthors
-      $ toTermsCount (V.fromList $ toTTResult <$> Q.tsrTR results) (toInt $ Q.tsrTH results)
-   where
-    toInt c = fromInteger $ toInteger c
 
   toAPeerResult :: Q.PeerStrengthResult -> SearchPB.AuthorPeer
   toAPeerResult Q.PeerStrengthResult {..} =
@@ -847,6 +838,8 @@ metricGet auth request = checkAuth auth response
       "comment_authors" -> runMetric Q.metricCommentAuthors
       "change_authors" -> runMetric Q.metricChangeAuthors
       "change_merged_authors" -> runMetric Q.metricChangeMergedAuthors
+      "change_reviewed_authors" -> runMetric Q.metricChangeReviewedAuthors
+      "change_commented_authors" -> runMetric Q.metricChangeCommentedAuthors
       "time_to_merge" -> runMetric Q.metricTimeToMerge
       "time_to_merge_variance" -> runMetric Q.metricTimeToMergeVariance
       "first_review_mean_time" -> runMetric Q.metricFirstReviewMeanTime
