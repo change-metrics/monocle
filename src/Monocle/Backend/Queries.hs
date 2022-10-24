@@ -1442,6 +1442,44 @@ metricComments = Metric mi compute computeTrend topNotSupported
   computeTrend interval = withDocType EChangeCommentedEvent qf $ countHisto CreatedAt interval
   qf = QueryFlavor Author CreatedAt
 
+metricChangeReviewedAuthors :: QEffects es => Metric es Word32
+metricChangeReviewedAuthors = Metric mi compute computeTrend computeTop
+ where
+  mi =
+    MetricInfo
+      "change_reviewed_authors"
+      "Change reviewed' authors count"
+      "The count of reviewed change's author"
+      [iii|The metric is the count of reviewed change's author aggregated by unique author. #{queryFlavorToDesc qf}|]
+  compute =
+    Num . countToWord
+      <$> withFilter [documentType ev] (withFlavor qf countOnAuthors)
+  computeTrend = onAuthorCountHisto ev
+  computeTop limit =
+    Just . toTermsCountWord32
+      <$> getChangeEventsTop limit (ev :| []) "on_author.muid" qf
+  qf = QueryFlavor OnAuthor CreatedAt
+  ev = EChangeReviewedEvent
+
+metricChangeCommentedAuthors :: QEffects es => Metric es Word32
+metricChangeCommentedAuthors = Metric mi compute computeTrend computeTop
+ where
+  mi =
+    MetricInfo
+      "change_commented_authors"
+      "Change commented' authors count"
+      "The count of commented change's author"
+      [iii|The metric is the count of commented change's author aggregated by unique author. #{queryFlavorToDesc qf}|]
+  compute =
+    Num . countToWord
+      <$> withFilter [documentType ev] (withFlavor qf countOnAuthors)
+  computeTrend = onAuthorCountHisto ev
+  computeTop limit =
+    Just . toTermsCountWord32
+      <$> getChangeEventsTop limit (ev :| []) "on_author.muid" qf
+  qf = QueryFlavor OnAuthor CreatedAt
+  ev = EChangeCommentedEvent
+
 metricReviewAuthors :: QEffects es => Metric es Word32
 metricReviewAuthors = Metric mi compute computeTrend computeTop
  where
@@ -1663,6 +1701,8 @@ allMetrics =
     , toJSON <$> metricCommentAuthors
     , toJSON <$> metricChangeAuthors
     , toJSON <$> metricChangeMergedAuthors
+    , toJSON <$> metricChangeReviewedAuthors
+    , toJSON <$> metricChangeCommentedAuthors
     , toJSON <$> metricTimeToMerge
     , toJSON <$> metricTimeToMergeVariance
     , toJSON <$> metricFirstCommentMeanTime

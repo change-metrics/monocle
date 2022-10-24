@@ -847,6 +847,8 @@ metricGet auth request = checkAuth auth response
       "comment_authors" -> runMetric Q.metricCommentAuthors
       "change_authors" -> runMetric Q.metricChangeAuthors
       "change_merged_authors" -> runMetric Q.metricChangeMergedAuthors
+      "change_reviewed_authors" -> runMetric Q.metricChangeReviewedAuthors
+      "change_commented_authors" -> runMetric Q.metricChangeCommentedAuthors
       "time_to_merge" -> runMetric Q.metricTimeToMerge
       "time_to_merge_variance" -> runMetric Q.metricTimeToMergeVariance
       "first_review_mean_time" -> runMetric Q.metricFirstReviewMeanTime
