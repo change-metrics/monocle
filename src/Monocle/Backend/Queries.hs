@@ -378,11 +378,7 @@ instance BucketName NoSubBucket where
 
 instance (FromJSON a, BucketName a) => FromJSON (HistoBucket a) where
   parseJSON (Object v) = do
-    HistoBucket
-      <$> v .: "key"
-      <*> v .: "key_as_string"
-      <*> v .: "doc_count"
-      <*> parseSubBucket
+    HistoBucket <$> v .: "key" <*> v .: "key_as_string" <*> v .: "doc_count" <*> parseSubBucket
    where
     subKeyName = bucketName (Proxy @a)
     parseSubBucket
@@ -512,10 +508,7 @@ data EventProjectBucketAgg = EventProjectBucketAgg
 
 instance FromJSON EventProjectBucketAgg where
   parseJSON (Object v) =
-    EventProjectBucketAgg
-      <$> v .: "key"
-      <*> v .: "doc_count"
-      <*> (unProjectBuckets <$> v .: "project")
+    EventProjectBucketAgg <$> v .: "key" <*> v .: "doc_count" <*> (unProjectBuckets <$> v .: "project")
   parseJSON _ = mzero
 
 newtype EventProjectBucketAggs = EventProjectBucketAggs {unEPBuckets :: [EventProjectBucketAgg]} deriving (Eq, Show)
@@ -1455,9 +1448,9 @@ metricReviewAuthors = Metric mi compute computeTrend computeTop
   mi =
     MetricInfo
       "review_authors"
-      "Review authors count"
-      "The count of change's review authors"
-      [iii|The metric is the count of change' reviews aggregated by unique authors. #{queryFlavorToDesc qf}|]
+      "Review' authors count"
+      "The count of change's reviewer"
+      [iii|The metric is the count of change's review authors aggregated by unique author. #{queryFlavorToDesc qf}|]
   compute =
     Num . countToWord
       <$> withFilter [documentType ev] (withFlavor qf countAuthors)
@@ -1474,9 +1467,9 @@ metricCommentAuthors = Metric mi compute computeTrend computeTop
   mi =
     MetricInfo
       "comment_authors"
-      "Comment authors count"
-      "The count of change's comment authors"
-      [iii|The metric is the count of change' comments aggregated by unique authors. #{queryFlavorToDesc qf}|]
+      "Comment' authors count"
+      "The count of change's commenter"
+      [iii|The metric is the count of change's comment authors aggregated by unique author. #{queryFlavorToDesc qf}|]
   compute =
     Num . countToWord
       <$> withFilter [documentType ev] (withFlavor qf countAuthors)

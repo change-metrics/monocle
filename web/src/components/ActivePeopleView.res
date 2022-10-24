@@ -126,13 +126,13 @@ module TopMetricsInfo = {
     | ByChangeReviewed => (
         SearchTypes.Query_top_authors_changes_reviewed,
         "By reviews",
-        tooltip_prefix ++ "reviews they performed",
+        "This shows a list of review' authors ordered by the amount of reviews they performed",
         TopTermsTable.NoLink,
       )
     | ByChangeCommented => (
         SearchTypes.Query_top_authors_changes_commented,
         "By comments",
-        tooltip_prefix ++ "comments they wrote",
+        "This shows a list of comment' authors ordered by the amount of comments they wrote",
         TopTermsTable.NoLink,
       )
     | ByMostReviewed => (
