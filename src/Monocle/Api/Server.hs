@@ -591,9 +591,11 @@ searchQuery auth request = checkAuth auth response
             termsCountWord32ToResult . fromJust
               <$> Q.runMetricTop Q.metricChangeMergedAuthors queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_REVIEWED_AUTHORS ->
-            handleTopAuthorsQ queryRequestLimit Q.getMostReviewedAuthor
+            termsCountWord32ToResult . fromJust
+              <$> Q.runMetricTop Q.metricChangeReviewedAuthors queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS ->
-            handleTopAuthorsQ queryRequestLimit Q.getMostCommentedAuthor
+            termsCountWord32ToResult . fromJust
+              <$> Q.runMetricTop Q.metricChangeCommentedAuthors queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS ->
             SearchPB.QueryResponse
               . Just
@@ -644,17 +646,6 @@ searchQuery auth request = checkAuth auth response
       . Just
       . SearchPB.QueryResponseResultTopAuthors
       . Q.toTermsCountPBInt
-
-  handleTopAuthorsQ :: Word32 -> (Word32 -> Eff es Q.TermsResultWTH) -> Eff es SearchPB.QueryResponse
-  handleTopAuthorsQ limit cb = do
-    results <- cb limit
-    pure
-      . SearchPB.QueryResponse
-      . Just
-      . SearchPB.QueryResponseResultTopAuthors
-      $ toTermsCount (V.fromList $ toTTResult <$> Q.tsrTR results) (toInt $ Q.tsrTH results)
-   where
-    toInt c = fromInteger $ toInteger c
 
   toAPeerResult :: Q.PeerStrengthResult -> SearchPB.AuthorPeer
   toAPeerResult Q.PeerStrengthResult {..} =
