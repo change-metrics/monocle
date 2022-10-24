@@ -18,6 +18,7 @@ All notable changes to this project will be documented in this file.
 
 - [crawler] Github crawler no longer crash when rate limit is deactivated on GHE (#958).
 - [api] Ordering by task's score (#833).
+- [api] Filter on "not author" for top authors metric "By changes reviewed" and "By changes commented".
 
 ## [1.7.0] - 2022-09-16
 
