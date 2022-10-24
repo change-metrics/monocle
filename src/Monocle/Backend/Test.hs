@@ -756,40 +756,46 @@ testTopAuthors = withTenant doTest
 
     -- Check for expected metrics
     withQuery defaultQuery do
-      results <- fromJust <$> Q.runMetricTop Q.metricChangeAuthors 10
-      assertEqual'
-        "Check metricChangeAuthors Top"
-        (V.fromList [Q.TermCount {tcTerm = "eve", tcCount = 4}])
-        (Q.tscData results)
-      results' <- fromJust <$> Q.runMetricTop Q.metricChangeMergedAuthors 10
-      assertEqual'
-        "Check metricChangeMergedAuthors Top"
-        (V.fromList [Q.TermCount {tcTerm = "eve", tcCount = 2}])
-        (Q.tscData results')
-      results'' <- fromJust <$> Q.runMetricTop Q.metricReviewAuthors 10
-      assertEqual'
-        "Check metricReviewAuthors Top"
-        ( V.fromList
-            [ Q.TermCount {tcTerm = "alice", tcCount = 2}
-            , Q.TermCount {tcTerm = "bob", tcCount = 2}
-            ]
-        )
-        (Q.tscData results'')
-      results''' <- fromJust <$> Q.runMetricTop Q.metricCommentAuthors 10
-      assertEqual'
-        "Check metricCommentAuthors Top"
-        (V.fromList [Q.TermCount {tcTerm = "alice", tcCount = 2}])
-        (Q.tscData results''')
-      results'''' <- Q.getMostReviewedAuthor 10
-      assertEqual'
-        "Check getMostReviewedAuthor count"
-        [Q.TermResult {trTerm = "eve", trCount = 4}]
-        (Q.tsrTR results'''')
-      results''''' <- Q.getMostCommentedAuthor 10
-      assertEqual'
-        "Check getMostCommentedAuthor count"
-        [Q.TermResult {trTerm = "eve", trCount = 2}]
-        (Q.tsrTR results''''')
+      do
+        results <- fromJust <$> Q.runMetricTop Q.metricChangeAuthors 10
+        assertEqual'
+          "Check metricChangeAuthors Top"
+          (V.fromList [Q.TermCount {tcTerm = "eve", tcCount = 4}])
+          (Q.tscData results)
+      do
+        results <- fromJust <$> Q.runMetricTop Q.metricChangeMergedAuthors 10
+        assertEqual'
+          "Check metricChangeMergedAuthors Top"
+          (V.fromList [Q.TermCount {tcTerm = "eve", tcCount = 2}])
+          (Q.tscData results)
+      do
+        results <- fromJust <$> Q.runMetricTop Q.metricReviewAuthors 10
+        assertEqual'
+          "Check metricReviewAuthors Top"
+          ( V.fromList
+              [ Q.TermCount {tcTerm = "alice", tcCount = 2}
+              , Q.TermCount {tcTerm = "bob", tcCount = 2}
+              ]
+          )
+          (Q.tscData results)
+      do
+        results <- fromJust <$> Q.runMetricTop Q.metricCommentAuthors 10
+        assertEqual'
+          "Check metricCommentAuthors Top"
+          (V.fromList [Q.TermCount {tcTerm = "alice", tcCount = 2}])
+          (Q.tscData results)
+      do
+        results <- fromJust <$> Q.runMetricTop Q.metricChangeReviewedAuthors 10
+        assertEqual'
+          "Check metricChangeReviewedAuthors Top"
+          (V.fromList [Q.TermCount {tcTerm = "eve", tcCount = 4}])
+          (Q.tscData results)
+      do
+        results <- fromJust <$> Q.runMetricTop Q.metricChangeCommentedAuthors 10
+        assertEqual'
+          "Check metricChangeCommentedAuthors Top"
+          (V.fromList [Q.TermCount {tcTerm = "eve", tcCount = 2}])
+          (Q.tscData results)
 
 testGetAuthorsPeersStrength :: Assertion
 testGetAuthorsPeersStrength = withTenant doTest

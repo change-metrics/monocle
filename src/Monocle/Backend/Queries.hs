@@ -670,16 +670,6 @@ getChangeEventsTop :: QEffects es => Word32 -> NonEmpty EDocType -> Text -> Quer
 getChangeEventsTop limit docs qfield qf =
   withFlavor qf $ getDocTypeTopCountByField docs qfield (Just limit)
 
-getMostReviewedAuthor :: QEffects es => Word32 -> Eff es TermsResultWTH
-getMostReviewedAuthor limit =
-  withFlavor (QueryFlavor Author CreatedAt) $
-    getDocTypeTopCountByField (EChangeReviewedEvent :| []) "on_author.muid" (Just limit)
-
-getMostCommentedAuthor :: QEffects es => Word32 -> Eff es TermsResultWTH
-getMostCommentedAuthor limit =
-  withFlavor (QueryFlavor Author CreatedAt) $
-    getDocTypeTopCountByField (EChangeCommentedEvent :| []) "on_author.muid" (Just limit)
-
 -- | peer strength authors
 data PeerStrengthResult = PeerStrengthResult
   { psrAuthor :: Text
