@@ -495,6 +495,8 @@ components:
                 duration:
                     type: integer
                     format: int32
+                draft:
+                    type: boolean
         monocle_change_ChangeMergedEvent:
             properties: {}
         monocle_change_ChangeReviewedEvent:

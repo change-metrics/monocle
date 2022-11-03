@@ -145,6 +145,7 @@ fakeChangeEvent from' to = do
       echangeeventTasksData = Nothing
       echangeeventLabels = Just []
       echangeeventDuration = Nothing
+      echangeeventDraft = Nothing
   pure $ EChangeEvent {..}
 
 fakeTaskId :: Faker.Fake Text

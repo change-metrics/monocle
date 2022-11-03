@@ -256,9 +256,8 @@ monocleBackendQueriesTests :: TestTree
 monocleBackendQueriesTests =
   testGroup
     "Monocle.Backend.Queries"
-    [ testCase
-        "Index changes"
-        testIndexChanges
+    [ testCase "Index changes" testIndexChanges
+    , testCase "Index events" testIndexEvents
     , testCase "Test achievement" testAchievements
     , testCase "Test reposSummary" testReposSummary
     , testCase "Test top authors" testTopAuthors

@@ -186,6 +186,18 @@ testIndexChanges = withTenant doTest
         , echangeUrl = "https://fakehost/change/" <> show number
         }
 
+testIndexEvents :: Assertion
+testIndexEvents = do
+  withTenant $ E.runFailIO do
+    let evt1 = emptyEvent {echangeeventType = EChangeCommentedEvent, echangeeventId = "1"}
+        evt2 = emptyEvent {echangeeventType = EChangeMergedEvent, echangeeventId = "2", echangeeventDraft = Just True}
+    I.indexEvents [evt1, evt2]
+    (Just evt1') <- I.getChangeEventById $ I.getEventDocId evt1
+    assertEqual' "Expect event evt1 type" (echangeeventType evt1') EChangeCommentedEvent
+    (Just evt2') <- I.getChangeEventById $ I.getEventDocId evt2
+    assertEqual' "Expect event evt2 type" (echangeeventType evt2') EChangeMergedEvent
+    assertEqual' "Expect event evt2 draft status" (echangeeventDraft evt2') (Just True)
+
 testProjectCrawlerMetadata :: Assertion
 testProjectCrawlerMetadata = withTenant doTest
  where
@@ -1250,6 +1262,7 @@ emptyEvent = EChangeEvent {..}
   echangeeventTasksData = Nothing
   echangeeventLabels = mempty
   echangeeventDuration = Nothing
+  echangeeventDraft = Nothing
 
 showEvents :: [ScenarioEvent] -> Text
 showEvents xs = Text.intercalate ", " $ sort (map go xs)

@@ -348,6 +348,7 @@ transformResponse host identCB result = do
       , changeEventLabels = changeLabels change
       , changeEventId = eId
       , changeEventType = Just eType
+      , changeEventDraft = changeDraft change
       , -- To be filled by caller function
         changeEventCreatedAt = Nothing
       , changeEventAuthor = Nothing

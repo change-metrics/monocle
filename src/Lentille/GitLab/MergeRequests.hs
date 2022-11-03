@@ -285,6 +285,7 @@ transformResponse host getIdentIdCB result =
           changeEventChangeId = changeChangeId
           changeEventUrl = changeUrl
           changeEventChangedFiles = fmap toChangeFilePath changeChangedFiles
+          changeEventDraft = changeDraft
           -- To be filled by caller function
           changeEventCreatedAt = Nothing
           changeEventAuthor = Nothing

@@ -126,4 +126,5 @@ message ChangeEvent {
   oneof optional_duration {
     int32 duration = 23;
   }
+  bool draft = 24;
 }

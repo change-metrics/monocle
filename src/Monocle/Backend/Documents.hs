@@ -467,6 +467,7 @@ data EChangeEvent = EChangeEvent
   , echangeeventApproval :: Maybe [LText]
   , echangeeventTasksData :: Maybe [ETaskData]
   , echangeeventDuration :: Maybe Int
+  , echangeeventDraft :: Maybe Bool
   }
   deriving (Show, Eq, Generic)
 

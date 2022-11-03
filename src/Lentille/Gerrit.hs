@@ -261,6 +261,7 @@ streamChange' env identCB serverUrl query prefixM = go 0
           changeEventLabels = changeLabels
           changeEventType = Just eType
           changeEventOptionalDuration = swapDuration <$> changeOptionalDuration
+          changeEventDraft = changeDraft
        in ChangePB.ChangeEvent {..}
     toChangeCreatedEvent =
       baseEvent (ChangePB.ChangeEventTypeChangeCreated ChangePB.ChangeCreatedEvent) $ "CCE" <> changeId
