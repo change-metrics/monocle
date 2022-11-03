@@ -414,6 +414,12 @@ monocleSearchLanguage =
             "{\"term\":{\"state\":{\"value\":\"CLOSED\"}}}"
         )
     , testCase
+        "Query draft state"
+        ( queryMatch
+            "state:draft"
+            "{\"term\":{\"draft\":{\"value\":\"true\"}}}"
+        )
+    , testCase
         "Query date"
         ( queryMatch
             "updated_at>2021 and updated_at<2021-05"
