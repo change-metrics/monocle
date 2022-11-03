@@ -361,7 +361,7 @@ streamChange' env identCB serverUrl query prefixM = go 0
         -- TODO(fbo) add assignees support to gerrit-haskell
         changeAssignees = V.fromList []
         changeApprovals = V.fromList $ from <$> toApprovals (M.toList labels)
-        changeDraft = status == DRAFT
+        changeDraft = work_in_progress == Just True
         changeOptionalSelfMerged =
           if status == MERGED
             then ChangePB.ChangeOptionalSelfMergedSelfMerged . isSelfMerged owner <$> submitter
@@ -402,4 +402,3 @@ streamChange' env identCB serverUrl query prefixM = go 0
       ABANDONED -> ChangePB.Change_ChangeStateClosed
       MERGED -> ChangePB.Change_ChangeStateMerged
       NEW -> ChangePB.Change_ChangeStateOpen
-      DRAFT -> ChangePB.Change_ChangeStateOpen

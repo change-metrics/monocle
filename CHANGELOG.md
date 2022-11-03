@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 
 - [api] Add the `file` field to the query language to filter changes changing at least a file path that match the regex.
 - [web] Search authors page displays the total count of authors.
+- [api] Enable the 'draft' status for Gerrit changes. 
 
 ### Changed
 
