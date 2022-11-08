@@ -485,6 +485,7 @@ toEChangeEvent ChangePB.ChangeEvent {..} =
         _anyOtherApprovals -> Nothing
     , echangeeventTasksData = Nothing
     , echangeeventDuration = toDuration <$> changeEventOptionalDuration
+    , echangeeventDraft = Just changeEventDraft
     }
  where
   author = toAuthor changeEventAuthor

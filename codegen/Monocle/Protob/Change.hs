@@ -1899,6 +1899,7 @@ data ChangeEvent = ChangeEvent
   , changeEventLabels :: Hs.Vector Hs.Text
   , changeEventOptionalDuration ::
       Hs.Maybe ChangeEventOptionalDuration
+  , changeEventDraft :: Hs.Bool
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -1928,6 +1929,7 @@ instance HsProtobuf.Message ChangeEvent where
       , changeEventType = changeEventType
       , changeEventLabels = changeEventLabels
       , changeEventOptionalDuration = changeEventOptionalDuration
+      , changeEventDraft = changeEventDraft
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -2081,6 +2083,10 @@ instance HsProtobuf.Message ChangeEvent where
                         (HsProtobuf.FieldNumber 23)
                         (HsProtobuf.ForceEmit y)
                     )
+          , ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 24)
+                changeEventDraft
+            )
           ]
       )
   decodeMessage _ =
@@ -2242,6 +2248,10 @@ instance HsProtobuf.Message ChangeEvent where
                 )
               ]
           )
+      <*> ( HsProtobuf.at
+              HsProtobuf.decodeMessageField
+              (HsProtobuf.FieldNumber 24)
+          )
   dotProto _ =
     [ ( HsProtobuf.DotProtoField
           (HsProtobuf.FieldNumber 1)
@@ -2362,6 +2372,13 @@ instance HsProtobuf.Message ChangeEvent where
           []
           ""
       )
+    , ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 24)
+          (HsProtobuf.Prim HsProtobuf.Bool)
+          (HsProtobuf.Single "draft")
+          []
+          ""
+      )
     ]
 
 instance HsJSONPB.ToJSONPB ChangeEvent where
@@ -2384,6 +2401,7 @@ instance HsJSONPB.ToJSONPB ChangeEvent where
         f15_or_f16_or_f17_or_f18_or_f19_or_f20_or_f21
         f22
         f23
+        f24
       ) =
       ( HsJSONPB.object
           [ "id" .= f1
@@ -2439,6 +2457,7 @@ instance HsJSONPB.ToJSONPB ChangeEvent where
                           options
                       else encodeOptional_duration options
             )
+          , "draft" .= f24
           ]
       )
   toEncodingPB
@@ -2460,6 +2479,7 @@ instance HsJSONPB.ToJSONPB ChangeEvent where
         f15_or_f16_or_f17_or_f18_or_f19_or_f20_or_f21
         f22
         f23
+        f24
       ) =
       ( HsJSONPB.pairs
           [ "id" .= f1
@@ -2515,6 +2535,7 @@ instance HsJSONPB.ToJSONPB ChangeEvent where
                           options
                       else encodeOptional_duration options
             )
+          , "draft" .= f24
           ]
       )
 
@@ -2571,6 +2592,7 @@ instance HsJSONPB.FromJSONPB ChangeEvent where
                         )
                           <|> (parseOptional_duration obj)
                   )
+              <*> obj .: "draft"
         )
     )
 

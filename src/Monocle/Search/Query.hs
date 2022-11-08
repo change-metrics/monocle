@@ -139,7 +139,7 @@ fields =
   , ("created_at", (fieldDate, "created_at", "Change creation date"))
   , ("from", (fieldDate, flavoredField, "Range starting date"))
   , ("to", (fieldDate, flavoredField, "Range ending date"))
-  , ("state", (fieldText, "state", "Change state, one of: open, merged, self_merged, abandoned"))
+  , ("state", (fieldText, "state", "Change state, one of: open, merged, self_merged, abandoned, draft"))
   , ("repo", (fieldRegex, "repository_fullname", "Repository name"))
   , ("project", (fieldText, "project_def", "Project name"))
   , ("author", (fieldRegex, flavoredField, "Change author name"))
@@ -381,6 +381,7 @@ mkEqQuery field value' = do
               "merged" -> Right ("state", "MERGED")
               "self_merged" -> Right ("self_merged", "true")
               "abandoned" -> Right ("state", "CLOSED")
+              "draft" -> Right ("draft", "true")
               _ -> Left $ "Invalid value for state: " <> value
           )
       pure $ BH.TermQuery (BH.Term stateField stateValue) Nothing
