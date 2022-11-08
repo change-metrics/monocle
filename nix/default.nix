@@ -57,6 +57,14 @@ let
       sha256 = "sha256-rbVK5O9IyM0STncLv3dGMv+Tgtwgju0z49pE0g/A2x0=";
     };
 
+    # Set to gerrit-haskell 0.1.6.0 tag
+    gerrit = hpPrev.callCabal2nix "gerrit" (pkgs.fetchFromGitHub {
+      owner = "softwarefactory-project";
+      repo = "gerrit-haskell";
+      rev = "3ff110fc6eb1738ecbcb08ca378de905b166eade";
+      sha256 = "sha256-eAU2Di6LXmDhYnUP9zJtF0/NiMu3JniZqD3u0pu6aYc=";
+    }) { };
+
     # upgrade to latest morpheus needs some work
     morpheus-graphql-tests = mk-morpheus-lib hpPrev "tests";
     morpheus-graphql-core = mk-morpheus-lib hpPrev "core";
