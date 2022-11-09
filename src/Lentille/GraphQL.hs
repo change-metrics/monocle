@@ -94,7 +94,7 @@ doGraphRequest GraphClient {..} jsonBody = do
         initRequest
           { HTTP.method = "POST"
           , HTTP.requestHeaders =
-              [ ("Authorization", "token " <> encodeUtf8 (unSecret token))
+              [ ("Authorization", "Bearer " <> encodeUtf8 (unSecret token))
               , ("User-Agent", "change-metrics/monocle")
               , ("Content-Type", "application/json")
               ]
