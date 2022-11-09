@@ -267,6 +267,8 @@ the listed repositories.
 `gitlab_token` might be specified to use an alternate environment variable name to look for the
 token value. Default is "GITLAB_TOKEN"
 
+To crawl privates repositories, you must generate a Personal Access Token with the "read_api" scope.
+
 ###### TaskData
 
 Monocle provides additional crawlers to attach tasks/issues/RFEs to changes based on a
