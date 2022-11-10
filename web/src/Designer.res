@@ -21,9 +21,44 @@ module Fixture = {
   let fields: SearchTypes.fields_response = SearchBs.decode_fields_response(searchFieldsJson)
 }
 
-let dispatchChange = (c => Js.log2("Hidding", c), c => Js.log2("Revealing", c))
+let hiddenDispatchChange = (c => Js.log2("Hidding", c), c => Js.log2("Revealing", c))
+let pinnedDispatchChange = (c => Js.log2("Pin", c), c => Js.log2("Unpin", c))
 
-let status = HiddenChanges.Visible
+let hiddenStatus = HiddenChanges.Visible
+let pinnedStatus = PinnedChanges.Unpinned
+
+module Table = {
+  @react.component
+  let make = (~store: Store.t, ~changes: list<SearchTypes.change>) => {
+    let (changesArray, paginate) = changes->Belt.List.toArray->usePagination
+    let (state, _) = store
+    let (hiddenChanges, hiddenDispatchChange) = HiddenChanges.use(state.dexie, changesArray)
+    let (pinnedChanges, pinnedDispatchChange) = PinnedChanges.use(state.dexie, changesArray)
+    <>
+      {paginate}
+      <table className="pf-c-table pf-m-compact pf-m-grid-md" role="grid">
+        <Change.RowItem.Head />
+        <tbody role="rowgroup">
+          {hiddenChanges
+          ->Belt.Array.mapWithIndex((idx, (hiddenStatus, change)) =>
+            hiddenStatus != HiddenChanges.Hidden
+              ? <Change.RowItem
+                  key={string_of_int(idx)}
+                  store
+                  change
+                  hiddenStatus
+                  hiddenDispatchChange
+                  pinnedStatus={PinnedChanges.simpleGetStatus(pinnedChanges, change)}
+                  pinnedDispatchChange
+                />
+              : React.null
+          )
+          ->React.array}
+        </tbody>
+      </table>
+    </>
+  }
+}
 
 module App = {
   @react.component
@@ -40,12 +75,19 @@ module App = {
         (
           "change",
           <div className="container">
-            <Change.DataItem store change={Fixture.change} status dispatchChange />
+            <Change.DataItem
+              store
+              change={Fixture.change}
+              hiddenStatus
+              hiddenDispatchChange
+              pinnedStatus
+              pinnedDispatchChange
+            />
           </div>,
         ),
         (
           "table",
-          <Change.Table
+          <Table
             store
             changes={Belt.List.make(200, Fixture.change)->Belt.List.mapWithIndex((idx, change) => {
               ...change,
@@ -58,9 +100,11 @@ module App = {
           <NChangeView.ChangeList
             store
             changes={Belt.List.make(100, Fixture.change)
-            ->Belt.List.map(c => (status, c))
+            ->Belt.List.map(c => (hiddenStatus, c))
             ->Belt.List.toArray}
-            dispatchChange
+            hiddenDispatchChange
+            pinnedChanges=[]
+            pinnedDispatchChange
           />,
         ),
         (

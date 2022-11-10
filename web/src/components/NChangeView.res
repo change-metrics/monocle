@@ -139,8 +139,10 @@ module ChangeList = {
   let make = (
     ~store: Store.t,
     ~changes: HiddenChanges.changeArray,
-    ~dispatchChange: HiddenChanges.dispatch,
+    ~hiddenDispatchChange: HiddenChanges.dispatch,
     ~disableHiddenChange: option<bool>=?,
+    ~pinnedChanges: PinnedChanges.changeArray,
+    ~pinnedDispatchChange: PinnedChanges.dispatch,
   ) => {
     let (toggle, isChangeVisible) = switch disableHiddenChange {
     | Some(true) => (React.null, _ => true)
@@ -153,9 +155,17 @@ module ChangeList = {
       <MStackItem>
         <Patternfly.DataList isCompact={true}>
           {changesArray
-          ->Belt.Array.map(((status, change)) =>
-            isChangeVisible(status)
-              ? <Change.DataItem store key={change.change_id} change status dispatchChange />
+          ->Belt.Array.map(((hiddenStatus, change)) =>
+            isChangeVisible(hiddenStatus)
+              ? <Change.DataItem
+                  store
+                  key={change.change_id}
+                  change
+                  hiddenStatus
+                  hiddenDispatchChange
+                  pinnedStatus={PinnedChanges.simpleGetStatus(pinnedChanges, change)}
+                  pinnedDispatchChange
+                />
               : React.null
           )
           ->React.array}
@@ -269,8 +279,9 @@ module View = {
   @react.component
   let make = (~store: Store.t, ~changesAll, ~extraQuery, ~hideAuthors, ~disableHiddenChange) => {
     let (state, _) = store
-    let (changes, dispatchChange) = HiddenChanges.use(state.dexie, changesAll)
-    switch changes->Belt.Array.length {
+    let (hiddenChanges, hiddenDispatchChange) = HiddenChanges.use(state.dexie, changesAll)
+    let (pinnedChanges, pinnedDispatchChange) = PinnedChanges.use(state.dexie, changesAll)
+    switch hiddenChanges->Belt.Array.length {
     | 0 =>
       <MStack>
         <MStackItem> <Search.Filter store /> </MStackItem>
@@ -280,7 +291,16 @@ module View = {
       <MStack>
         <MStackItem> <ChangesTopPies store ?extraQuery ?hideAuthors /> </MStackItem>
         <MStackItem> <Search.Filter store /> </MStackItem>
-        <MStackItem> <ChangeList store changes dispatchChange ?disableHiddenChange /> </MStackItem>
+        <MStackItem>
+          <ChangeList
+            store
+            changes=hiddenChanges
+            hiddenDispatchChange
+            ?disableHiddenChange
+            pinnedChanges
+            pinnedDispatchChange
+          />
+        </MStackItem>
       </MStack>
     }
   }

@@ -18,14 +18,23 @@ module Column = {
       @react.component
       let make = (~store: Store.t, ~changesAll: array<SearchTypes.change>, ~isChangeVisible) => {
         let (state, _) = store
-        let (changes, dispatchChange) = HiddenChanges.use(state.dexie, changesAll)
-        switch changes->Belt.Array.length {
+        let (hiddenChanges, hiddenDispatchChange) = HiddenChanges.use(state.dexie, changesAll)
+        let (pinnedChanges, pinnedDispatchChange) = PinnedChanges.use(state.dexie, changesAll)
+        switch hiddenChanges->Belt.Array.length {
         | 0 => noChangeFound
         | _ =>
-          changes
-          ->Belt.Array.map(((status, change)) =>
-            isChangeVisible(status)
-              ? <Change.RowItem store key={change.url} change status dispatchChange />
+          hiddenChanges
+          ->Belt.Array.map(((hiddenStatus, change)) =>
+            isChangeVisible(hiddenStatus)
+              ? <Change.RowItem
+                  store
+                  key={change.url}
+                  change
+                  hiddenStatus
+                  hiddenDispatchChange
+                  pinnedStatus={PinnedChanges.simpleGetStatus(pinnedChanges, change)}
+                  pinnedDispatchChange
+                />
               : React.null
           )
           ->React.array
@@ -72,15 +81,24 @@ module Column = {
     @react.component
     let make = (~store: Store.t, ~changesAll: array<SearchTypes.change>, ~isChangeVisible) => {
       let (state, _) = store
-      let (changes, dispatchChange) = HiddenChanges.use(state.dexie, changesAll)
-      switch changes->Belt.Array.length {
+      let (hiddenChanges, hiddenDispatchChange) = HiddenChanges.use(state.dexie, changesAll)
+      let (pinnedChanges, pinnedDispatchChange) = PinnedChanges.use(state.dexie, changesAll)
+      switch hiddenChanges->Belt.Array.length {
       | 0 => noChangeFound
       | _ =>
         <Patternfly.DataList isCompact={true}>
-          {changes
+          {hiddenChanges
           ->Belt.Array.map(((status, change)) =>
             isChangeVisible(status)
-              ? <Change.DataItem store key={change.url} change status dispatchChange />
+              ? <Change.DataItem
+                  store
+                  key={change.url}
+                  change
+                  hiddenStatus=status
+                  hiddenDispatchChange
+                  pinnedStatus={PinnedChanges.simpleGetStatus(pinnedChanges, change)}
+                  pinnedDispatchChange
+                />
               : React.null
           )
           ->React.array}

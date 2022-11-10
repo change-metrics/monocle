@@ -283,18 +283,41 @@ module StatusButton = {
     </Patternfly.Tooltip>
   }
 }
+module PinnedButton = {
+  @react.component
+  let make = (
+    ~change: SearchTypes.change,
+    ~status: PinnedChanges.changeStatus,
+    ~dispatchChange: PinnedChanges.dispatch,
+  ) => {
+    let (pin, unpin) = dispatchChange
+    let (tooltip, button, action) = switch status {
+    | Unpinned => ("Pin this change", `📌`, pin)
+    | Pinned => ("Unpin this change", `⭕`, unpin)
+    }
+    let onClick = _ => change->action
+
+    <Patternfly.Tooltip content={tooltip}>
+      <a onClick style={ReactDOM.Style.make(~paddingRight="5px", ~paddingLeft="5px", ())}>
+        {button->str}
+      </a>
+    </Patternfly.Tooltip>
+  }
+}
 
 module DataItem = {
   @react.component
   let make = (
     ~store: Store.t,
     ~change: SearchTypes.change,
-    ~status: HiddenChanges.changeStatus,
-    ~dispatchChange: HiddenChanges.dispatch,
+    ~hiddenStatus: HiddenChanges.changeStatus,
+    ~hiddenDispatchChange: HiddenChanges.dispatch,
+    ~pinnedStatus: PinnedChanges.changeStatus,
+    ~pinnedDispatchChange: PinnedChanges.dispatch,
   ) =>
     <DataListItemRow key={change.url}>
       <DataListCell>
-        <Card isCompact={true}>
+        <Card style={pinnedStatus->PinnedChanges.style} isCompact={true}>
           <CardHeader>
             <span style={ReactDOM.Style.make(~width="100%", ())}>
               <State state={change.state} draft={change.draft} />
@@ -305,7 +328,8 @@ module DataItem = {
                 : <> {"<"->str} <BranchLink store branch={change.target_branch} /> {">"->str} </>}
               <ExternalLink href={change.url} title={change.title} />
               <ChangeLink store id={change.change_id} />
-              <StatusButton store change status dispatchChange />
+              <PinnedButton change status=pinnedStatus dispatchChange=pinnedDispatchChange />
+              <StatusButton store change status=hiddenStatus dispatchChange=hiddenDispatchChange />
               <span style={ReactDOM.Style.make(~float="right", ())}>
                 {"Complexity: "->str}
                 <Tooltip content="Count of lines changed + Count of files changed">
@@ -351,12 +375,15 @@ module RowItem = {
   let make = (
     ~store: Store.t,
     ~change: SearchTypes.change,
-    ~status: HiddenChanges.changeStatus,
-    ~dispatchChange: HiddenChanges.dispatch,
+    ~hiddenStatus: HiddenChanges.changeStatus,
+    ~hiddenDispatchChange: HiddenChanges.dispatch,
+    ~pinnedStatus: PinnedChanges.changeStatus,
+    ~pinnedDispatchChange: PinnedChanges.dispatch,
   ) =>
-    <tr role="row">
+    <tr style={pinnedStatus->PinnedChanges.style} role="row">
       <td role="cell">
-        <StatusButton store change status dispatchChange />
+        <PinnedButton change status=pinnedStatus dispatchChange=pinnedDispatchChange />
+        <StatusButton store change status=hiddenStatus dispatchChange=hiddenDispatchChange />
         <ExternalLink href={change.url} title={change.title} />
         // show details button, currently commented as it looks a bit noisy...
         // <ChangeLink store id={change.change_id} title={change.title} />
@@ -379,30 +406,6 @@ module RowItem = {
         <div> <TaskDatas change /> </div>
       </td>
     </tr>
-}
-
-module Table = {
-  @react.component
-  let make = (~store: Store.t, ~changes: list<SearchTypes.change>) => {
-    let (changesArray, paginate) = changes->Belt.List.toArray->usePagination
-    let (state, _) = store
-    let (changesFiltered, dispatchChange) = HiddenChanges.use(state.dexie, changesArray)
-    <>
-      {paginate}
-      <table className="pf-c-table pf-m-compact pf-m-grid-md" role="grid">
-        <RowItem.Head />
-        <tbody role="rowgroup">
-          {changesFiltered
-          ->Belt.Array.mapWithIndex((idx, (status, change)) =>
-            status != HiddenChanges.Hidden
-              ? <RowItem key={string_of_int(idx)} store change status dispatchChange />
-              : React.null
-          )
-          ->React.array}
-        </tbody>
-      </table>
-    </>
-  }
 }
 
 module ChangeDetailView = {
