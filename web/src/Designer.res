@@ -23,9 +23,11 @@ module Fixture = {
 
 let hiddenDispatchChange = (c => Js.log2("Hidding", c), c => Js.log2("Revealing", c))
 let pinnedDispatchChange = (c => Js.log2("Pin", c), c => Js.log2("Unpin", c))
+let maskedDispatchChange = (c => Js.log2("Mask", c), c => Js.log2("Unmask", c))
 
 let hiddenStatus = HiddenChanges.Visible
 let pinnedStatus = PinnedChanges.Unpinned
+let maskedStatus = MaskedChanges.Masked
 
 module Table = {
   @react.component
@@ -34,6 +36,7 @@ module Table = {
     let (state, _) = store
     let (hiddenChanges, hiddenDispatchChange) = HiddenChanges.use(state.dexie, changesArray)
     let (pinnedChanges, pinnedDispatchChange) = PinnedChanges.use(state.dexie, changesArray)
+    let (maskedChanges, maskedDispatchChange) = MaskedChanges.use(state.dexie, changesArray)
     <>
       {paginate}
       <table className="pf-c-table pf-m-compact pf-m-grid-md" role="grid">
@@ -50,6 +53,8 @@ module Table = {
                   hiddenDispatchChange
                   pinnedStatus={PinnedChanges.simpleGetStatus(pinnedChanges, change)}
                   pinnedDispatchChange
+                  maskedStatus={MaskedChanges.simpleGetStatus(maskedChanges, change)}
+                  maskedDispatchChange
                 />
               : React.null
           )
@@ -82,6 +87,8 @@ module App = {
               hiddenDispatchChange
               pinnedStatus
               pinnedDispatchChange
+              maskedStatus
+              maskedDispatchChange
             />
           </div>,
         ),
@@ -105,6 +112,8 @@ module App = {
             hiddenDispatchChange
             pinnedChanges=[]
             pinnedDispatchChange
+            maskedChanges=[]
+            maskedDispatchChange
           />,
         ),
         (
