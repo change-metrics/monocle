@@ -143,10 +143,12 @@ module ChangeList = {
     ~disableHiddenChange: option<bool>=?,
     ~pinnedChanges: PinnedChanges.changeArray,
     ~pinnedDispatchChange: PinnedChanges.dispatch,
+    ~maskedChanges: MaskedChanges.changeArray,
+    ~maskedDispatchChange: MaskedChanges.dispatch,
   ) => {
     let (toggle, isChangeVisible) = switch disableHiddenChange {
-    | Some(true) => (React.null, _ => true)
-    | _ => HiddenChanges.useToggle()
+    | Some(true) => (React.null, (_, _) => true)
+    | _ => VisibleChanges.use()
     }
     let (changesArray, paginate) = usePagination(changes)
     <MStack>
@@ -155,8 +157,9 @@ module ChangeList = {
       <MStackItem>
         <Patternfly.DataList isCompact={true}>
           {changesArray
-          ->Belt.Array.map(((hiddenStatus, change)) =>
-            isChangeVisible(hiddenStatus)
+          ->Belt.Array.map(((hiddenStatus, change)) => {
+            let maskedState = MaskedChanges.simpleGetStatus(maskedChanges, change)
+            isChangeVisible(hiddenStatus, maskedState)
               ? <Change.DataItem
                   store
                   key={change.change_id}
@@ -165,9 +168,11 @@ module ChangeList = {
                   hiddenDispatchChange
                   pinnedStatus={PinnedChanges.simpleGetStatus(pinnedChanges, change)}
                   pinnedDispatchChange
+                  maskedStatus={MaskedChanges.simpleGetStatus(maskedChanges, change)}
+                  maskedDispatchChange
                 />
               : React.null
-          )
+          })
           ->React.array}
         </Patternfly.DataList>
       </MStackItem>
@@ -281,6 +286,7 @@ module View = {
     let (state, _) = store
     let (hiddenChanges, hiddenDispatchChange) = HiddenChanges.use(state.dexie, changesAll)
     let (pinnedChanges, pinnedDispatchChange) = PinnedChanges.use(state.dexie, changesAll)
+    let (maskedChanges, maskedDispatchChange) = MaskedChanges.use(state.dexie, changesAll)
     switch hiddenChanges->Belt.Array.length {
     | 0 =>
       <MStack>
@@ -299,6 +305,8 @@ module View = {
             ?disableHiddenChange
             pinnedChanges
             pinnedDispatchChange
+            maskedChanges
+            maskedDispatchChange
           />
         </MStackItem>
       </MStack>

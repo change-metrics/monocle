@@ -305,6 +305,32 @@ module PinnedButton = {
   }
 }
 
+module MaskButton = {
+  @react.component
+  let make = (
+    ~change: SearchTypes.change,
+    ~status: MaskedChanges.changeStatus,
+    ~dispatchChange: MaskedChanges.dispatch,
+  ) => {
+    let (mask, unmask) = dispatchChange
+    let (tooltip, button, action) = switch status {
+    | Unmasked => (
+        "Mask this change. (The change will not be shown again on the board even if it got an update)",
+        `👺`,
+        mask,
+      )
+    | Masked => ("Unmask this change", `😐`, unmask)
+    }
+    let onClick = _ => change->action
+
+    <Patternfly.Tooltip content={tooltip}>
+      <a onClick style={ReactDOM.Style.make(~paddingRight="5px", ~paddingLeft="5px", ())}>
+        {button->str}
+      </a>
+    </Patternfly.Tooltip>
+  }
+}
+
 module DataItem = {
   @react.component
   let make = (
@@ -314,6 +340,8 @@ module DataItem = {
     ~hiddenDispatchChange: HiddenChanges.dispatch,
     ~pinnedStatus: PinnedChanges.changeStatus,
     ~pinnedDispatchChange: PinnedChanges.dispatch,
+    ~maskedStatus: MaskedChanges.changeStatus,
+    ~maskedDispatchChange: MaskedChanges.dispatch,
   ) =>
     <DataListItemRow key={change.url}>
       <DataListCell>
@@ -330,6 +358,7 @@ module DataItem = {
               <ChangeLink store id={change.change_id} />
               <PinnedButton change status=pinnedStatus dispatchChange=pinnedDispatchChange />
               <StatusButton store change status=hiddenStatus dispatchChange=hiddenDispatchChange />
+              <MaskButton change status=maskedStatus dispatchChange=maskedDispatchChange />
               <span style={ReactDOM.Style.make(~float="right", ())}>
                 {"Complexity: "->str}
                 <Tooltip content="Count of lines changed + Count of files changed">
@@ -379,11 +408,14 @@ module RowItem = {
     ~hiddenDispatchChange: HiddenChanges.dispatch,
     ~pinnedStatus: PinnedChanges.changeStatus,
     ~pinnedDispatchChange: PinnedChanges.dispatch,
+    ~maskedStatus: MaskedChanges.changeStatus,
+    ~maskedDispatchChange: MaskedChanges.dispatch,
   ) =>
     <tr style={pinnedStatus->PinnedChanges.style} role="row">
       <td role="cell">
         <PinnedButton change status=pinnedStatus dispatchChange=pinnedDispatchChange />
         <StatusButton store change status=hiddenStatus dispatchChange=hiddenDispatchChange />
+        <MaskButton change status=maskedStatus dispatchChange=maskedDispatchChange />
         <ExternalLink href={change.url} title={change.title} />
         // show details button, currently commented as it looks a bit noisy...
         // <ChangeLink store id={change.change_id} title={change.title} />

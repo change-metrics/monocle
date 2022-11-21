@@ -29,9 +29,22 @@ module PinnedChangeSchema = {
   let make = id => {id: id, ctype: #Change}
 }
 
+module MaskedChangeSchema = {
+  type id = string
+  type t = {
+    // the change id, which is also the key of the document
+    id: string,
+    // a tag to enable full listing
+    ctype: [#Change],
+  }
+  let tableName = "masked"
+
+  let make = id => {id: id, ctype: #Change}
+}
+
 let mkDexie: unit => Dexie.Database.t = () => {
   let dexie = Dexie.Database.make("Monocle")
-  let schema = [("hidden", "&id,ctype"), ("pinned", "&id,ctype")]
-  dexie->Dexie.Database.version(2)->Dexie.Version.stores(schema)->ignore
+  let schema = [("hidden", "&id,ctype"), ("pinned", "&id,ctype"), ("masked", "&id,ctype")]
+  dexie->Dexie.Database.version(3)->Dexie.Version.stores(schema)->ignore
   dexie
 }

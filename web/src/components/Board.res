@@ -16,27 +16,38 @@ module Column = {
   module Row = {
     module RView = {
       @react.component
-      let make = (~store: Store.t, ~changesAll: array<SearchTypes.change>, ~isChangeVisible) => {
+      let make = (
+        ~store: Store.t,
+        ~changesAll: array<SearchTypes.change>,
+        ~isChangeVisible: (HiddenChanges.changeStatus, MaskedChanges.changeStatus) => bool,
+      ) => {
         let (state, _) = store
+
         let (hiddenChanges, hiddenDispatchChange) = HiddenChanges.use(state.dexie, changesAll)
         let (pinnedChanges, pinnedDispatchChange) = PinnedChanges.use(state.dexie, changesAll)
+        let (maskedChanges, maskedDispatchChange) = MaskedChanges.use(state.dexie, changesAll)
         switch hiddenChanges->Belt.Array.length {
         | 0 => noChangeFound
         | _ =>
           hiddenChanges
-          ->Belt.Array.map(((hiddenStatus, change)) =>
-            isChangeVisible(hiddenStatus)
-              ? <Change.RowItem
-                  store
-                  key={change.url}
-                  change
-                  hiddenStatus
-                  hiddenDispatchChange
-                  pinnedStatus={PinnedChanges.simpleGetStatus(pinnedChanges, change)}
-                  pinnedDispatchChange
-                />
-              : React.null
-          )
+          ->Belt.Array.map(((hiddenStatus, change)) => {
+            let maskState = MaskedChanges.simpleGetStatus(maskedChanges, change)
+            switch isChangeVisible(hiddenStatus, maskState) {
+            | true =>
+              <Change.RowItem
+                store
+                key={change.url}
+                change
+                hiddenStatus
+                hiddenDispatchChange
+                pinnedStatus={PinnedChanges.simpleGetStatus(pinnedChanges, change)}
+                pinnedDispatchChange
+                maskedStatus={MaskedChanges.simpleGetStatus(maskedChanges, change)}
+                maskedDispatchChange
+              />
+            | _ => React.null
+            }
+          })
           ->React.array
         }
       }
@@ -44,7 +55,11 @@ module Column = {
 
     // TODO: merge common code with Column
     @react.component
-    let make = (~store: Store.t, ~column, ~isChangeVisible) => {
+    let make = (
+      ~store: Store.t,
+      ~column,
+      ~isChangeVisible: (HiddenChanges.changeStatus, MaskedChanges.changeStatus) => bool,
+    ) => {
       let (state, _dispatch) = store
       let (result, setResult) = React.useState(_ => None)
       let handleOk = (resp: WebApi.axiosResponse<SearchTypes.query_response>) =>
@@ -79,17 +94,24 @@ module Column = {
 
   module CView = {
     @react.component
-    let make = (~store: Store.t, ~changesAll: array<SearchTypes.change>, ~isChangeVisible) => {
+    let make = (
+      ~store: Store.t,
+      ~changesAll: array<SearchTypes.change>,
+      ~isChangeVisible: (HiddenChanges.changeStatus, MaskedChanges.changeStatus) => bool,
+    ) => {
       let (state, _) = store
+
       let (hiddenChanges, hiddenDispatchChange) = HiddenChanges.use(state.dexie, changesAll)
       let (pinnedChanges, pinnedDispatchChange) = PinnedChanges.use(state.dexie, changesAll)
+      let (maskedChanges, maskedDispatchChange) = MaskedChanges.use(state.dexie, changesAll)
       switch hiddenChanges->Belt.Array.length {
       | 0 => noChangeFound
       | _ =>
         <Patternfly.DataList isCompact={true}>
           {hiddenChanges
-          ->Belt.Array.map(((status, change)) =>
-            isChangeVisible(status)
+          ->Belt.Array.map(((status, change)) => {
+            let maskedState = MaskedChanges.simpleGetStatus(maskedChanges, change)
+            isChangeVisible(status, maskedState)
               ? <Change.DataItem
                   store
                   key={change.url}
@@ -98,9 +120,11 @@ module Column = {
                   hiddenDispatchChange
                   pinnedStatus={PinnedChanges.simpleGetStatus(pinnedChanges, change)}
                   pinnedDispatchChange
+                  maskedStatus={MaskedChanges.simpleGetStatus(maskedChanges, change)}
+                  maskedDispatchChange
                 />
               : React.null
-          )
+          })
           ->React.array}
         </Patternfly.DataList>
       }
@@ -518,7 +542,7 @@ let make = (~store: Store.t) => {
 
   let editor = <Board.Editor store columns board dispatch />
 
-  let (toggle, isChangeVisible) = HiddenChanges.useToggle()
+  let (toggleButton, isChangeVisible) = VisibleChanges.use()
 
   let board = switch board.style {
   | Board.Kanban =>
@@ -556,7 +580,7 @@ let make = (~store: Store.t) => {
   <MStack>
     <MStackItem> {editor} </MStackItem>
     <MStackItem>
-      {toggle} <span style={ReactDOM.Style.make(~overflowX="scroll", ())}> {board} </span>
+      {toggleButton} <span style={ReactDOM.Style.make(~overflowX="scroll", ())}> {board} </span>
     </MStackItem>
   </MStack>
 }
