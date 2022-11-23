@@ -5,7 +5,6 @@ import Data.Vector qualified as V
 import Lentille.Bugzilla.Spec
 import Macroscope.Test (monocleMacroscopeTests)
 import Monocle.Api.Test (mkAppEnv, withTestApi)
-import Monocle.Backend.Provisioner (runProvisioner)
 import Monocle.Backend.Test
 import Monocle.Client (MonocleClient (tokenM))
 import Monocle.Client.Api (authGetMagicJwt, authWhoAmi, configGetGroupMembers, configGetGroups, crawlerCommitInfo)
@@ -50,12 +49,6 @@ main = withOpenSSL do
           , monocleMacroscopeTests
           , monocleApiTests
           ]
-
-  -- TODO: move provisioner to the CLI module
-  provisionerM <- lookupEnv "PROVISIONER"
-  case provisionerM of
-    Just provisioner -> runProvisioner (from provisioner) >> exitSuccess
-    Nothing -> pure ()
 
   defaultMain
     ( testGroup "Tests" $
