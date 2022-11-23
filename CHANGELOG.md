@@ -9,6 +9,8 @@ All notable changes to this project will be documented in this file.
 - [web] Search authors page displays the total count of authors.
 - [api] Enable the 'draft' status for Gerrit changes. 
 - [api] Enable the "draft" state's value in the query language.
+- [web] Add the pin change button to highlight a change.
+- [web] Add the mask chnage button to permanently hide a change.
 
 ### Changed
 
