@@ -100,6 +100,8 @@ fakeText = from <$> Faker.TvShow.Futurama.quotes
 
 fakeChange :: UTCTime -> UTCTime -> Faker.Fake EChange
 fakeChange from' to = do
+  repoName <- Faker.Combinators.frequency [(5, pure "repo1"), (3, pure "repo2")]
+  let repoPrefix = "myorg"
   let echangeId = ""
   let echangeType = EChangeDoc
   let echangeNumber = 1
@@ -113,9 +115,9 @@ fakeChange from' to = do
   let echangeChangedFiles = [File 0 0 "/fake/path"]
   echangeText <- fakeText
   let echangeCommits = []
-  let echangeRepositoryPrefix = ""
-  let echangeRepositoryFullname = ""
-  let echangeRepositoryShortname = ""
+  let echangeRepositoryPrefix = repoPrefix
+  let echangeRepositoryFullname = repoPrefix <> "/" <> repoName
+  let echangeRepositoryShortname = repoName
   echangeAuthor <- fakeAuthor
   let echangeBranch = ""
   echangeCreatedAt <- dropTime <$> Faker.DateTime.utcBetween from' to
