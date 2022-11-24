@@ -210,14 +210,13 @@ module RelativeDate = {
 module State = {
   @react.component
   let make = (~state, ~draft) => {
-    let (color, value) = draft
-      ? (#Grey, "Draft")
-      : switch state {
-        | "OPEN" => (#Green, "Open")
-        | "MERGED" => (#Blue, "Merged")
-        | "CLOSED" => (#Purple, "Abandoned")
-        | _ => (#Red, state)
-        }
+    let (color, value) = switch (state, draft) {
+    | ("OPEN", true) => (#Grey, "Draft")
+    | ("OPEN", false) => (#Green, "Open")
+    | ("MERGED", _) => (#Blue, "Merged")
+    | ("CLOSED", _) => (#Purple, "Abandoned")
+    | _ => (#Red, state)
+    }
     <Label color> {value->str} </Label>
   }
 }

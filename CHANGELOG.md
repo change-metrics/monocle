@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 - [api] Enable the 'draft' status for Gerrit changes. 
 - [api] Enable the "draft" state's value in the query language.
 - [web] Add the pin change button to highlight a change.
-- [web] Add the mask chnage button to permanently hide a change.
+- [web] Add the mask change button to permanently hide a change.
 
 ### Changed
 
@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 - [api] Ordering by task's score (#833).
 - [api] Filter on "not author" for top authors metric "By changes reviewed" and "By changes commented".
 - [crawler] Support for crawling private repositories on Gitlab (#985).
+- [web] A draft change is only displayed as draft when the change is open (#993).
 
 ## [1.7.0] - 2022-09-16
 
