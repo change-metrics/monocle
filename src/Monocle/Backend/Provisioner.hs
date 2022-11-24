@@ -131,7 +131,12 @@ fakeChange from' to = do
   let echangeApproval = Just ["OK"]
   let echangeSelfMerged = Nothing
   let echangeTasksData = Nothing
-  let echangeState = EChangeOpen
+  echangeState <-
+    Faker.Combinator.frequency
+      [ (3, pure EChangeMerged)
+      , (2, pure EChangeOpen)
+      , (1, pure EChangeClosed)
+      ]
   echangeMergeable <- Faker.Combinators.frequency [(5, pure "MERGEABLE"), (1, pure "")]
   let echangeLabels = []
   let echangeAssignees = []
