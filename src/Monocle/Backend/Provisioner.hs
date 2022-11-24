@@ -21,6 +21,7 @@ module Monocle.Backend.Provisioner (
 import Data.Time.Clock.System
 import Faker qualified
 import Faker.Combinators qualified
+import Faker.Combinators qualified as Faker.Combinator
 import Faker.Creature.Dog qualified
 import Faker.DateTime qualified
 import Faker.Movie.BackToTheFuture qualified
@@ -134,7 +135,7 @@ fakeChange from' to = do
   echangeMergeable <- Faker.Combinators.frequency [(5, pure "MERGEABLE"), (1, pure "")]
   let echangeLabels = []
   let echangeAssignees = []
-  let echangeDraft = False
+  echangeDraft <- Faker.Combinator.frequency [(5, pure False), (1, pure True)]
   pure $ EChange {..}
 
 fakeChangeEvent :: UTCTime -> UTCTime -> Faker.Fake EChangeEvent
