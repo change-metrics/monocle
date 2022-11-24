@@ -258,6 +258,20 @@ export CRAWLERS_API_KEY=$(uuidgen)
 ghcid --set ":set args api" --test 'CLI.main'
 ```
 
+### Fake data provisionning
+
+Provisonning fake data (only fake changes are supported) can be done using the repl:
+
+```
+nix develop --command monocle-repl
+λ> import Monocle.Backend.Provisioner
+λ> runProvisioner "etc/config.yaml" "http://localhost:19200" "demo-fake-data" 300
+```
+
+Prior to run the provisonner, add the *demo-fake-data* workspace in the config file with an
+empty *crawlers* list, then start the monocle API.
+
+
 ### Update API (protobuf)
 
 The APIs are defined using protobuf. To change them, first you need to update the

@@ -1,5 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
+-- TODO: Add a CLI command to run the provisioner on an index.
+
 -- | A test module to load some fake data
 module Monocle.Backend.Provisioner (
   -- * Provisioner
@@ -19,6 +21,7 @@ module Monocle.Backend.Provisioner (
 import Data.Time.Clock.System
 import Faker qualified
 import Faker.Combinators qualified
+import Faker.Combinators qualified as Faker.Combinator
 import Faker.Creature.Dog qualified
 import Faker.DateTime qualified
 import Faker.Movie.BackToTheFuture qualified
@@ -26,20 +29,29 @@ import Faker.TvShow.Futurama qualified
 import Faker.TvShow.TheExpanse qualified
 import Google.Protobuf.Timestamp qualified (fromUTCTime)
 import Monocle.Backend.Documents
-import Monocle.Backend.Index qualified as I
 import Monocle.Backend.Test qualified as T
-import Monocle.Config (mkTenant)
+import Monocle.Config (csConfig, getWorkspaces, lookupTenant)
+import Monocle.Effects (getReloadConfig, runElasticEffect, runEmptyQueryM, runMonoConfig)
+import Monocle.Env (mkEnv)
 import Monocle.Prelude
 import Monocle.Protob.Search (TaskData (..))
 
 -- | Provision fakedata for a tenant
-runProvisioner :: Text -> IO ()
-runProvisioner tenantName = T.withTenantConfig (mkTenant tenantName) $ runFailIO $ do
-  runRetry I.ensureIndex
-  events <- liftIO createFakeEvents
-  logInfo ("[provisioner] Adding " <> show (length events) <> " events to " <> tenantName <> ".") []
-  T.indexScenario events
-  logInfo "[provisioner] Done." []
+runProvisioner :: FilePath -> Text -> Text -> Int -> IO ()
+runProvisioner configPath elasticUrl tenantName docCount = runEff . runMonoConfig configPath . runLoggerEffect $ do
+  conf <- csConfig <$> getReloadConfig
+  let tenantM = lookupTenant (getWorkspaces conf) tenantName
+  case tenantM of
+    Just tenant -> do
+      bhEnv <- mkEnv elasticUrl
+      r <- runRetry $ runFail $ runElasticEffect bhEnv $ do
+        events <- liftIO $ createFakeEvents docCount
+        runEmptyQueryM tenant $ T.indexScenario events
+        logInfo "Provisionned" ["index" .= tenantName, "doc count" .= length events]
+      case r of
+        Left err -> logInfo "Unable to perform the provisionning" ["error" .= err]
+        Right _ -> pure ()
+    Nothing -> pure ()
 
 -- | Ensure changes have a unique ID
 setChangeID :: [EChange] -> IO [EChange]
@@ -59,11 +71,11 @@ setChangeID xs = do
       newChanges
 
 -- | Creates a bunch of event in the last 3 weeks
-createFakeEvents :: IO [T.ScenarioEvent]
-createFakeEvents = do
+createFakeEvents :: Int -> IO [T.ScenarioEvent]
+createFakeEvents docCount = do
   now <- getCurrentTime
   let from' = addUTCTime (-3600 * 24 * 7 * 3) now
-  baseChanges <- Faker.generateNonDeterministic $ Faker.Combinators.listOf 10 $ fakeChange from' now
+  baseChanges <- Faker.generateNonDeterministic $ Faker.Combinators.listOf docCount $ fakeChange from' now
   changes <- setChangeID baseChanges
   pure $ T.SChange <$> changes
 
@@ -89,6 +101,8 @@ fakeText = from <$> Faker.TvShow.Futurama.quotes
 
 fakeChange :: UTCTime -> UTCTime -> Faker.Fake EChange
 fakeChange from' to = do
+  repoName <- Faker.Combinators.frequency [(5, pure "repo1"), (3, pure "repo2")]
+  let repoPrefix = "myorg"
   let echangeId = ""
   let echangeType = EChangeDoc
   let echangeNumber = 1
@@ -102,9 +116,9 @@ fakeChange from' to = do
   let echangeChangedFiles = [File 0 0 "/fake/path"]
   echangeText <- fakeText
   let echangeCommits = []
-  let echangeRepositoryPrefix = ""
-  let echangeRepositoryFullname = ""
-  let echangeRepositoryShortname = ""
+  let echangeRepositoryPrefix = repoPrefix
+  let echangeRepositoryFullname = repoPrefix <> "/" <> repoName
+  let echangeRepositoryShortname = repoName
   echangeAuthor <- fakeAuthor
   let echangeBranch = ""
   echangeCreatedAt <- dropTime <$> Faker.DateTime.utcBetween from' to
@@ -117,11 +131,16 @@ fakeChange from' to = do
   let echangeApproval = Just ["OK"]
   let echangeSelfMerged = Nothing
   let echangeTasksData = Nothing
-  let echangeState = EChangeOpen
+  echangeState <-
+    Faker.Combinator.frequency
+      [ (3, pure EChangeMerged)
+      , (2, pure EChangeOpen)
+      , (1, pure EChangeClosed)
+      ]
   echangeMergeable <- Faker.Combinators.frequency [(5, pure "MERGEABLE"), (1, pure "")]
   let echangeLabels = []
   let echangeAssignees = []
-  let echangeDraft = False
+  echangeDraft <- Faker.Combinator.frequency [(5, pure False), (1, pure True)]
   pure $ EChange {..}
 
 fakeChangeEvent :: UTCTime -> UTCTime -> Faker.Fake EChangeEvent
