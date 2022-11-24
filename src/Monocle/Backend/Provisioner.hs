@@ -37,15 +37,15 @@ import Monocle.Prelude
 import Monocle.Protob.Search (TaskData (..))
 
 -- | Provision fakedata for a tenant
-runProvisioner :: FilePath -> Text -> Text -> IO ()
-runProvisioner configPath elasticUrl tenantName = runEff . runMonoConfig configPath . runLoggerEffect $ do
+runProvisioner :: FilePath -> Text -> Text -> Int -> IO ()
+runProvisioner configPath elasticUrl tenantName docCount = runEff . runMonoConfig configPath . runLoggerEffect $ do
   conf <- csConfig <$> getReloadConfig
   let tenantM = lookupTenant (getWorkspaces conf) tenantName
   case tenantM of
     Just tenant -> do
       bhEnv <- mkEnv elasticUrl
       r <- runRetry $ runFail $ runElasticEffect bhEnv $ do
-        events <- liftIO createFakeEvents
+        events <- liftIO $ createFakeEvents docCount
         runEmptyQueryM tenant $ T.indexScenario events
         logInfo "Provisionned" ["index" .= tenantName, "doc count" .= length events]
       case r of
@@ -71,11 +71,11 @@ setChangeID xs = do
       newChanges
 
 -- | Creates a bunch of event in the last 3 weeks
-createFakeEvents :: IO [T.ScenarioEvent]
-createFakeEvents = do
+createFakeEvents :: Int -> IO [T.ScenarioEvent]
+createFakeEvents docCount = do
   now <- getCurrentTime
   let from' = addUTCTime (-3600 * 24 * 7 * 3) now
-  baseChanges <- Faker.generateNonDeterministic $ Faker.Combinators.listOf 10 $ fakeChange from' now
+  baseChanges <- Faker.generateNonDeterministic $ Faker.Combinators.listOf docCount $ fakeChange from' now
   changes <- setChangeID baseChanges
   pure $ T.SChange <$> changes
 
