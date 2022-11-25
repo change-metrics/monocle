@@ -16,7 +16,12 @@ const esbuildOptions = {
   outfile: './build/dist/bundle.js',
   bundle: true,
   sourcemap: true,
-  minify: isProd,
+  // We select per option minification options
+  // minify: false,
+  minifyWhitespace: true,
+  minifySyntax: true,
+  // For some reason when set to true this option break the htmx integration
+  // minifyIdentifiers: true,
   watch: process.argv.slice(2)[0] == 'watch',
   target: ['firefox87'],
   define: {
