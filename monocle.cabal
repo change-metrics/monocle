@@ -11,7 +11,7 @@ copyright:           2021,2022 Monocle authors
 category:            Development
 build-type:          Simple
 extra-doc-files:     README.md
-tested-with:         GHC == 8.10.7 || == 9.2.2
+tested-with:         GHC == 9.2.4
 extra-source-files:  schemas/monocle/config/**/*.dhall,
                      schemas/github/schema.docs.graphql,
                      schemas/gitlab/schema.graphql,
