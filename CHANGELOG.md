@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [master]
 ### Added
+### Changed
+### Removed
+### Fixed
+
+## [1.8.0] - 2022-11-28
+### Added
 
 - [api] Add the `file` field to the query language to filter changes changing at least a file path that match the regex.
 - [web] Search authors page displays the total count of authors.
@@ -17,7 +23,6 @@ All notable changes to this project will be documented in this file.
 - [logging] The api and crawler logs changed to structured json logging.
 - [prometheus] The http_request and http_failure counter labels changed from (workspace, url, crawler) to (module, url).
 
-### Removed
 ### Fixed
 
 - [crawler] Github crawler no longer crash when rate limit is deactivated on GHE (#958).
