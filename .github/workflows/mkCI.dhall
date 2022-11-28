@@ -106,6 +106,10 @@ in  { GithubActions
         , run = Some "docker build -t quay.io/change-metrics/monocle:latest ."
         }
       , GithubActions.Step::{
+        , name = Some "Set Monocle compose image to latest"
+        , run = Some "echo \"COMPOSE_MONOCLE_VERSION=latest\" > .env"
+        }
+      , GithubActions.Step::{
         , name = Some "Start Monocle compose"
         , run = Some "docker-compose up -d"
         }

@@ -50,6 +50,8 @@ jobs:
         run: "nix build .#containerMonocle; docker load < ./result"
       - name: Build docker image
         run: docker build -t quay.io/change-metrics/monocle:latest .
+      - name: Set Monocle compose image to latest
+        run: "echo \"COMPOSE_MONOCLE_VERSION=latest\" > .env"
       - name: Start Monocle compose
         run: docker-compose up -d
       - name: Wait for services to start
