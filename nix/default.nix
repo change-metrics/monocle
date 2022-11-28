@@ -505,7 +505,7 @@ in rec {
     rwHome = "mkdir -p -m 1777 ${home}";
   in pkgs.dockerTools.buildLayeredImage {
     name = "quay.io/change-metrics/monocle-exe";
-    contents = [ pkgs.coreutils pkgs.cacert pkgs.bash monocle-exe ];
+    contents = [ pkgs.coreutils pkgs.cacert pkgs.bash pkgs.curl monocle-exe ];
     extraCommands = "${createPasswd} && ${fixCABundle} && ${rwHome}";
     tag = "latest";
     created = "now";
