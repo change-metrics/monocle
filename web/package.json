@@ -27,6 +27,11 @@
     "yargs-parser": "^20.2.7",
     "htmx.org": "1.8.0"
   },
+  "overrides": {
+    "react-event-timeline": {
+      "react": ">= 0.14.0 < 17.1.0-0"
+    }
+  },
   "scripts": {
     "start": "mkdir -p build && npm run build && npm run live",
     "live": "concurrently --names www,res,esb -c green.bold,red.bold,blue.bold npm:dev-server npm:re:watch npm:es:watch",
