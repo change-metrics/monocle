@@ -450,10 +450,11 @@ Monocle supports user authentication via an OIDC (OpenID Connect) provider.
 Once authenticated, Monocle is able to display personalized content like resolving the
 *self* query value such as in the query: *author: self*.
 
-Monocle only support one provider at a time.
+Monocle supports one provider at a time.
 
-Note that by default and if no authentication system is configured, Monocle provides an
-*unauthentcated login* mechanism which allows a user to enter its *author name*.
+Note that by default and if authentication system is not configured or misconfigured,
+Monocle provides an *unauthentcated login* mechanism which allows a user to enter its
+*author name*.
 
 ##### OIDC Provider
 
