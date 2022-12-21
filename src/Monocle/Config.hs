@@ -316,13 +316,14 @@ getWorkspaces :: Config -> [Index]
 getWorkspaces Config {..} = workspaces
 
 -- | Get Authentication provider from config
-getAuthProvider :: Text -> Config -> IO (Maybe OIDCProviderConfig)
+getAuthProvider :: Text -> Config -> IO (Either Text (Maybe OIDCProviderConfig))
 getAuthProvider publicUrl Config {auth} = case auth of
   Just Auth {..} -> do
     case auth_provider of
       OIDCProvider (OIDC {..}) | (not . any T.null) [oidc_issuer_url, oidc_client_id, oidc_provider_name] ->
         do
-          opClientSecretM <- fmap from <$> lookupEnv (secretEnv oidc_provider_name)
+          let secEnv = secretEnv oidc_provider_name
+          opClientSecretM <- fmap from <$> lookupEnv secEnv
           case opClientSecretM of
             Just opClientSecret | not (T.null opClientSecret) -> mkProvider
              where
@@ -332,16 +333,27 @@ getAuthProvider publicUrl Config {auth} = case auth of
                     opUserClaim = oidc_user_claim
                     opName = oidc_provider_name
                     opEnforceAuth = Just True == enforce_auth
-                 in pure . Just $ OIDCProviderConfig {..}
-            _ -> pure Nothing
-      GithubAuthProvider _ -> error "Github Auth provider not yet supported"
-      _ -> pure Nothing
-  Nothing -> pure Nothing
+                 in pure . Right . Just $ OIDCProviderConfig {..}
+            Just _ ->
+              pure . Left $
+                misconfigMsg
+                  <> from secEnv
+                  <> " environment variable found must not be empty."
+            Nothing ->
+              pure . Left $
+                misconfigMsg
+                  <> from secEnv
+                  <> " environment variable not found."
+      OIDCProvider _ -> do
+        pure . Left $ misconfigMsg <> "At least one mandatory setting is empty."
+      GithubAuthProvider _ -> error "GithubAuthProvider not yet supported"
+  Nothing -> pure $ Right Nothing
  where
   opAppPublicURL = ensureTrailingSlash publicUrl
   ensureTrailingSlash iss = T.dropWhileEnd (== '/') iss <> "/"
   providerNameToEnvFragment = T.replace " " "_" . T.toUpper
   secretEnv pname = "MONOCLE_OIDC_" <> from (providerNameToEnvFragment pname) <> "_CLIENT_SECRET"
+  misconfigMsg = "OIDCProvider is misconfigured. "
 
 -- End - Functions to handle a Config
 

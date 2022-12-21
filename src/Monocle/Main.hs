@@ -146,10 +146,13 @@ run' ApiConfig {..} aplogger = E.runConcurrent $ runLoggerEffect do
   let localJWTSettings = defaultJWTSettings localJwk
   -- Initialize env to talk with OIDC provider
   oidcEnv <- case providerM of
-    Just provider -> do
+    Left msg -> do
+      logWarn "AuthSystemFailed" ["invalid config" .= msg]
+      pure Nothing
+    Right (Just provider) -> do
       logInfo "AuthSystemReady" ["provider" .= opName provider]
       pure <$> liftIO (initOIDCEnv provider)
-    _ -> pure Nothing
+    Right Nothing -> pure Nothing
   let aOIDC = OIDC {..}
 
   bhEnv <- mkEnv elasticUrl
