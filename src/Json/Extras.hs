@@ -21,9 +21,9 @@ import Data.Text.Short (ShortText)
 import Data.Text.Short qualified as TextShort
 import Data.Text.Time qualified as TextTime
 import Data.Time.Clock (UTCTime)
-import "json-syntax" Json
 import Relude
 import Witch (from)
+import "json-syntax" Json
 
 decodeThrow :: LBS.ByteString -> Json.Value
 decodeThrow dat = case decode (Bytes.fromByteString (from dat)) of
