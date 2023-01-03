@@ -42,7 +42,7 @@ import Effectful.Dispatch.Static (SideEffects (..), evalStaticRep)
 -------------------------------------------------------------------------------
 -- BugZilla context
 -------------------------------------------------------------------------------
-type BZEffects es = [BZEffect, LoggerEffect, PrometheusEffect, Retry] :>> es
+type BZEffects es = (BZEffect :> es, LoggerEffect :> es, PrometheusEffect :> es, Retry :> es)
 
 -- A dummy effect to replace the legacy MonadGerrit.
 -- TODO: re-implement on top of HttpEffect.

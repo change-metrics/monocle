@@ -107,7 +107,7 @@ process logFunc postFunc =
 -- | 'runStream' is the main function used by macroscope
 runStream ::
   forall es.
-  [LoggerEffect, Retry, PrometheusEffect, E.Reader CrawlerEnv, MonoClientEffect, TimeEffect] :>> es =>
+  (LoggerEffect :> es, Retry :> es, PrometheusEffect :> es, E.Reader CrawlerEnv :> es, MonoClientEffect :> es, TimeEffect :> es) =>
   ApiKey ->
   IndexName ->
   CrawlerName ->
@@ -141,7 +141,7 @@ runStream apiKey indexName crawlerName documentStream = do
 -- when it contains a Left.
 runStreamError ::
   forall es.
-  [LoggerEffect, Retry, PrometheusEffect, E.Reader CrawlerEnv, MonoClientEffect] :>> es =>
+  (LoggerEffect :> es, Retry :> es, PrometheusEffect :> es, MonoClientEffect :> es) =>
   UTCTime ->
   ApiKey ->
   IndexName ->
@@ -255,7 +255,7 @@ runStreamError startTime apiKey indexName (CrawlerName crawlerName) documentStre
 
 -- | Adapt the API response
 getStreamOldestEntity ::
-  [PrometheusEffect, LoggerEffect, Retry, MonoClientEffect] :>> es =>
+  (PrometheusEffect :> es, LoggerEffect :> es, Retry :> es, MonoClientEffect :> es) =>
   LText ->
   LText ->
   CrawlerPB.EntityType ->

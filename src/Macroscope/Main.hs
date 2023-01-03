@@ -74,7 +74,7 @@ getCrawlers xs = do
 crawlerName :: Config.Crawler -> Text
 crawlerName Config.Crawler {..} = name
 
-withMonitoringServer :: [IOE, LoggerEffect, E.Concurrent] :>> es => Int -> Eff es () -> Eff es ()
+withMonitoringServer :: (IOE :> es, LoggerEffect :> es, E.Concurrent :> es) => Int -> Eff es () -> Eff es ()
 withMonitoringServer port action = do
   -- Setup GHC metrics for prometheus
   void $ promRegister ghcMetrics
@@ -108,7 +108,7 @@ runMacroscope port confPath client = do
     . runMonoClient client
     $ withMonitoringServer port runMacroscope'
 
-runMacroscope' :: forall es. [IOE, MonoConfigEffect] :>> es => MacroEffects es => Eff es ()
+runMacroscope' :: forall es. (IOE :> es, MonoConfigEffect :> es, MacroEffects es) => Eff es ()
 runMacroscope' = do
   logInfo_ "Starting to fetch streams"
   loop (Clients mempty mempty mempty)
@@ -254,7 +254,7 @@ getClientBZ url token = do
   pure (url, client)
 
 -- | Boilerplate function to retrieve a client from the store
-getClientGraphQL :: [HttpEffect, Concurrent, Fail] :>> es => Text -> Secret -> GetClient es GraphClient
+getClientGraphQL :: Concurrent :> es => Text -> Secret -> GetClient es GraphClient
 getClientGraphQL url token = do
   clients <- gets clientsGraph
   (client, newClients) <- mapMutate clients (url, token) $ lift $ newGraphClient url token
@@ -282,7 +282,20 @@ groupByClient = grp >>> adapt
   keepOrder = fmap snd . NonEmpty.reverse
 
 -- | MonadMacro is an alias for a bunch of constraints required for the macroscope process
-type MacroEffects es = [GerritEffect, BZEffect, E.Reader CrawlerEnv, MonoClientEffect, HttpEffect, PrometheusEffect, LoggerEffect, TimeEffect, EnvEffect, Retry, Concurrent, Fail] :>> es
+type MacroEffects es =
+  ( GerritEffect :> es
+  , BZEffect :> es
+  , E.Reader CrawlerEnv :> es
+  , MonoClientEffect :> es
+  , HttpEffect :> es
+  , PrometheusEffect :> es
+  , LoggerEffect :> es
+  , TimeEffect :> es
+  , EnvEffect :> es
+  , Retry :> es
+  , Concurrent :> es
+  , Fail :> es
+  )
 
 runMacroEffects :: IOE :> es => Eff (GerritEffect : BZEffect : TimeEffect : HttpEffect : PrometheusEffect : EnvEffect : Fail : Retry : Concurrent : es) a -> Eff es a
 runMacroEffects = runConcurrent . runRetry . runFailIO . runEnv . runPrometheus . runHttpEffect . runTime . runBZ . runGerrit

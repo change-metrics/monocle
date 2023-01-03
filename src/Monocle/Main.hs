@@ -34,7 +34,7 @@ import Effectful.Reader.Static qualified as E
 import Effectful.Servant qualified
 import Monocle.Effects
 
-rootServer :: ApiEffects es => '[E.Concurrent] :>> es => CookieSettings -> Servant.ServerT RootAPI (Eff es)
+rootServer :: (ApiEffects es, E.Concurrent Monocle.Prelude.:> es) => CookieSettings -> Servant.ServerT RootAPI (Eff es)
 rootServer cookieSettings = app :<|> app
  where
   app = server :<|> searchAuthorsHandler :<|> handleLogin :<|> handleLoggedIn cookieSettings
@@ -115,7 +115,7 @@ run cfg =
       . runMonoConfig (configFile cfg)
       $ run' cfg aplogger
 
-run' :: '[IOE, MonoConfigEffect] :>> es => ApiConfig -> ApacheLogger -> Eff es ()
+run' :: (IOE Monocle.Prelude.:> es, MonoConfigEffect Monocle.Prelude.:> es) => ApiConfig -> ApacheLogger -> Eff es ()
 run' ApiConfig {..} aplogger = E.runConcurrent $ runLoggerEffect do
   conf <- Config.csConfig <$> getReloadConfig
   let workspaces = Config.getWorkspaces conf

@@ -28,7 +28,7 @@ import Streaming.Prelude qualified as Streaming
 import Monocle.Effects
 
 -- Legacy wrappers
-simpleSearchLegacy :: [LoggerEffect, ElasticEffect] :>> es => (FromJSON a) => BH.IndexName -> BH.Search -> Eff es [BH.Hit a]
+simpleSearchLegacy :: (LoggerEffect :> es, ElasticEffect :> es, FromJSON a) => BH.IndexName -> BH.Search -> Eff es [BH.Hit a]
 simpleSearchLegacy indexName search = BH.hits . BH.searchHits <$> esSearchLegacy indexName search
 
 -------------------------------------------------------------------------------
