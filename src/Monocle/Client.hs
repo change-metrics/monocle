@@ -106,4 +106,4 @@ monocleReq path MonocleClient {..} body =
   decodeResponse body' = case JSONPB.eitherDecode body' of
     Left err -> error $ "Decoding of " <> show body <> " failed with: " <> show err
     Right a -> a
-  authorizationH = fmap (\token -> ("Authorization", "Bearer " <> from token)) tokenM
+  authorizationH = fmap (\token -> ("Authorization", "Bearer " <> encodeUtf8 token)) tokenM

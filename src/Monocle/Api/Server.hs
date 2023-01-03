@@ -953,11 +953,11 @@ handleLoggedIn cookieSettings err codeM stateM = do
       tokens :: O.Tokens Value <-
         liftIO $
           O.getValidTokens
-            (mkSessionStore oidcEnv (Just $ from oauthState) Nothing)
+            (mkSessionStore oidcEnv (Just $ encodeUtf8 oauthState) Nothing)
             (oidc oidcEnv)
             (manager oidcEnv)
-            (from oauthState)
-            (from oauthCode)
+            (encodeUtf8 oauthState)
+            (encodeUtf8 oauthCode)
       now <- liftIO Monocle.Prelude.getCurrentTime
       let idToken = O.idToken tokens
           dayS = 24 * 3600
@@ -981,7 +981,7 @@ handleLoggedIn cookieSettings err codeM stateM = do
       case (mApplyCookies, jwtE) of
         (Just applyCookies, Right jwt) -> do
           incCounter monocleAuthSuccessCounter
-          logInfo "JWTCreated" ["uid" .= mUidMap, "redir" .= unsafeInto @Text (redirectUri oidcEnv)]
+          logInfo "JWTCreated" ["uid" .= mUidMap, "redir" .= decodeUtf8 @Text (redirectUri oidcEnv)]
           let resp = addHeader (makeMonocleCookie jwt) $ LoginInUser (redirectURI oauthState)
           pure $ applyCookies resp
         _ -> do

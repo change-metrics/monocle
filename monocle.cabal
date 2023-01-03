@@ -177,6 +177,7 @@ library
                      -- , servant-effectful (enabled after https://github.com/Kleidukos/servant-effectful/issues/5)
                      , streaming                  >= 0.2
                      , string-interpolate         >= 0.3.1.2
+                     , tagged
                      , tasty                      >= 1.4
                      , tasty-hunit                >= 0.10
                      , template-haskell

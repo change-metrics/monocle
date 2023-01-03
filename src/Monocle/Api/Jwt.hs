@@ -87,9 +87,9 @@ initOIDCEnv providerConfig@OIDCProviderConfig {..} = do
   manager <- newOpenSSLManager
   provider <- O.discover opIssuerURL manager
   sessionStoreStorage <- newMVar HM.empty
-  let redirectUri = from $ opAppPublicURL <> "api/2/auth/cb"
-      clientId = from opClientID
-      clientSecret = from opClientSecret
+  let redirectUri = encodeUtf8 opAppPublicURL <> "api/2/auth/cb"
+      clientId = encodeUtf8 opClientID
+      clientSecret = encodeUtf8 opClientSecret
       oidc = O.setCredentials clientId clientSecret redirectUri (O.newOIDC provider)
   pure OIDCEnv {..}
 
