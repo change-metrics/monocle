@@ -123,13 +123,11 @@ mkSessionStore OIDCEnv {sessionStoreStorage} stateM uriM = do
  where
   storeSave :: O.State -> O.Nonce -> IO ()
   storeSave state' nonce = modifyMVar_ sessionStoreStorage $ \store -> pure $ HM.insert state' nonce store
-  storeGet :: IO (Maybe O.State, Maybe O.Nonce)
-  storeGet = case stateM of
-    Just state' -> do
-      store <- readMVar sessionStoreStorage
-      let nonce = HM.lookup state' store
-      pure (Just state', nonce)
-    Nothing -> pure (Nothing, Nothing)
+  storeGet :: O.State -> IO (Maybe O.Nonce)
+  storeGet state' = do
+    store <- readMVar sessionStoreStorage
+    let nonce = HM.lookup state' store
+    pure nonce
 
 -- | Generate a random fixed size string of 42 char base64 encoded
 genRandomB64 :: IO ByteString
