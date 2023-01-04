@@ -6,6 +6,7 @@ module Lentille.GitHub.RateLimit where
 
 import Data.Morpheus.Client
 import Lentille
+import Lentille.GitHub.Types
 import Lentille.GraphQL
 import Monocle.Prelude
 import Network.HTTP.Client (responseBody, responseStatus)
@@ -13,11 +14,9 @@ import Network.HTTP.Types (Status, badGateway502, forbidden403, ok200)
 
 import Effectful.Retry
 
-newtype DateTime = DateTime Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
-
-defineByDocumentFile
+declareLocalTypesInline
   ghSchemaLocation
-  [gql|
+  [raw|
     query GetRateLimit  {
       rateLimit {
         used
@@ -31,7 +30,7 @@ transformResponse :: GetRateLimit -> Maybe RateLimit
 transformResponse = \case
   GetRateLimit
     ( Just
-        (RateLimitRateLimit used remaining (DateTime resetAt'))
+        (GetRateLimitRateLimit used remaining (DateTime resetAt'))
       ) -> case parseDateValue $ from resetAt' of
       Just resetAt -> Just RateLimit {..}
       Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAt'

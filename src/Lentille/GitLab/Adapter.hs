@@ -17,7 +17,7 @@ import Monocle.Protob.Change
 import Proto3.Suite (Enumerated (..))
 import Relude
 
-newtype Time = Time Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
+newtype Time = Time Text deriving (Show, Eq, FromJSON)
 
 data DiffStatsSummary = DiffStatsSummary
   { additions :: Int

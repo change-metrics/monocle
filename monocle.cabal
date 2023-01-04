@@ -154,7 +154,7 @@ library
                      , lens-aeson
                      , lucid                      >= 2.11.1
                      , megaparsec                 >= 9
-                     , morpheus-graphql-client    ^>= 0.19
+                     , morpheus-graphql-client    >= 0.27
                      , mmorph
                      , mtl
                      , network                    >= 3
@@ -244,6 +244,7 @@ library
                      , Lentille.GraphQL
                      , Lentille.Bugzilla
 
+                     , Lentille.GitHub.Types
                      , Lentille.GitHub.Issues
                      , Lentille.GitHub.RateLimit
                      , Lentille.GitHub.Organization

@@ -6,12 +6,9 @@ module Lentille.GitHub.User where
 
 import Data.Morpheus.Client
 import Lentille.GitHub.RateLimit (retryCheck)
+import Lentille.GitHub.Types
 import Lentille.GraphQL
 import Monocle.Prelude
-
-newtype DateTime = DateTime Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
-
-newtype URI = URI Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 
 data IdentInfo = IdentInfo
   { iiAvatarUrl :: Text
@@ -24,9 +21,9 @@ data IdentInfo = IdentInfo
 
 -- https://docs.github.com/en/graphql/reference/objects#user
 -- To get the orgs login the following scope: ['read:org'] is required
-defineByDocumentFile
+declareLocalTypesInline
   ghSchemaLocation
-  [gql|
+  [raw|
     query getUser ($login: String!) {
       rateLimit {
         used
@@ -51,14 +48,14 @@ transformResponse :: GraphResp GetUser -> (RateLimit, IdentInfo)
 transformResponse (Left err) = error (show err)
 transformResponse (Right resp) = case resp of
   GetUser
-    (Just (RateLimitRateLimit used remaining (DateTime resetAtText)))
+    (Just (GetUserRateLimit used remaining (DateTime resetAtText)))
     ( Just
-        ( UserUser
+        ( GetUserUser
             (URI iiAvatarUrl)
             iiName
             iiCompany
             iiLocation
-            (UserOrganizationsOrganizationConnection (Just orgListM))
+            (GetUserUserOrganizations (Just orgListM))
           )
       ) ->
       let rateLimit = case parseDateValue $ from resetAtText of

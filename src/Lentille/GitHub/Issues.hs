@@ -12,13 +12,10 @@ import Data.Time.Format
 import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Lentille.GitHub.RateLimit (getRateLimit)
+import Lentille.GitHub.Types
 import Lentille.GraphQL
 import Monocle.Prelude
 import Monocle.Protob.Search (TaskData (..))
-
-newtype DateTime = DateTime Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
-
-newtype URI = URI Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 
 -- The query muste use the filter "linked:pr" filter. steamLinkedIssue ensures this.
 -- CONNECTED_EVENT happens when a LINK is performed manually though the GH UI.
@@ -26,9 +23,9 @@ newtype URI = URI Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
 --  Most of the time this is used by developers to reference an issue in
 --  the PR description or in a commit messages.
 -- See GH documentation https://docs.github.com/en/github/managing-your-work-on-github/linking-a-pull-request-to-an-issue
-defineByDocumentFile
+declareLocalTypesInline
   ghSchemaLocation
-  [gql|
+  [raw|
     query GetLinkedIssues ($search: String!, $cursor: String) {
       rateLimit {
         used
@@ -91,11 +88,11 @@ streamLinkedIssue client time repo =
   toSimpleDate :: UTCTime -> String
   toSimpleDate = formatTime defaultTimeLocale "%F"
 
-pattern IssueLabels :: [Maybe SearchNodesLabelsNodesLabel] -> SearchNodesSearchResultItem
-pattern IssueLabels nodesLabel <- SearchNodesIssue _ _ _ _ _ _ (Just (SearchNodesLabelsLabelConnection (Just nodesLabel))) _
+pattern IssueLabels :: [Maybe GetLinkedIssuesSearchNodesLabelsNodes] -> GetLinkedIssuesSearchNodesIssue
+pattern IssueLabels nodesLabel <- GetLinkedIssuesSearchNodesIssue _ _ _ _ _ _ (Just (GetLinkedIssuesSearchNodesLabels (Just nodesLabel))) _
 
-transformRateLimit :: RateLimitRateLimit -> RateLimit
-transformRateLimit (RateLimitRateLimit used remaining (DateTime resetAtText)) =
+transformRateLimit :: GetLinkedIssuesRateLimit -> RateLimit
+transformRateLimit (GetLinkedIssuesRateLimit used remaining (DateTime resetAtText)) =
   case parseDateValue $ from resetAtText of
     Just resetAt -> RateLimit {..}
     Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAtText
@@ -105,9 +102,9 @@ transformResponse searchResult =
   case searchResult of
     GetLinkedIssues
       rateLimitM
-      ( SearchSearchResultItemConnection
+      ( GetLinkedIssuesSearch
           issueCount'
-          (SearchPageInfoPageInfo hasNextPage' endCursor')
+          (GetLinkedIssuesSearchPageInfo hasNextPage' endCursor')
           (Just issues)
         ) ->
         let newTaskDataE = concatMap mkTaskData issues
@@ -118,10 +115,9 @@ transformResponse searchResult =
             )
     respOther -> error ("Invalid response: " <> show respOther)
  where
-  mkTaskData :: Maybe SearchNodesSearchResultItem -> [Either Text TaskData]
+  mkTaskData :: Maybe GetLinkedIssuesSearchNodes -> [Either Text TaskData]
   mkTaskData issueM = case issueM of
     Just issue ->
-      -- (fmap . join . fmap $ toTaskData issue) (getTDChangeUrls issue)
       let tdChangeUrlsE :: [Either Text Text]
           tdChangeUrlsE = getTDChangeUrls issue
           newTaskDataEE :: [Either Text (Either Text TaskData)]
@@ -129,8 +125,10 @@ transformResponse searchResult =
           newTaskDataE = fmap join newTaskDataEE
        in newTaskDataE
     Nothing -> []
-  toTaskData :: SearchNodesSearchResultItem -> Text -> Either Text TaskData
-  toTaskData issue curl =
+
+  toTaskData :: GetLinkedIssuesSearchNodes -> Text -> Either Text TaskData
+  toTaskData (GetLinkedIssuesSearchNodesVariantSearchResultItem _) _ = Left "Impossible result"
+  toTaskData (GetLinkedIssuesSearchNodesVariantIssue issue) curl =
     TaskData
       <$> (Just <$> getUpdatedAt issue)
       <*> pure (from curl)
@@ -147,51 +145,65 @@ transformResponse searchResult =
     getLabelsE = case partitionEithers (getLabels issue) of
       ([], labels') -> Right (fmap from labels')
       (errors, _) -> Left (unwords errors)
-    getIssueURL :: SearchNodesSearchResultItem -> Text
-    getIssueURL (SearchNodesIssue _ _ _ _ (URI changeURL) _ _ _) = changeURL
-    getNumber :: SearchNodesSearchResultItem -> Text
-    getNumber (SearchNodesIssue _ _ _ _ _ number _ _) = show number
-  getUpdatedAt :: SearchNodesSearchResultItem -> Either Text Timestamp
-  getUpdatedAt (SearchNodesIssue _ _ _ (DateTime updatedAt') _ _ _ _) =
+    getIssueURL :: GetLinkedIssuesSearchNodesIssue -> Text
+    getIssueURL (GetLinkedIssuesSearchNodesIssue _ _ _ _ (URI changeURL) _ _ _) = changeURL
+    getNumber :: GetLinkedIssuesSearchNodesIssue -> Text
+    getNumber (GetLinkedIssuesSearchNodesIssue _ _ _ _ _ number _ _) = show number
+
+  getUpdatedAt :: GetLinkedIssuesSearchNodesIssue -> Either Text Timestamp
+  getUpdatedAt (GetLinkedIssuesSearchNodesIssue _ _ _ (DateTime updatedAt') _ _ _ _) =
     case Timestamp.fromRFC3339 $ from updatedAt' of
       Just ts -> Right ts
       Nothing -> Left $ "Unable to decode updatedAt format" <> show updatedAt'
-  getLabels :: SearchNodesSearchResultItem -> [Either Text Text]
+
+  getLabels :: GetLinkedIssuesSearchNodesIssue -> [Either Text Text]
   getLabels issue =
     case issue of
       IssueLabels nodesLabel -> fmap getLabelFromNode nodesLabel
       respOther -> [Left ("Invalid response: " <> show respOther)]
-  getLabelFromNode :: Maybe SearchNodesLabelsNodesLabel -> Either Text Text
+
+  getLabelFromNode :: Maybe GetLinkedIssuesSearchNodesLabelsNodes -> Either Text Text
   getLabelFromNode nodeLabelM = case nodeLabelM of
-    Just
-      (SearchNodesLabelsNodesLabel label) -> Right label
+    Just (GetLinkedIssuesSearchNodesLabelsNodes name) -> Right name
     Nothing -> Left "Missing Label in SearchNodesLabelsNodesLabel"
-  getTDChangeUrls :: SearchNodesSearchResultItem -> [Either Text Text]
+
+  getTDChangeUrls :: GetLinkedIssuesSearchNodes -> [Either Text Text]
   getTDChangeUrls issue =
     case issue of
-      SearchNodesIssue
-        _
-        _
-        _
-        _
-        _
-        _
-        _
-        ( SearchNodesTimelineItemsIssueTimelineItemsConnection
-            (Just urls)
+      GetLinkedIssuesSearchNodesVariantIssue
+        ( GetLinkedIssuesSearchNodesIssue
+            _
+            _
+            _
+            _
+            _
+            _
+            _
+            ( GetLinkedIssuesSearchNodesTimelineItems
+                (Just urls)
+              )
           ) -> Right <$> mapMaybe extractUrl urls
       respOther -> [Left ("Invalid response: " <> show respOther)]
-  extractUrl :: Maybe SearchNodesTimelineItemsNodesIssueTimelineItems -> Maybe Text
+
+  extractUrl :: Maybe GetLinkedIssuesSearchNodesTimelineItemsNodes -> Maybe Text
   extractUrl item = case item of
     Just
-      ( SearchNodesTimelineItemsNodesConnectedEvent
-          "ConnectedEvent"
-          (SearchNodesTimelineItemsNodesSubjectPullRequest _ (Just (URI url')))
+      ( GetLinkedIssuesSearchNodesTimelineItemsNodesVariantConnectedEvent
+          ( GetLinkedIssuesSearchNodesTimelineItemsNodesConnectedEvent
+              "ConnectedEvent"
+              ( GetLinkedIssuesSearchNodesTimelineItemsNodesSubjectVariantPullRequest
+                  (GetLinkedIssuesSearchNodesTimelineItemsNodesSubjectPullRequest _ (Just (URI url')))
+                )
+            )
         ) -> Just url'
     Just
-      ( SearchNodesTimelineItemsNodesCrossReferencedEvent
-          "CrossReferencedEvent"
-          (SearchNodesTimelineItemsNodesSourcePullRequest _ (Just (URI url')))
+      ( GetLinkedIssuesSearchNodesTimelineItemsNodesVariantCrossReferencedEvent
+          ( GetLinkedIssuesSearchNodesTimelineItemsNodesCrossReferencedEvent
+              "CrossReferencedEvent"
+              ( GetLinkedIssuesSearchNodesTimelineItemsNodesSourceVariantPullRequest
+                  (GetLinkedIssuesSearchNodesTimelineItemsNodesSourcePullRequest _ (Just (URI url')))
+                )
+            )
         ) -> Just url'
     -- We are requesting Issue with connected PR we cannot get Nothing
     _ -> Nothing

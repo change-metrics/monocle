@@ -21,12 +21,12 @@ import Monocle.Prelude hiding (id, state)
 import Monocle.Protob.Change
 import Streaming.Prelude qualified as S
 
-newtype NoteID = NoteID Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
+newtype NoteID = NoteID Text deriving (Show, Eq, FromJSON)
 
 -- https://docs.gitlab.com/ee/api/graphql/reference/index.html#projectmergerequests
-defineByDocumentFile
+declareLocalTypesInline
   glSchemaLocation
-  [gql|
+  [raw|
     query GetProjectMergeRequests ($project: ID!, $iids: [String!], $cursor: String) {
       project(fullPath: $project) {
         name
@@ -136,12 +136,12 @@ transformResponse host getIdentIdCB result =
   case result of
     GetProjectMergeRequests
       ( Just
-          ( ProjectProject
+          ( GetProjectMergeRequestsProject
               shortName
               fullName
               ( Just
-                  ( ProjectMergeRequestsMergeRequestConnection
-                      (ProjectMergeRequestsPageInfoPageInfo hasNextPage endCursor)
+                  ( GetProjectMergeRequestsProjectMergeRequests
+                      (GetProjectMergeRequestsProjectMergeRequestsPageInfo hasNextPage endCursor)
                       count
                       (Just nodes)
                     )
@@ -162,7 +162,7 @@ transformResponse host getIdentIdCB result =
  where
   toIdent' = toIdent host getIdentIdCB
   toCommit' = toCommit host getIdentIdCB
-  extract :: Text -> Text -> ProjectMergeRequestsNodesMergeRequest -> (Change, [ChangeEvent])
+  extract :: Text -> Text -> GetProjectMergeRequestsProjectMergeRequestsNodes -> (Change, [ChangeEvent])
   extract shortName fullName mr =
     let change = getChange mr
         comments = getComments mr
@@ -175,25 +175,25 @@ transformResponse host getIdentIdCB result =
             <> getChangeReviewedEvent change comments
         )
    where
-    toDiffStatsSummary ProjectMergeRequestsNodesDiffStatsSummaryDiffStatsSummary {..} = DiffStatsSummary {..}
-    toDiffStats ProjectMergeRequestsNodesDiffStatsDiffStats {..} = DiffStats {..}
-    toMRCommit (ProjectMergeRequestsNodesCommitsWithoutMergeCommitsNodesCommit sha author' authoredDate ctitle) =
+    toDiffStatsSummary GetProjectMergeRequestsProjectMergeRequestsNodesDiffStatsSummary {..} = DiffStatsSummary {..}
+    toDiffStats GetProjectMergeRequestsProjectMergeRequestsNodesDiffStats {..} = DiffStats {..}
+    toMRCommit (GetProjectMergeRequestsProjectMergeRequestsNodesCommitsWithoutMergeCommitsNodes sha author' authoredDate ctitle) =
       let cauthor = authorName <$> author' in MRCommit {..}
      where
-      authorName ProjectMergeRequestsNodesCommitsWithoutMergeCommitsNodesAuthorUserCore {..} = MRUserCore username
+      authorName GetProjectMergeRequestsProjectMergeRequestsNodesCommitsWithoutMergeCommitsNodesAuthor {..} = MRUserCore username
     toCommitsNodes
-      (ProjectMergeRequestsNodesCommitsWithoutMergeCommitsCommitConnection nodes) = cleanMaybeMNodes nodes
+      (GetProjectMergeRequestsProjectMergeRequestsNodesCommitsWithoutMergeCommits nodes) = cleanMaybeMNodes nodes
     toLabelsNodes
-      (ProjectMergeRequestsNodesLabelsLabelConnection nodes) = cleanMaybeMNodes nodes
+      (GetProjectMergeRequestsProjectMergeRequestsNodesLabels nodes) = cleanMaybeMNodes nodes
     toAssigneesNodes
-      (ProjectMergeRequestsNodesAssigneesMergeRequestAssigneeConnection nodes) = cleanMaybeMNodes nodes
-    getLabelTitle (ProjectMergeRequestsNodesLabelsNodesLabel title') = from title'
-    getAuthorUsername ProjectMergeRequestsNodesAuthorUserCore {..} = username
-    getMergerUsername ProjectMergeRequestsNodesMergeUserUserCore {..} = username
-    getAssigneesUsername ProjectMergeRequestsNodesAssigneesNodesMergeRequestAssignee {..} = username
+      (GetProjectMergeRequestsProjectMergeRequestsNodesAssignees nodes) = cleanMaybeMNodes nodes
+    getLabelTitle (GetProjectMergeRequestsProjectMergeRequestsNodesLabelsNodes title') = from title'
+    getAuthorUsername GetProjectMergeRequestsProjectMergeRequestsNodesAuthor {..} = username
+    getMergerUsername GetProjectMergeRequestsProjectMergeRequestsNodesMergeUser {..} = username
+    getAssigneesUsername GetProjectMergeRequestsProjectMergeRequestsNodesAssigneesNodes {..} = username
 
-    getChange :: ProjectMergeRequestsNodesMergeRequest -> Change
-    getChange ProjectMergeRequestsNodesMergeRequest {..} =
+    getChange :: GetProjectMergeRequestsProjectMergeRequestsNodes -> Change
+    getChange GetProjectMergeRequestsProjectMergeRequestsNodes {..} =
       let changeId = (from . sanitizeID $ unpackID id)
           changeNumber = getChangeNumber iid
           changeChangeId = getChangeId fullName iid
@@ -250,14 +250,14 @@ transformResponse host getIdentIdCB result =
             )
        in Change {..}
 
-    getComments :: ProjectMergeRequestsNodesMergeRequest -> [MRComment]
-    getComments ProjectMergeRequestsNodesMergeRequest {..} =
+    getComments :: GetProjectMergeRequestsProjectMergeRequestsNodes -> [MRComment]
+    getComments GetProjectMergeRequestsProjectMergeRequestsNodes {..} =
       toMRComment <$> maybe [] toNotesNodes (Just notes)
      where
-      toNotesNodes (ProjectMergeRequestsNodesNotesNoteConnection nodes) = cleanMaybeMNodes nodes
-      toMRComment :: ProjectMergeRequestsNodesNotesNodesNote -> MRComment
-      toMRComment (ProjectMergeRequestsNodesNotesNodesNote nId author' commentedAt ntypeM) =
-        let ProjectMergeRequestsNodesNotesNodesAuthorUserCore author'' = author'
+      toNotesNodes (GetProjectMergeRequestsProjectMergeRequestsNodesNotes nodes) = cleanMaybeMNodes nodes
+      toMRComment :: GetProjectMergeRequestsProjectMergeRequestsNodesNotesNodes -> MRComment
+      toMRComment (GetProjectMergeRequestsProjectMergeRequestsNodesNotesNodes nId author' commentedAt ntypeM) =
+        let GetProjectMergeRequestsProjectMergeRequestsNodesNotesNodesAuthor author'' = author'
             commentType = getCommentType ntypeM
             NoteID noteIDT = nId
          in MRComment

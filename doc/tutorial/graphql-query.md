@@ -46,9 +46,9 @@ Add to the file your query like so:
 
 ```haskell
 import Lentille.GitHub (schemaLocation)
-defineByDocumentFile
+declareLocalTypesInline
   schemaLocation
-  [gql|
+  [raw|
     { query content here }
   |]
 ```
@@ -115,9 +115,9 @@ src/Lentille/GitHub/Issues.hs:(20,8)-(45,4): Splicing expression
 As you can see, there are unknown type constructor like URI or DateTime. So add newtype for those:
 
 ```haskell
-newtype DateTime = DateTime Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
+newtype DateTime = DateTime Text deriving (Show, Eq, FromJSON)
 
-newtype URI = URI Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
+newtype URI = URI Text deriving (Show, Eq, FromJSON)
 ```
 
 ... then reload:

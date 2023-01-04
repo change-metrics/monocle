@@ -8,20 +8,15 @@ module Lentille.GitHub.Watching where
 
 import Data.Morpheus.Client qualified
 import Lentille.GitHub.RateLimit qualified
+import Lentille.GitHub.Types
 import Lentille.GraphQL qualified
 import Monocle.Prelude
 import Monocle.Protob.Crawler qualified
 
-newtype DateTime = DateTime Text
-  deriving (Show, Eq, Data.Morpheus.Client.EncodeScalar, Data.Morpheus.Client.DecodeScalar)
-
-newtype URI = URI {unURI :: Text}
-  deriving (Show, Eq, Data.Morpheus.Client.EncodeScalar, Data.Morpheus.Client.DecodeScalar)
-
 -- https://docs.github.com/en/graphql/reference/objects#user
-Data.Morpheus.Client.defineByDocumentFile
+Data.Morpheus.Client.declareLocalTypesInline
   Lentille.GraphQL.ghSchemaLocation
-  [Data.Morpheus.Client.gql|
+  [Data.Morpheus.Client.raw|
     query GetWatched ($login: String!, $cursor: String)  {
       rateLimit {
         used
@@ -44,12 +39,12 @@ transformResponse :: GetWatched -> Lentille.GraphQL.GraphResponse [Monocle.Proto
 transformResponse result = do
   case result of
     GetWatched
-      (Just (RateLimitRateLimit used remaining (DateTime resetAtText)))
+      (Just (GetWatchedRateLimit used remaining (DateTime resetAtText)))
       ( Just
-          ( UserUser
-              ( UserWatchingRepositoryConnection
+          ( GetWatchedUser
+              ( GetWatchedUserWatching
                   totalCount
-                  (UserWatchingPageInfoPageInfo hasNextPage endCursor)
+                  (GetWatchedUserWatchingPageInfo hasNextPage endCursor)
                   (Just watchedRepositories)
                 )
             )
@@ -69,7 +64,7 @@ transformResponse result = do
       , []
       )
  where
-  getRepos :: [Maybe UserWatchingNodesRepository] -> [Monocle.Protob.Crawler.Project]
+  getRepos :: [Maybe GetWatchedUserWatchingNodes] -> [Monocle.Protob.Crawler.Project]
   getRepos r = Monocle.Protob.Crawler.Project . from . unURI . url <$> catMaybes r
 
 streamWatchedProjects ::

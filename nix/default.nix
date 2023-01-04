@@ -7,17 +7,6 @@ let
   else
     throw "Refusing to build from a dirty Git tree!";
 
-  mk-morpheus-lib = hpPrev: name:
-    let
-      morpheus-graphql-src = pkgs.fetchFromGitHub {
-        owner = "morpheusgraphql";
-        repo = "morpheus-graphql";
-        rev = "df3a4b0d11b53de3ddf3b43966e0242877541e50";
-        sha256 = "sha256-rrDWIYmY9J9iPI/lSuflyyxapAXyuHbLP86awH33mzo=";
-      };
-    in (hpPrev.callCabal2nix "morpheus-graphql-${name}"
-      "${morpheus-graphql-src}/morpheus-graphql-${name}" { });
-
   # Add monocle and patch broken dependency to the haskell package set
   haskellExtend = hpFinal: hpPrev: {
     monocle = hpPrev.callCabal2nix "monocle" self { };
@@ -42,12 +31,6 @@ let
       version = "0.19.1.0";
       sha256 = "sha256-QEN1wOLLUEsDKAbgz8ex0wfK/duNytvRYclwkBj/1G0=";
     };
-
-    # upgrade to latest morpheus needs some work
-    morpheus-graphql-tests = mk-morpheus-lib hpPrev "tests";
-    morpheus-graphql-core = mk-morpheus-lib hpPrev "core";
-    morpheus-graphql-code-gen = mk-morpheus-lib hpPrev "code-gen";
-    morpheus-graphql-client = mk-morpheus-lib hpPrev "client";
   };
 
   # create the main package set without options
