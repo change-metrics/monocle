@@ -52,7 +52,7 @@ import Effectful.Dispatch.Static (SideEffects (..), evalStaticRep)
 -------------------------------------------------------------------------------
 -- Gerrit context
 -------------------------------------------------------------------------------
-type GerritEffects es = [GerritEffect, LoggerEffect, PrometheusEffect, Retry] :>> es
+type GerritEffects es = (GerritEffect :> es, LoggerEffect :> es, PrometheusEffect :> es, Retry :> es)
 
 -- A dummy effect to replace the legacy MonadGerrit.
 -- TODO: re-implement on top of HttpEffect.

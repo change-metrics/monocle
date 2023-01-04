@@ -440,7 +440,7 @@ testUpgradeConfigV1 = do
     getCrawlerProjectMDDocID =
       let entity = Project repoName
        in entityDocID (CrawlerName crawlerName) entity
-  setDocs :: [MonoQuery, ElasticEffect, LoggerEffect] :>> es => Config.Crawler -> Text -> Text -> Text -> (Eff es) ()
+  setDocs :: (MonoQuery :> es, ElasticEffect :> es, LoggerEffect :> es) => Config.Crawler -> Text -> Text -> Text -> (Eff es) ()
   setDocs crawler crawlerName repo1 repo2 = do
     -- Init crawler metadata
     I.initCrawlerMetadata crawler

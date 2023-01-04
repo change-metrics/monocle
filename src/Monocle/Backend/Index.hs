@@ -237,7 +237,7 @@ configDoc = BH.DocId "config"
 -- | Upgrade to config v1 (migrate legacy GH crawler to the new API)
 -- | This function looks for GitHub project crawler metadata docs and reset the
 -- | lastCommitAt to the lastUpdatedAt date of the most recent change of the repository.
-upgradeConfigV1 :: forall es. '[E.Fail, LoggerEffect, MonoQuery] :>> es => IndexEffects es => Eff es ()
+upgradeConfigV1 :: forall es. (E.Fail :> es, MonoQuery :> es) => IndexEffects es => Eff es ()
 upgradeConfigV1 = do
   indexName <- getIndexName
   logInfo "Applying migration to schema V1 on workspace" ["index" .= indexName]
@@ -290,7 +290,7 @@ upgradeConfigV1 = do
         otherEntity -> do
           logInfo "Unexpected entity" ["other" .= otherEntity]
 
-upgradeConfigV2 :: forall es. '[E.Fail, LoggerEffect, MonoQuery] :>> es => IndexEffects es => Eff es ()
+upgradeConfigV2 :: forall es. MonoQuery :> es => IndexEffects es => Eff es ()
 upgradeConfigV2 = do
   indexName <- getIndexName
   logInfo "Applying migration to schema V2 on workspace" ["index" .= indexName]
@@ -299,7 +299,7 @@ upgradeConfigV2 = do
   logInfo "Authors cache populated monocle uid" ["added" .= added]
 
 -- | Add self_merged data to event of type ChangeMergedEvent
-upgradeConfigV3 :: forall es. '[E.Fail, LoggerEffect, MonoQuery] :>> es => IndexEffects es => Eff es Int
+upgradeConfigV3 :: forall es. MonoQuery :> es => IndexEffects es => Eff es Int
 upgradeConfigV3 = do
   indexName <- getIndexName
   logInfo "Applying migration to schema V3 on workspace" ["index" .= indexName]
@@ -325,7 +325,7 @@ upgradeConfigV3 = do
     BulkUpdate indexName (getEventDocId ev) $ toJSON ev
 
 -- | Fix duration computation that was computed in the reverse order giving negative durations
-upgradeConfigV4 :: forall es. '[E.Fail, LoggerEffect, MonoQuery] :>> es => IndexEffects es => Eff es Int
+upgradeConfigV4 :: forall es. MonoQuery :> es => IndexEffects es => Eff es Int
 upgradeConfigV4 = do
   indexName <- getIndexName
   logInfo "Applying migration to schema V4 on workspace " ["index" .= indexName]
@@ -353,7 +353,7 @@ upgradeConfigV4 = do
   mkChangeBulkUpdate indexName change =
     BulkUpdate indexName (getChangeDocId change) $ toJSON change
 
-upgrades :: forall es. '[E.Fail, LoggerEffect, MonoQuery] :>> es => IndexEffects es => [(ConfigVersion, Eff es ())]
+upgrades :: forall es. (E.Fail :> es, MonoQuery :> es) => IndexEffects es => [(ConfigVersion, Eff es ())]
 upgrades =
   [ (ConfigVersion 1, upgradeConfigV1)
   , (ConfigVersion 2, upgradeConfigV2)
@@ -383,13 +383,13 @@ getVersion = ConfigVersion . fromMaybe 0 . preview (_Object . at "version" . tra
 setVersion :: ConfigVersion -> Value -> Value
 setVersion (ConfigVersion v) = set (_Object . at "version") (Just . Number . fromInteger $ v)
 
-getConfigVersion :: forall es. '[E.Fail, LoggerEffect, MonoQuery] :>> es => IndexEffects es => Eff es (ConfigVersion, Value)
+getConfigVersion :: forall es. (E.Fail :> es, MonoQuery :> es) => IndexEffects es => Eff es (ConfigVersion, Value)
 getConfigVersion = do
   QueryConfig _ <- getQueryTarget
   currentConfig <- fromMaybe (object []) <$> getDocumentById configDoc
   pure (getVersion currentConfig, currentConfig)
 
-ensureConfigIndex :: forall es. '[E.Fail, LoggerEffect, MonoQuery, Retry] :>> es => IndexEffects es => Eff es ()
+ensureConfigIndex :: forall es. (E.Fail :> es, MonoQuery :> es, Retry :> es) => IndexEffects es => Eff es ()
 ensureConfigIndex = do
   QueryConfig conf <- getQueryTarget
 
@@ -416,14 +416,14 @@ ensureConfigIndex = do
   traverseWorkspace action conf = do
     traverse_ (\ws -> localQueryTarget (QueryWorkspace ws) action) (Config.getWorkspaces conf)
 
-ensureIndexSetup :: '[MonoQuery, LoggerEffect, ElasticEffect, Retry] :>> es => Eff es ()
+ensureIndexSetup :: (MonoQuery :> es, LoggerEffect :> es, ElasticEffect :> es, Retry :> es) => Eff es ()
 ensureIndexSetup = do
   indexName <- getIndexName
   logInfo "Ensure workspace " ["index" .= indexName]
   createIndex indexName ChangesIndexMapping
   esSettings indexName (object ["index" .= object ["max_regex_length" .= (50_000 :: Int)]])
 
-ensureIndexCrawlerMetadata :: [E.Fail, LoggerEffect, ElasticEffect, MonoQuery] :>> es => Eff es ()
+ensureIndexCrawlerMetadata :: (E.Fail :> es, LoggerEffect :> es, ElasticEffect :> es, MonoQuery :> es) => Eff es ()
 ensureIndexCrawlerMetadata = do
   QueryWorkspace config <- getQueryTarget
   traverse_ initCrawlerMetadata $ Config.crawlers config
@@ -436,12 +436,12 @@ withRefresh action = do
   refreshResp <- esRefreshIndex index
   unless (BH.isSuccess refreshResp) (error $ "Unable to refresh index: " <> show resp)
 
-ensureIndex :: '[E.Fail, LoggerEffect, MonoQuery, ElasticEffect, Retry] :>> es => Eff es ()
+ensureIndex :: (E.Fail :> es, LoggerEffect :> es, MonoQuery :> es, ElasticEffect :> es, Retry :> es) => Eff es ()
 ensureIndex = do
   ensureIndexSetup
   ensureIndexCrawlerMetadata
 
-removeIndex :: '[E.Fail, LoggerEffect, MonoQuery, ElasticEffect] :>> es => Eff es ()
+removeIndex :: (E.Fail :> es, MonoQuery :> es, ElasticEffect :> es) => Eff es ()
 removeIndex = do
   indexName <- getIndexName
   _resp <- esDeleteIndex indexName
@@ -672,7 +672,7 @@ data TaskDataDoc = TaskDataDoc
 
 type TaskDataOrphanDoc = TaskDataDoc
 
-getOrphanTaskDataByChangeURL :: forall es. [ElasticEffect, MonoQuery] :>> es => [Text] -> Eff es [EChangeOrphanTD]
+getOrphanTaskDataByChangeURL :: forall es. (ElasticEffect :> es, MonoQuery :> es) => [Text] -> Eff es [EChangeOrphanTD]
 getOrphanTaskDataByChangeURL urls = do
   index <- getIndexName
   results <- scanSearch index
@@ -690,7 +690,7 @@ getOrphanTaskDataByChangeURL urls = do
           ]
       ]
 
-getOrphanTaskDataAndDeclareAdoption :: [ElasticEffect, MonoQuery] :>> es => IndexEffects es => [Text] -> Eff es [EChangeOrphanTD]
+getOrphanTaskDataAndDeclareAdoption :: MonoQuery :> es => IndexEffects es => [Text] -> Eff es [EChangeOrphanTD]
 getOrphanTaskDataAndDeclareAdoption urls = do
   oTDs <- getOrphanTaskDataByChangeURL urls
   void $ updateDocs $ toAdoptedDoc <$> oTDs

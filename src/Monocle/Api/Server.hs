@@ -74,12 +74,12 @@ import Servant.Auth.Server.Internal.JWT (makeJWT)
 import Web.Cookie (SetCookie (..), defaultSetCookie, sameSiteStrict)
 
 -- | 'getWorkspaces' returns the list of workspace, reloading the config when the file changed.
-getWorkspaces :: '[MonoConfigEffect] :>> es => Eff es [Config.Index]
+getWorkspaces :: MonoConfigEffect :> es => Eff es [Config.Index]
 getWorkspaces = Config.workspaces . Config.csConfig <$> getReloadConfig
 
 -- | 'updateIndex' if needed - ensures index exists and refresh crawler Metadata
 -- note: updateIndex is the handler that needs the Concurrent Effect to modify the MVar.
-updateIndex :: forall es. ApiEffects es => [MonoQuery, E.Concurrent] :>> es => Config.Index -> MVar Config.WorkspaceStatus -> Eff es ()
+updateIndex :: forall es. (ApiEffects es, MonoQuery :> es, E.Concurrent :> es) => Config.Index -> MVar Config.WorkspaceStatus -> Eff es ()
 updateIndex index wsRef = E.modifyMVar_ wsRef doUpdateIfNeeded
  where
   doUpdateIfNeeded :: Config.WorkspaceStatus -> Eff es Config.WorkspaceStatus
@@ -388,7 +388,7 @@ crawlerCommit _auth request = do
       $ Right err
 
 -- | /crawler/get_commit_info endpoint
-crawlerCommitInfo :: ApiEffects es => '[E.Concurrent] :>> es => AuthResult AuthenticatedUser -> CrawlerPB.CommitInfoRequest -> Eff es CrawlerPB.CommitInfoResponse
+crawlerCommitInfo :: (ApiEffects es, E.Concurrent :> es) => AuthResult AuthenticatedUser -> CrawlerPB.CommitInfoRequest -> Eff es CrawlerPB.CommitInfoResponse
 crawlerCommitInfo _auth request = do
   Config.ConfigStatus _ Config.Config {..} wsStatus <- getReloadConfig
   let tenants = workspaces
@@ -953,11 +953,11 @@ handleLoggedIn cookieSettings err codeM stateM = do
       tokens :: O.Tokens Value <-
         liftIO $
           O.getValidTokens
-            (mkSessionStore oidcEnv (Just $ from oauthState) Nothing)
+            (mkSessionStore oidcEnv (Just $ encodeUtf8 oauthState) Nothing)
             (oidc oidcEnv)
             (manager oidcEnv)
-            (from oauthState)
-            (from oauthCode)
+            (encodeUtf8 oauthState)
+            (encodeUtf8 oauthCode)
       now <- liftIO Monocle.Prelude.getCurrentTime
       let idToken = O.idToken tokens
           dayS = 24 * 3600
@@ -981,7 +981,7 @@ handleLoggedIn cookieSettings err codeM stateM = do
       case (mApplyCookies, jwtE) of
         (Just applyCookies, Right jwt) -> do
           incCounter monocleAuthSuccessCounter
-          logInfo "JWTCreated" ["uid" .= mUidMap, "redir" .= unsafeInto @Text (redirectUri oidcEnv)]
+          logInfo "JWTCreated" ["uid" .= mUidMap, "redir" .= decodeUtf8 @Text (redirectUri oidcEnv)]
           let resp = addHeader (makeMonocleCookie jwt) $ LoginInUser (redirectURI oauthState)
           pure $ applyCookies resp
         _ -> do

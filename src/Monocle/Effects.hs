@@ -36,12 +36,6 @@
 --
 --   `LoggerEffect :> es` meanst that the es list contains the Effect.
 --
--- To add multiple effect, use the ':>>' operator:
---
---   `[LoggerEffect,ConfigEffect] :>> es` == `(LoggerEffect :> es, ConfigEffect :> es)`
---
--- If the list contains only one item, it needs to be quoted, e.g.: `'[LoggerEffect] :>> es`
---
 -- * Effect execution
 --
 -- Effect can be executed using a run* function to remove the effect from the list.
@@ -109,16 +103,24 @@ import Monocle.Client.Api (crawlerAddDoc, crawlerCommit, crawlerCommitInfo)
 import Monocle.Protob.Crawler qualified as CrawlerPB
 
 -- the servant api, previously known as AppM
-type ApiEffects es = [IOE, E.Reader AppEnv, E.Error Servant.ServerError, MonoConfigEffect, LoggerEffect, ElasticEffect, E.Fail] :>> es
+type ApiEffects es =
+  ( IOE :> es
+  , E.Reader AppEnv :> es
+  , E.Error Servant.ServerError :> es
+  , MonoConfigEffect :> es
+  , LoggerEffect :> es
+  , ElasticEffect :> es
+  , E.Fail :> es
+  )
 
 -- the effect necessary to run elastic request
-type IndexEffects es = [ElasticEffect, LoggerEffect] :>> es
+type IndexEffects es = (ElasticEffect :> es, LoggerEffect :> es)
 
--- the query handler, previously known as QueryM
-type QEffects es = [ElasticEffect, LoggerEffect, MonoQuery] :>> es
+-- the query handler :> es, previously known as QueryM
+type QEffects es = (ElasticEffect :> es, LoggerEffect :> es, MonoQuery :> es)
 
--- the macro handler, previously known as LentilleM
-type CrawlerEffects es = [LoggerEffect, MonoClientEffect] :>> es
+-- the macro handler :> es, previously known as LentilleM
+type CrawlerEffects es = (LoggerEffect :> es, MonoClientEffect :> es)
 
 type TestEffects es = (E.Fail :> es, IOE :> es, QEffects es)
 
@@ -138,7 +140,7 @@ testTree =
     ]
  where
   testEff a b = liftIO (a @?= b)
-  testMonoConfig :: [MonoConfigEffect, IOE] :>> es => FilePath -> Eff es ()
+  testMonoConfig :: (MonoConfigEffect :> es, IOE :> es) => FilePath -> Eff es ()
   testMonoConfig fp = do
     -- Setup the test config
     let getNames c = Monocle.Config.getWorkspaceName <$> Monocle.Config.getWorkspaces (Monocle.Config.csConfig c)
@@ -361,12 +363,12 @@ runElasticEffect bhEnv action = do
   -- bhEnv <- liftIO (BH.mkBHEnv <$> pure server <*> Monocle.Client.mkManager)
   evalStaticRep (ElasticEffect bhEnv) action
 
-esSearch :: [ElasticEffect, LoggerEffect] :>> es => (ToJSON body, FromJSONField resp) => BH.IndexName -> body -> BHR.ScrollRequest -> Eff es (BH.SearchResult resp)
+esSearch :: (ElasticEffect :> es, ToJSON body, FromJSONField resp) => BH.IndexName -> body -> BHR.ScrollRequest -> Eff es (BH.SearchResult resp)
 esSearch iname body scrollReq = do
   ElasticEffect env <- getStaticRep
   unsafeEff_ $ BH.runBH env $ BHR.search iname body scrollReq
 
-esAdvance :: [ElasticEffect, LoggerEffect] :>> es => FromJSON resp => BH.ScrollId -> Eff es (BH.SearchResult resp)
+esAdvance :: (ElasticEffect :> es, FromJSON resp) => BH.ScrollId -> Eff es (BH.SearchResult resp)
 esAdvance scroll = do
   ElasticEffect env <- getStaticRep
   unsafeEff_ $ BH.runBH env $ BHR.advance scroll
@@ -448,7 +450,7 @@ esUpdateDocument iname ids body doc = do
   unsafeEff_ $ BH.runBH env $ BH.updateDocument iname ids body doc
 
 -- Legacy wrappers
-esSearchLegacy :: [LoggerEffect, ElasticEffect] :>> es => (FromJSON a) => BH.IndexName -> BH.Search -> Eff es (BH.SearchResult a)
+esSearchLegacy :: (LoggerEffect :> es, ElasticEffect :> es, FromJSON a) => BH.IndexName -> BH.Search -> Eff es (BH.SearchResult a)
 esSearchLegacy indexName search = do
   ElasticEffect env <- getStaticRep
   (rawResp, resp) <- unsafeEff_ $ BH.runBH env do
@@ -498,7 +500,7 @@ retryLimit :: Int
 retryLimit = 7
 
 -- | Retry HTTP network action, doubling backoff each time
-httpRetry :: (HasCallStack, [PrometheusEffect, Retry, LoggerEffect] :>> es) => Text -> Eff es a -> Eff es a
+httpRetry :: (HasCallStack, PrometheusEffect :> es, Retry :> es, LoggerEffect :> es) => Text -> Eff es a -> Eff es a
 httpRetry urlLabel baseAction = Retry.recovering policy [httpHandler] (const action)
  where
   modName = case getCallStack callStack of
@@ -533,7 +535,7 @@ type TestApi =
   "route1" Servant.:> Get '[Servant.JSON] Natural
     :<|> "route2" Servant.:> Get '[Servant.JSON] Natural
 
-type ApiEffects' es = [IOE, LoggerEffect] :>> es
+type ApiEffects' es = (IOE :> es, LoggerEffect :> es)
 
 -- | serverEff is the effectful implementation of the TestAPI
 serverEff' :: forall es. ApiEffects' es => Servant.ServerT TestApi (Eff es)
@@ -564,7 +566,7 @@ demoServant =
       Warp.run 8080 $ Servant.serve (Proxy @TestApi) $ liftServer es
 demoCrawler = runEff $ runLoggerEffect $ runHttpEffect crawlerDemo
 
-type CrawlerEffect' es = [IOE, HttpEffect, LoggerEffect] :>> es
+type CrawlerEffect' es = (IOE :> es, HttpEffect :> es, LoggerEffect :> es)
 
 crawlerDemo :: CrawlerEffect' es => Eff es ()
 crawlerDemo = withContext ("crawler" .= ("crawler-name" :: Text)) do

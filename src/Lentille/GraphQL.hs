@@ -41,7 +41,7 @@ import Effectful.Concurrent.MVar qualified as E
 import Effectful.Retry
 import Monocle.Effects
 
-type GraphEffects es = [LoggerEffect, HttpEffect, PrometheusEffect, TimeEffect, Retry, Concurrent, Fail] :>> es
+type GraphEffects es = (LoggerEffect :> es, HttpEffect :> es, PrometheusEffect :> es, TimeEffect :> es, Retry :> es, Concurrent :> es, Fail :> es)
 
 type GraphResponse a = (PageInfo, Maybe RateLimit, [Text], a)
 
@@ -68,7 +68,7 @@ data GraphClient = GraphClient
   }
 
 newGraphClient ::
-  [HttpEffect, Concurrent, Fail] :>> es =>
+  Concurrent :> es =>
   "url" ::: Text ->
   Secret ->
   Eff es GraphClient
@@ -86,7 +86,7 @@ type DoFetch es = LBS.ByteString -> WriterT [RequestLog] (Eff es) LBS.ByteString
 
 -- | The morpheus-graphql-client fetch callback,
 -- doc: https://hackage.haskell.org/package/morpheus-graphql-client-0.17.0/docs/Data-Morpheus-Client.html
-doGraphRequest :: [HttpEffect, PrometheusEffect, LoggerEffect, Retry] :>> es => GraphClient -> DoFetch es
+doGraphRequest :: (HttpEffect :> es, PrometheusEffect :> es, LoggerEffect :> es, Retry :> es) => GraphClient -> DoFetch es
 doGraphRequest GraphClient {..} jsonBody = do
   -- Prepare the request
   let initRequest = HTTP.parseRequest_ (from url)

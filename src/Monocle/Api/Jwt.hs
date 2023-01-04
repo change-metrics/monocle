@@ -87,9 +87,9 @@ initOIDCEnv providerConfig@OIDCProviderConfig {..} = do
   manager <- newOpenSSLManager
   provider <- O.discover opIssuerURL manager
   sessionStoreStorage <- newMVar HM.empty
-  let redirectUri = from $ opAppPublicURL <> "api/2/auth/cb"
-      clientId = from opClientID
-      clientSecret = from opClientSecret
+  let redirectUri = encodeUtf8 opAppPublicURL <> "api/2/auth/cb"
+      clientId = encodeUtf8 opClientID
+      clientSecret = encodeUtf8 opClientSecret
       oidc = O.setCredentials clientId clientSecret redirectUri (O.newOIDC provider)
   pure OIDCEnv {..}
 
@@ -123,13 +123,11 @@ mkSessionStore OIDCEnv {sessionStoreStorage} stateM uriM = do
  where
   storeSave :: O.State -> O.Nonce -> IO ()
   storeSave state' nonce = modifyMVar_ sessionStoreStorage $ \store -> pure $ HM.insert state' nonce store
-  storeGet :: IO (Maybe O.State, Maybe O.Nonce)
-  storeGet = case stateM of
-    Just state' -> do
-      store <- readMVar sessionStoreStorage
-      let nonce = HM.lookup state' store
-      pure (Just state', nonce)
-    Nothing -> pure (Nothing, Nothing)
+  storeGet :: O.State -> IO (Maybe O.Nonce)
+  storeGet state' = do
+    store <- readMVar sessionStoreStorage
+    let nonce = HM.lookup state' store
+    pure nonce
 
 -- | Generate a random fixed size string of 42 char base64 encoded
 genRandomB64 :: IO ByteString

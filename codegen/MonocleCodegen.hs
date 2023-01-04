@@ -156,8 +156,9 @@ protoToServant pb =
     , "import Servant.Auth.Server (Auth, JWT, Cookie)"
     , "import Monocle.Api.Jwt (AuthenticatedUser)"
     , "import Monocle.Effects (ApiEffects)"
-    , "import Effectful (Eff, (:>>))"
-    , "import Effectful.Concurrent.MVar qualified as E"
+    , "import Effectful (Eff)"
+    , "import Effectful.Concurrent qualified as E"
+    , "import Effectful qualified as E"
     ]
 
   imports = concatMap mkImport methods
@@ -188,7 +189,7 @@ protoToServant pb =
         <> " :> Post  '[PBJSON, JSON] "
         <> ("Monocle.Protob." <> moduleName <> "." <> name <> "Response")
   server =
-    [ "server :: ApiEffects es => '[E.Concurrent] :>> es => ServerT MonocleAPI (Eff es)"
+    [ "server :: ApiEffects es => E.Concurrent E.:> es => ServerT MonocleAPI (Eff es)"
     , "server ="
     , Text.intercalate "\n :<|>" $ map mkServer methods
     ]

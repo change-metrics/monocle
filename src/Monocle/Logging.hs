@@ -65,7 +65,10 @@ doLog lvl loc msg attrs = do
 -- | Get the `Module.Name:LINE` from the log* caller, jumping over the log* stack
 getLocName :: HasCallStack => ByteString
 getLocName = case getCallStack callStack of
-  (_logStack : (_, srcLoc) : _) -> from (srcLocModule srcLoc) <> ":" <> from (show $ srcLocStartLine srcLoc)
+  (_logStack : (_, srcLoc) : _) ->
+    let modName = from $ srcLocModule srcLoc
+        line = from $ show $ srcLocStartLine srcLoc
+     in encodeUtf8 $ modName <> ":" <> line
   _ -> "N/C"
 
 -- | Produce info log with attributes, for example:

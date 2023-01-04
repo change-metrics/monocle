@@ -34,7 +34,7 @@ import Effectful.Reader.Static qualified as E
 import Effectful.Servant qualified
 import Monocle.Effects
 
-rootServer :: ApiEffects es => '[E.Concurrent] :>> es => CookieSettings -> Servant.ServerT RootAPI (Eff es)
+rootServer :: (ApiEffects es, E.Concurrent Monocle.Prelude.:> es) => CookieSettings -> Servant.ServerT RootAPI (Eff es)
 rootServer cookieSettings = app :<|> app
  where
   app = server :<|> searchAuthorsHandler :<|> handleLogin :<|> handleLoggedIn cookieSettings
@@ -48,7 +48,7 @@ mkStaticMiddleware publicUrl title webAppPath = do
   rootDir <- fromMaybe (error "Web APP files are missing") <$> webAppPath `existOr` Just fallbackWebAppPath
   -- Load the index and inject the customization
   index <- Text.readFile $ rootDir <> "index.html"
-  pure $ staticMiddleware (from $ prepIndex index) rootDir
+  pure $ staticMiddleware (encodeUtf8 $ prepIndex index) rootDir
  where
   -- Replace env variable in the index page
   prepIndex :: Text -> Text
@@ -115,7 +115,7 @@ run cfg =
       . runMonoConfig (configFile cfg)
       $ run' cfg aplogger
 
-run' :: '[IOE, MonoConfigEffect] :>> es => ApiConfig -> ApacheLogger -> Eff es ()
+run' :: (IOE Monocle.Prelude.:> es, MonoConfigEffect Monocle.Prelude.:> es) => ApiConfig -> ApacheLogger -> Eff es ()
 run' ApiConfig {..} aplogger = E.runConcurrent $ runLoggerEffect do
   conf <- Config.csConfig <$> getReloadConfig
   let workspaces = Config.getWorkspaces conf
@@ -141,7 +141,7 @@ run' ApiConfig {..} aplogger = E.runConcurrent $ runLoggerEffect do
 
   -- Init OIDC
   -- Initialise JWT settings for locally issuing JWT (local provider)
-  localJwk <- liftIO . doGenJwk $ from <$> jwkKey
+  localJwk <- liftIO . doGenJwk $ encodeUtf8 <$> jwkKey
   providerM <- liftIO (getAuthProvider publicUrl conf)
   let localJWTSettings = defaultJWTSettings localJwk
   -- Initialize env to talk with OIDC provider

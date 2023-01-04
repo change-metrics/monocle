@@ -65,6 +65,8 @@ module Monocle.Prelude (
   TryFrom (..),
   tryInto,
   tryVia,
+  Witch.Encoding.UTF_8,
+  Data.Tagged.Tagged (..),
 
   -- * streaming
   Stream,
@@ -216,6 +218,7 @@ import Data.Aeson.Lens (_Integer, _Object)
 import Data.Aeson.Types (Pair)
 import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)
 import Data.Map qualified as Map
+import Data.Tagged
 import Data.Text qualified as T
 import Data.Text.Internal.Search
 import Data.Time
@@ -251,6 +254,7 @@ import Test.Tasty.HUnit
 import UnliftIO.Async (cancel, withAsync)
 import UnliftIO.MVar (modifyMVar, modifyMVar_)
 import Witch hiding (over)
+import Witch.Encoding
 
 import Monocle.Logging
 

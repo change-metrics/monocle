@@ -22,14 +22,6 @@ let
   haskellExtend = hpFinal: hpPrev: {
     monocle = hpPrev.callCabal2nix "monocle" self { };
 
-    retry-effectful = hpPrev.callCabal2nix "retry-effectful"
-      (pkgs.fetchFromGitHub {
-        owner = "change-metrics";
-        repo = "retry-effectful";
-        rev = "5a9e4751a916a0d1b160f2390f286d8c82247ec3";
-        sha256 = "sha256-CIuV3qsJ/xy24BVGrMYPKjIjK8dyA76dG3Wpi9vVriA=";
-      }) { };
-
     # data-diverse is presently marked as broken because the test don't pass.
     data-diverse = pkgs.haskell.lib.dontCheck
       (pkgs.haskell.lib.overrideCabal hpPrev.data-diverse { broken = false; });
@@ -50,20 +42,6 @@ let
       version = "0.19.1.0";
       sha256 = "sha256-QEN1wOLLUEsDKAbgz8ex0wfK/duNytvRYclwkBj/1G0=";
     };
-
-    # upgrade to envparse 0.5 to persist env var for ghcid hot reload
-    envparse = pkgs.haskell.lib.overrideCabal hpPrev.envparse {
-      version = "0.5.0";
-      sha256 = "sha256-rbVK5O9IyM0STncLv3dGMv+Tgtwgju0z49pE0g/A2x0=";
-    };
-
-    # Set to gerrit-haskell 0.1.6.0 tag
-    gerrit = hpPrev.callCabal2nix "gerrit" (pkgs.fetchFromGitHub {
-      owner = "softwarefactory-project";
-      repo = "gerrit-haskell";
-      rev = "3ff110fc6eb1738ecbcb08ca378de905b166eade";
-      sha256 = "sha256-eAU2Di6LXmDhYnUP9zJtF0/NiMu3JniZqD3u0pu6aYc=";
-    }) { };
 
     # upgrade to latest morpheus needs some work
     morpheus-graphql-tests = mk-morpheus-lib hpPrev "tests";
