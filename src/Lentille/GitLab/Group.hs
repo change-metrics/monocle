@@ -18,9 +18,9 @@ import Monocle.Protob.Crawler (Project (..))
 import Streaming.Prelude qualified as S
 
 -- https://docs.gitlab.com/ee/api/graphql/reference/#querygroup
-defineByDocumentFile
+declareLocalTypesInline
   glSchemaLocation
-  [gql|
+  [raw|
     query GetGroupProjects ($fullPath: ID!, $cursor: String) {
       group(fullPath: $fullPath) {
         projects (first: 100, after: $cursor, includeSubgroups: true) {
@@ -48,9 +48,9 @@ transformResponse result =
   case result of
     GetGroupProjects
       ( Just
-          ( GroupGroup
-              ( GroupProjectsProjectConnection
-                  (GroupProjectsPageInfoPageInfo hasNextPage endCursor)
+          ( GetGroupProjectsGroup
+              ( GetGroupProjectsGroupProjects
+                  (GetGroupProjectsGroupProjectsPageInfo hasNextPage endCursor)
                   nodes
                 )
             )
@@ -67,4 +67,4 @@ transformResponse result =
       , []
       )
  where
-  getFullPath GroupProjectsNodesProject {..} = Project . from $ unpackID fullPath
+  getFullPath GetGroupProjectsGroupProjectsNodes {..} = Project . from $ unpackID fullPath

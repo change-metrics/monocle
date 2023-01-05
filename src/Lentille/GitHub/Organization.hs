@@ -5,16 +5,15 @@ module Lentille.GitHub.Organization where
 
 import Data.Morpheus.Client
 import Lentille.GitHub.RateLimit (getRateLimit, retryCheck)
+import Lentille.GitHub.Types
 import Lentille.GraphQL
 import Monocle.Prelude
 import Monocle.Protob.Crawler (Project (..))
 
-newtype DateTime = DateTime Text deriving (Show, Eq, EncodeScalar, DecodeScalar)
-
 -- https://docs.github.com/en/graphql/reference/objects#organization
-defineByDocumentFile
+declareLocalTypesInline
   ghSchemaLocation
-  [gql|
+  [raw|
     query GetProjects ($login: String!, $cursor: String)  {
       rateLimit {
         used
@@ -31,22 +30,22 @@ defineByDocumentFile
     }
   |]
 
-transformRateLimit :: RateLimitRateLimit -> RateLimit
-transformRateLimit (RateLimitRateLimit used remaining (DateTime resetAtText)) =
+transformRateLimit :: GetProjectsRateLimit -> RateLimit
+transformRateLimit (GetProjectsRateLimit used remaining (DateTime resetAtText)) =
   case parseDateValue $ from resetAtText of
     Just resetAt -> RateLimit {..}
     Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAtText
 
 transformResponse :: GetProjects -> (PageInfo, Maybe RateLimit, [Text], [Project])
-transformResponse result = do
+transformResponse result =
   case result of
     GetProjects
       rateLimitM
       ( Just
-          ( OrganizationOrganization
-              ( OrganizationRepositoriesRepositoryConnection
+          ( GetProjectsOrganization
+              ( GetProjectsOrganizationRepositories
                   totalCount
-                  (OrganizationRepositoriesPageInfoPageInfo hasNextPage endCursor)
+                  (GetProjectsOrganizationRepositoriesPageInfo hasNextPage endCursor)
                   (Just orgRepositories)
                 )
             )
@@ -63,7 +62,7 @@ transformResponse result = do
       , []
       )
  where
-  getRepos :: [Maybe OrganizationRepositoriesNodesRepository] -> [Project]
+  getRepos :: [Maybe GetProjectsOrganizationRepositoriesNodes] -> [Project]
   getRepos r = Project . from . nameWithOwner <$> catMaybes r
 
 streamOrganizationProjects :: GraphEffects es => GraphClient -> Text -> LentilleStream es Project

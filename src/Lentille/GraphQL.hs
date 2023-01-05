@@ -90,7 +90,7 @@ doGraphRequest :: (HttpEffect :> es, PrometheusEffect :> es, LoggerEffect :> es,
 doGraphRequest GraphClient {..} jsonBody = do
   -- Prepare the request
   let initRequest = HTTP.parseRequest_ (from url)
-      request =
+      req =
         initRequest
           { HTTP.method = "POST"
           , HTTP.requestHeaders =
@@ -102,17 +102,17 @@ doGraphRequest GraphClient {..} jsonBody = do
           }
 
   -- Do the request (and retry on HttpException raised by the http-client)
-  response <- lift (httpRetry url $ httpRequest request)
+  response <- lift (httpRetry url $ httpRequest req)
 
   -- Record the event
   let responseBody = HTTP.responseBody response
-  tell [RequestLog request jsonBody response responseBody]
+  tell [RequestLog req jsonBody response responseBody]
 
   -- Return the body so that morpheus run the json decoder
   pure responseBody
 
 -- | Helper function to adapt the morpheus client fetch with a WriterT context
-fetchWithLog :: (FromJSON a, Fetch a) => DoFetch es -> Args a -> Eff es (Either (FetchError a) a, [RequestLog])
+fetchWithLog :: Fetch a => DoFetch es -> Args a -> Eff es (Either (FetchError a) a, [RequestLog])
 fetchWithLog cb = runWriterT . fetch cb
 
 -------------------------------------------------------------------------------
@@ -134,7 +134,7 @@ type GraphResp a = Either GraphQLError a
 -- In case of retry the depth parameter of mkArgs is decreased (see adaptDepth)
 doRequest ::
   forall a es.
-  (GraphEffects es, Fetch a, FromJSON a, Show a) =>
+  (GraphEffects es, Fetch a, Show a) =>
   GraphClient ->
   (Maybe Int -> Maybe Text -> Args a) ->
   (GraphResp a -> Eff es RetryAction) ->
@@ -188,7 +188,7 @@ defaultStreamFetchOptParams = StreamFetchOptParams (const $ pure DontRetry) Noth
 
 streamFetch ::
   forall es a b.
-  (GraphEffects es, Fetch a, FromJSON a, Show a) =>
+  (GraphEffects es, Fetch a, Show a) =>
   GraphClient ->
   -- | query Args constructor, the function takes a Maybe depth and a Maybe cursor
   (Maybe Int -> Maybe Text -> Args a) ->
@@ -207,7 +207,7 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
       logWarn "Reached Quota limit. Waiting until reset date" ["reset" .= resetAtTime]
       holdOnUntil resetAtTime
 
-  request pageInfoM storedRateLimitM = do
+  requestWithPageInfo pageInfoM storedRateLimitM = do
     holdOnIfNeeded storedRateLimitM
     respE <- doRequest client mkArgs fpRetryCheck fpDepth pageInfoM
     pure $ case respE of
@@ -246,7 +246,7 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
 
     -- Perform the GraphQL request
     respE <- lift $ E.modifyMVar rateLimitMVar $ \rl -> do
-      resE <- request pageInfoM rl
+      resE <- requestWithPageInfo pageInfoM rl
       pure $ case resE of
         Left err -> (rl, Left err)
         Right (newRL, x) -> (newRL, Right x)
