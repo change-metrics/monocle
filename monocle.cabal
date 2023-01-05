@@ -7,11 +7,11 @@ license:             AGPL-3.0-only
 license-file:        LICENSE
 author:              Monocle authors
 maintainer:          Monocle authors <fboucher@redhat.com>
-copyright:           2021,2022 Monocle authors
+copyright:           2021,2022,2023 Monocle authors
 category:            Development
 build-type:          Simple
 extra-doc-files:     README.md
-tested-with:         GHC == 9.2.4
+tested-with:         GHC == 9.2.5
 extra-source-files:  schemas/monocle/config/**/*.dhall,
                      schemas/github/schema.docs.graphql,
                      schemas/gitlab/schema.graphql,

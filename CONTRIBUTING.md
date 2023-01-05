@@ -14,144 +14,37 @@ the .secret file.
 
 According to the [README.md](README.md#installation), the recommended way to deploy Monocle is via
 Docker compose, however the containerized deployment does not fit well for building a development environment.
+Furthermore, deploying from source can be used to better understand how Monocle components interact together.
 
-Furthermore, deploying from source can be used to better understand how Monocle components interact
-together.
+The recommended ways to deploy and hack the source is via nix. Nix gives you the same environment as a
+production build along with developer tools. However the project could still be built with ghcup+cabal
+using the [cabal-override.project file](README.md#build-using-cabal).
 
-Below are the two recommended ways to deploy Monocle from source:
-
-- [By deploying the tool chain on your system](#running-the-services-manually-on-your-host)
-- [By deploying the tool chain via NIX](#running-the-services-manually-using-nix)
-
-### Running the services manually on your host
-
-#### Requirements
-
-These requirements are for a Fedora based system. Please adapt them to your own OS if needed.
-
-Please note that the GHC version available on your OS might not fit the Monocle build requirements. Please
-ensure the GHC version into [monocle.cabal](./monocle.cabal) (line: "tested-with:") is the same version
-than the version available on your OS.
-
-Run the following commands **as non-root user**:
-
-```ShellSession
-sudo dnf install -y podman nodejs git ghc cabal-install zlib-devel python3-virtualenv python3-devel openssl-devel gcc
-```
-
-Alternatively, or if the GHC version of your OS does not match the requirement, the Haskell tool chain
-can be deployed using a *distro-agnostic* way via [ghc-up](https://www.haskell.org/ghcup):
-
-
-```ShellSession
-curl -sSf https://get-ghcup.haskell.org | sh
-```
-
-If the above command fails read the output from more information, usually there are missing dependencies.
-Then logout and login again, for the new configurations to be loaded.
-
-#### ElasticSearch
-
-Monocle relies on ElasticSearch as backend to store Changes events.
-
-```ShellSession
-./contrib/start-elk.sh 9200
-```
-Make sure data directory has writing permissions.
-
-#### WebUI
-
-The API serves the webui from `/usr/share/monocle/webapp` or the `web/build` directory.
-Build the UI first:
-
-```ShellSession
-cd web
-npm install
-npm build
-```
-
-#### API
-
-To start the Monocle API run the following commands.
-
-To reload modules when code is updated then type `:reload`.
-
-In addition you could run `ghcid -c 'cabal repl monocle'` in another terminal, then on every save in your IDE you'll see a list of the errors and warnings from ghc.
-
-You might need to restart the repl and/or ghcid when new dependencies are
-added in the `monocle.cabal` file.
-
-```ShellSession
-export $(cat .secrets)
-cabal repl monocle
-λ> import Monocle.Main
-λ> run $ defaultApiConfig 9879 "http://localhost:9200" "../etc/config.yaml"
-```
-
-#### WebUI hot reload
-
-The Monocle React WebAPP hot reload service can be started:
-
-```ShellSession
-cd web
-npm install
-REACT_APP_API_URL=http://localhost:8080 npm start
-firefox http://localhost:3000
-```
-If you are running this on non-local machine, set the `REACT_APP_API_URL=http://< machine ip | FQDN >:8080`. FQDN must be known in your network.
-
-#### Start crawlers process
-
-Run this commands to start the Macroscope which is the new Monocle crawler system.
-
-```ShellSession
-export $(cat .secrets)
-cabal repl monocle
-λ> import Macroscope.Worker
-λ> import Macroscope.Main
-λ> import Monocle.Client (withClient)
-λ> withClient "http://127.0.0.1:8080" Nothing $ \client -> runMacroscope 19001 "../etc/config.yaml" client
-```
-
-### Running the services manually using NIX
-
-This section describes how to start the Monocle services directly on your host using nix.
-
-If you have not installed nix follow the instructions [here](https://nixos.org/), or from the [manual](https://nixos.org/manual/nix/stable/installation/installing-binary.html).
+To install nix, follow the instructions [here](https://nixos.org/), or from the [manual](https://nixos.org/manual/nix/stable/installation/installing-binary.html).
 
 You can configure the project [cachix](https://cachix.org) binary cache with this command: `nix shell nixpkgs#cachix --command cachix use change-metrics`.
 
-Get started by running the `nix develop` command at the root of the project:
+The first "nix develop" command might takes long as data must be fetched from the nix cache.
 
-```ShellSession
-monocle $ nix develop
-[nix(monocle)]$ make
-```
+### Running the services
 
-Build the project:
+This section describes how to start the Monocle services directly on your host.
 
-```
-$(nix build . --print-out-paths)/bin/monocle --help
-```
-
-#### ElasticSearch
+#### Start ElasticSearch
 
 ```ShellSession
 nix develop --command elasticsearch-start
 ```
 
-#### Web
+#### Start the Monocle API
+
+The API serves the web UI and the Monocle API. The web App must be built first by running:
 
 ```ShellSession
-nix develop --command monocle-web-start
-firefox http://localhost:13000
+cd web && npm install && npm build && cd -
 ```
 
-If the command fails with `Error: package bs-parse not found or built`, you can try running this command: `rm -Rf web/lib web/node_modules`
-
-If the API is not running locally, sets the `MONOCLE_PUBLIC_URL=http://monocle-api:8080` environment before running `monocle-web-start`
-
-#### API
+Then, ensure you have set the Monocle config file `config.yaml` (see [README.md](README.md#create-the-config-yaml-file)) and run:
 
 ```ShellSession
 nix develop --command monocle-repl
@@ -159,7 +52,13 @@ nix develop --command monocle-repl
 λ> run $ defaultApiConfig 8080 "http://localhost:19200" "etc/config.yaml"
 ```
 
-#### Start crawlers process
+The Monocle UI should be accessible:
+
+```ShellSession
+firefox http://localhost:8080
+```
+
+#### Start the Monocle crawler process
 
 ```ShellSession
 nix develop --command monocle-repl
@@ -169,59 +68,52 @@ nix develop --command monocle-repl
 λ> withClient "http://localhost:8080" Nothing $ \client -> runMacroscope 19001 "etc/config.yaml" client
 ```
 
-#### Run ghcid
+## nix-develop
+
+The nix develop shell provides development tooling such as:
+
+- Haskell Language Server
+- Fourmolu
+- Hlint
+
+Then one could simply run its code editor from the `nix develop` shell and benefit
+the tooling available in the PATH:
+
+```ShellSession
+monocle $ nix develop
+[nix(monocle)]$ code .
+```
+
+You might need to install the right Haskell plugin for your editor.
+
+## Extra toolings
+
+### Run ghcid
+
+ghcid automatically re-compiles the code when a haskell file change and display compilation
+errors and warnings.
+
 
 ```ShellSession
 nix develop --command monocle-ghcid
 ```
 
-#### Run hoogle
+### Run hoogle
+
+Hoogle generates the documentation from the Monocle source code.
 
 ```ShellSession
-nix develop --command hoogle server -p 8080 --local --haskell
+nix develop --command hoogle server -p 8081 --local --haskell
 ```
 
-#### Monitoring containers:xs
-
-```ShellSession
-podman load < $(nix build .#containerPrometheus)
-podman load < $(nix build .#containerGrafana)
-```
-
-Test the containers:
-
-```ShellSession
-podman run --network host -v prom-data:/var/lib/prometheus:Z -e API_TARGET=localhost:8080 --rm quay.io/change-metrics/monocle-prometheus:latest
-podman run -it --rm --network host quay.io/change-metrics/monocle-grafana:latest
-```
-
-
-## Contributing a new driver
-
-There is no specific documentation to cover that topic yet but the source code of
-the [GitLab driver](src/Lentille/GitLab/MergeRequests.hs) might be a good
-source of knowledge to hack on a new crawler.
+You can access the generated documentation on port 8081.
 
 ## Running tests
 
-Tests rely on the Elasticsearch service so first you need to ensure the ElasticSearch is running on your system. To start the service use the script `contrib/start-elk.sh` or the related nix develop command.
+Tests rely on the Elasticsearch service so first you need to ensure that the ElasticSearch is running on your system.
+Ensure the service is started by running: `nix develop --command elasticsearch-start`
 
-### On the Haskell code base
-
-Tests can be executed using:
-
-```ShellSession
-export MONOCLE_ELASTIC_URL=http://localhost:9200
-cabal test
-```
-
-Run a single test with:
-
-```ShellSession
-cabal test --test-option=-p --test-option='/Test get metrics/'
-```
-
-Run linters with:
+Run linters (fourmolu and hlint) with:
 
 ```ShellSession
 nix develop --command monocle-fast-ci-run
@@ -233,22 +125,28 @@ When the linters fail, you can fix the issue automatically with:
 nix develop --command monocle-reformat-run
 ```
 
-Doctest can be executed using:
+Run the full test suite with:
 
 ```ShellSession
-# Ensure doctest-0.20. is installed
-cabal install doctest --overwrite-policy=always
-# Run doctest through cabal
-cabal repl --with-ghc=doctest --ghc-options=-Wno-unused-packages
+nix develop --command monocle-ci-run
 ```
 
-Or using ghcid to automatically run the test when the code changes:
+## Start the web development server
+
+Start the web dev server (hot-reload):
 
 ```ShellSession
-ghcid --test 'Tests.main'
+nix develop --command monocle-web-start
+firefox http://localhost:13000
 ```
 
-Similarly the api can be automatically restarted:
+If the command fails with `Error: package bs-parse not found or built`, you can try running this command: `rm -Rf web/lib web/node_modules`
+
+If the API is not running locally, sets the `MONOCLE_PUBLIC_URL=http://monocle-api:8080` environment before running `monocle-web-start`
+
+## Automatic restart of the API
+
+The api can be automatically restarted when code change:
 
 ```ShellSession
 export MONOCLE_CONFIG=./etc/config.yaml
@@ -258,7 +156,7 @@ export CRAWLERS_API_KEY=$(uuidgen)
 ghcid --set ":set args api" --test 'CLI.main'
 ```
 
-### Fake data provisionning
+## Fake data provisionning
 
 Provisonning fake data (only fake changes are supported) can be done using the repl:
 
@@ -272,7 +170,7 @@ Prior to run the provisonner, add the *demo-fake-data* workspace in the config f
 empty *crawlers* list, then start the monocle API.
 
 
-### Update API (protobuf)
+## Run the codegen (protobuf)
 
 The APIs are defined using protobuf. To change them, first you need to update the
 protobuf definitions present in the [./schemas/monocle folder](./schemas/monocle). Then you need to update
@@ -280,4 +178,43 @@ the api and web client by running the protoc command using the Makefile:
 
 ```ShellSession
 $ make codegen
+```
+
+## Create a monocle build
+
+This produces a monocle binary:
+
+```
+$(nix build . --print-out-paths)/bin/monocle --help
+```
+
+## Build using cabal
+
+Despite that nix is the recommended way to build Monocle from source, using cabal should
+be possible using the command below:
+
+```
+cabal build --project-file=cabal-override.project
+```
+
+Please open an issue if this fails to build.
+
+## Contributing a new driver
+
+There is no specific documentation to cover that topic yet but the source code of
+the [GitLab driver](src/Lentille/GitLab/MergeRequests.hs) might be a good
+source of knowledge to hack on a new crawler.
+
+## Monitoring containers
+
+```ShellSession
+podman load < $(nix build .#containerPrometheus)
+podman load < $(nix build .#containerGrafana)
+```
+
+Test the containers:
+
+```ShellSession
+podman run --network host -v prom-data:/var/lib/prometheus:Z -e API_TARGET=localhost:8080 --rm quay.io/change-metrics/monocle-prometheus:latest
+podman run -it --rm --network host quay.io/change-metrics/monocle-grafana:latest
 ```
