@@ -1,0 +1,10 @@
+package proto3-suite
+  flags: -swagger
+
+packages: .
+
+-- Enable bytestring-11
+source-repository-package
+  type: git
+  location: https://github.com/klangner/text-time
+  tag: 1ff65c2c8845e3fdd99900054f0596818a95c316
