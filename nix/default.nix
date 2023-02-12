@@ -302,14 +302,13 @@ in rec {
     exec ${pkgs.nodejs}/bin/npm start
   '';
 
-  services-req = [
-    elasticsearchStart
-    promStart
-    grafanaStart
-    monocleReplStart
-    monocleWebStart
-    monocleGhcid
-  ];
+  services-req =
+    [ elasticsearchStart monocleReplStart monocleWebStart monocleGhcid ];
+
+  monitoring-shell = hsPkgs.shellFor {
+    packages = p: [ p.monocle ];
+    buildInputs = [ promStart grafanaStart ];
+  };
 
   # define the base requirements
   base-req = [ pkgs.bashInteractive hspkgs.coreutils pkgs.gnumake ];
