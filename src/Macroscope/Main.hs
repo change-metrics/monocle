@@ -18,6 +18,7 @@ module Macroscope.Main (
   mkStreamsActions,
 ) where
 
+import Data.Hashable (hash)
 import Data.List.NonEmpty qualified as NonEmpty
 import Data.Map qualified as Map
 import Data.Text qualified as T
@@ -249,7 +250,7 @@ getClientBZ url token = do
     mapMutate clients (url, token) . pure $
       getBugzillaSession url $
         Just $
-          getApikey (unSecret token)
+          getApikey token
   modify $ \s -> s {clientsBugzilla = newClients}
   pure (url, client)
 
@@ -259,7 +260,7 @@ getClientGraphQL url token = do
   clients <- gets clientsGraph
   (client, newClients) <- mapMutate clients (url, token) $ lift $ newGraphClient url token
   modify $ \s -> s {clientsGraph = newClients}
-  let groupKey = url <> "-" <> unSecret token
+  let groupKey = url <> "-" <> show (hash token)
   pure (groupKey, client)
 
 -- | Groups the streams by client

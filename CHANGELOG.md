@@ -8,12 +8,14 @@ All notable changes to this project will be documented in this file.
 ### Removed
 ### Fixed
 
+- [crawler] Authentification token are no longer written in the service logs.
+
 ## [1.8.0] - 2022-11-28
 ### Added
 
 - [api] Add the `file` field to the query language to filter changes changing at least a file path that match the regex.
 - [web] Search authors page displays the total count of authors.
-- [api] Enable the 'draft' status for Gerrit changes. 
+- [api] Enable the 'draft' status for Gerrit changes.
 - [api] Enable the "draft" state's value in the query language.
 - [web] Add the pin change button to highlight a change.
 - [web] Add the mask change button to permanently hide a change.

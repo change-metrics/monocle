@@ -121,8 +121,8 @@ instance FromJSON BugsWithScore where
     pure $ BugsWithScore bugs
   parseJSON _ = mzero
 
-getApikey :: Text -> BZ.BugzillaApiKey
-getApikey = BZ.BugzillaApiKey
+getApikey :: Secret -> BZ.BugzillaApiKey
+getApikey = BZ.BugzillaApiKey . unsafeShowSecret
 
 -- getBugs unwraps the 'BugsWithScore' newtype wrapper
 getBugs :: BZEffects es => BZ.Request -> Eff es [BugWithScore]

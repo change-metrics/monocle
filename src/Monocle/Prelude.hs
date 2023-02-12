@@ -15,8 +15,12 @@ module Monocle.Prelude (
   getEnv',
   setEnv,
   headMaybe,
-  Secret (..),
   (:::),
+
+  -- * secret
+  Secret,
+  unsafeShowSecret,
+  bearerTokenHeader,
 
   -- * logging
   module Monocle.Logging,
@@ -238,6 +242,7 @@ import GHC.Stack
 import Google.Protobuf.Timestamp qualified
 import Language.Haskell.TH.Quote (QuasiQuoter)
 import Network.HTTP.Client.OpenSSL (newOpenSSLManager, withOpenSSL)
+import Network.HTTP.Types.Header (Header)
 import Prometheus (Info (..), counter, incCounter, withLabel)
 import Prometheus qualified
 import Proto3.Suite (Enumerated (..))
@@ -313,8 +318,24 @@ httpFailureCounter =
 type (name :: k) ::: a = a
 
 -- | A newtype for secret like token pulled from the environment
-newtype Secret = Secret {unSecret :: Text}
+newtype Secret = Secret Text
   deriving newtype (Eq, Ord, Hashable)
+
+instance From Text Secret where
+  from = Secret
+
+instance From LText Secret where
+  from = Secret . from
+
+instance From ByteString Secret where
+  from = Secret . decodeUtf8
+
+-- | Use this function to pass the secret to external library
+unsafeShowSecret :: Secret -> Text
+unsafeShowSecret (Secret s) = s
+
+bearerTokenHeader :: Secret -> Header
+bearerTokenHeader (Secret s) = ("Authorization", "Bearer " <> encodeUtf8 s)
 
 -- | Pretty json encoding with a fixed key order
 encodePretty :: ToJSON a => a -> LByteString

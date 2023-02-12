@@ -63,8 +63,7 @@ runGerrit :: IOE :> es => Eff (GerritEffect : es) a -> Eff es a
 runGerrit = evalStaticRep GerritEffect
 
 getGerritClient :: GerritEffect :> es => Text -> Maybe (Text, Secret) -> Eff es G.GerritClient
-getGerritClient url Nothing = unsafeEff_ $ getClient url Nothing
-getGerritClient url (Just (user, Secret password)) = unsafeEff_ $ getClient url $ Just (user, password)
+getGerritClient url mAuth = unsafeEff_ $ getClient url mAuth
 
 getProjects :: GerritEffect :> es => GerritEnv -> Int -> G.GerritProjectQuery -> Maybe Int -> Eff es GerritProjectsMessage
 getProjects env count query startM = unsafeEff_ $ G.getProjects count query startM (client env)
@@ -72,10 +71,13 @@ getProjects env count query startM = unsafeEff_ $ G.getProjects count query star
 queryChanges :: GerritEffects es => GerritEnv -> Int -> [GerritQuery] -> Maybe Int -> Eff es [GerritChange]
 queryChanges env count queries startM = unsafeEff_ $ G.queryChanges count queries startM (client env)
 
-getClient :: Text -> Maybe (Text, Text) -> IO G.GerritClient
+getClient :: Text -> Maybe (Text, Secret) -> IO G.GerritClient
 getClient url auth = do
   manager <- mkManager
-  pure $ G.getClientWithManager manager url auth
+  pure $ G.getClientWithManager manager url (getGerritAuth <$> auth)
+
+getGerritAuth :: (Text, Secret) -> (Text, Text)
+getGerritAuth = fmap unsafeShowSecret
 
 data GerritEnv = GerritEnv
   { client :: G.GerritClient

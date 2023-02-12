@@ -225,13 +225,13 @@ usageLentille =
   getGerritEnv url = do
     client <- G.getGerritClient url Nothing
     pure $ G.GerritEnv client Nothing (const Nothing) "cli"
-  getGraphClient url secret = newGraphClient url (Secret secret)
+  getGraphClient url secret = newGraphClient url (from secret)
 
   urlOption = strOption (long "url" <> O.help "API url, e.g. https://api.github.com/graphql" <> metavar "URL")
   queryOption = strOption (long "query" <> O.help "Gerrit regexp query")
   orgOption = strOption (long "organization" <> O.help "GitHub organization name")
   userOption = strOption (long "user" <> O.help "GitHub user name")
-  secretOption = strOption (long "token" <> O.help "GitHub token, get one from https://github.com/settings/tokens")
+  secretOption = into @Secret @Text <$> strOption (long "token" <> O.help "GitHub token, get one from https://github.com/settings/tokens")
   changeOption = option auto (long "change" <> O.help "Change Number" <> metavar "NR")
   projectOption = strOption (long "project" <> O.help "Project name")
   sinceOption = strOption (long "since" <> O.help "Since date")
