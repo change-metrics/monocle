@@ -143,6 +143,7 @@ library
                      , foldl
                      , gerrit                     >= 0.1.6
                      , gitrev                     >= 1.3.1
+                     , hashable
                      , hashtables                 >= 1.2
                      , http-client                >= 0.6
                      , http-client-openssl        >= 0.3
