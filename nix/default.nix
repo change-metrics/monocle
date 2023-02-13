@@ -135,7 +135,7 @@ in rec {
                 - CRAWLER_TARGET
     '';
   };
-  prom-home = "/var/lib/prometheus";
+  prom-home = "~/.local/share/monocle/prometheus-home";
   promStart = pkgs.writeScriptBin "prometheus-start" ''
     ${headers}
 
@@ -165,7 +165,7 @@ in rec {
     };
   };
 
-  grafana-home = "/var/lib/grafana";
+  grafana-home = "~/.local/share/monocle/grafana-home";
   grafanaPromDS = pkgs.writeTextFile {
     name = "prometheus.yml";
     text = ''
@@ -304,11 +304,6 @@ in rec {
 
   services-req =
     [ elasticsearchStart monocleReplStart monocleWebStart monocleGhcid ];
-
-  monitoring-shell = hsPkgs.shellFor {
-    packages = p: [ p.monocle ];
-    buildInputs = [ promStart grafanaStart ];
-  };
 
   # define the base requirements
   base-req = [ pkgs.bashInteractive hspkgs.coreutils pkgs.gnumake ];

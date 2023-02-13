@@ -43,11 +43,17 @@
       packages."x86_64-linux".default = legacy.monocle-exe;
       packages."x86_64-linux".env = legacy.monocle-light.env;
       packages."x86_64-linux".containerMonocle = legacy.containerMonocle;
-      packages."x86_64-linux".containerGrafana = legacy.containerGrafana;
-      packages."x86_64-linux".containerPrometheus = legacy.containerPrometheus;
       apps."x86_64-linux".default = {
         type = "app";
         program = "${legacy.monocle-exe}/bin/monocle";
+      };
+      apps."x86_64-linux".prometheus = {
+        type = "app";
+        program = "${legacy.promStart}/bin/prometheus-start";
+      };
+      apps."x86_64-linux".grafana = {
+        type = "app";
+        program = "${legacy.grafanaStart}/bin/grafana-start";
       };
     };
 }
