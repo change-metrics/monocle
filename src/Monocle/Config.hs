@@ -291,7 +291,7 @@ getSecret ::
   Maybe Text ->
   Eff es Secret
 getSecret def keyM =
-  Secret . decodeUtf8 . fromMaybe (error $ "Missing environment: " <> env)
+  from . fromMaybe (error $ "Missing environment: " <> env)
     <$> envGet (unTagged $ into @(UTF_8 ByteString) env)
  where
   env = fromMaybe def keyM

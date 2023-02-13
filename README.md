@@ -133,7 +133,7 @@ For a local deployment, default settings are fine.
 The following settings are available in the `.env` file (See `.env.sample` for a sample file):
 
 - `COMPOSE_ES_XMS and COMPOSE_ES_XMX` to change the ElasticSearch JVM HEAP SIZE. By default 512m.
-- `COMPOSE_MONOCLE_VERSION` to use a specific version. By default it uses `latest`.
+- `COMPOSE_MONOCLE_VERSION` to use a specific version. By default it uses latest stable release version.
 - `COMPOSE_MONOCLE_API_ADDR` to set binding address where the Monocle API is exposed by the container.
 - `COMPOSE_MONOCLE_API_PORT` to set binding port where the Monocle API is exposed by the container.
 - `COMPOSE_MONOCLE_PUBLIC_URL` to configure the public URL to access the UI and API.
