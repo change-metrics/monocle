@@ -42,12 +42,12 @@ let boot =
       \(name : Text) ->
         [ checkout-step
         , GithubActions.Step::{
-          , uses = Some "cachix/install-nix-action@v15"
+          , uses = Some "cachix/install-nix-action@v20"
           , `with` = Some
               (toMap { nix_path = "nixpkgs=channel:nixos-unstable" })
           }
         , GithubActions.Step::{
-          , uses = Some "cachix/cachix-action@v10"
+          , uses = Some "cachix/cachix-action@v12"
           , `with` = Some
               (toMap { name, authToken = "\${{ secrets.CACHIX_AUTH_TOKEN }}" })
           }
