@@ -188,6 +188,13 @@ This produces a monocle binary:
 $(nix build . --print-out-paths)/bin/monocle --help
 ```
 
+## Build the container image
+
+```
+podman load < $(nix build .#containerMonocle)
+podman build -t quay.io/change-metrics/monocle:latest .
+```
+
 ## Build using cabal
 
 Despite that nix is the recommended way to build Monocle from source, using cabal should

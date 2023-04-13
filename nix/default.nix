@@ -465,6 +465,7 @@ in rec {
     tag = "latest";
     created = "now";
     config = {
+      USER = "1000";
       Env = [
         "SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt"
         "HOME=/${home}"
