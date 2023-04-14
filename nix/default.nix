@@ -449,7 +449,8 @@ in rec {
     home = "var/lib/${user}";
 
     # Create a passwd entry so that openssh can find the .ssh config
-    createPasswd = "echo ${user}:x:0:0:monocle:/${home}:/bin/bash > etc/passwd";
+    createPasswd =
+      "echo ${user}:x:1000:1000:monocle:/${home}:/bin/bash > etc/passwd";
 
     # Make ca-bundles.crt available to HSOpenSSL as plain file
     # https://hackage.haskell.org/package/HsOpenSSL-x509-system-0.1.0.4/docs/src/OpenSSL.X509.SystemStore.Unix.html#contextLoadSystemCerts
@@ -465,13 +466,8 @@ in rec {
     tag = "latest";
     created = "now";
     config = {
-      USER = "1000";
-      Env = [
-        "SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt"
-        "HOME=/${home}"
-        # Use fakeroot to avoid `No user exists for uid` error
-        "LD_PRELOAD=${pkgs.fakeroot}/lib/libfakeroot.so"
-      ];
+      Env = [ "SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt" "HOME=/${home}" ];
+      User = "1000:1000";
     };
   };
 
