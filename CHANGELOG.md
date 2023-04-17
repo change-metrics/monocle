@@ -3,9 +3,15 @@
 All notable changes to this project will be documented in this file.
 
 ## [master]
+
 ### Added
+
+- [doc] Add a section about metric API usage.
+
 ### Changed
+
 ### Removed
+
 ### Fixed
 
 - [crawler] Authentification token are no longer written in the service logs.

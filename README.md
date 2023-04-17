@@ -587,6 +587,32 @@ Monocle is composed of the following services:
 
 The APIs are defined using [protobuf][monocle-protobuf] and served over HTTP through [Monocle OpenAPI][monocle-openapi].
 
+## Consuming metrics via the API
+
+Most of the metrics are exposed via the `api/2/metric/get` endpoint. The `api/2/metric/list` lists the
+available metrics. The Monocle Web UI leverages those metrics via the `Catalog` page.
+
+The detail about the query and response format is described in the [Monocle OpenAPI][monocle-openapi] document.
+
+Note that there is an effort in progress to ensure that all metrics displayed by the Monocle Web UI use the
+`api/2/metric` endpoint.
+
+To list the available metrics:
+
+```Shell
+curl 'https://demo.changemetrics.io/api/2/metric/list' \
+  -H 'Content-Type: application/json' \
+  --data '{"void":""}'
+```
+
+To get the `Changes created` metric as a `trend` with automatic interval:
+
+```Shell
+curl 'https://demo.changemetrics.io/api/2/metric/get' \
+  -H 'Content-Type: application/json' \
+  --data '{"index":"python","username":"","query":"from:now-3weeks","metric":"changes_created","trend":{"interval":""}}'
+```
+
 ## Monitoring
 
 To setup the monitoring:
