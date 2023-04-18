@@ -37,6 +37,7 @@
         self = self;
       };
     in {
+      haskellExtend = legacy.hExtend;
       devShell."x86_64-linux" = legacy.shell;
       devShells."x86_64-linux".ci = legacy.ci-shell;
       devShells."x86_64-linux".monitoring = legacy.monitoring-shell;
