@@ -31,6 +31,7 @@ import GHC.Enum qualified as Hs
 import GHC.Generics qualified as Hs
 import Google.Protobuf.Timestamp qualified
 import Monocle.Protob.Change qualified
+import Monocle.Protob.Issue qualified
 import Monocle.Protob.Search qualified
 import Proto3.Suite.Class qualified as HsProtobuf
 import Proto3.Suite.DotProto qualified as HsProtobuf
@@ -66,6 +67,11 @@ instance HsProtobuf.Message Entity where
                       (HsProtobuf.FieldNumber 2)
                       (HsProtobuf.ForceEmit y)
                   )
+                EntityEntityProjectIssueName y ->
+                  ( HsProtobuf.encodeMessageField
+                      (HsProtobuf.FieldNumber 4)
+                      (HsProtobuf.ForceEmit y)
+                  )
                 EntityEntityTdName y ->
                   ( HsProtobuf.encodeMessageField
                       (HsProtobuf.FieldNumber 3)
@@ -88,6 +94,11 @@ instance HsProtobuf.Message Entity where
                     <*> HsProtobuf.decodeMessageField
                 )
               ,
+                ( (HsProtobuf.FieldNumber 4)
+                , (Hs.pure (Hs.Just Hs.. EntityEntityProjectIssueName))
+                    <*> HsProtobuf.decodeMessageField
+                )
+              ,
                 ( (HsProtobuf.FieldNumber 3)
                 , (Hs.pure (Hs.Just Hs.. EntityEntityTdName))
                     <*> HsProtobuf.decodeMessageField
@@ -97,14 +108,16 @@ instance HsProtobuf.Message Entity where
   dotProto _ = []
 
 instance HsJSONPB.ToJSONPB Entity where
-  toJSONPB (Entity f1_or_f2_or_f3) =
+  toJSONPB (Entity f1_or_f2_or_f4_or_f3) =
     ( HsJSONPB.object
         [ ( let encodeEntity =
-                  ( case f1_or_f2_or_f3 of
+                  ( case f1_or_f2_or_f4_or_f3 of
                       Hs.Just (EntityEntityOrganizationName f1) ->
                         (HsJSONPB.pair "organization_name" f1)
                       Hs.Just (EntityEntityProjectName f2) ->
                         (HsJSONPB.pair "project_name" f2)
+                      Hs.Just (EntityEntityProjectIssueName f4) ->
+                        (HsJSONPB.pair "project_issue_name" f4)
                       Hs.Just (EntityEntityTdName f3) -> (HsJSONPB.pair "td_name" f3)
                       Hs.Nothing -> Hs.mempty
                   )
@@ -117,14 +130,16 @@ instance HsJSONPB.ToJSONPB Entity where
           )
         ]
     )
-  toEncodingPB (Entity f1_or_f2_or_f3) =
+  toEncodingPB (Entity f1_or_f2_or_f4_or_f3) =
     ( HsJSONPB.pairs
         [ ( let encodeEntity =
-                  ( case f1_or_f2_or_f3 of
+                  ( case f1_or_f2_or_f4_or_f3 of
                       Hs.Just (EntityEntityOrganizationName f1) ->
                         (HsJSONPB.pair "organization_name" f1)
                       Hs.Just (EntityEntityProjectName f2) ->
                         (HsJSONPB.pair "project_name" f2)
+                      Hs.Just (EntityEntityProjectIssueName f4) ->
+                        (HsJSONPB.pair "project_issue_name" f4)
                       Hs.Just (EntityEntityTdName f3) -> (HsJSONPB.pair "td_name" f3)
                       Hs.Nothing -> Hs.mempty
                   )
@@ -148,6 +163,8 @@ instance HsJSONPB.FromJSONPB Entity where
                                 <$> (HsJSONPB.parseField parseObj "organization_name")
                             , Hs.Just Hs.. EntityEntityProjectName
                                 <$> (HsJSONPB.parseField parseObj "project_name")
+                            , Hs.Just Hs.. EntityEntityProjectIssueName
+                                <$> (HsJSONPB.parseField parseObj "project_issue_name")
                             , Hs.Just Hs.. EntityEntityTdName
                                 <$> (HsJSONPB.parseField parseObj "td_name")
                             , Hs.pure Hs.Nothing
@@ -170,6 +187,7 @@ instance HsJSONPB.FromJSON Entity where
 data EntityEntity
   = EntityEntityOrganizationName Hs.Text
   | EntityEntityProjectName Hs.Text
+  | EntityEntityProjectIssueName Hs.Text
   | EntityEntityTdName Hs.Text
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -240,6 +258,9 @@ data AddDocRequest = AddDocRequest
       Hs.Vector Monocle.Protob.Crawler.Project
   , addDocRequestTaskDatas ::
       Hs.Vector Monocle.Protob.Search.TaskData
+  , addDocRequestIssues :: Hs.Vector Monocle.Protob.Issue.Issue
+  , addDocRequestIssueEvents ::
+      Hs.Vector Monocle.Protob.Issue.IssueEvent
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
 
@@ -260,6 +281,8 @@ instance HsProtobuf.Message AddDocRequest where
       , addDocRequestEvents = addDocRequestEvents
       , addDocRequestProjects = addDocRequestProjects
       , addDocRequestTaskDatas = addDocRequestTaskDatas
+      , addDocRequestIssues = addDocRequestIssues
+      , addDocRequestIssueEvents = addDocRequestIssueEvents
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -307,6 +330,20 @@ instance HsProtobuf.Message AddDocRequest where
                 ( Hs.coerce @(Hs.Vector Monocle.Protob.Search.TaskData)
                     @(HsProtobuf.NestedVec Monocle.Protob.Search.TaskData)
                     addDocRequestTaskDatas
+                )
+            )
+          , ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 10)
+                ( Hs.coerce @(Hs.Vector Monocle.Protob.Issue.Issue)
+                    @(HsProtobuf.NestedVec Monocle.Protob.Issue.Issue)
+                    addDocRequestIssues
+                )
+            )
+          , ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 11)
+                ( Hs.coerce @(Hs.Vector Monocle.Protob.Issue.IssueEvent)
+                    @(HsProtobuf.NestedVec Monocle.Protob.Issue.IssueEvent)
+                    addDocRequestIssueEvents
                 )
             )
           ]
@@ -361,6 +398,21 @@ instance HsProtobuf.Message AddDocRequest where
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 8)
+              )
+          )
+      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Protob.Issue.Issue))
+              @(_ (Hs.Vector Monocle.Protob.Issue.Issue))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 10)
+              )
+          )
+      <*> ( Hs.coerce
+              @(_ (HsProtobuf.NestedVec Monocle.Protob.Issue.IssueEvent))
+              @(_ (Hs.Vector Monocle.Protob.Issue.IssueEvent))
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 11)
               )
           )
   dotProto _ =
@@ -440,10 +492,36 @@ instance HsProtobuf.Message AddDocRequest where
           []
           ""
       )
+    , ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 10)
+          ( HsProtobuf.Repeated
+              ( HsProtobuf.Named
+                  ( HsProtobuf.Dots
+                      (HsProtobuf.Path ("monocle_issue" Hs.:| ["Issue"]))
+                  )
+              )
+          )
+          (HsProtobuf.Single "issues")
+          []
+          ""
+      )
+    , ( HsProtobuf.DotProtoField
+          (HsProtobuf.FieldNumber 11)
+          ( HsProtobuf.Repeated
+              ( HsProtobuf.Named
+                  ( HsProtobuf.Dots
+                      (HsProtobuf.Path ("monocle_issue" Hs.:| ["IssueEvent"]))
+                  )
+              )
+          )
+          (HsProtobuf.Single "issue_events")
+          []
+          ""
+      )
     ]
 
 instance HsJSONPB.ToJSONPB AddDocRequest where
-  toJSONPB (AddDocRequest f1 f2 f3 f4 f5 f6 f7 f8) =
+  toJSONPB (AddDocRequest f1 f2 f3 f4 f5 f6 f7 f8 f10 f11) =
     ( HsJSONPB.object
         [ "index" .= f1
         , "crawler" .= f2
@@ -453,9 +531,11 @@ instance HsJSONPB.ToJSONPB AddDocRequest where
         , "events" .= f6
         , "projects" .= f7
         , "task_datas" .= f8
+        , "issues" .= f10
+        , "issue_events" .= f11
         ]
     )
-  toEncodingPB (AddDocRequest f1 f2 f3 f4 f5 f6 f7 f8) =
+  toEncodingPB (AddDocRequest f1 f2 f3 f4 f5 f6 f7 f8 f10 f11) =
     ( HsJSONPB.pairs
         [ "index" .= f1
         , "crawler" .= f2
@@ -465,6 +545,8 @@ instance HsJSONPB.ToJSONPB AddDocRequest where
         , "events" .= f6
         , "projects" .= f7
         , "task_datas" .= f8
+        , "issues" .= f10
+        , "issue_events" .= f11
         ]
     )
 
@@ -482,6 +564,8 @@ instance HsJSONPB.FromJSONPB AddDocRequest where
               <*> obj .: "events"
               <*> obj .: "projects"
               <*> obj .: "task_datas"
+              <*> obj .: "issues"
+              <*> obj .: "issue_events"
         )
     )
 

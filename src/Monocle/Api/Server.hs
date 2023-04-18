@@ -285,6 +285,8 @@ crawlerAddDoc _auth request = do
           events
           projects
           taskDatas
+          issues
+          issuesEvents
         ) = request
 
   let requestE = do
@@ -305,6 +307,7 @@ crawlerAddDoc _auth request = do
   case requestE of
     Right (index, crawler) -> runEmptyQueryM index $ case toEntity entity of
       Project _ -> addChanges crawlerName changes events
+      ProjectIssue _ -> addIssues crawlerName issues issuesEvents
       Organization organizationName -> addProjects crawler organizationName projects
       TaskDataEntity _ -> addTDs crawlerName taskDatas
     Left err -> pure $ toErrorResponse err
@@ -324,12 +327,18 @@ crawlerAddDoc _auth request = do
     I.addCachedAuthors events'
     pure $ CrawlerPB.AddDocResponse Nothing
 
+  addIssues crawlerName issues issueEvents = do
+    logInfo "AddingIssue" ["crawler" .= crawlerName, "changes" .= length issues, "events" .= length issueEvents]
+    I.indexIssues (from <$> toList issues)
+    I.indexIssueEvents (from <$> toList issueEvents)
+    pure $ CrawlerPB.AddDocResponse Nothing
+
   addProjects crawler organizationName projects = do
     logInfo "AddingProject" ["crawler" .= getWorkerName crawler, "org" .= organizationName, "projects" .= length projects]
     let names = projectNames projects
-        -- TODO(fbo) Enable crawl github issues by default for an organization.
+        -- TODO(fbo) Enable crawl github/gitlab issues by default for an organization.
         -- We might need to re-think some data fetching like priority/severity.
-        -- entities = (Project <$> names) <> (TaskDataEntity <$> names)
+        -- entities = (Project <$> names) <> (ProjectIssues <$> names)
         entities = Project <$> names
     I.initCrawlerEntities entities crawler
     pure $ CrawlerPB.AddDocResponse Nothing

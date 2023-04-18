@@ -22,10 +22,22 @@ import Monocle.Protob.Crawler qualified as CrawlerPB
 
 -- | Entity.
 data Entity
-  = Project Text
-  | Organization Text
-  | TaskDataEntity Text
+  = -- | Crawler collect change from Project
+    Project Text
+  | -- | Crawler collect issue from ProjectIssue
+    ProjectIssue Text
+  | -- | Crawler collect project from Organization
+    Organization Text
+  | -- | Crawler collect task data
+    TaskDataEntity Text
   deriving (Eq, Show, Generic, ToJSON)
+
+instance From Entity Text where
+  from = \case
+    Project _ -> "project"
+    ProjectIssue _ -> "issue"
+    Organization _ -> "organization"
+    TaskDataEntity _ -> "taskdata"
 
 makePrisms ''Entity
 
@@ -47,6 +59,7 @@ entityDocID (CrawlerName name) e =
   entityName =
     case e of
       Project n -> n
+      ProjectIssue n -> n
       Organization n -> n
       TaskDataEntity n -> n
 
@@ -55,6 +68,7 @@ instance From Entity CrawlerPB.Entity where
    where
     pbe = case e of
       Project n -> CrawlerPB.EntityEntityProjectName (from n)
+      ProjectIssue n -> CrawlerPB.EntityEntityProjectIssueName (from n)
       Organization n -> CrawlerPB.EntityEntityOrganizationName (from n)
       TaskDataEntity n -> CrawlerPB.EntityEntityTdName (from n)
 
@@ -62,6 +76,7 @@ instance From CrawlerPB.Entity Entity where
   from = \case
     CrawlerPB.Entity (Just pbe) -> case pbe of
       CrawlerPB.EntityEntityProjectName n -> Project (from n)
+      CrawlerPB.EntityEntityProjectIssueName n -> ProjectIssue (from n)
       CrawlerPB.EntityEntityOrganizationName n -> Organization (from n)
       CrawlerPB.EntityEntityTdName n -> TaskDataEntity (from n)
     CrawlerPB.Entity Nothing -> error "Missing CrawlerPB.Entity value"
@@ -69,5 +84,6 @@ instance From CrawlerPB.Entity Entity where
 instance From Entity CrawlerPB.EntityType where
   from = \case
     Project _ -> CrawlerPB.EntityTypeENTITY_TYPE_PROJECT
+    ProjectIssue _ -> CrawlerPB.EntityTypeENTITY_TYPE_TASK_DATA
     Organization _ -> CrawlerPB.EntityTypeENTITY_TYPE_ORGANIZATION
     TaskDataEntity _ -> CrawlerPB.EntityTypeENTITY_TYPE_TASK_DATA

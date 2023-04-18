@@ -18,6 +18,7 @@ import Monocle.Entity
 import Monocle.Prelude
 import Monocle.Protob.Change (Change, ChangeEvent)
 import Monocle.Protob.Crawler as CrawlerPB hiding (Entity)
+import Monocle.Protob.Issue (Issue, IssueEvent)
 import Monocle.Protob.Search (TaskData)
 import Proto3.Suite (Enumerated (Enumerated))
 import Streaming qualified as S
@@ -72,6 +73,7 @@ data DocumentType
   = DTProject Project
   | DTChanges (Change, [ChangeEvent])
   | DTTaskData TaskData
+  | DTIssues (Issue, [IssueEvent])
   deriving (Generic, ToJSON)
 
 data ProcessResult = AddOk | AddError Text deriving stock (Show)
@@ -222,8 +224,16 @@ runStreamError startTime apiKey indexName (CrawlerName crawlerName) documentStre
         addDocRequestEvents = V.fromList $ concat $ mapMaybe getEvents xs
         addDocRequestProjects = V.fromList $ mapMaybe getProject' xs
         addDocRequestTaskDatas = V.fromList $ mapMaybe getTD xs
+        addDocRequestIssues = V.fromList $ mapMaybe getIssue xs
+        addDocRequestIssueEvents = V.fromList $ concat $ mapMaybe getIssueEvent xs
      in AddDocRequest {..}
    where
+    getIssue = \case
+      DTIssues (issue, _) -> Just issue
+      _ -> Nothing
+    getIssueEvent = \case
+      DTIssues (_, events) -> Just events
+      _ -> Nothing
     getEvents = \case
       DTChanges (_, events) -> Just events
       _ -> Nothing

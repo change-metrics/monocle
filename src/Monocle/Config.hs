@@ -69,6 +69,7 @@ module Monocle.Config (
   getPrefix,
   getCrawlerName,
   getCrawlerProject,
+  getCrawlerProjectIssue,
   getCrawlerOrganization,
   getCrawlerTaskData,
 
@@ -473,6 +474,12 @@ getCrawlerTaskData Crawler {..} = case provider of
     let addOrgPrefix = getPath github_organization
      in addOrgPrefix <$> fromMaybe [] github_repositories
   BugzillaProvider Bugzilla {..} -> fromMaybe [] bugzilla_products
+  _anyOtherProvider -> []
+
+getCrawlerProjectIssue :: Crawler -> [Text]
+getCrawlerProjectIssue crawler@Crawler {..} = case provider of
+  GithubProvider Github {} -> getCrawlerTaskData crawler
+  -- todo: add JiraProvider here
   _anyOtherProvider -> []
 
 -- End - Functions to handle a Crawler

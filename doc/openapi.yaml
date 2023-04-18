@@ -658,6 +658,16 @@ components:
                     items:
                         $ref: '#/components/schemas/monocle_search_TaskData'
                     description: task_datas are added when Entity is td_name
+                issues:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_issue_Issue'
+                    description: issues are added when Entity is project_issue_name
+                issue_events:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_issue_IssueEvent'
+                    description: issue_events are added when Entity is project_issue_name
         monocle_crawler_AddDocResponse:
             properties:
                 error:
@@ -711,6 +721,8 @@ components:
                     type: string
                 project_name:
                     type: string
+                project_issue_name:
+                    type: string
                 td_name:
                     type: string
             description: A descriptive name of the entities being added
@@ -718,6 +730,72 @@ components:
             properties:
                 full_path:
                     type: string
+        monocle_issue_Issue:
+            properties:
+                id:
+                    type: string
+                number:
+                    type: integer
+                    format: int32
+                title:
+                    type: string
+                text:
+                    type: string
+                url:
+                    type: string
+                repository_prefix:
+                    type: string
+                repository_fullname:
+                    type: string
+                repository_shortname:
+                    type: string
+                author:
+                    $ref: '#/components/schemas/monocle_change_Ident'
+                created_at:
+                    type: string
+                    format: RFC3339
+                updated_at:
+                    type: string
+                    format: RFC3339
+                closed_at:
+                    type: string
+                    format: RFC3339
+                state:
+                    type: string
+        monocle_issue_IssueClosedEvent:
+            properties: {}
+        monocle_issue_IssueCommentedEvent:
+            properties:
+                comment:
+                    type: string
+        monocle_issue_IssueCreatedEvent:
+            properties: {}
+        monocle_issue_IssueEvent:
+            properties:
+                id:
+                    type: string
+                created_at:
+                    type: string
+                    format: RFC3339
+                author:
+                    $ref: '#/components/schemas/monocle_change_Ident'
+                repository_prefix:
+                    type: string
+                repository_fullname:
+                    type: string
+                repository_shortname:
+                    type: string
+                number:
+                    type: integer
+                    format: int32
+                url:
+                    type: string
+                IssueCreated:
+                    $ref: '#/components/schemas/monocle_issue_IssueCreatedEvent'
+                IssueCommented:
+                    $ref: '#/components/schemas/monocle_issue_IssueCommentedEvent'
+                IssueClosed:
+                    $ref: '#/components/schemas/monocle_issue_IssueClosedEvent'
         monocle_login_LoginValidationRequest:
             properties:
                 username:

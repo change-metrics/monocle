@@ -459,6 +459,7 @@ toAuthor Nothing =
     "backend-ghost"
     "backend-ghost"
 
+-- TODO: change that to a From instance
 toEChangeEvent :: ChangePB.ChangeEvent -> EChangeEvent
 toEChangeEvent ChangePB.ChangeEvent {..} =
   EChangeEvent
@@ -593,6 +594,12 @@ indexChanges changes = indexDocs $ fmap (toDoc . ensureType) changes
  where
   toDoc change = (toJSON change, getChangeDocId change)
   ensureType change = change {echangeType = EChangeDoc}
+
+indexIssues :: [EIssue] -> Eff es ()
+indexIssues = error "todo"
+
+indexIssueEvents :: [EIssueEvent] -> Eff es ()
+indexIssueEvents = error "todo"
 
 getEventDocId :: EChangeEvent -> BH.DocId
 getEventDocId event = BH.DocId . from $ echangeeventId event
@@ -922,6 +929,9 @@ initCrawlerEntities entities worker = traverse_ run entities
 getProjectEntityFromCrawler :: Config.Crawler -> [Entity]
 getProjectEntityFromCrawler worker = Project <$> Config.getCrawlerProject worker
 
+getProjectIssueFromCrawler :: Config.Crawler -> [Entity]
+getProjectIssueFromCrawler worker = ProjectIssue <$> Config.getCrawlerProjectIssue worker
+
 getOrganizationEntityFromCrawler :: Config.Crawler -> [Entity]
 getOrganizationEntityFromCrawler worker = Organization <$> Config.getCrawlerOrganization worker
 
@@ -934,6 +944,7 @@ initCrawlerMetadata crawler =
     ( getProjectEntityFromCrawler crawler
         <> getOrganizationEntityFromCrawler crawler
         <> getTaskDataEntityFromCrawler crawler
+        <> getProjectIssueFromCrawler crawler
     )
     crawler
 
