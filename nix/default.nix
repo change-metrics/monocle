@@ -74,6 +74,9 @@ let
   '';
 
 in rec {
+  # Overlay
+  hExtend = haskellExtend;
+
   # DB
   info = pkgs.lib.splitString "-" pkgs.stdenv.hostPlatform.system;
   arch = pkgs.lib.elemAt info 0;
