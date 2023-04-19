@@ -1,16 +1,22 @@
 -- | Data types for Elasticsearch documents
 --
--- Note there are three data types:
--- - Monocle.Change is the schemas used by the crawler, thus the import is named CrawlerPB to disambiguate.
--- - Monocle.Search is the schemas used by the web interface (SearchPB).
--- - Monocle.Backend.Documents (this module) is the schemas used by elastic search.
+-- Note [Documents type]
+-- ~~~~~~~~~~~~~~~~~~~~~
+--
+-- To avoid tight coupling, the monocle data are represented in different type.
+-- Checkout this article for some more explanation: https://leapyear.io/resources/blog-posts/how-to-haskell-sharing-data-types-is-tight-coupling/
+--
+-- There are three type of modules:
+-- - Monocle.Protob.Change and Issue are created by the crawlers and read by the API.
+-- - Monocle.Protob.Search are served by the API and read by the web interface.
+-- - Monocle.Backend.Documents (this module) are managed by the API internal.
 --
 -- The different data types are used for different purpose:
--- - CrawlerPB are managed by Lentilles
--- - SearchPB is the public interface
--- - Documents needs to stay in sync with the elastic schemas.
+-- - Monocle.Protob are the exchange format, the modules are imported using the 'PB' suffix.
+-- - Documents (this module) are stored in elasticsearch, they must stay in sync with the index mapping.
 --
--- This module provides From instance to help converting the data types.
+-- Within an index, the different data type are sharing the same elasticsearch mapping.
+-- It is the JSON decoder that decides what gets loaded based on the document type.
 module Monocle.Backend.Documents where
 
 import Data.Aeson (Value (String), defaultOptions, genericParseJSON, genericToJSON, withObject, withText, (.:))
@@ -21,6 +27,7 @@ import Monocle.Entity
 import Monocle.Prelude
 import Monocle.Protob.Change qualified as ChangePB
 import Monocle.Protob.Crawler qualified as CrawlerPB
+import Monocle.Protob.Issue qualified as IssuePB
 import Monocle.Protob.Search qualified as SearchPB
 
 data Author = Author
@@ -41,6 +48,11 @@ instance From ChangePB.Ident Author where
       { authorMuid = identMuid
       , authorUid = identUid
       }
+
+fromMaybeIdent :: Maybe ChangePB.Ident -> Author
+fromMaybeIdent = maybe ghostAuthor from
+ where
+  ghostAuthor = Author "backend-ghost" "backend-ghost"
 
 -- | CachedAuthor is used by the Author search cache
 data CachedAuthor = CachedAuthor
@@ -210,6 +222,7 @@ instance FromJSON EChangeState where
           _anyOtherValue -> fail "Unknown Monocle Elastic change state"
       )
 
+-- | When adding new document type, update the `instance FromJSON EDocType` too.
 data EDocType
   = EChangeCreatedEvent
   | EChangeMergedEvent
@@ -219,6 +232,10 @@ data EDocType
   | EChangeCommitForcePushedEvent
   | EChangeCommitPushedEvent
   | EChangeDoc
+  | EIssueCreatedEvent
+  | EIssueClosedEvent
+  | EIssueCommentedEvent
+  | EIssueDoc
   | EOrphanTaskData
   | ECachedAuthor
   deriving (Eq, Show, Enum, Bounded)
@@ -237,6 +254,10 @@ instance From EDocType Text where
     EChangeCommitForcePushedEvent -> "ChangeCommitForcePushedEvent"
     EChangeCommitPushedEvent -> "ChangeCommitPushedEvent"
     EChangeDoc -> "Change"
+    EIssueCreatedEvent -> "IssueCreatedEvent"
+    EIssueClosedEvent -> "IssueClosedEvent"
+    EIssueCommentedEvent -> "IssueCommentedEvent"
+    EIssueDoc -> "Issue"
     EOrphanTaskData -> "OrphanTaskData"
     ECachedAuthor -> "CachedAuthor"
 
@@ -271,10 +292,60 @@ instance FromJSON EDocType where
           "ChangeCommitForcePushedEvent" -> pure EChangeCommitForcePushedEvent
           "ChangeCommitPushedEvent" -> pure EChangeCommitPushedEvent
           "Change" -> pure EChangeDoc
+          "IssueCreatedEvent" -> pure EIssueCreatedEvent
+          "IssueClosedEvent" -> pure EIssueClosedEvent
+          "IssueCommentedEvent" -> pure EIssueCommentedEvent
+          "Issue" -> pure EIssueDoc
           "OrphanTaskData" -> pure EOrphanTaskData
           "CachedAuthor" -> pure ECachedAuthor
           anyOtherValue -> fail $ "Unknown Monocle Elastic doc type: " <> from anyOtherValue
       )
+
+data EIssue = EIssue
+  { eissueId :: LText
+  , eissueNumber :: Int
+  , eissueType :: EDocType
+  , eissueTitle :: LText
+  , eissueText :: LText
+  , eissueUrl :: LText
+  , eissueRepositoryPrefix :: LText
+  , eissueRepositoryShortname :: LText
+  , eissueRepositoryFullname :: LText
+  , eissueAuthor :: Author
+  , eissueCreatedAt :: UTCTime
+  , eissueUpdatedAt :: UTCTime
+  , eissueClosedAt :: Maybe UTCTime
+  , eissueState :: LText
+  }
+  deriving (Show, Eq, Generic)
+
+instance ToJSON EIssue where
+  toJSON = genericToJSON $ aesonPrefix snakeCase
+
+instance FromJSON EIssue where
+  parseJSON = genericParseJSON $ aesonPrefix snakeCase
+
+-- | Convert data comming from the crawler, (see Note [Documents type])
+instance From IssuePB.Issue EIssue where
+  from IssuePB.Issue {..} =
+    EIssue
+      { eissueId = issueId
+      , eissueNumber = fromInteger . toInteger $ issueNumber
+      , eissueType = EIssueDoc
+      , eissueTitle = issueTitle
+      , eissueText = issueText
+      , eissueUrl = issueUrl
+      , eissueRepositoryPrefix = issueRepositoryPrefix
+      , eissueRepositoryShortname = issueRepositoryShortname
+      , eissueRepositoryFullname = issueRepositoryFullname
+      , eissueAuthor = from (ensureAuthor issueAuthor)
+      , eissueCreatedAt = from $ fromMaybe (error "CreatedAt field is mandatory") issueCreatedAt
+      , eissueUpdatedAt = from $ fromMaybe (error "UpdatedAt field is mandatory") issueUpdatedAt
+      , eissueClosedAt = toClosedAt <$> issueOptionalClosedAt
+      , eissueState = issueState
+      }
+   where
+    toClosedAt (IssuePB.IssueOptionalClosedAtClosedAt t) = from t
 
 data EChange = EChange
   { echangeId :: LText
@@ -443,10 +514,46 @@ data EChangeOrphanTDAdopted = EChangeOrphanTDAdopted
 instance ToJSON EChangeOrphanTDAdopted where
   toJSON = genericToJSON $ aesonPrefix snakeCase
 
+data EIssueEvent = EIssueEvent
+  { eissueeventId :: LText
+  , eissueeventNumber :: Int
+  , eissueeventType :: EDocType
+  , eissueeventAuthor :: Author
+  , eissueeventComment :: Maybe LText
+  }
+  deriving (Show, Eq, Generic)
+
+instance ToJSON EIssueEvent where
+  toJSON = genericToJSON $ aesonPrefix snakeCase
+
+instance FromJSON EIssueEvent where
+  parseJSON = genericParseJSON $ aesonPrefix snakeCase
+
+-- | Convert data comming from the crawler, (see Note [Documents type])
+instance From IssuePB.IssueEvent EIssueEvent where
+  from IssuePB.IssueEvent {..} =
+    EIssueEvent
+      { eissueeventId = issueEventId
+      , eissueeventNumber = fromIntegral issueEventNumber
+      , eissueeventType = maybe (error "issueEventType field is mandatory") getType issueEventType
+      , eissueeventAuthor = fromMaybeIdent issueEventAuthor
+      , eissueeventComment = commentFromType
+      }
+   where
+    getType = \case
+      IssuePB.IssueEventTypeIssueCreated {} -> EIssueCreatedEvent
+      IssuePB.IssueEventTypeIssueClosed {} -> EIssueClosedEvent
+      IssuePB.IssueEventTypeIssueCommented {} -> EIssueCommentedEvent
+    commentFromType = case issueEventType of
+      Just (IssuePB.IssueEventTypeIssueCommented (IssuePB.IssueCommentedEvent v)) -> Just v
+      _ -> Nothing
+
 data EChangeEvent = EChangeEvent
   { echangeeventId :: LText
   , echangeeventNumber :: Word32
+  -- ^ this is odd, that should be Int, like in EChange
   , echangeeventType :: EDocType
+  -- ^ the eventType value can only be one of EChange*Event
   , echangeeventChangeId :: LText
   , echangeeventUrl :: LText
   , echangeeventChangedFiles :: [SimpleFile]
@@ -515,6 +622,7 @@ instance ToJSON ECrawlerMetadataObject where
     entityValue = case ecmCrawlerEntity e of
       Organization n -> n
       Project n -> n
+      ProjectIssue n -> n
       TaskDataEntity n -> n
 
 instance FromJSON ECrawlerMetadataObject where

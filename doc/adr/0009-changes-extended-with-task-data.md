@@ -1,6 +1,6 @@
 # 9. Changes extended with task data
 
-* Status: accepted
+* Status: superseded by [ADR-0013](./0013-index-project-issues.md)
 * Deciders: Fabien Boucher
 * Date: 2021-04-20
 

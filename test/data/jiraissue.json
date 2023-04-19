@@ -1,0 +1,76 @@
+{
+  "id": "14825490",
+  "key": "PROJECT-1058",
+  "fields": {
+    "issuetype": {
+      "name": "Story"
+    },
+    "project": {
+      "id": "12328552",
+      "key": "PROJECT",
+      "name": "Project",
+      "projectCategory": {
+        "id": "10937",
+        "description": "The project category",
+        "name": "Org Project"
+      }
+    },
+    "resolution": {
+      "description": "This issue is closed, and complete.",
+      "name": "Done"
+    },
+    "resolutiondate": "2022-09-01T09:15:25.775+0000",
+    "created": "2022-08-24T15:38:59.605+0000",
+    "priority": {
+      "name": "Medium",
+      "id": "10000"
+    },
+    "labels": [],
+    "assignee": {
+      "name": "jira-id",
+      "key": "name",
+      "emailAddress": "user@example.com",
+      "displayName": "Foo Bar"
+    },
+    "updated": "2022-09-01T09:15:25.777+0000",
+    "status": {
+      "description": "",
+      "name": "Done"
+    },
+    "components": [],
+    "description": "Issue description...",
+    "summary": "Issue summary",
+    "creator": {
+      "name": "jira-id",
+      "key": "name",
+      "emailAddress": "user@example.com",
+      "displayName": "Foo Bar"
+    },
+    "subtasks": [],
+    "reporter": {
+      "name": "jira-id",
+      "key": "name",
+      "emailAddress": "user@example.com",
+      "displayName": "Foo Bar"
+    },
+    "comment": {
+      "comments": [
+        {
+          "id": "20861827",
+          "author": {
+            "name": "jira-id",
+            "key": "name",
+            "emailAddress": "user@example.com",
+            "displayName": "Foo Bar"
+          },
+          "body": "comment body",
+          "created": "2022-08-29T07:27:30.402+0000",
+          "updated": "2022-08-29T07:27:30.402+0000"
+        }
+      ],
+      "maxResults": 1,
+      "total": 1,
+      "startAt": 0
+    }
+  }
+}

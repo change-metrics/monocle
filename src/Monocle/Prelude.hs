@@ -76,6 +76,8 @@ module Monocle.Prelude (
   Stream,
   Of (..),
   toVector,
+  ListT,
+  streamingFromListT,
 
   -- * unliftio
   MonadUnliftIO,
@@ -241,6 +243,8 @@ import GHC.Generics (C, D, K1, M1, R, Rep, S, Selector, U1, selName, (:*:), (:+:
 import GHC.Stack
 import Google.Protobuf.Timestamp qualified
 import Language.Haskell.TH.Quote (QuasiQuoter)
+import ListT (ListT)
+import ListT qualified
 import Network.HTTP.Client.OpenSSL (newOpenSSLManager, withOpenSSL)
 import Network.HTTP.Types.Header (Header)
 import Prometheus (Info (..), counter, incCounter, withLabel)
@@ -592,3 +596,11 @@ runErrorIO action = do
   case res of
     Left e -> error (show e)
     Right x -> pure x
+
+-- | ListT
+streamingFromListT :: Monad m => ListT m a -> Stream (Of a) m ()
+streamingFromListT = S.unfoldr go
+ where
+  go listT = do
+    res <- ListT.uncons listT
+    pure $ res `orDie` ()

@@ -1,0 +1,58 @@
+// Copyright: (c) 2021 Monocle authors
+// SPDX-License-Identifier: AGPL-3.0-only
+
+syntax = "proto3";
+package monocle_issue;
+option go_package = "monocle/issue";
+
+import "google/protobuf/timestamp.proto";
+import "monocle/protob/change.proto";
+
+message Ident {
+  string uid = 1;
+  string muid = 2;
+}
+
+message Issue {
+  string id = 1;
+  int32 number = 2;
+  string title = 4;
+  string text = 5;
+  string url = 6;
+
+  string repository_prefix = 13;
+  string repository_fullname = 14;
+  string repository_shortname = 15;
+  monocle_change.Ident author = 16;
+
+  google.protobuf.Timestamp created_at = 20;
+  google.protobuf.Timestamp updated_at = 22;
+  oneof optional_closed_at {
+    google.protobuf.Timestamp closed_at = 23;
+  }
+
+  string state = 24;
+}
+
+message IssueEvent {
+  string id = 1;
+  google.protobuf.Timestamp created_at = 2;
+  monocle_change.Ident author = 3;
+  string repository_prefix = 4;
+  string repository_fullname = 5;
+  string repository_shortname = 6;
+
+  int32 number = 9;
+  string url = 11;
+  oneof type {
+    IssueCreatedEvent IssueCreated = 15;
+    IssueCommentedEvent IssueCommented = 16;
+    IssueClosedEvent IssueClosed = 21;
+  }
+}
+
+message IssueCreatedEvent {}
+message IssueCommentedEvent {
+  string comment = 1;
+}
+message IssueClosedEvent {}

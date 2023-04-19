@@ -5,7 +5,7 @@
 
 BASEDIR = monocle/protob
 MESSAGES = $(BASEDIR)/search.proto $(BASEDIR)/config.proto $(BASEDIR)/login.proto $(BASEDIR)/metric.proto $(BASEDIR)/auth.proto
-CRAWLER = $(BASEDIR)/change.proto $(BASEDIR)/crawler.proto
+CRAWLER = $(BASEDIR)/change.proto $(BASEDIR)/issue.proto $(BASEDIR)/crawler.proto
 PINCLUDE = -I /usr/include $(PROTOC_FLAGS) -I ./schemas/
 
 codegen: codegen-ci codegen-javascript codegen-stubs codegen-openapi codegen-haskell doc/architecture.png

@@ -1,0 +1,21 @@
+{
+  "startAt": 0,
+  "maxResults": 10,
+  "total": 2,
+  "issues": [
+    {
+      "id": "14825490",
+      "key": "PROJECT-1058",
+      "fields": {
+        "updated": "2022-09-13T14:37:36.000+0000"
+      }
+    },
+    {
+      "id": "14793238",
+      "key": "PROJECT-997",
+      "fields": {
+        "updated": "2022-08-13T13:52:52.000+0000"
+      }
+    }
+  ]
+}
