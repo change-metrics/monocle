@@ -157,7 +157,7 @@ testGetStream = do
     (streams, clients) <- runStateT (traverse Macroscope.getCrawler (Macroscope.getCrawlers conf)) (Macroscope.Clients mempty mempty mempty)
     assertEqual' "Two streams created" 3 (length streams)
     assertEqual' "Only two gitlab clients created" 2 (length $ toList $ Macroscope.clientsGraph clients)
-    let expected = ["http://localhost-2443212458582611272 for crawler-for-org3", "http://localhost-2443213558094239483 for crawler-for-org1, crawler-for-org2"]
+    let expected = ["http://localhost--2790417469892086757 for crawler-for-org1, crawler-for-org2", "http://localhost--2790417469892086758 for crawler-for-org3"]
     assertEqual' "Stream group named" expected (map fst $ Macroscope.mkStreamsActions (catMaybes streams))
  where
   conf =

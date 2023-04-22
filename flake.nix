@@ -25,8 +25,7 @@
     nixpkgs.url =
       "github:NixOS/nixpkgs/ed014c27f4d0ca772fb57d3b8985b772b0503bbd";
     hspkgs.url =
-      "github:podenv/hspkgs/4a25962c7beede6cfcacc66000ef783e5c98e483";
-    # "path:/srv/github.com/podenv/hspkgs";
+      "github:podenv/hspkgs/fe0dabfd8acf96f1b5cff55766de6284517868cf";
   };
 
   outputs = { self, nixpkgs, hspkgs }:
