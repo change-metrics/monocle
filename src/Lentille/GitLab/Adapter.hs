@@ -61,7 +61,7 @@ defaultTimestamp :: Time
 defaultTimestamp = Time "1970-01-01T00:00:00+00:00"
 
 -- Generic utility fonction
-fromMTtoLT :: (From s LText) => Maybe s -> LText
+fromMTtoLT :: From s LText => Maybe s -> LText
 fromMTtoLT = maybe "" from
 
 timeToTimestamp :: Maybe String -> Time -> T.Timestamp

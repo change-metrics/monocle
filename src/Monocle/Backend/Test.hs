@@ -1231,7 +1231,7 @@ testTaskDataAdoption = withTenant doTest
 -- >>> let now = [utctime|2021-06-10 01:21:03|]
 
 -- | 'randomAuthor' returns a random element of the given list
-randomAuthor :: (MonadRandom m) => [a] -> m a
+randomAuthor :: MonadRandom m => [a] -> m a
 randomAuthor xs = do
   let n = length xs
   i <- getRandomR (0, n - 1)
