@@ -258,7 +258,7 @@ runEmptyQueryM ws = runQueryM ws query
 localSearchQuery :: MonoQuery :> es => (SearchQuery.Query -> SearchQuery.Query) -> Eff es a -> Eff es a
 localSearchQuery changeQuery = localStaticRep updateRep
  where
-  updateRep (MonoQuery env) = MonoQuery (env {searchQuery = changeQuery (env.searchQuery)})
+  updateRep (MonoQuery env) = MonoQuery (env {searchQuery = changeQuery env.searchQuery})
 
 localQueryTarget :: MonoQuery :> es => Monocle.Env.QueryTarget -> Eff es a -> Eff es a
 localQueryTarget localTarget = localStaticRep updateRep

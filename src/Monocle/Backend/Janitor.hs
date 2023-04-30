@@ -187,7 +187,7 @@ wipeCrawlerData crawlerName = do
   projects <- getProjectsCrawler
   logInfo "Discovered" ["projects" .= length projects]
   -- For each projects delete related changes and events
-  traverse_ deleteDocsByRepoName ((prefix <>) <$> projects)
+  traverse_ (deleteDocsByRepoName . (prefix <>)) projects
   -- Finally remove crawler metadata objects
   deleteCrawlerMDs
  where
@@ -243,7 +243,8 @@ removeTDCrawlerData crawlerName = do
   -- - the Streaming.map composition is more natural using `>>>` instead of `.`.
   removeChangeTaskDatas :: BH.IndexName -> Eff es Int
   removeChangeTaskDatas index =
-    withQuery changeTaskDataQuery $ -- filter on changes which have a task data from that crawler
+    withQuery changeTaskDataQuery $
+      -- filter on changes which have a task data from that crawler
       Q.scanSearchHit -- scan the Hit (get a Stream (Of EChange))
         & ( Streaming.map removeTDFromChange -- remove the task data from the EChange
               >>> Streaming.map mkEChangeBulkUpdate -- create bulk operation
@@ -270,7 +271,8 @@ removeTDCrawlerData crawlerName = do
 
   removeOrphanTaskDatas :: BH.IndexName -> Eff es Int
   removeOrphanTaskDatas index =
-    withQuery taskDataQuery $ -- filter on orphaned task data from that crawler
+    withQuery taskDataQuery $
+      -- filter on orphaned task data from that crawler
       Q.scanSearchId -- scan the DocId
         & ( Streaming.map (BulkDelete index) -- create bulk delete operation
               >>> I.bulkStream -- perform the bulk operation stream

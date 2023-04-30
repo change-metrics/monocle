@@ -8,6 +8,7 @@ import Data.Aeson.Types qualified as Aeson
 import Data.HashMap.Strict qualified as HM
 import Data.List qualified
 import Data.Map qualified as Map
+import Data.Ord qualified
 import Data.String.Interpolate (i, iii)
 import Data.Time (UTCTime (UTCTime), addDays, addGregorianMonthsClip, addGregorianYearsClip, secondsToNominalDiffTime)
 import Data.Time.Clock (secondsToDiffTime)
@@ -692,10 +693,12 @@ getAuthorsPeersStrength limit = withFlavor qf do
   authors_peers <- traverse (getAuthorPeers . trTerm) (tsrTR peers)
   pure $
     take (fromInteger $ toInteger limit) $
-      reverse $
-        sort $
-          filter (\psr -> psrAuthor psr /= psrPeer psr) $
-            concatMap transform authors_peers
+      sortBy
+        (comparing Data.Ord.Down)
+        ( concatMap
+            (filter (\psr -> psrAuthor psr /= psrPeer psr) . transform)
+            authors_peers
+        )
  where
   eventTypes :: NonEmpty EDocType
   eventTypes = fromList [EChangeReviewedEvent, EChangeCommentedEvent]
