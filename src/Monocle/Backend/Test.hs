@@ -1119,8 +1119,8 @@ testTaskDataAdd = withTenant doTest
     assertEqual'
       "Check adding matching taskData"
       [ ("44", Nothing)
-      , ("43", Just [I.toETaskData crawlerName td43])
       , ("42", Just [I.toETaskData crawlerName td42])
+      , ("43", Just [I.toETaskData crawlerName td43])
       ]
       ((\EChange {..} -> (echangeId, echangeTasksData)) <$> changes)
     -- Ensure associated ChangeEvents got the Task data attibutes
@@ -1231,7 +1231,7 @@ testTaskDataAdoption = withTenant doTest
 -- >>> let now = [utctime|2021-06-10 01:21:03|]
 
 -- | 'randomAuthor' returns a random element of the given list
-randomAuthor :: (MonadRandom m) => [a] -> m a
+randomAuthor :: MonadRandom m => [a] -> m a
 randomAuthor xs = do
   let n = length xs
   i <- getRandomR (0, n - 1)

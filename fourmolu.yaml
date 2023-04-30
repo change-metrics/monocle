@@ -7,3 +7,4 @@ diff-friendly-import-export: true
 respectful: true
 haddock-style: single-line
 newlines-between-decls: 1
+single-constraint-parens: never

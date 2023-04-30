@@ -131,8 +131,8 @@ search index body scrollRequest = do
 
 -- | A special purpose search implementation that uses the faster json-syntax
 searchHit ::
-  (MonadBH m) =>
-  (Aeson.ToJSON body) =>
+  MonadBH m =>
+  Aeson.ToJSON body =>
   BH.IndexName ->
   body ->
   m [Json.Value]

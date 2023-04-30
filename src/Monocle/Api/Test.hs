@@ -50,7 +50,7 @@ runAppEnv appEnv =
     . (fmap (fromRight (error "oops")) . E.runErrorNoCallStack)
     . runLoggerEffect
     . E.runReader appEnv
-    . runMonoConfigFromEnv (appEnv.config)
+    . runMonoConfigFromEnv appEnv.config
     . runElasticEffect (appEnv.bhEnv :: BH.BHEnv)
 
 -- | Run the api effects and provide a http client to the callback for api testing.
@@ -63,7 +63,7 @@ withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
    where
     -- testSetup :: TestEffects es => Eff es ()
     testSetup = do
-      conf <- Config.csConfig <$> liftIO (appEnv.config)
+      conf <- Config.csConfig <$> liftIO appEnv.config
       let indexes = Config.getWorkspaces conf
           cookieCfg = defaultCookieSettings
           jwtCfg = appEnv.aOIDC.localJWTSettings

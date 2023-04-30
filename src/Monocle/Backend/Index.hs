@@ -787,7 +787,7 @@ taskDataAdd crawlerName tds = do
     HashTable LText TaskDataDoc ->
     -- IO action with the list of orphan Task Data
     IO [TaskDataOrphanDoc]
-  updateChangesWithTD ht = catMaybes <$> traverse handleTD (toETaskData crawlerName <$> tds)
+  updateChangesWithTD ht = catMaybes <$> traverse (handleTD . toETaskData crawlerName) tds
    where
     handleTD ::
       -- The input Task Data we want to append or update

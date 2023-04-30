@@ -11,21 +11,6 @@ let
   haskellExtend = hpFinal: hpPrev: {
     monocle = hpPrev.callCabal2nix "monocle" self { };
 
-    # data-diverse is presently marked as broken because the test don't pass.
-    data-diverse = pkgs.haskell.lib.dontCheck
-      (pkgs.haskell.lib.overrideCabal hpPrev.data-diverse { broken = false; });
-
-    # proto3-wire test needs bytestring-0.11, though even with the patch the test does not pass.
-    proto3-wire = pkgs.haskell.lib.dontCheck hpPrev.proto3-wire;
-
-    # proto3-suite doesn't work with old swagger, so we disable the flag
-    # and the test doesn't pass in nix.
-    proto3-suite = pkgs.haskell.lib.dontCheck
-      (pkgs.haskell.lib.disableCabalFlag hpPrev.proto3-suite "swagger");
-
-    # criterion test sometime hangs
-    criterion = pkgs.haskell.lib.dontCheck hpPrev.criterion;
-
     # upgrade to bloodhound 0.20 needs some work
     bloodhound = pkgs.haskell.lib.overrideCabal hpPrev.bloodhound {
       version = "0.19.1.0";

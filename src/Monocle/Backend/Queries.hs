@@ -8,6 +8,7 @@ import Data.Aeson.Types qualified as Aeson
 import Data.HashMap.Strict qualified as HM
 import Data.List qualified
 import Data.Map qualified as Map
+import Data.Ord qualified
 import Data.String.Interpolate (i, iii)
 import Data.Time (UTCTime (UTCTime), addDays, addGregorianMonthsClip, addGregorianYearsClip, secondsToNominalDiffTime)
 import Data.Time.Clock (secondsToDiffTime)
@@ -184,7 +185,7 @@ deleteDocs = do
   void $ doDeleteByQueryBH query
 
 -- | Get aggregation results
-doAggregation :: QEffects es => (ToJSON body) => body -> Eff es BH.AggregationResults
+doAggregation :: QEffects es => ToJSON body => body -> Eff es BH.AggregationResults
 doAggregation body = toAggRes <$> doSearchBH body
 
 toAggRes :: BH.SearchResult Value -> BH.AggregationResults
@@ -203,7 +204,7 @@ queryAggValue search = getAggValue "agg1" <$> doAggregation search
   getAggValue key = getValue . parseAggregationResults key
 
 -- | Extract a single aggregation result from the map
-parseAggregationResults :: (FromJSON a) => Text -> BH.AggregationResults -> a
+parseAggregationResults :: FromJSON a => Text -> BH.AggregationResults -> a
 parseAggregationResults key res = getExn do
   value <- Map.lookup (from key) res `orDie` ("No value found for: " <> from key)
   Aeson.parseEither Aeson.parseJSON value
@@ -692,10 +693,12 @@ getAuthorsPeersStrength limit = withFlavor qf do
   authors_peers <- traverse (getAuthorPeers . trTerm) (tsrTR peers)
   pure $
     take (fromInteger $ toInteger limit) $
-      reverse $
-        sort $
-          filter (\psr -> psrAuthor psr /= psrPeer psr) $
-            concatMap transform authors_peers
+      sortBy
+        (comparing Data.Ord.Down)
+        ( concatMap
+            (filter (\psr -> psrAuthor psr /= psrPeer psr) . transform)
+            authors_peers
+        )
  where
   eventTypes :: NonEmpty EDocType
   eventTypes = fromList [EChangeReviewedEvent, EChangeCommentedEvent]

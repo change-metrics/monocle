@@ -262,7 +262,7 @@ import System.IO.Unsafe (unsafePerformIO)
 import Test.Tasty.HUnit
 import UnliftIO.Async (cancel, withAsync)
 import UnliftIO.MVar (modifyMVar, modifyMVar_)
-import Witch hiding (over)
+import Witch
 import Witch.Encoding
 
 import Monocle.Logging
