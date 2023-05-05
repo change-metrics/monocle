@@ -68,6 +68,20 @@ nix develop --command monocle-repl
 λ> withClient "http://localhost:8080" Nothing $ \client -> runMacroscope 19001 "etc/config.yaml" client
 ```
 
+### Start the CLI
+
+Display the CLI help:
+
+```
+nix run . -- --help
+```
+
+For instance running a crawler:
+
+```
+nix run . -- lentille github-projects --url https://api.github.com/graphql --token <a-valid-token> --organization change-metrics
+```
+
 ## nix-develop
 
 The nix develop shell provides development tooling such as:
