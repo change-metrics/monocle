@@ -12,6 +12,7 @@ import Lentille
 import Lentille.Gerrit qualified as G
 import Lentille.GitHub.Organization qualified as GH_ORG
 import Lentille.GitHub.PullRequests qualified as GH_PR
+import Lentille.GitHub.UserPullRequests qualified as GH_UPR
 import Lentille.GitHub.Watching qualified
 import Lentille.GraphQL (newGraphClient)
 import Lentille.Jira qualified as Jira
@@ -168,6 +169,7 @@ usageLentille =
         <> mkSubCommand "gerrit-changes" "Get changes list" gerritChangesUsage
         <> mkSubCommand "github-projects" "Get projects list" githubProjectsUsage
         <> mkSubCommand "github-changes" "Get changes list" githubChangesUsage
+        <> mkSubCommand "github-user-changes" "Get changes list" githubUserChangesUsage
         <> mkSubCommand "github-watching" "Get watched list" githubWatchingUsage
         <> mkSubCommand "jira-issues" "Get recent issues" jiraIssuesUsage
     )
@@ -219,6 +221,19 @@ usageLentille =
     io (url, secret, repo, since, limitM) = runStandaloneStream do
       client <- getGraphClient url secret
       dump limitM $ GH_PR.streamPullRequests client (const Nothing) (toSince since) repo
+
+  githubUserChangesUsage = io <$> parser
+   where
+    parser =
+      (,,,,)
+        <$> urlOption
+        <*> secretOption
+        <*> userOption
+        <*> sinceOption
+        <*> limitOption
+    io (url, secret, user, since, limitM) = runStandaloneStream do
+      client <- getGraphClient url secret
+      dump limitM $ GH_UPR.streamUserPullRequests client (const Nothing) (toSince since) user
 
   jiraIssuesUsage = io <$> parser
    where

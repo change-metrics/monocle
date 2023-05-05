@@ -256,8 +256,11 @@ library
                      , Lentille.GitHub.Issues
                      , Lentille.GitHub.RateLimit
                      , Lentille.GitHub.Organization
+                     , Lentille.GitHub.GraphQLFragments
                      , Lentille.GitHub.PullRequests
+                     , Lentille.GitHub.UserPullRequests
                      , Lentille.GitHub.User
+                     , Lentille.GitHub.Utils
                      , Lentille.GitHub.Watching
 
                      , Lentille.GitLab.MergeRequests
