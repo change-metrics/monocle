@@ -31,10 +31,14 @@ import Options.Applicative qualified as O
 import Options.Applicative.Help.Pretty (string)
 import Streaming.Prelude qualified as S
 
+import Data.String.Interpolate (i)
 import Database.Bloodhound qualified as BH
 import Effectful.Prometheus
+import Lentille.GitHub.Types (Changes)
 import ListT qualified
+import Monocle.Backend.Documents (EChange (..))
 import Monocle.Effects
+import Monocle.Protob.Change
 
 ---------------------------------------------------------------
 -- Unified CLI
@@ -179,61 +183,69 @@ usageLentille =
     parser = (,) <$> urlOption <*> changeOption
     io (url, change) = runStandaloneStream do
       env <- getGerritEnv url
-      dump Nothing $ G.streamChange env [G.ChangeId $ show (change :: Int)]
+      dumpJSON Nothing $ G.streamChange env [G.ChangeId $ show (change :: Int)]
 
   gerritProjectsUsage = io <$> parser
    where
     parser = (,) <$> urlOption <*> queryOption
     io (url, query) = runStandaloneStream do
       env <- getGerritEnv url
-      dump Nothing $ G.streamProject env $ G.Regexp query
+      dumpJSON Nothing $ G.streamProject env $ G.Regexp query
 
   gerritChangesUsage = io <$> parser
    where
     parser = (,,,) <$> urlOption <*> projectOption <*> sinceOption <*> limitOption
     io (url, project, since, limit) = runStandaloneStream do
       env <- getGerritEnv url
-      dump limit $ G.streamChange env [G.Project project, G.After (toSince since)]
+      dumpJSON limit $ G.streamChange env [G.Project project, G.After (toSince since)]
 
   githubProjectsUsage = io <$> parser
    where
     parser = (,,) <$> urlOption <*> secretOption <*> orgOption
     io (url, secret, org) = runStandaloneStream do
       client <- getGraphClient url secret
-      dump Nothing $ GH_ORG.streamOrganizationProjects client org
+      dumpJSON Nothing $ GH_ORG.streamOrganizationProjects client org
 
   githubWatchingUsage = io <$> parser
    where
     parser = (,,,) <$> urlOption <*> secretOption <*> userOption <*> limitOption
     io (url, secret, user, limitM) = runStandaloneStream do
       client <- getGraphClient url secret
-      dump limitM $ Lentille.GitHub.Watching.streamWatchedProjects client user
+      dumpJSON limitM $ Lentille.GitHub.Watching.streamWatchedProjects client user
 
   githubChangesUsage = io <$> parser
    where
     parser =
-      (,,,,)
+      (,,,,,)
         <$> urlOption
         <*> secretOption
         <*> projectOption
         <*> sinceOption
         <*> limitOption
-    io (url, secret, repo, since, limitM) = runStandaloneStream do
+        <*> humanOption
+    io (url, secret, repo, since, limitM, humanF) = runStandaloneStream do
       client <- getGraphClient url secret
-      dump limitM $ GH_PR.streamPullRequests client (const Nothing) (toSince since) repo
+      let stream = GH_PR.streamPullRequests client (const Nothing) (toSince since) repo
+      if humanF
+        then dumpChanges formatChange limitM stream
+        else dumpJSON limitM stream
 
   githubUserChangesUsage = io <$> parser
    where
     parser =
-      (,,,,)
+      (,,,,,)
         <$> urlOption
         <*> secretOption
         <*> userOption
         <*> sinceOption
         <*> limitOption
-    io (url, secret, user, since, limitM) = runStandaloneStream do
+        <*> humanOption
+    io (url, secret, user, since, limitM, humanF) = runStandaloneStream do
       client <- getGraphClient url secret
-      dump limitM $ GH_UPR.streamUserPullRequests client (const Nothing) (toSince since) user
+      let stream = GH_UPR.streamUserPullRequests client (const Nothing) (toSince since) user
+      if humanF
+        then dumpChanges formatChange limitM stream
+        else dumpJSON limitM stream
 
   jiraIssuesUsage = io <$> parser
    where
@@ -261,11 +273,15 @@ usageLentille =
   projectOption = strOption (long "project" <> O.help "Project name")
   sinceOption = strOption (long "since" <> O.help "Since date")
   limitOption = optional $ option auto (long "limit" <> O.help "Limit count")
+  humanOption = Options.Applicative.flag False True (long "human" <> O.help "Human readable display")
+
+  formatChange :: (Change, [ChangeEvent]) -> String
+  formatChange (c, _) = let (EChange {..}) = from c in [i|U:#{echangeUpdatedAt}\tC:#{echangeCreatedAt}\tT:#{echangeTitle}|]
 
   runStandaloneStream = runEff . runErrorIO @LentilleError . runConcurrent . runFailIO . runLoggerEffect . runTime . runRetry . runHttpEffect . G.runGerrit . runPrometheus
 
-dump :: (IOE :> es, ToJSON a) => Maybe Int -> Stream (Of a) (Eff es) () -> Eff es ()
-dump limitM stream = do
+dumpJSON :: (IOE :> es, ToJSON a) => Maybe Int -> Stream (Of a) (Eff es) () -> Eff es ()
+dumpJSON limitM stream = do
   xsE <- tryAny $ S.toList_ $ brk stream
   case xsE of
     Right xs -> liftIO . putBSLn . from . encodePrettyWithSpace 2 $ xs
@@ -273,6 +289,27 @@ dump limitM stream = do
   liftIO . putLBSLn =<< exportMetricsAsText
  where
   brk = maybe id S.take limitM
+
+dumpChanges ::
+  IOE :> es =>
+  (Changes -> String) ->
+  Maybe Int ->
+  Stream (Of (Either LentilleError Changes)) (Eff es) () ->
+  Eff es ()
+dumpChanges format limitM stream = do
+  xsE <- tryAny $ S.toList_ $ brk stream
+  case xsE of
+    Right xs -> liftIO $ showChanges xs
+    Left err -> liftIO . putBSLn $ "Couldn't evalue the stream due to " <> show err
+ where
+  brk = maybe id S.take limitM
+  showChanges :: [Either LentilleError Changes] -> IO ()
+  showChanges =
+    mapM_
+      ( \case
+          Right change -> putStrLn $ format change
+          Left err -> putStrLn $ "LentilleError : " <> show err
+      )
 
 dumpListT :: (IOE :> es, ToJSON a) => ListT (Eff es) a -> Eff es ()
 dumpListT listT = do
