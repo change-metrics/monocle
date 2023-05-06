@@ -41,7 +41,7 @@ nix develop --command elasticsearch-start
 The API serves the web UI and the Monocle API. The web App must be built first by running:
 
 ```ShellSession
-cd web && npm install && npm build && cd -
+cd web && npm install && npm run build && cd -
 ```
 
 Then, ensure you have set the Monocle config file `config.yaml` (see [README.md](README.md#create-the-config-yaml-file)) and run:
@@ -66,6 +66,20 @@ nix develop --command monocle-repl
 λ> import Macroscope.Main
 λ> import Monocle.Client (withClient)
 λ> withClient "http://localhost:8080" Nothing $ \client -> runMacroscope 19001 "etc/config.yaml" client
+```
+
+### Start the CLI
+
+Display the CLI help:
+
+```
+nix run . -- --help
+```
+
+For instance running a crawler:
+
+```
+nix run . -- lentille github-projects --url https://api.github.com/graphql --token <a-valid-token> --organization change-metrics
 ```
 
 ## nix-develop

@@ -3,10 +3,9 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 {-# OPTIONS_GHC -Wno-partial-fields #-}
 
-module Lentille.GitHub.PullRequests where
+module Lentille.GitHub.UserPullRequests where
 
 import Data.Morpheus.Client
-import Data.Text qualified (takeWhile, takeWhileEnd)
 import Lentille
 import Lentille.GitHub.GraphQLFragments (fragmentPRData)
 import Lentille.GitHub.Types
@@ -16,17 +15,17 @@ import Monocle.Prelude hiding (id, state)
 import Monocle.Protob.Change
 import Streaming.Prelude qualified as S (break)
 
--- https://docs.github.com/en/graphql/reference/queries#repository
+-- https://docs.github.com/en/graphql/reference/queries#user
 declareLocalTypesInline
   ghSchemaLocation
   ( [raw|
-    query GetProjectPullRequests ($org: String!, $repo: String!, $depth: Int, $cursor: String) {
+    query GetUserPullRequests ($login: String!, $depth: Int, $cursor: String) {
       rateLimit {
         used
         remaining
         resetAt
       }
-      repository(owner: $org, name: $repo) {
+      user(login: $login) {
         pullRequests (first: $depth, after: $cursor, orderBy: { field: UPDATED_AT, direction: DESC }) {
           totalCount
           pageInfo {hasNextPage endCursor}
@@ -43,7 +42,7 @@ declareLocalTypesInline
       <> fragmentPRData
   )
 
-streamPullRequests ::
+streamUserPullRequests ::
   GraphEffects es =>
   GraphClient ->
   -- A callback to get Ident ID from an alias
@@ -51,12 +50,10 @@ streamPullRequests ::
   UTCTime ->
   Text ->
   LentilleStream es Changes
-streamPullRequests client cb untilDate repoFullname =
+streamUserPullRequests client cb untilDate userLogin =
   breakOnDate $ streamFetch client mkArgs optParams transformResponse'
  where
-  org = Data.Text.takeWhile (/= '/') repoFullname
-  repo = Data.Text.takeWhileEnd (/= '/') repoFullname
-  mkArgs = GetProjectPullRequestsArgs org repo
+  mkArgs = GetUserPullRequestsArgs userLogin
   transformResponse' = transformResponse (getHost client) cb
   -- This transform the stream by adding a limit.
   -- We don't care about the rest so we replace it with ()
@@ -68,15 +65,15 @@ transformResponse ::
   -- A callback to get Ident ID from an alias
   (Text -> Maybe Text) ->
   -- The response payload
-  GetProjectPullRequests ->
+  GetUserPullRequests ->
   (PageInfo, Maybe RateLimit, [Text], [Changes])
 transformResponse host identCB result = do
   let process resp rateLimit = case resp of
         ( Just
-            ( GetProjectPullRequestsRepository
-                ( GetProjectPullRequestsRepositoryPullRequests
+            ( GetUserPullRequestsUser
+                ( GetUserPullRequestsUserPullRequests
                     totalCount'
-                    (GetProjectPullRequestsRepositoryPullRequestsPageInfo hasNextPage endCursor)
+                    (GetUserPullRequestsUserPullRequestsPageInfo hasNextPage endCursor)
                     (Just projectPRs)
                   )
               )
@@ -86,46 +83,46 @@ transformResponse host identCB result = do
         _anyOtherResponse ->
           ( PageInfo False Nothing Nothing
           , Nothing
-          , ["Unknown GetProjectPullRequests response: " <> show result]
+          , ["Unknown GetUserPullRequests response: " <> show result]
           , []
           )
   case result of
-    GetProjectPullRequests
-      (Just (GetProjectPullRequestsRateLimit used remaining (DateTime resetAtText)))
+    GetUserPullRequests
+      (Just (GetUserPullRequestsRateLimit used remaining (DateTime resetAtText)))
       resp -> process resp (Just $ extractRateLimit used remaining resetAtText)
-    GetProjectPullRequests Nothing resp -> process resp Nothing
+    GetUserPullRequests Nothing resp -> process resp Nothing
  where
   getIdent :: Text -> Ident
   getIdent = toIdent host identCB
   getGhostIdent = ghostIdent host
 
-  repoOwnerName :: GetProjectPullRequestsRepositoryPullRequestsNodesRepository -> (Text, Text)
+  repoOwnerName :: GetUserPullRequestsUserPullRequestsNodesRepository -> (Text, Text)
   repoOwnerName
-    ( GetProjectPullRequestsRepositoryPullRequestsNodesRepository
-        (GetProjectPullRequestsRepositoryPullRequestsNodesRepositoryOwner _ login)
+    ( GetUserPullRequestsUserPullRequestsNodesRepository
+        (GetUserPullRequestsUserPullRequestsNodesRepositoryOwner _ login)
         name
       ) = (login, name)
 
-  repoFullname :: GetProjectPullRequestsRepositoryPullRequestsNodesRepository -> Text
+  repoFullname :: GetUserPullRequestsUserPullRequestsNodesRepository -> Text
   repoFullname r = let (owner, name) = repoOwnerName r in owner <> "/" <> name
 
-  commitCount :: GetProjectPullRequestsRepositoryPullRequestsNodesCommits -> Int
-  commitCount (GetProjectPullRequestsRepositoryPullRequestsNodesCommits count _) = count
+  commitCount :: GetUserPullRequestsUserPullRequestsNodesCommits -> Int
+  commitCount (GetUserPullRequestsUserPullRequestsNodesCommits count _) = count
 
-  toChangedFiles :: GetProjectPullRequestsRepositoryPullRequestsNodesFiles -> [ChangedFile]
-  toChangedFiles (GetProjectPullRequestsRepositoryPullRequestsNodesFiles nodes) =
+  toChangedFiles :: GetUserPullRequestsUserPullRequestsNodesFiles -> [ChangedFile]
+  toChangedFiles (GetUserPullRequestsUserPullRequestsNodesFiles nodes) =
     toChangedFile <$> catMaybes (fromMaybe [] nodes)
    where
-    toChangedFile :: GetProjectPullRequestsRepositoryPullRequestsNodesFilesNodes -> ChangedFile
-    toChangedFile GetProjectPullRequestsRepositoryPullRequestsNodesFilesNodes {..} =
+    toChangedFile :: GetUserPullRequestsUserPullRequestsNodesFilesNodes -> ChangedFile
+    toChangedFile GetUserPullRequestsUserPullRequestsNodesFilesNodes {..} =
       ChangedFile (from additions) (from deletions) (from path)
 
-  toChangeCommits :: GetProjectPullRequestsRepositoryPullRequestsNodesCommits -> [Commit]
-  toChangeCommits (GetProjectPullRequestsRepositoryPullRequestsNodesCommits _ nodes) =
+  toChangeCommits :: GetUserPullRequestsUserPullRequestsNodesCommits -> [Commit]
+  toChangeCommits (GetUserPullRequestsUserPullRequestsNodesCommits _ nodes) =
     toCommit . commit <$> catMaybes (fromMaybe [] nodes)
    where
-    toCommit :: GetProjectPullRequestsRepositoryPullRequestsNodesCommitsNodesCommit -> Commit
-    toCommit GetProjectPullRequestsRepositoryPullRequestsNodesCommitsNodesCommit {..} =
+    toCommit :: GetUserPullRequestsUserPullRequestsNodesCommitsNodesCommit -> Commit
+    toCommit GetUserPullRequestsUserPullRequestsNodesCommitsNodesCommit {..} =
       let commitSha = from $ getSHA oid
           commitAuthor = getAuthor <$> author
           commitCommitter = getCommitter <$> committer
@@ -137,72 +134,72 @@ transformResponse host identCB result = do
        in Commit {..}
      where
       getAuthor
-        ( GetProjectPullRequestsRepositoryPullRequestsNodesCommitsNodesCommitAuthor
-            (Just (GetProjectPullRequestsRepositoryPullRequestsNodesCommitsNodesCommitAuthorUser login))
+        ( GetUserPullRequestsUserPullRequestsNodesCommitsNodesCommitAuthor
+            (Just (GetUserPullRequestsUserPullRequestsNodesCommitsNodesCommitAuthorUser login))
           ) = getIdent login
       getAuthor _ = ghostIdent host
       getCommitter
-        ( GetProjectPullRequestsRepositoryPullRequestsNodesCommitsNodesCommitCommitter
-            (Just (GetProjectPullRequestsRepositoryPullRequestsNodesCommitsNodesCommitCommitterUser login))
+        ( GetUserPullRequestsUserPullRequestsNodesCommitsNodesCommitCommitter
+            (Just (GetUserPullRequestsUserPullRequestsNodesCommitsNodesCommitCommitterUser login))
           ) = getIdent login
       getCommitter _ = ghostIdent host
 
-  getPRAuthor :: GetProjectPullRequestsRepositoryPullRequestsNodesAuthor -> Text
-  getPRAuthor (GetProjectPullRequestsRepositoryPullRequestsNodesAuthor _ login) = login
+  getPRAuthor :: GetUserPullRequestsUserPullRequestsNodesAuthor -> Text
+  getPRAuthor (GetUserPullRequestsUserPullRequestsNodesAuthor _ login) = login
 
-  getPRMergedBy :: GetProjectPullRequestsRepositoryPullRequestsNodesMergedBy -> Text
-  getPRMergedBy (GetProjectPullRequestsRepositoryPullRequestsNodesMergedBy _ login) = login
+  getPRMergedBy :: GetUserPullRequestsUserPullRequestsNodesMergedBy -> Text
+  getPRMergedBy (GetUserPullRequestsUserPullRequestsNodesMergedBy _ login) = login
 
-  toLabels :: GetProjectPullRequestsRepositoryPullRequestsNodesLabels -> [Text]
-  toLabels (GetProjectPullRequestsRepositoryPullRequestsNodesLabels nodes) =
+  toLabels :: GetUserPullRequestsUserPullRequestsNodesLabels -> [Text]
+  toLabels (GetUserPullRequestsUserPullRequestsNodesLabels nodes) =
     toLabel <$> catMaybes (fromMaybe [] nodes)
    where
-    toLabel :: GetProjectPullRequestsRepositoryPullRequestsNodesLabelsNodes -> Text
-    toLabel (GetProjectPullRequestsRepositoryPullRequestsNodesLabelsNodes name) = name
+    toLabel :: GetUserPullRequestsUserPullRequestsNodesLabelsNodes -> Text
+    toLabel (GetUserPullRequestsUserPullRequestsNodesLabelsNodes name) = name
 
-  toAssignees :: GetProjectPullRequestsRepositoryPullRequestsNodesAssignees -> [Ident]
-  toAssignees (GetProjectPullRequestsRepositoryPullRequestsNodesAssignees nodes) =
+  toAssignees :: GetUserPullRequestsUserPullRequestsNodesAssignees -> [Ident]
+  toAssignees (GetUserPullRequestsUserPullRequestsNodesAssignees nodes) =
     getIdent . toAssignee <$> catMaybes (fromMaybe [] nodes)
    where
-    toAssignee :: GetProjectPullRequestsRepositoryPullRequestsNodesAssigneesNodes -> Text
-    toAssignee (GetProjectPullRequestsRepositoryPullRequestsNodesAssigneesNodes login) = login
+    toAssignee :: GetUserPullRequestsUserPullRequestsNodesAssigneesNodes -> Text
+    toAssignee (GetUserPullRequestsUserPullRequestsNodesAssigneesNodes login) = login
 
-  getEventsFromTimeline :: Change -> GetProjectPullRequestsRepositoryPullRequestsNodesTimelineItems -> [ChangeEvent]
-  getEventsFromTimeline change (GetProjectPullRequestsRepositoryPullRequestsNodesTimelineItems nodes) =
+  getEventsFromTimeline :: Change -> GetUserPullRequestsUserPullRequestsNodesTimelineItems -> [ChangeEvent]
+  getEventsFromTimeline change (GetUserPullRequestsUserPullRequestsNodesTimelineItems nodes) =
     mapMaybe toEventM (catMaybes (fromMaybe [] nodes))
    where
-    toEventM :: GetProjectPullRequestsRepositoryPullRequestsNodesTimelineItemsNodes -> Maybe ChangeEvent
+    toEventM :: GetUserPullRequestsUserPullRequestsNodesTimelineItemsNodes -> Maybe ChangeEvent
     toEventM = \case
-      GetProjectPullRequestsRepositoryPullRequestsNodesTimelineItemsNodesVariantClosedEvent
-        ( GetProjectPullRequestsRepositoryPullRequestsNodesTimelineItemsNodesClosedEvent
+      GetUserPullRequestsUserPullRequestsNodesTimelineItemsNodesVariantClosedEvent
+        ( GetUserPullRequestsUserPullRequestsNodesTimelineItemsNodesClosedEvent
             _
             eId
             createdAt
-            (Just (GetProjectPullRequestsRepositoryPullRequestsNodesTimelineItemsNodesActor _ actor))
+            (Just (GetUserPullRequestsUserPullRequestsNodesTimelineItemsNodesActor _ actor))
           ) -> toMaybeMergedOrAbandonedEvent change eId getIdent actor createdAt
-      GetProjectPullRequestsRepositoryPullRequestsNodesTimelineItemsNodesVariantPullRequestReview
-        ( GetProjectPullRequestsRepositoryPullRequestsNodesTimelineItemsNodesPullRequestReview
+      GetUserPullRequestsUserPullRequestsNodesTimelineItemsNodesVariantPullRequestReview
+        ( GetUserPullRequestsUserPullRequestsNodesTimelineItemsNodesPullRequestReview
             _
             eId
             createdAt
             reviewState
-            (Just (GetProjectPullRequestsRepositoryPullRequestsNodesTimelineItemsNodesAuthor _ actor))
+            (Just (GetUserPullRequestsUserPullRequestsNodesTimelineItemsNodesAuthor _ actor))
           ) -> toMaybeReviewEvent change eId getIdent actor createdAt reviewState
-      GetProjectPullRequestsRepositoryPullRequestsNodesTimelineItemsNodesVariantHeadRefForcePushedEvent
-        ( GetProjectPullRequestsRepositoryPullRequestsNodesTimelineItemsNodesHeadRefForcePushedEvent
+      GetUserPullRequestsUserPullRequestsNodesTimelineItemsNodesVariantHeadRefForcePushedEvent
+        ( GetUserPullRequestsUserPullRequestsNodesTimelineItemsNodesHeadRefForcePushedEvent
             _
             eId
             createdAt
-            (Just (GetProjectPullRequestsRepositoryPullRequestsNodesTimelineItemsNodesFpactor _ actor))
+            (Just (GetUserPullRequestsUserPullRequestsNodesTimelineItemsNodesFpactor _ actor))
           ) -> toMaybeForcePushedEvent change eId getIdent actor createdAt
       _ -> Nothing
 
-  getCommitEvents :: Change -> GetProjectPullRequestsRepositoryPullRequestsNodesCommits -> [ChangeEvent]
-  getCommitEvents change (GetProjectPullRequestsRepositoryPullRequestsNodesCommits _ nodes) =
+  getCommitEvents :: Change -> GetUserPullRequestsUserPullRequestsNodesCommits -> [ChangeEvent]
+  getCommitEvents change (GetUserPullRequestsUserPullRequestsNodesCommits _ nodes) =
     toEvent <$> catMaybes (fromMaybe [] nodes)
    where
-    toEvent :: GetProjectPullRequestsRepositoryPullRequestsNodesCommitsNodes -> ChangeEvent
-    toEvent (GetProjectPullRequestsRepositoryPullRequestsNodesCommitsNodes commit) =
+    toEvent :: GetUserPullRequestsUserPullRequestsNodesCommitsNodes -> ChangeEvent
+    toEvent (GetUserPullRequestsUserPullRequestsNodesCommitsNodes commit) =
       ( baseEvent
           (ChangeEventTypeChangeCommitPushed ChangeCommitPushedEvent)
           (from . getSHA $ oid commit)
@@ -212,29 +209,29 @@ transformResponse host identCB result = do
         , changeEventCreatedAt = maybe (changeCreatedAt change) (Just . from) (pushedDate commit)
         }
      where
-      getCommitter :: Maybe GetProjectPullRequestsRepositoryPullRequestsNodesCommitsNodesCommitCommitter -> Ident
+      getCommitter :: Maybe GetUserPullRequestsUserPullRequestsNodesCommitsNodesCommitCommitter -> Ident
       getCommitter
         ( Just
-            ( GetProjectPullRequestsRepositoryPullRequestsNodesCommitsNodesCommitCommitter
-                (Just (GetProjectPullRequestsRepositoryPullRequestsNodesCommitsNodesCommitCommitterUser login))
+            ( GetUserPullRequestsUserPullRequestsNodesCommitsNodesCommitCommitter
+                (Just (GetUserPullRequestsUserPullRequestsNodesCommitsNodesCommitCommitterUser login))
               )
           ) = getIdent login
       getCommitter _ = getGhostIdent
 
-  getCommentEvents :: Change -> GetProjectPullRequestsRepositoryPullRequestsNodesComments -> [ChangeEvent]
-  getCommentEvents change (GetProjectPullRequestsRepositoryPullRequestsNodesComments nodes) =
+  getCommentEvents :: Change -> GetUserPullRequestsUserPullRequestsNodesComments -> [ChangeEvent]
+  getCommentEvents change (GetUserPullRequestsUserPullRequestsNodesComments nodes) =
     mapMaybe toEvent (catMaybes (fromMaybe [] nodes))
    where
-    toEvent :: GetProjectPullRequestsRepositoryPullRequestsNodesCommentsNodes -> Maybe ChangeEvent
+    toEvent :: GetUserPullRequestsUserPullRequestsNodesCommentsNodes -> Maybe ChangeEvent
     toEvent
-      ( GetProjectPullRequestsRepositoryPullRequestsNodesCommentsNodes
+      ( GetUserPullRequestsUserPullRequestsNodesCommentsNodes
           eId
           createdAt
-          (Just (GetProjectPullRequestsRepositoryPullRequestsNodesCommentsNodesAuthor _ actor))
+          (Just (GetUserPullRequestsUserPullRequestsNodesCommentsNodesAuthor _ actor))
         ) = toMaybeCommentEvent change eId getIdent actor createdAt
     toEvent _ = Nothing
-  transPR :: GetProjectPullRequestsRepositoryPullRequestsNodes -> Maybe Changes
-  transPR GetProjectPullRequestsRepositoryPullRequestsNodes {..} =
+  transPR :: GetUserPullRequestsUserPullRequestsNodes -> Maybe Changes
+  transPR GetUserPullRequestsUserPullRequestsNodes {..} =
     let change =
           Change
             { changeId = from . sanitizeID $ unpackID id

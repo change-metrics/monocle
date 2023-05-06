@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - [doc] Add a section about metric API usage.
+- [crawler] Add a Github user Pull Requests crawler.
+- [CLI] Add a CLI command to stream user Pull Requests.
 
 ### Changed
 
