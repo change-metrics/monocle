@@ -84,6 +84,7 @@ in rec {
       discovery.type: single-node
       network.host: 0.0.0.0
       cluster.routing.allocation.disk.threshold_enabled: false
+      ingest.geoip.downloader.enabled: false
     '';
   };
   elasticsearchStart = pkgs.writeScriptBin "elasticsearch-start" ''
