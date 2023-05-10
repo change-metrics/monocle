@@ -143,7 +143,7 @@ testRunCrawlers = do
 
   withClient "http://localhost" Nothing $ \client ->
     runLentilleM client $
-      Macroscope.runCrawlers' 10_000 25_000 70_000 isReload streams
+      Macroscope.runCrawlers' 10_000 70_000 25_000 isReload streams
 
   got <- reverse <$> readTVarIO logs
   assertEqual "Stream ran" expected got

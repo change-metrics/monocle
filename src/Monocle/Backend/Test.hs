@@ -361,7 +361,7 @@ testEnsureConfig = withTenantConfig tenantConfig $ localQueryTarget target $ run
   assertEqual' "Check expected Config Index" I.configVersion currentVersion
  where
   tenantConfig = Config.mkTenant "test-index"
-  target = QueryConfig $ Config.Config Nothing Nothing [tenantConfig]
+  target = QueryConfig $ Config.Config Nothing Nothing Nothing [tenantConfig]
 
 testUpgradeConfigV3 :: Assertion
 testUpgradeConfigV3 = do

@@ -32,7 +32,7 @@ import Effectful.Servant qualified
 mkAppEnv :: Config.Index -> IO AppEnv
 mkAppEnv workspace = do
   bhEnv <- mkEnv'
-  let config' = Config.Config Nothing Nothing [workspace]
+  let config' = Config.Config Nothing Nothing Nothing [workspace]
       ws = Config.mkWorkspaceStatus config'
   wsRef <- newMVar $ fmap (const Config.Ready) ws
   jwk <- generateKey

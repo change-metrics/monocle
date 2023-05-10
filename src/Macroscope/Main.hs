@@ -118,6 +118,7 @@ runMacroscope' = do
   loop clients = do
     -- Load the config
     conf <- Config.csConfig <$> getReloadConfig
+    let loopDelay = 1_000_000 * fromIntegral (fromMaybe 600 ((.loop_delay_sec) =<< conf.crawlers))
 
     -- Flatten each crawler from all workspaces
     let crawlerInfos = getCrawlers $ Config.getWorkspaces conf
@@ -126,7 +127,7 @@ runMacroscope' = do
     (streams, newClients) <- runStateT (traverse getCrawler crawlerInfos) clients
 
     -- Run the steams group
-    runCrawlers (Config.csReloaded <$> getReloadConfig) (mkStreamsActions $ catMaybes streams)
+    runCrawlers loopDelay (Config.csReloaded <$> getReloadConfig) (mkStreamsActions $ catMaybes streams)
 
     -- Loop again
     loop newClients
@@ -145,24 +146,24 @@ mkStreamsActions = map mkStreamGroup . groupByClient
   crawlersName = T.intercalate ", " . map (crawlerName . infoCrawler . fst) . toList
 
 -- | Continuously runs the stream groups in parallel until the config is reloaded
-runCrawlers :: (IOE :> es, MacroEffects es) => Eff es Bool -> [StreamGroup es] -> Eff es ()
-runCrawlers = runCrawlers' 500_000 600_000_000 30_000_000
+runCrawlers :: (IOE :> es, MacroEffects es) => Int -> Eff es Bool -> [StreamGroup es] -> Eff es ()
+runCrawlers = runCrawlers' 500_000 30_000_000
 
 -- | The runCrawler implementation with custom delay for testing purpose
 runCrawlers' ::
   (IOE :> es, MacroEffects es) =>
   -- | How long to wait before starting further crawler
   Int ->
-  -- | How long to wait before restarting a crawler
-  Int ->
   -- | How long to wait before checking if the config changed
+  Int ->
+  -- | How long to wait before restarting a crawler
   Int ->
   -- | The action to check if the config changed
   Eff es Bool ->
   -- | The list of stream group
   [StreamGroup es] ->
   Eff es ()
-runCrawlers' startDelay loopDelay watchDelay isReloaded groups = do
+runCrawlers' startDelay watchDelay loopDelay isReloaded groups = do
   logInfo "Starting crawlers" ["crawlers" .= map fst groups]
   -- Create a 'runGroup' thread for each stream group
   let groupAsyncs = E.mapConcurrently runGroup (zip [0 ..] groups)
