@@ -10,6 +10,7 @@
 , Provider = ./Provider/package.dhall
 , Project = ./Project/package.dhall
 , Crawler = ./Crawler/package.dhall
+, Crawlers = ./Crawlers/package.dhall
 , SearchAlias = ./SearchAlias/package.dhall
 , Workspace = ./Workspace/package.dhall
 , Ident = ./Ident/package.dhall

@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 - [crawler] Add a Github user Pull Requests crawler.
 - [CLI] Add a CLI command to stream user Pull Requests.
 - [CLI] Add a human readable flag to github-changes and github-user-changes commands.
+- [config] Add an optional `crawlers` section to set global crawlers setting.
+- [config] Add a global crawler setting to set the loop delay in second (`loop_delay_sec`).
 
 ### Changed
 

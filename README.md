@@ -443,6 +443,18 @@ about:
       url: https://github.com/change-metrics/demo-node-config
 ```
 
+#### Crawlers
+
+This section configures global crawlers setting.
+
+Here is an example:
+
+```YAML
+crawlers:
+  # Wait one hour between iteration
+  loop_delay_sec: 3600
+```
+
 #### Authentication
 
 Monocle supports user authentication via an OIDC (OpenID Connect) provider.

@@ -20,6 +20,7 @@ module Monocle.Config (
   Project (..),
   Ident (..),
   SearchAlias (..),
+  Crawlers (..),
   Crawler (..),
   Provider (..),
   Gitlab (..),
@@ -105,6 +106,7 @@ Dhall.TH.makeHaskellTypes
         , main "Ident"
         , main "SearchAlias"
         , main "Crawler"
+        , main "Crawlers"
         , main "Auth"
         , main "Config"
         , main "About"
@@ -135,63 +137,51 @@ configurationSchema :: Dhall.Core.Expr Dhall.Src.Src Void
 configurationSchema = $(Dhall.TH.staticDhallExpression "./schemas/monocle/config/Config/Type.dhall")
 
 deriving instance Eq OIDC
-
 deriving instance Show OIDC
 
 deriving instance Eq GithubAuth
-
 deriving instance Show GithubAuth
 
 deriving instance Eq Auth
-
 deriving instance Show Auth
 
 deriving instance Eq AuthProvider
-
 deriving instance Show AuthProvider
 
 deriving instance Eq Gerrit
-
 deriving instance Show Gerrit
 
 deriving instance Eq Github
-
 deriving instance Show Github
 
 deriving instance Eq GithubApplication
-
 deriving instance Show GithubApplication
 
 deriving instance Eq Gitlab
-
 deriving instance Show Gitlab
 
 deriving instance Eq Bugzilla
-
 deriving instance Show Bugzilla
 
 deriving instance Eq Project
-
 deriving instance Show Project
 
 deriving instance Eq Provider
-
 deriving instance Show Provider
 
-deriving instance Eq Crawler
+deriving instance Eq Crawlers
+deriving instance Show Crawlers
 
+deriving instance Eq Crawler
 deriving instance Show Crawler
 
 deriving instance Eq Ident
-
 deriving instance Show Ident
 
 deriving instance Eq SearchAlias
-
 deriving instance Show SearchAlias
 
 deriving instance Eq Index
-
 deriving instance Show Index
 
 -- End - Loading of Types from the dhall-monocle
@@ -380,7 +370,7 @@ lookupProject index projectName = find isProject (fromMaybe [] (projects index))
 
 -- | Find a 'Crawler' in an 'Index'
 lookupCrawler :: Index -> Text -> Maybe Crawler
-lookupCrawler index crawlerName = find isProject (crawlers index)
+lookupCrawler index crawlerName = find isProject index.crawlers
  where
   isProject Crawler {..} = name == crawlerName
 

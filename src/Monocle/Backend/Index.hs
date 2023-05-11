@@ -257,7 +257,7 @@ upgradeConfigV1 = do
           Config.GithubProvider _ -> True
           _otherwise -> False
      in Config.getCrawlerName
-          <$> filter isGHProvider (Config.crawlers ws)
+          <$> filter isGHProvider ws.crawlers
   getProjectCrawlerMDByName :: Text -> Eff es [ECrawlerMetadata]
   getProjectCrawlerMDByName crawlerName = do
     let entity = CrawlerPB.EntityTypeENTITY_TYPE_PROJECT
@@ -426,7 +426,7 @@ ensureIndexSetup = do
 ensureIndexCrawlerMetadata :: (E.Fail :> es, LoggerEffect :> es, ElasticEffect :> es, MonoQuery :> es) => Eff es ()
 ensureIndexCrawlerMetadata = do
   QueryWorkspace config <- getQueryTarget
-  traverse_ initCrawlerMetadata $ Config.crawlers config
+  traverse_ initCrawlerMetadata config.crawlers
 
 withRefresh :: HasCallStack => MonoQuery :> es => IndexEffects es => Eff es BH.Reply -> Eff es ()
 withRefresh action = do

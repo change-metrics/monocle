@@ -176,8 +176,9 @@ monocleApiTests =
     reloadedRef <- newTVarIO False
     let appEnv =
           mkAppEnvWithSideEffect
-            (Config.Config Nothing Nothing [makeFakeWS wsName1 ["opendev/neutron"]])
+            (Config.Config Nothing Nothing Nothing [makeFakeWS wsName1 ["opendev/neutron"]])
             ( Config.Config
+                Nothing
                 Nothing
                 Nothing
                 [ makeFakeWS wsName1 ["opendev/neutron", "opendev/nova"]
