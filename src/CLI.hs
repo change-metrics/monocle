@@ -32,7 +32,6 @@ import Options.Applicative.Help.Pretty (string)
 import Streaming.Prelude qualified as S
 
 import Data.String.Interpolate (i)
-import Database.Bloodhound qualified as BH
 import Effectful.Prometheus
 import Lentille.GitHub.Types (Changes)
 import ListT qualified
@@ -142,25 +141,38 @@ usageJanitor :: Parser (IO ())
 usageJanitor =
   subparser
     ( mkSubCommand "update-idents" "Update author identities" janitorUpdateIdent
+        <> mkSubCommand "wipe-crawler-data" "Remove changes/task-data and events related to a crawler name" janitorRemoveCrawlerData
     )
  where
+  configOption = strOption (long "config" <> O.help "Path to configuration file" <> metavar "MONOCLE_CONFIG")
+  elasticOption = strOption (long "elastic" <> O.help "The Elastic endpoint url" <> metavar "MONOCLE_ELASTIC_URL")
+  workspaceOption = strOption (long "workspace" <> O.help "Workspace name" <> metavar "WORKSPACE")
+  runOnWorkspace env action' workspace = runEff $ runLoggerEffect $ runElasticEffect env $ runEmptyQueryM workspace action'
+  noWorkspace workspaceName = "Unable to find the workspace " <> workspaceName <> " in the Monocle config"
   janitorUpdateIdent = io <$> parser
    where
-    parser = (,,) <$> configOption <*> elasticOption <*> workspaceOption
+    parser = (,,) <$> configOption <*> elasticOption <*> optional workspaceOption
     io (configPath, elasticUrl, workspaceNameM) = do
       config <- Config.loadConfigWithoutEnv configPath
       env <- mkEnv $ getURL elasticUrl
       case workspaceNameM of
         Just workspaceName -> do
           void $ case Config.lookupTenant (Config.getWorkspaces config) workspaceName of
-            Nothing -> print $ "Unable to find the workspace " <> workspaceName <> " in the Monocle config"
-            Just workspace -> runOnWorkspace env workspace
-        Nothing -> traverse_ (runOnWorkspace env) $ Config.getWorkspaces config
-    workspaceOption = optional $ strOption (long "workspace" <> O.help "Workspace name" <> metavar "WORKSPACE")
-    configOption = strOption (long "config" <> O.help "Path to configuration file" <> metavar "MONOCLE_CONFIG")
-    elasticOption = strOption (long "elastic" <> O.help "The Elastic endpoint url" <> metavar "MONOCLE_ELASTIC_URL")
-    runOnWorkspace :: BH.BHEnv -> Config.Index -> IO ()
-    runOnWorkspace env workspace = runEff $ runLoggerEffect $ runElasticEffect env $ runEmptyQueryM workspace J.updateIdentsOnWorkspace
+            Nothing -> print $ noWorkspace workspaceName
+            Just workspace -> runOnWorkspace env J.updateIdentsOnWorkspace workspace
+        Nothing -> traverse_ (runOnWorkspace env J.updateIdentsOnWorkspace) $ Config.getWorkspaces config
+  janitorRemoveCrawlerData = io <$> parser
+   where
+    crawlerNameOption = strOption (long "crawler-name" <> O.help "The crawler name" <> metavar "CRAWLER_NAME")
+    parser = (,,,) <$> configOption <*> elasticOption <*> workspaceOption <*> crawlerNameOption
+    io (configPath, elasticUrl, workspaceName, crawlerName) = do
+      config <- Config.loadConfigWithoutEnv configPath
+      env <- mkEnv $ getURL elasticUrl
+      void $ case Config.lookupTenant (Config.getWorkspaces config) workspaceName of
+        Nothing -> print $ noWorkspace workspaceName
+        Just workspace -> do
+          runOnWorkspace env (J.wipeCrawlerData crawlerName) workspace
+          runOnWorkspace env (J.removeTDCrawlerData crawlerName) workspace
 
 ---------------------------------------------------------------
 -- Lentille cli

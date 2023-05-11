@@ -540,7 +540,7 @@ Here are the expected environment variables that need to be added to the `.secre
 
 Open the sample [config.yaml](test/data/config.yaml).
 
-#### Troubleshooting
+### Troubleshooting
 
 ElasticSearch could need some capabilities to run in container
 mode. Take a look at the logs to see if it started correctly:
@@ -586,6 +586,17 @@ crawler container, you should consider changing ciphers using the `TLS_CIPHER` e
 in your docker-compose configuration file. You can find [additional information](https://fedoraproject.org/wiki/Changes/StrongCryptoSettings2) on Fedora changelog.
 
 To disable TLS verification, set the `TLS_NO_VERIFY` environment variable to `1`.
+
+
+## Wipe crawler data from the database
+
+To wipe any data related to a workspace's crawler:
+
+```bash
+docker-compose stop crawler
+docker-compose run --rm --no-deps api monocle janitor wipe-crawler-data --elastic elastic:9200 --config /etc/monocle/config.yaml --workspace <workspace> --crawler-name <crawler-name>
+docker-compose start crawler
+```
 
 ## Components
 

@@ -177,7 +177,7 @@ wipeCrawlerData :: forall es. QEffects es => Text -> Eff es ()
 wipeCrawlerData crawlerName = do
   -- Get index from QueryM
   config <- getIndexConfig
-  -- Get crawler defintion from configuration (we need it to discover if a prefix is set)
+  -- Get crawler definition from configuration (we need it to discover if a prefix is set)
   let crawlerM = Config.lookupCrawler config crawlerName
       crawler = fromMaybe (error "Unable to find the crawler in the configuration") crawlerM
       prefixM = Config.getPrefix crawler
@@ -207,7 +207,7 @@ wipeCrawlerData crawlerName = do
       _ -> Nothing
   deleteDocsByRepoName :: Text -> Eff es ()
   deleteDocsByRepoName fullname = do
-    logInfo "Deleting" ["fullname" .= fullname]
+    logInfo "Deleting all documents for repository" ["fullname" .= fullname]
     withQuery sQuery Q.deleteDocs
    where
     sQuery =
