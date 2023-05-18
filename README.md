@@ -219,8 +219,16 @@ the listed repositories. To crawl repositories from a personnal GitHub account, 
 `github_token` might be specified to use an alternate environment variable name to look for the
 token value. Default is "GITHUB_TOKEN"
 
-To crawl privates repositories, you must generate a Personal Access Token with the "repo" scope.
+Regarding the Github tokens (classic):
 
+- To crawl public repositories, no specific scope are needed (no checkbox selected).
+- To crawl privates repositories, you must set the "repo" scope.
+
+Regarding the Github fine grained tokens (new):
+
+- To crawl public repositories, keep the "Public Repositories (read-only)" checkbox selected. Nothing else is needed.
+- To crawl privates repositories, select "All repositories" or "Only select repositories", then in "Repository permissions"
+  select "Pull Requests", "Contents" as "Read-only".
 
 A Gerrit provider settings
 
@@ -272,13 +280,15 @@ To crawl privates repositories, you must generate a Personal Access Token with t
 ###### TaskData
 
 Monocle provides additional crawlers to attach tasks/issues/RFEs to changes based on a
-match on `change_url`. Then, Changes can be enhanced with information about related
+match on `change_url`. Then, Changes are enhanced with information about related
 tasks such as a `priority` or a `score`.
 
 For GitHub:
 
 The GitHub TaskData crawler run automatically whenever repositories are specified into a
 [GitHub Changes crawler](#github) definition.
+
+When using the "Fine grained" token for private repositories, then make sure to select the "Issues" permission.
 
 For Bugzilla:
 
