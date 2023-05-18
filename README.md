@@ -15,6 +15,7 @@ How to get started with Monocle:
 - Explore the website and blog: [changemetrics.io](https://changemetrics.io)
 - Try on the demo instance: [demo.changemetrics.io](https://demo.changemetrics.io)
 - Chat with us in the project Matrix room: [#monocle:matrix.org](https://matrix.to/#/#monocle:matrix.org)
+- Ask and Discuss about Monocle on the [Discussions page](https://github.com/change-metrics/monocle/discussions)
 - Run your own instance: [Read the installation guide](#installation)
 - Hack on it: [Read the contributing guide](CONTRIBUTING.md)
 
