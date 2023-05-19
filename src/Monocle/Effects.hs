@@ -366,6 +366,7 @@ runElasticEffect bhEnv action = do
 esSearch :: (ElasticEffect :> es, ToJSON body, FromJSONField resp) => BH.IndexName -> body -> BHR.ScrollRequest -> Eff es (BH.SearchResult resp)
 esSearch iname body scrollReq = do
   ElasticEffect env <- getStaticRep
+  -- unsafeEff_ $ BH.runBH env $ BHR.search iname (trace (show $ encode body) body) scrollReq
   unsafeEff_ $ BH.runBH env $ BHR.search iname body scrollReq
 
 esAdvance :: (ElasticEffect :> es, FromJSON resp) => BH.ScrollId -> Eff es (BH.SearchResult resp)

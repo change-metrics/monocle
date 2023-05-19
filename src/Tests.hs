@@ -514,6 +514,7 @@ monocleSearchLanguage =
     , testCase "QueryM combinator" testSimpleQueryM
     , testCase "QueryM ensureMinBound" testEnsureMinBound
     , testCase "QueryM dropDate" testDropDate
+    , testCase "QueryM dropAuthor" testDropAuthor
     ]
  where
   mkQueryM code action = runEff $ runMonoQueryConfig (mkCodeQuery code) action
@@ -557,6 +558,15 @@ monocleSearchLanguage =
     let expected = "{\"bool\":{\"must\":[{\"range\":{\"created_at\":{\"boost\":1,\"gt\":\"2020-01-01T00:00:00Z\"}}},{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"zuul\"}}}]}}"
     liftIO $ assertEqual "match" (Just expected) got
     withModified Q.dropDate do
+      newQ <- prettyQuery
+      liftIO $ assertEqual "drop date worked" (Just "{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"zuul\"}}}") newQ
+
+  testDropAuthor :: Assertion
+  testDropAuthor = mkQueryM "repo:zuul author:john" do
+    got <- prettyQuery
+    let expected = "{\"bool\":{\"must\":[{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"zuul\"}}},{\"regexp\":{\"author.muid\":{\"flags\":\"ALL\",\"value\":\"john\"}}}]}}"
+    liftIO $ assertEqual "match" (Just expected) got
+    withModified Q.dropAuthor do
       newQ <- prettyQuery
       liftIO $ assertEqual "drop date worked" (Just "{\"regexp\":{\"repository_fullname\":{\"flags\":\"ALL\",\"value\":\"zuul\"}}}") newQ
 

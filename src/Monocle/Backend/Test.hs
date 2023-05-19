@@ -31,6 +31,7 @@ import Streaming.Prelude qualified as Streaming
 import Test.Tasty.HUnit ((@?=))
 
 import Effectful.Fail qualified as E
+import Monocle.Backend.Queries (PeersStrengthMode (PSModeFilterOnAuthor, PSModeFilterOnPeer))
 import Monocle.Effects
 
 fakeDate, fakeDateAlt :: UTCTime
@@ -824,7 +825,7 @@ testGetAuthorsPeersStrength = withTenant doTest
 
     -- Check for expected metrics
     withQuery defaultQuery do
-      results <- Q.getAuthorsPeersStrength 10
+      results <- Q.getAuthorsPeersStrength PSModeFilterOnAuthor 10
       assertEqual'
         "Check getAuthorsPeersStrength results"
         [ Q.PeerStrengthResult
@@ -835,6 +836,24 @@ testGetAuthorsPeersStrength = withTenant doTest
         , Q.PeerStrengthResult
             { psrAuthor = "bob"
             , psrPeer = "alice"
+            , psrStrength = 2
+            }
+        ]
+        results
+
+    -- Check for expected metrics
+    withQuery defaultQuery do
+      results <- Q.getAuthorsPeersStrength PSModeFilterOnPeer 10
+      assertEqual'
+        "Check getAuthorsPeersStrength results"
+        [ Q.PeerStrengthResult
+            { psrAuthor = "bob"
+            , psrPeer = "eve"
+            , psrStrength = 4
+            }
+        , Q.PeerStrengthResult
+            { psrAuthor = "alice"
+            , psrPeer = "bob"
             , psrStrength = 2
             }
         ]

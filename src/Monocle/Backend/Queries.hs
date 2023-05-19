@@ -683,42 +683,78 @@ instance Ord PeerStrengthResult where
   (PeerStrengthResult _ _ x) `compare` (PeerStrengthResult _ _ y) =
     x `compare` y
 
-getAuthorsPeersStrength :: QEffects es => Word32 -> Eff es [PeerStrengthResult]
-getAuthorsPeersStrength limit = withFlavor qf do
-  peers <-
+data PeersStrengthMode
+  = -- Find (and filter on) comments/reviews events authors and for each of them find all changes authors on which the event's author did a comment/review
+    PSModeFilterOnPeer
+  | -- Find (and filter on) changes authors and for each of them find all event authors that did a comment/review on the change author
+    PSModeFilterOnAuthor
+
+getAuthorsPeersStrength :: QEffects es => PeersStrengthMode -> Word32 -> Eff es [PeerStrengthResult]
+getAuthorsPeersStrength = \case
+  PSModeFilterOnPeer -> getAuthorsPeersStrengthFromPeerReviewers
+  PSModeFilterOnAuthor -> getAuthorsPeersStrengthFromChangeAuthors
+
+getAndSortToPeerStrength :: Int -> [(Text, [TermResult])] -> [PeerStrengthResult]
+getAndSortToPeerStrength limit authors_peers =
+  take (fromInteger $ toInteger limit) $
+    sortBy
+      (comparing Data.Ord.Down)
+      ( concatMap
+          (filter (\psr -> psrAuthor psr /= psrPeer psr) . transform)
+          authors_peers
+      )
+ where
+  transform (author, peers_authors) =
+    let
+      toPSR tr =
+        PeerStrengthResult
+          author
+          (trTerm tr)
+          (fromInteger $ toInteger (trCount tr))
+     in
+      toPSR <$> peers_authors
+
+getAuthorsPeersStrengthFromChangeAuthors :: QEffects es => Word32 -> Eff es [PeerStrengthResult]
+getAuthorsPeersStrengthFromChangeAuthors limit = withFlavor qf do
+  authors <-
+    getDocTypeTopCountByField
+      (fromList [EChangeDoc])
+      "author.muid"
+      (Just limit)
+  authors_peers <- traverse (getAuthorPeers . trTerm) (tsrTR authors)
+  pure $ getAndSortToPeerStrength (fromInteger $ toInteger limit) authors_peers
+ where
+  qf = QueryFlavor Author CreatedAt
+  getAuthorPeers :: QEffects es => Text -> Eff es (Text, [TermResult])
+  getAuthorPeers author = withFilter [mkTerm "on_author.muid" author] $ withModified Q.dropAuthor $ do
+    event_authors <-
+      getDocTypeTopCountByField
+        (fromList [EChangeReviewedEvent, EChangeCommentedEvent])
+        "author.muid"
+        (Just 5000)
+    pure (author, tsrTR event_authors)
+
+getAuthorsPeersStrengthFromPeerReviewers :: QEffects es => Word32 -> Eff es [PeerStrengthResult]
+getAuthorsPeersStrengthFromPeerReviewers limit = withFlavor qf do
+  event_authors <-
     getDocTypeTopCountByField
       eventTypes
       "author.muid"
       (Just limit)
-  authors_peers <- traverse (getAuthorPeers . trTerm) (tsrTR peers)
-  pure $
-    take (fromInteger $ toInteger limit) $
-      sortBy
-        (comparing Data.Ord.Down)
-        ( concatMap
-            (filter (\psr -> psrAuthor psr /= psrPeer psr) . transform)
-            authors_peers
-        )
+  authors <- traverse (getAuthorPeers . trTerm) (tsrTR event_authors)
+  pure $ getAndSortToPeerStrength (fromInteger $ toInteger limit) authors
  where
   eventTypes :: NonEmpty EDocType
   eventTypes = fromList [EChangeReviewedEvent, EChangeCommentedEvent]
   qf = QueryFlavor Author CreatedAt
   getAuthorPeers :: QEffects es => Text -> Eff es (Text, [TermResult])
-  getAuthorPeers peer = withFilter [mkTerm "author.muid" peer] do
+  getAuthorPeers event_author = withFilter [mkTerm "author.muid" event_author] do
     change_authors <-
       getDocTypeTopCountByField
         eventTypes
         "on_author.muid"
         (Just 5000)
-    pure (peer, tsrTR change_authors)
-  transform :: (Text, [TermResult]) -> [PeerStrengthResult]
-  transform (peer, change_authors) = toPSR <$> change_authors
-   where
-    toPSR tr =
-      PeerStrengthResult
-        (trTerm tr)
-        peer
-        (fromInteger $ toInteger (trCount tr))
+    pure (event_author, tsrTR change_authors)
 
 -- | Convert a duration to an interval that spans over maximum 24 buckets (31 for days)
 newtype TimeFormat = TimeFormat {getFormat :: Text}
