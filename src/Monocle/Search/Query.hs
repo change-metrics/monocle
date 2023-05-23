@@ -16,6 +16,7 @@ module Monocle.Search.Query (
   rangeField,
   defaultQueryFlavor,
   dropDate,
+  dropAuthor,
   dropField,
   blankQuery,
   yearAgo,
@@ -562,3 +563,6 @@ dropField dropFieldPred (Just expr) = go expr
 
 dropDate :: Maybe Expr -> Maybe Expr
 dropDate = dropField (`elem` ["from", "to", "updated_at", "created_at"])
+
+dropAuthor :: Maybe Expr -> Maybe Expr
+dropAuthor = dropField (`elem` ["author"])

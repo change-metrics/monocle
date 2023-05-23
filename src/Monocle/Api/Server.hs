@@ -68,6 +68,7 @@ import Effectful.Error.Static qualified as E
 import Effectful.Reader.Static (asks)
 import Monocle.Effects
 
+import Monocle.Backend.Queries (PeersStrengthMode (PSModeFilterOnAuthor))
 import Servant.API (Headers)
 import Servant.API.Header (Header)
 import Servant.Auth.Server.Internal.JWT (makeJWT)
@@ -612,7 +613,7 @@ searchQuery auth request = checkAuth auth response
               . SearchPB.AuthorsPeers
               . V.fromList
               . map toAPeerResult
-              <$> Q.getAuthorsPeersStrength queryRequestLimit
+              <$> Q.getAuthorsPeersStrength PSModeFilterOnAuthor queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS -> do
             results <- take (fromInteger . toInteger $ queryRequestLimit) <$> Q.getNewContributors
             pure $

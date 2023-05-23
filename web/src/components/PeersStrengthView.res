@@ -42,18 +42,18 @@ module ConnectionDiagram = {
 module PeersStrengthTable = {
   @react.component
   let make = (~items: list<SearchTypes.author_peer>) => {
-    let columnNames = ["Peer reviewer", "Change author", "Strength"]
+    let columnNames = ["Change author", "Peer reviewer", "Strength"]
 
     let isOrdered = (first: SearchTypes.author_peer, second: SearchTypes.author_peer, index) =>
       switch index {
-      | 0 => first.peer < second.peer
-      | 1 => first.author < second.author
+      | 0 => first.author < second.author
+      | 1 => first.peer < second.peer
       | 2 => first.strength < second.strength
       | _ => false
       }
     let formatters: list<SearchTypes.author_peer => React.element> = list{
-      item => item.peer->str,
       item => item.author->str,
+      item => item.peer->str,
       item => item.strength->int32_str->str,
     }
 
