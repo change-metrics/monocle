@@ -3,6 +3,8 @@
 Note that the following procedure must be valid for deploying on OpenShift. For this
 you might want to use the `oc` command instead of `kubectl`.
 
+Alternatively to this process, a k8s operator is available on [operatorhub.io](https://operatorhub.io/operator/monocle-operator).
+
 ## Initial deployment
 
 The `secrets` file must be populated with at least the `CRAWLERS_API_KEY`.
