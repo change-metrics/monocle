@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - [metric] Changed the Peer strength metric computation to enable filtering by change author (#1037).
+- [api] Disable /health and /metrics request logging.
 
 ### Removed
 

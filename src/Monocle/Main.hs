@@ -160,7 +160,7 @@ run' ApiConfig {..} aplogger = E.runConcurrent $ runLoggerEffect do
     traverse_ (`runEmptyQueryM` I.ensureIndex) workspaces
     runMonoQuery (MonoQueryEnv (QueryConfig conf) (mkQuery [])) I.ensureConfigIndex
 
-    let settings = Warp.setPort port $ Warp.setLogger aplogger Warp.defaultSettings
+    let settings = Warp.setPort port $ Warp.setLogger httpLogger Warp.defaultSettings
         jwtCfg = localJWTSettings
         cookieCfg = defaultCookieSettings {cookieXsrfSetting = Nothing}
         cfg = jwtCfg :. cookieCfg :. EmptyContext
@@ -187,3 +187,9 @@ run' ApiConfig {..} aplogger = E.runConcurrent $ runLoggerEffect do
  where
   corsPolicy =
     simpleCorsResourcePolicy {corsRequestHeaders = ["content-type"]}
+
+  -- An apache style logger that ignores /health and /metrics requests
+  httpLogger :: Wai.Request -> HTTP.Status -> Maybe Integer -> IO ()
+  httpLogger req status len
+    | Wai.rawPathInfo req `elem` ["/health", "/metrics"] && status.statusCode == 200 = pure ()
+    | otherwise = aplogger req status len
