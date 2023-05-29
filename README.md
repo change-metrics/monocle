@@ -18,6 +18,7 @@ How to get started with Monocle:
 - Ask and Discuss about Monocle on the [Discussions page](https://github.com/change-metrics/monocle/discussions)
 - Run your own instance: [Read the installation guide](#installation)
 - Hack on it: [Read the contributing guide](CONTRIBUTING.md)
+- Checkout [who use Monocle](#users-of-monocle)
 
 ## Screenshots of Monocle from the demo instance
 
@@ -680,3 +681,11 @@ for service in prometheus grafana; do systemctl --user start monocle-$service; d
 
 [monocle-protobuf]: ./schemas/monocle
 [monocle-openapi]: ./doc/openapi.yaml
+
+## Users of Monocle
+
+| company name / project name      | main usage (board, metrics, other)      | public instance (url)/private instance        |
+|----------------------------------|-----------------------------------------|-----------------------------------------------|
+| changemetrics.io                 | project demo instance                   | https://demo.changemetrics.io                 |
+
+If you use Monocle, please open a [Pull Request](https://github.com/change-metrics/monocle/pulls) to get added to this list.
