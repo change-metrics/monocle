@@ -684,8 +684,8 @@ for service in prometheus grafana; do systemctl --user start monocle-$service; d
 
 ## Users of Monocle
 
-Feel free to open a Pull Request to get listed into this list.
-
 | company name / project name      | main usage (board, metrics, other)      | public instance (url)/private instance        |
 |----------------------------------|-----------------------------------------|-----------------------------------------------|
 | changemetrics.io                 | project demo instance                   | https://demo.changemetrics.io                 |
+
+If you use Monocle, please open a [Pull Request](https://github.com/change-metrics/monocle/pulls) to get added to this list.
