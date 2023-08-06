@@ -30,20 +30,29 @@ import Data.Word qualified as Hs (Word16, Word32, Word64)
 import GHC.Enum qualified as Hs
 import GHC.Generics qualified as Hs
 import Google.Protobuf.Timestamp qualified
+import Google.Protobuf.Wrappers.Polymorphic qualified as HsProtobuf (
+  Wrapped (..),
+ )
 import Monocle.Protob.Change qualified
 import Monocle.Protob.Issue qualified
 import Monocle.Protob.Search qualified
 import Proto3.Suite.Class qualified as HsProtobuf
-import Proto3.Suite.DotProto qualified as HsProtobuf
+import Proto3.Suite.DotProto qualified as HsProtobufAST
 import Proto3.Suite.JSONPB ((.:), (.=))
 import Proto3.Suite.JSONPB qualified as HsJSONPB
 import Proto3.Suite.Types qualified as HsProtobuf
 import Proto3.Wire qualified as HsProtobuf
+import Proto3.Wire.Decode qualified as HsProtobuf (
+  Parser,
+  RawField,
+ )
 import Unsafe.Coerce qualified as Hs
 import Prelude qualified as Hs
 
 newtype Entity = Entity {entityEntity :: Hs.Maybe EntityEntity}
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData Entity
 
 instance HsProtobuf.Named Entity where
   nameOf _ = (Hs.fromString "Entity")
@@ -60,22 +69,30 @@ instance HsProtobuf.Message Entity where
                 EntityEntityOrganizationName y ->
                   ( HsProtobuf.encodeMessageField
                       (HsProtobuf.FieldNumber 1)
-                      (HsProtobuf.ForceEmit y)
+                      ( HsProtobuf.ForceEmit
+                          (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (y))
+                      )
                   )
                 EntityEntityProjectName y ->
                   ( HsProtobuf.encodeMessageField
                       (HsProtobuf.FieldNumber 2)
-                      (HsProtobuf.ForceEmit y)
+                      ( HsProtobuf.ForceEmit
+                          (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (y))
+                      )
                   )
                 EntityEntityProjectIssueName y ->
                   ( HsProtobuf.encodeMessageField
                       (HsProtobuf.FieldNumber 4)
-                      (HsProtobuf.ForceEmit y)
+                      ( HsProtobuf.ForceEmit
+                          (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (y))
+                      )
                   )
                 EntityEntityTdName y ->
                   ( HsProtobuf.encodeMessageField
                       (HsProtobuf.FieldNumber 3)
-                      (HsProtobuf.ForceEmit y)
+                      ( HsProtobuf.ForceEmit
+                          (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (y))
+                      )
                   )
         ]
     )
@@ -86,22 +103,30 @@ instance HsProtobuf.Message Entity where
               [
                 ( (HsProtobuf.FieldNumber 1)
                 , (Hs.pure (Hs.Just Hs.. EntityEntityOrganizationName))
-                    <*> HsProtobuf.decodeMessageField
+                    <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                            (HsProtobuf.decodeMessageField)
+                        )
                 )
               ,
                 ( (HsProtobuf.FieldNumber 2)
                 , (Hs.pure (Hs.Just Hs.. EntityEntityProjectName))
-                    <*> HsProtobuf.decodeMessageField
+                    <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                            (HsProtobuf.decodeMessageField)
+                        )
                 )
               ,
                 ( (HsProtobuf.FieldNumber 4)
                 , (Hs.pure (Hs.Just Hs.. EntityEntityProjectIssueName))
-                    <*> HsProtobuf.decodeMessageField
+                    <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                            (HsProtobuf.decodeMessageField)
+                        )
                 )
               ,
                 ( (HsProtobuf.FieldNumber 3)
                 , (Hs.pure (Hs.Just Hs.. EntityEntityTdName))
-                    <*> HsProtobuf.decodeMessageField
+                    <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                            (HsProtobuf.decodeMessageField)
+                        )
                 )
               ]
           )
@@ -113,12 +138,25 @@ instance HsJSONPB.ToJSONPB Entity where
         [ ( let encodeEntity =
                   ( case f1_or_f2_or_f4_or_f3 of
                       Hs.Just (EntityEntityOrganizationName f1) ->
-                        (HsJSONPB.pair "organization_name" f1)
+                        ( HsJSONPB.pair
+                            "organization_name"
+                            (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
+                        )
                       Hs.Just (EntityEntityProjectName f2) ->
-                        (HsJSONPB.pair "project_name" f2)
+                        ( HsJSONPB.pair
+                            "project_name"
+                            (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
+                        )
                       Hs.Just (EntityEntityProjectIssueName f4) ->
-                        (HsJSONPB.pair "project_issue_name" f4)
-                      Hs.Just (EntityEntityTdName f3) -> (HsJSONPB.pair "td_name" f3)
+                        ( HsJSONPB.pair
+                            "project_issue_name"
+                            (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f4))
+                        )
+                      Hs.Just (EntityEntityTdName f3) ->
+                        ( HsJSONPB.pair
+                            "td_name"
+                            (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f3))
+                        )
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -135,12 +173,25 @@ instance HsJSONPB.ToJSONPB Entity where
         [ ( let encodeEntity =
                   ( case f1_or_f2_or_f4_or_f3 of
                       Hs.Just (EntityEntityOrganizationName f1) ->
-                        (HsJSONPB.pair "organization_name" f1)
+                        ( HsJSONPB.pair
+                            "organization_name"
+                            (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
+                        )
                       Hs.Just (EntityEntityProjectName f2) ->
-                        (HsJSONPB.pair "project_name" f2)
+                        ( HsJSONPB.pair
+                            "project_name"
+                            (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
+                        )
                       Hs.Just (EntityEntityProjectIssueName f4) ->
-                        (HsJSONPB.pair "project_issue_name" f4)
-                      Hs.Just (EntityEntityTdName f3) -> (HsJSONPB.pair "td_name" f3)
+                        ( HsJSONPB.pair
+                            "project_issue_name"
+                            (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f4))
+                        )
+                      Hs.Just (EntityEntityTdName f3) ->
+                        ( HsJSONPB.pair
+                            "td_name"
+                            (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f3))
+                        )
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -159,13 +210,21 @@ instance HsJSONPB.FromJSONPB Entity where
             (Hs.pure Entity)
               <*> ( let parseEntity parseObj =
                           Hs.msum
-                            [ Hs.Just Hs.. EntityEntityOrganizationName
+                            [ Hs.Just
+                                Hs.. EntityEntityOrganizationName
+                                Hs.. Hs.coerce @(HsProtobuf.String Hs.Text) @(Hs.Text)
                                 <$> (HsJSONPB.parseField parseObj "organization_name")
-                            , Hs.Just Hs.. EntityEntityProjectName
+                            , Hs.Just
+                                Hs.. EntityEntityProjectName
+                                Hs.. Hs.coerce @(HsProtobuf.String Hs.Text) @(Hs.Text)
                                 <$> (HsJSONPB.parseField parseObj "project_name")
-                            , Hs.Just Hs.. EntityEntityProjectIssueName
+                            , Hs.Just
+                                Hs.. EntityEntityProjectIssueName
+                                Hs.. Hs.coerce @(HsProtobuf.String Hs.Text) @(Hs.Text)
                                 <$> (HsJSONPB.parseField parseObj "project_issue_name")
-                            , Hs.Just Hs.. EntityEntityTdName
+                            , Hs.Just
+                                Hs.. EntityEntityTdName
+                                Hs.. Hs.coerce @(HsProtobuf.String Hs.Text) @(Hs.Text)
                                 <$> (HsJSONPB.parseField parseObj "td_name")
                             , Hs.pure Hs.Nothing
                             ]
@@ -189,7 +248,9 @@ data EntityEntity
   | EntityEntityProjectName Hs.Text
   | EntityEntityProjectIssueName Hs.Text
   | EntityEntityTdName Hs.Text
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData EntityEntity
 
 instance HsProtobuf.Named EntityEntity where
   nameOf _ = (Hs.fromString "EntityEntity")
@@ -262,7 +323,9 @@ data AddDocRequest = AddDocRequest
   , addDocRequestIssueEvents ::
       Hs.Vector Monocle.Protob.Issue.IssueEvent
   }
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData AddDocRequest
 
 instance HsProtobuf.Named AddDocRequest where
   nameOf _ = (Hs.fromString "AddDocRequest")
@@ -287,234 +350,251 @@ instance HsProtobuf.Message AddDocRequest where
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
-                addDocRequestIndex
+                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
+                    (addDocRequestIndex)
+                )
             )
           , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
-                addDocRequestCrawler
+                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
+                    (addDocRequestCrawler)
+                )
             )
           , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 3)
-                addDocRequestApikey
+                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
+                    (addDocRequestApikey)
+                )
             )
           , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 4)
                 ( Hs.coerce @(Hs.Maybe Monocle.Protob.Crawler.Entity)
                     @(HsProtobuf.Nested Monocle.Protob.Crawler.Entity)
-                    addDocRequestEntity
+                    (addDocRequestEntity)
                 )
             )
           , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 5)
                 ( Hs.coerce @(Hs.Vector Monocle.Protob.Change.Change)
                     @(HsProtobuf.NestedVec Monocle.Protob.Change.Change)
-                    addDocRequestChanges
+                    (addDocRequestChanges)
                 )
             )
           , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 6)
                 ( Hs.coerce @(Hs.Vector Monocle.Protob.Change.ChangeEvent)
                     @(HsProtobuf.NestedVec Monocle.Protob.Change.ChangeEvent)
-                    addDocRequestEvents
+                    (addDocRequestEvents)
                 )
             )
           , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 7)
                 ( Hs.coerce @(Hs.Vector Monocle.Protob.Crawler.Project)
                     @(HsProtobuf.NestedVec Monocle.Protob.Crawler.Project)
-                    addDocRequestProjects
+                    (addDocRequestProjects)
                 )
             )
           , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 8)
                 ( Hs.coerce @(Hs.Vector Monocle.Protob.Search.TaskData)
                     @(HsProtobuf.NestedVec Monocle.Protob.Search.TaskData)
-                    addDocRequestTaskDatas
+                    (addDocRequestTaskDatas)
                 )
             )
           , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 10)
                 ( Hs.coerce @(Hs.Vector Monocle.Protob.Issue.Issue)
                     @(HsProtobuf.NestedVec Monocle.Protob.Issue.Issue)
-                    addDocRequestIssues
+                    (addDocRequestIssues)
                 )
             )
           , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 11)
                 ( Hs.coerce @(Hs.Vector Monocle.Protob.Issue.IssueEvent)
                     @(HsProtobuf.NestedVec Monocle.Protob.Issue.IssueEvent)
-                    addDocRequestIssueEvents
+                    (addDocRequestIssueEvents)
                 )
             )
           ]
       )
   decodeMessage _ =
     (Hs.pure AddDocRequest)
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 1)
+      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
           )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 2)
+      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 2)
+              )
           )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 3)
+      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 3)
+              )
           )
-      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Protob.Crawler.Entity))
-              @(_ (Hs.Maybe Monocle.Protob.Crawler.Entity))
+      <*> ( HsProtobuf.coerceOver
+              @(HsProtobuf.Nested Monocle.Protob.Crawler.Entity)
+              @(Hs.Maybe Monocle.Protob.Crawler.Entity)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 4)
               )
           )
-      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Protob.Change.Change))
-              @(_ (Hs.Vector Monocle.Protob.Change.Change))
+      <*> ( HsProtobuf.coerceOver
+              @(HsProtobuf.NestedVec Monocle.Protob.Change.Change)
+              @(Hs.Vector Monocle.Protob.Change.Change)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 5)
               )
           )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.NestedVec Monocle.Protob.Change.ChangeEvent))
-              @(_ (Hs.Vector Monocle.Protob.Change.ChangeEvent))
+      <*> ( HsProtobuf.coerceOver
+              @(HsProtobuf.NestedVec Monocle.Protob.Change.ChangeEvent)
+              @(Hs.Vector Monocle.Protob.Change.ChangeEvent)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 6)
               )
           )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.NestedVec Monocle.Protob.Crawler.Project))
-              @(_ (Hs.Vector Monocle.Protob.Crawler.Project))
+      <*> ( HsProtobuf.coerceOver
+              @(HsProtobuf.NestedVec Monocle.Protob.Crawler.Project)
+              @(Hs.Vector Monocle.Protob.Crawler.Project)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 7)
               )
           )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.NestedVec Monocle.Protob.Search.TaskData))
-              @(_ (Hs.Vector Monocle.Protob.Search.TaskData))
+      <*> ( HsProtobuf.coerceOver
+              @(HsProtobuf.NestedVec Monocle.Protob.Search.TaskData)
+              @(Hs.Vector Monocle.Protob.Search.TaskData)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 8)
               )
           )
-      <*> ( Hs.coerce @(_ (HsProtobuf.NestedVec Monocle.Protob.Issue.Issue))
-              @(_ (Hs.Vector Monocle.Protob.Issue.Issue))
+      <*> ( HsProtobuf.coerceOver
+              @(HsProtobuf.NestedVec Monocle.Protob.Issue.Issue)
+              @(Hs.Vector Monocle.Protob.Issue.Issue)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 10)
               )
           )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.NestedVec Monocle.Protob.Issue.IssueEvent))
-              @(_ (Hs.Vector Monocle.Protob.Issue.IssueEvent))
+      <*> ( HsProtobuf.coerceOver
+              @(HsProtobuf.NestedVec Monocle.Protob.Issue.IssueEvent)
+              @(Hs.Vector Monocle.Protob.Issue.IssueEvent)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 11)
               )
           )
   dotProto _ =
-    [ ( HsProtobuf.DotProtoField
+    [ ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 1)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "index")
+          (HsProtobufAST.Prim HsProtobufAST.String)
+          (HsProtobufAST.Single "index")
           []
           ""
       )
-    , ( HsProtobuf.DotProtoField
+    , ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 2)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "crawler")
+          (HsProtobufAST.Prim HsProtobufAST.String)
+          (HsProtobufAST.Single "crawler")
           []
           ""
       )
-    , ( HsProtobuf.DotProtoField
+    , ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 3)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "apikey")
+          (HsProtobufAST.Prim HsProtobufAST.String)
+          (HsProtobufAST.Single "apikey")
           []
           ""
       )
-    , ( HsProtobuf.DotProtoField
+    , ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 4)
-          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Entity")))
-          (HsProtobuf.Single "entity")
+          ( HsProtobufAST.Prim
+              (HsProtobufAST.Named (HsProtobufAST.Single "Entity"))
+          )
+          (HsProtobufAST.Single "entity")
           []
           ""
       )
-    , ( HsProtobuf.DotProtoField
+    , ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 5)
-          ( HsProtobuf.Repeated
-              ( HsProtobuf.Named
-                  ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("monocle_change" Hs.:| ["Change"]))
+          ( HsProtobufAST.Repeated
+              ( HsProtobufAST.Named
+                  ( HsProtobufAST.Dots
+                      (HsProtobufAST.Path ("monocle_change" Hs.:| ["Change"]))
                   )
               )
           )
-          (HsProtobuf.Single "changes")
+          (HsProtobufAST.Single "changes")
           []
           ""
       )
-    , ( HsProtobuf.DotProtoField
+    , ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 6)
-          ( HsProtobuf.Repeated
-              ( HsProtobuf.Named
-                  ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("monocle_change" Hs.:| ["ChangeEvent"]))
+          ( HsProtobufAST.Repeated
+              ( HsProtobufAST.Named
+                  ( HsProtobufAST.Dots
+                      (HsProtobufAST.Path ("monocle_change" Hs.:| ["ChangeEvent"]))
                   )
               )
           )
-          (HsProtobuf.Single "events")
+          (HsProtobufAST.Single "events")
           []
           ""
       )
-    , ( HsProtobuf.DotProtoField
+    , ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 7)
-          ( HsProtobuf.Repeated
-              (HsProtobuf.Named (HsProtobuf.Single "Project"))
+          ( HsProtobufAST.Repeated
+              (HsProtobufAST.Named (HsProtobufAST.Single "Project"))
           )
-          (HsProtobuf.Single "projects")
+          (HsProtobufAST.Single "projects")
           []
           ""
       )
-    , ( HsProtobuf.DotProtoField
+    , ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 8)
-          ( HsProtobuf.Repeated
-              ( HsProtobuf.Named
-                  ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("monocle_search" Hs.:| ["TaskData"]))
+          ( HsProtobufAST.Repeated
+              ( HsProtobufAST.Named
+                  ( HsProtobufAST.Dots
+                      (HsProtobufAST.Path ("monocle_search" Hs.:| ["TaskData"]))
                   )
               )
           )
-          (HsProtobuf.Single "task_datas")
+          (HsProtobufAST.Single "task_datas")
           []
           ""
       )
-    , ( HsProtobuf.DotProtoField
+    , ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 10)
-          ( HsProtobuf.Repeated
-              ( HsProtobuf.Named
-                  ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("monocle_issue" Hs.:| ["Issue"]))
+          ( HsProtobufAST.Repeated
+              ( HsProtobufAST.Named
+                  ( HsProtobufAST.Dots
+                      (HsProtobufAST.Path ("monocle_issue" Hs.:| ["Issue"]))
                   )
               )
           )
-          (HsProtobuf.Single "issues")
+          (HsProtobufAST.Single "issues")
           []
           ""
       )
-    , ( HsProtobuf.DotProtoField
+    , ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 11)
-          ( HsProtobuf.Repeated
-              ( HsProtobuf.Named
-                  ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("monocle_issue" Hs.:| ["IssueEvent"]))
+          ( HsProtobufAST.Repeated
+              ( HsProtobufAST.Named
+                  ( HsProtobufAST.Dots
+                      (HsProtobufAST.Path ("monocle_issue" Hs.:| ["IssueEvent"]))
                   )
               )
           )
-          (HsProtobuf.Single "issue_events")
+          (HsProtobufAST.Single "issue_events")
           []
           ""
       )
@@ -523,30 +603,92 @@ instance HsProtobuf.Message AddDocRequest where
 instance HsJSONPB.ToJSONPB AddDocRequest where
   toJSONPB (AddDocRequest f1 f2 f3 f4 f5 f6 f7 f8 f10 f11) =
     ( HsJSONPB.object
-        [ "index" .= f1
-        , "crawler" .= f2
-        , "apikey" .= f3
-        , "entity" .= f4
-        , "changes" .= f5
-        , "events" .= f6
-        , "projects" .= f7
-        , "task_datas" .= f8
-        , "issues" .= f10
-        , "issue_events" .= f11
+        [ "index"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
+        , "crawler"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
+        , "apikey"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f3))
+        , "entity"
+            .= ( Hs.coerce @(Hs.Maybe Monocle.Protob.Crawler.Entity)
+                  @(HsProtobuf.Nested Monocle.Protob.Crawler.Entity)
+                  (f4)
+               )
+        , "changes"
+            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Change.Change)
+                  @(HsProtobuf.NestedVec Monocle.Protob.Change.Change)
+                  (f5)
+               )
+        , "events"
+            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Change.ChangeEvent)
+                  @(HsProtobuf.NestedVec Monocle.Protob.Change.ChangeEvent)
+                  (f6)
+               )
+        , "projects"
+            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Crawler.Project)
+                  @(HsProtobuf.NestedVec Monocle.Protob.Crawler.Project)
+                  (f7)
+               )
+        , "task_datas"
+            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Search.TaskData)
+                  @(HsProtobuf.NestedVec Monocle.Protob.Search.TaskData)
+                  (f8)
+               )
+        , "issues"
+            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Issue.Issue)
+                  @(HsProtobuf.NestedVec Monocle.Protob.Issue.Issue)
+                  (f10)
+               )
+        , "issue_events"
+            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Issue.IssueEvent)
+                  @(HsProtobuf.NestedVec Monocle.Protob.Issue.IssueEvent)
+                  (f11)
+               )
         ]
     )
   toEncodingPB (AddDocRequest f1 f2 f3 f4 f5 f6 f7 f8 f10 f11) =
     ( HsJSONPB.pairs
-        [ "index" .= f1
-        , "crawler" .= f2
-        , "apikey" .= f3
-        , "entity" .= f4
-        , "changes" .= f5
-        , "events" .= f6
-        , "projects" .= f7
-        , "task_datas" .= f8
-        , "issues" .= f10
-        , "issue_events" .= f11
+        [ "index"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
+        , "crawler"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
+        , "apikey"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f3))
+        , "entity"
+            .= ( Hs.coerce @(Hs.Maybe Monocle.Protob.Crawler.Entity)
+                  @(HsProtobuf.Nested Monocle.Protob.Crawler.Entity)
+                  (f4)
+               )
+        , "changes"
+            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Change.Change)
+                  @(HsProtobuf.NestedVec Monocle.Protob.Change.Change)
+                  (f5)
+               )
+        , "events"
+            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Change.ChangeEvent)
+                  @(HsProtobuf.NestedVec Monocle.Protob.Change.ChangeEvent)
+                  (f6)
+               )
+        , "projects"
+            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Crawler.Project)
+                  @(HsProtobuf.NestedVec Monocle.Protob.Crawler.Project)
+                  (f7)
+               )
+        , "task_datas"
+            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Search.TaskData)
+                  @(HsProtobuf.NestedVec Monocle.Protob.Search.TaskData)
+                  (f8)
+               )
+        , "issues"
+            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Issue.Issue)
+                  @(HsProtobuf.NestedVec Monocle.Protob.Issue.Issue)
+                  (f10)
+               )
+        , "issue_events"
+            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Issue.IssueEvent)
+                  @(HsProtobuf.NestedVec Monocle.Protob.Issue.IssueEvent)
+                  (f11)
+               )
         ]
     )
 
@@ -556,16 +698,50 @@ instance HsJSONPB.FromJSONPB AddDocRequest where
         "AddDocRequest"
         ( \obj ->
             (Hs.pure AddDocRequest)
-              <*> obj .: "index"
-              <*> obj .: "crawler"
-              <*> obj .: "apikey"
-              <*> obj .: "entity"
-              <*> obj .: "changes"
-              <*> obj .: "events"
-              <*> obj .: "projects"
-              <*> obj .: "task_datas"
-              <*> obj .: "issues"
-              <*> obj .: "issue_events"
+              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                      (obj .: "index")
+                  )
+              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                      (obj .: "crawler")
+                  )
+              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                      (obj .: "apikey")
+                  )
+              <*> ( HsProtobuf.coerceOver
+                      @(HsProtobuf.Nested Monocle.Protob.Crawler.Entity)
+                      @(Hs.Maybe Monocle.Protob.Crawler.Entity)
+                      (obj .: "entity")
+                  )
+              <*> ( HsProtobuf.coerceOver
+                      @(HsProtobuf.NestedVec Monocle.Protob.Change.Change)
+                      @(Hs.Vector Monocle.Protob.Change.Change)
+                      (obj .: "changes")
+                  )
+              <*> ( HsProtobuf.coerceOver
+                      @(HsProtobuf.NestedVec Monocle.Protob.Change.ChangeEvent)
+                      @(Hs.Vector Monocle.Protob.Change.ChangeEvent)
+                      (obj .: "events")
+                  )
+              <*> ( HsProtobuf.coerceOver
+                      @(HsProtobuf.NestedVec Monocle.Protob.Crawler.Project)
+                      @(Hs.Vector Monocle.Protob.Crawler.Project)
+                      (obj .: "projects")
+                  )
+              <*> ( HsProtobuf.coerceOver
+                      @(HsProtobuf.NestedVec Monocle.Protob.Search.TaskData)
+                      @(Hs.Vector Monocle.Protob.Search.TaskData)
+                      (obj .: "task_datas")
+                  )
+              <*> ( HsProtobuf.coerceOver
+                      @(HsProtobuf.NestedVec Monocle.Protob.Issue.Issue)
+                      @(Hs.Vector Monocle.Protob.Issue.Issue)
+                      (obj .: "issues")
+                  )
+              <*> ( HsProtobuf.coerceOver
+                      @(HsProtobuf.NestedVec Monocle.Protob.Issue.IssueEvent)
+                      @(Hs.Vector Monocle.Protob.Issue.IssueEvent)
+                      (obj .: "issue_events")
+                  )
         )
     )
 
@@ -637,7 +813,9 @@ newtype AddDocResponse = AddDocResponse
   { addDocResponseResult ::
       Hs.Maybe AddDocResponseResult
   }
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData AddDocResponse
 
 instance HsProtobuf.Named AddDocResponse where
   nameOf _ = (Hs.fromString "AddDocResponse")
@@ -739,7 +917,9 @@ data AddDocResponseResult
       ( HsProtobuf.Enumerated
           Monocle.Protob.Crawler.AddDocError
       )
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData AddDocResponseResult
 
 instance HsProtobuf.Named AddDocResponseResult where
   nameOf _ = (Hs.fromString "AddDocResponseResult")
@@ -752,7 +932,9 @@ data CommitRequest = CommitRequest
   , commitRequestTimestamp ::
       Hs.Maybe Google.Protobuf.Timestamp.Timestamp
   }
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData CommitRequest
 
 instance HsProtobuf.Named CommitRequest where
   nameOf _ = (Hs.fromString "CommitRequest")
@@ -772,100 +954,115 @@ instance HsProtobuf.Message CommitRequest where
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
-                commitRequestIndex
+                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
+                    (commitRequestIndex)
+                )
             )
           , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
-                commitRequestCrawler
+                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
+                    (commitRequestCrawler)
+                )
             )
           , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 3)
-                commitRequestApikey
+                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
+                    (commitRequestApikey)
+                )
             )
           , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 4)
                 ( Hs.coerce @(Hs.Maybe Monocle.Protob.Crawler.Entity)
                     @(HsProtobuf.Nested Monocle.Protob.Crawler.Entity)
-                    commitRequestEntity
+                    (commitRequestEntity)
                 )
             )
           , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 5)
                 ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
                     @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
-                    commitRequestTimestamp
+                    (commitRequestTimestamp)
                 )
             )
           ]
       )
   decodeMessage _ =
     (Hs.pure CommitRequest)
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 1)
+      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
           )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 2)
+      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 2)
+              )
           )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 3)
+      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 3)
+              )
           )
-      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Protob.Crawler.Entity))
-              @(_ (Hs.Maybe Monocle.Protob.Crawler.Entity))
+      <*> ( HsProtobuf.coerceOver
+              @(HsProtobuf.Nested Monocle.Protob.Crawler.Entity)
+              @(Hs.Maybe Monocle.Protob.Crawler.Entity)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 4)
               )
           )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
-              @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
+      <*> ( HsProtobuf.coerceOver
+              @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
+              @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 5)
               )
           )
   dotProto _ =
-    [ ( HsProtobuf.DotProtoField
+    [ ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 1)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "index")
+          (HsProtobufAST.Prim HsProtobufAST.String)
+          (HsProtobufAST.Single "index")
           []
           ""
       )
-    , ( HsProtobuf.DotProtoField
+    , ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 2)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "crawler")
+          (HsProtobufAST.Prim HsProtobufAST.String)
+          (HsProtobufAST.Single "crawler")
           []
           ""
       )
-    , ( HsProtobuf.DotProtoField
+    , ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 3)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "apikey")
+          (HsProtobufAST.Prim HsProtobufAST.String)
+          (HsProtobufAST.Single "apikey")
           []
           ""
       )
-    , ( HsProtobuf.DotProtoField
+    , ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 4)
-          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Entity")))
-          (HsProtobuf.Single "entity")
+          ( HsProtobufAST.Prim
+              (HsProtobufAST.Named (HsProtobufAST.Single "Entity"))
+          )
+          (HsProtobufAST.Single "entity")
           []
           ""
       )
-    , ( HsProtobuf.DotProtoField
+    , ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 5)
-          ( HsProtobuf.Prim
-              ( HsProtobuf.Named
-                  ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
+          ( HsProtobufAST.Prim
+              ( HsProtobufAST.Named
+                  ( HsProtobufAST.Dots
+                      (HsProtobufAST.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
                   )
               )
           )
-          (HsProtobuf.Single "timestamp")
+          (HsProtobufAST.Single "timestamp")
           []
           ""
       )
@@ -874,20 +1071,42 @@ instance HsProtobuf.Message CommitRequest where
 instance HsJSONPB.ToJSONPB CommitRequest where
   toJSONPB (CommitRequest f1 f2 f3 f4 f5) =
     ( HsJSONPB.object
-        [ "index" .= f1
-        , "crawler" .= f2
-        , "apikey" .= f3
-        , "entity" .= f4
-        , "timestamp" .= f5
+        [ "index"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
+        , "crawler"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
+        , "apikey"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f3))
+        , "entity"
+            .= ( Hs.coerce @(Hs.Maybe Monocle.Protob.Crawler.Entity)
+                  @(HsProtobuf.Nested Monocle.Protob.Crawler.Entity)
+                  (f4)
+               )
+        , "timestamp"
+            .= ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
+                  @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
+                  (f5)
+               )
         ]
     )
   toEncodingPB (CommitRequest f1 f2 f3 f4 f5) =
     ( HsJSONPB.pairs
-        [ "index" .= f1
-        , "crawler" .= f2
-        , "apikey" .= f3
-        , "entity" .= f4
-        , "timestamp" .= f5
+        [ "index"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
+        , "crawler"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
+        , "apikey"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f3))
+        , "entity"
+            .= ( Hs.coerce @(Hs.Maybe Monocle.Protob.Crawler.Entity)
+                  @(HsProtobuf.Nested Monocle.Protob.Crawler.Entity)
+                  (f4)
+               )
+        , "timestamp"
+            .= ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
+                  @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
+                  (f5)
+               )
         ]
     )
 
@@ -897,11 +1116,25 @@ instance HsJSONPB.FromJSONPB CommitRequest where
         "CommitRequest"
         ( \obj ->
             (Hs.pure CommitRequest)
-              <*> obj .: "index"
-              <*> obj .: "crawler"
-              <*> obj .: "apikey"
-              <*> obj .: "entity"
-              <*> obj .: "timestamp"
+              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                      (obj .: "index")
+                  )
+              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                      (obj .: "crawler")
+                  )
+              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                      (obj .: "apikey")
+                  )
+              <*> ( HsProtobuf.coerceOver
+                      @(HsProtobuf.Nested Monocle.Protob.Crawler.Entity)
+                      @(Hs.Maybe Monocle.Protob.Crawler.Entity)
+                      (obj .: "entity")
+                  )
+              <*> ( HsProtobuf.coerceOver
+                      @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
+                      @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
+                      (obj .: "timestamp")
+                  )
         )
     )
 
@@ -979,7 +1212,9 @@ newtype CommitResponse = CommitResponse
   { commitResponseResult ::
       Hs.Maybe CommitResponseResult
   }
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData CommitResponse
 
 instance HsProtobuf.Named CommitResponse where
   nameOf _ = (Hs.fromString "CommitResponse")
@@ -1022,10 +1257,10 @@ instance HsProtobuf.Message CommitResponse where
               ,
                 ( (HsProtobuf.FieldNumber 2)
                 , (Hs.pure (Hs.fmap CommitResponseResultTimestamp))
-                    <*> ( Hs.coerce
-                            @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
-                            @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
-                            HsProtobuf.decodeMessageField
+                    <*> ( HsProtobuf.coerceOver
+                            @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
+                            @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
+                            (HsProtobuf.decodeMessageField)
                         )
                 )
               ]
@@ -1105,7 +1340,9 @@ data CommitResponseResult
           Monocle.Protob.Crawler.CommitError
       )
   | CommitResponseResultTimestamp Google.Protobuf.Timestamp.Timestamp
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData CommitResponseResult
 
 instance HsProtobuf.Named CommitResponseResult where
   nameOf _ = (Hs.fromString "CommitResponseResult")
@@ -1118,7 +1355,9 @@ data CommitInfoRequest = CommitInfoRequest
       HsProtobuf.Enumerated Monocle.Protob.Crawler.EntityType
   , commitInfoRequestOffset :: Hs.Word32
   }
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData CommitInfoRequest
 
 instance HsProtobuf.Named CommitInfoRequest where
   nameOf _ = (Hs.fromString "CommitInfoRequest")
@@ -1137,11 +1376,15 @@ instance HsProtobuf.Message CommitInfoRequest where
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
-                commitInfoRequestIndex
+                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
+                    (commitInfoRequestIndex)
+                )
             )
           , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
-                commitInfoRequestCrawler
+                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
+                    (commitInfoRequestCrawler)
+                )
             )
           , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 3)
@@ -1155,13 +1398,17 @@ instance HsProtobuf.Message CommitInfoRequest where
       )
   decodeMessage _ =
     (Hs.pure CommitInfoRequest)
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 1)
+      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
           )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 2)
+      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 2)
+              )
           )
       <*> ( HsProtobuf.at
               HsProtobuf.decodeMessageField
@@ -1172,33 +1419,33 @@ instance HsProtobuf.Message CommitInfoRequest where
               (HsProtobuf.FieldNumber 4)
           )
   dotProto _ =
-    [ ( HsProtobuf.DotProtoField
+    [ ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 1)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "index")
+          (HsProtobufAST.Prim HsProtobufAST.String)
+          (HsProtobufAST.Single "index")
           []
           ""
       )
-    , ( HsProtobuf.DotProtoField
+    , ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 2)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "crawler")
+          (HsProtobufAST.Prim HsProtobufAST.String)
+          (HsProtobufAST.Single "crawler")
           []
           ""
       )
-    , ( HsProtobuf.DotProtoField
+    , ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 3)
-          ( HsProtobuf.Prim
-              (HsProtobuf.Named (HsProtobuf.Single "EntityType"))
+          ( HsProtobufAST.Prim
+              (HsProtobufAST.Named (HsProtobufAST.Single "EntityType"))
           )
-          (HsProtobuf.Single "entity")
+          (HsProtobufAST.Single "entity")
           []
           ""
       )
-    , ( HsProtobuf.DotProtoField
+    , ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 4)
-          (HsProtobuf.Prim HsProtobuf.UInt32)
-          (HsProtobuf.Single "offset")
+          (HsProtobufAST.Prim HsProtobufAST.UInt32)
+          (HsProtobufAST.Single "offset")
           []
           ""
       )
@@ -1207,11 +1454,23 @@ instance HsProtobuf.Message CommitInfoRequest where
 instance HsJSONPB.ToJSONPB CommitInfoRequest where
   toJSONPB (CommitInfoRequest f1 f2 f3 f4) =
     ( HsJSONPB.object
-        ["index" .= f1, "crawler" .= f2, "entity" .= f3, "offset" .= f4]
+        [ "index"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
+        , "crawler"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
+        , "entity" .= f3
+        , "offset" .= f4
+        ]
     )
   toEncodingPB (CommitInfoRequest f1 f2 f3 f4) =
     ( HsJSONPB.pairs
-        ["index" .= f1, "crawler" .= f2, "entity" .= f3, "offset" .= f4]
+        [ "index"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
+        , "crawler"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
+        , "entity" .= f3
+        , "offset" .= f4
+        ]
     )
 
 instance HsJSONPB.FromJSONPB CommitInfoRequest where
@@ -1220,8 +1479,12 @@ instance HsJSONPB.FromJSONPB CommitInfoRequest where
         "CommitInfoRequest"
         ( \obj ->
             (Hs.pure CommitInfoRequest)
-              <*> obj .: "index"
-              <*> obj .: "crawler"
+              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                      (obj .: "index")
+                  )
+              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                      (obj .: "crawler")
+                  )
               <*> obj .: "entity"
               <*> obj .: "offset"
         )
@@ -1290,7 +1553,9 @@ newtype CommitInfoResponse = CommitInfoResponse
   { commitInfoResponseResult ::
       Hs.Maybe CommitInfoResponseResult
   }
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData CommitInfoResponse
 
 instance HsProtobuf.Named CommitInfoResponse where
   nameOf _ = (Hs.fromString "CommitInfoResponse")
@@ -1337,10 +1602,10 @@ instance HsProtobuf.Message CommitInfoResponse where
               ,
                 ( (HsProtobuf.FieldNumber 2)
                 , (Hs.pure (Hs.fmap CommitInfoResponseResultEntity))
-                    <*> ( Hs.coerce
-                            @(_ (HsProtobuf.Nested Monocle.Protob.Crawler.CommitInfoResponse_OldestEntity))
-                            @(_ (Hs.Maybe Monocle.Protob.Crawler.CommitInfoResponse_OldestEntity))
-                            HsProtobuf.decodeMessageField
+                    <*> ( HsProtobuf.coerceOver
+                            @(HsProtobuf.Nested Monocle.Protob.Crawler.CommitInfoResponse_OldestEntity)
+                            @(Hs.Maybe Monocle.Protob.Crawler.CommitInfoResponse_OldestEntity)
+                            (HsProtobuf.decodeMessageField)
                         )
                 )
               ]
@@ -1422,7 +1687,9 @@ data CommitInfoResponse_OldestEntity = CommitInfoResponse_OldestEntity
       Hs.Maybe
         Google.Protobuf.Timestamp.Timestamp
   }
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData CommitInfoResponse_OldestEntity
 
 instance HsProtobuf.Named CommitInfoResponse_OldestEntity where
   nameOf _ = (Hs.fromString "CommitInfoResponse_OldestEntity")
@@ -1443,53 +1710,56 @@ instance HsProtobuf.Message CommitInfoResponse_OldestEntity where
                 (HsProtobuf.FieldNumber 1)
                 ( Hs.coerce @(Hs.Maybe Monocle.Protob.Crawler.Entity)
                     @(HsProtobuf.Nested Monocle.Protob.Crawler.Entity)
-                    commitInfoResponse_OldestEntityEntity
+                    (commitInfoResponse_OldestEntityEntity)
                 )
             )
           , ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
                 ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
                     @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
-                    commitInfoResponse_OldestEntityLastCommitAt
+                    (commitInfoResponse_OldestEntityLastCommitAt)
                 )
             )
           ]
       )
   decodeMessage _ =
     (Hs.pure CommitInfoResponse_OldestEntity)
-      <*> ( Hs.coerce @(_ (HsProtobuf.Nested Monocle.Protob.Crawler.Entity))
-              @(_ (Hs.Maybe Monocle.Protob.Crawler.Entity))
+      <*> ( HsProtobuf.coerceOver
+              @(HsProtobuf.Nested Monocle.Protob.Crawler.Entity)
+              @(Hs.Maybe Monocle.Protob.Crawler.Entity)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 1)
               )
           )
-      <*> ( Hs.coerce
-              @(_ (HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp))
-              @(_ (Hs.Maybe Google.Protobuf.Timestamp.Timestamp))
+      <*> ( HsProtobuf.coerceOver
+              @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
+              @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 2)
               )
           )
   dotProto _ =
-    [ ( HsProtobuf.DotProtoField
+    [ ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 1)
-          (HsProtobuf.Prim (HsProtobuf.Named (HsProtobuf.Single "Entity")))
-          (HsProtobuf.Single "entity")
+          ( HsProtobufAST.Prim
+              (HsProtobufAST.Named (HsProtobufAST.Single "Entity"))
+          )
+          (HsProtobufAST.Single "entity")
           []
           ""
       )
-    , ( HsProtobuf.DotProtoField
+    , ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 2)
-          ( HsProtobuf.Prim
-              ( HsProtobuf.Named
-                  ( HsProtobuf.Dots
-                      (HsProtobuf.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
+          ( HsProtobufAST.Prim
+              ( HsProtobufAST.Named
+                  ( HsProtobufAST.Dots
+                      (HsProtobufAST.Path ("google" Hs.:| ["protobuf", "Timestamp"]))
                   )
               )
           )
-          (HsProtobuf.Single "last_commit_at")
+          (HsProtobufAST.Single "last_commit_at")
           []
           ""
       )
@@ -1497,9 +1767,33 @@ instance HsProtobuf.Message CommitInfoResponse_OldestEntity where
 
 instance HsJSONPB.ToJSONPB CommitInfoResponse_OldestEntity where
   toJSONPB (CommitInfoResponse_OldestEntity f1 f2) =
-    (HsJSONPB.object ["entity" .= f1, "last_commit_at" .= f2])
+    ( HsJSONPB.object
+        [ "entity"
+            .= ( Hs.coerce @(Hs.Maybe Monocle.Protob.Crawler.Entity)
+                  @(HsProtobuf.Nested Monocle.Protob.Crawler.Entity)
+                  (f1)
+               )
+        , "last_commit_at"
+            .= ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
+                  @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
+                  (f2)
+               )
+        ]
+    )
   toEncodingPB (CommitInfoResponse_OldestEntity f1 f2) =
-    (HsJSONPB.pairs ["entity" .= f1, "last_commit_at" .= f2])
+    ( HsJSONPB.pairs
+        [ "entity"
+            .= ( Hs.coerce @(Hs.Maybe Monocle.Protob.Crawler.Entity)
+                  @(HsProtobuf.Nested Monocle.Protob.Crawler.Entity)
+                  (f1)
+               )
+        , "last_commit_at"
+            .= ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
+                  @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
+                  (f2)
+               )
+        ]
+    )
 
 instance HsJSONPB.FromJSONPB CommitInfoResponse_OldestEntity where
   parseJSONPB =
@@ -1507,8 +1801,16 @@ instance HsJSONPB.FromJSONPB CommitInfoResponse_OldestEntity where
         "CommitInfoResponse_OldestEntity"
         ( \obj ->
             (Hs.pure CommitInfoResponse_OldestEntity)
-              <*> obj .: "entity"
-              <*> obj .: "last_commit_at"
+              <*> ( HsProtobuf.coerceOver
+                      @(HsProtobuf.Nested Monocle.Protob.Crawler.Entity)
+                      @(Hs.Maybe Monocle.Protob.Crawler.Entity)
+                      (obj .: "entity")
+                  )
+              <*> ( HsProtobuf.coerceOver
+                      @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
+                      @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
+                      (obj .: "last_commit_at")
+                  )
         )
     )
 
@@ -1525,13 +1827,17 @@ data CommitInfoResponseResult
           Monocle.Protob.Crawler.CommitInfoError
       )
   | CommitInfoResponseResultEntity Monocle.Protob.Crawler.CommitInfoResponse_OldestEntity
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData CommitInfoResponseResult
 
 instance HsProtobuf.Named CommitInfoResponseResult where
   nameOf _ = (Hs.fromString "CommitInfoResponseResult")
 
 newtype Project = Project {projectFullPath :: Hs.Text}
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData Project
 
 instance HsProtobuf.Named Project where
   nameOf _ = (Hs.fromString "Project")
@@ -1543,35 +1849,54 @@ instance HsProtobuf.Message Project where
     ( Hs.mconcat
         [ ( HsProtobuf.encodeMessageField
               (HsProtobuf.FieldNumber 1)
-              projectFullPath
+              ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
+                  (projectFullPath)
+              )
           )
         ]
     )
   decodeMessage _ =
     (Hs.pure Project)
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 1)
+      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
           )
   dotProto _ =
-    [ ( HsProtobuf.DotProtoField
+    [ ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 1)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "full_path")
+          (HsProtobufAST.Prim HsProtobufAST.String)
+          (HsProtobufAST.Single "full_path")
           []
           ""
       )
     ]
 
 instance HsJSONPB.ToJSONPB Project where
-  toJSONPB (Project f1) = (HsJSONPB.object ["full_path" .= f1])
-  toEncodingPB (Project f1) = (HsJSONPB.pairs ["full_path" .= f1])
+  toJSONPB (Project f1) =
+    ( HsJSONPB.object
+        [ "full_path"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
+        ]
+    )
+  toEncodingPB (Project f1) =
+    ( HsJSONPB.pairs
+        [ "full_path"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
+        ]
+    )
 
 instance HsJSONPB.FromJSONPB Project where
   parseJSONPB =
     ( HsJSONPB.withObject
         "Project"
-        (\obj -> (Hs.pure Project) <*> obj .: "full_path")
+        ( \obj ->
+            (Hs.pure Project)
+              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                      (obj .: "full_path")
+                  )
+        )
     )
 
 instance HsJSONPB.ToJSON Project where

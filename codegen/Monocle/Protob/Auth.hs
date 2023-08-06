@@ -29,12 +29,19 @@ import Data.Vector qualified as Hs (Vector)
 import Data.Word qualified as Hs (Word16, Word32, Word64)
 import GHC.Enum qualified as Hs
 import GHC.Generics qualified as Hs
+import Google.Protobuf.Wrappers.Polymorphic qualified as HsProtobuf (
+  Wrapped (..),
+ )
 import Proto3.Suite.Class qualified as HsProtobuf
-import Proto3.Suite.DotProto qualified as HsProtobuf
+import Proto3.Suite.DotProto qualified as HsProtobufAST
 import Proto3.Suite.JSONPB ((.:), (.=))
 import Proto3.Suite.JSONPB qualified as HsJSONPB
 import Proto3.Suite.Types qualified as HsProtobuf
 import Proto3.Wire qualified as HsProtobuf
+import Proto3.Wire.Decode qualified as HsProtobuf (
+  Parser,
+  RawField,
+ )
 import Unsafe.Coerce qualified as Hs
 import Prelude qualified as Hs
 
@@ -42,7 +49,9 @@ newtype GetMagicJwtRequest = GetMagicJwtRequest
   { getMagicJwtRequestToken ::
       Hs.Text
   }
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData GetMagicJwtRequest
 
 instance HsProtobuf.Named GetMagicJwtRequest where
   nameOf _ = (Hs.fromString "GetMagicJwtRequest")
@@ -59,21 +68,25 @@ instance HsProtobuf.Message GetMagicJwtRequest where
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
-                getMagicJwtRequestToken
+                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
+                    (getMagicJwtRequestToken)
+                )
             )
           ]
       )
   decodeMessage _ =
     (Hs.pure GetMagicJwtRequest)
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 1)
+      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
           )
   dotProto _ =
-    [ ( HsProtobuf.DotProtoField
+    [ ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 1)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "token")
+          (HsProtobufAST.Prim HsProtobufAST.String)
+          (HsProtobufAST.Single "token")
           []
           ""
       )
@@ -81,15 +94,28 @@ instance HsProtobuf.Message GetMagicJwtRequest where
 
 instance HsJSONPB.ToJSONPB GetMagicJwtRequest where
   toJSONPB (GetMagicJwtRequest f1) =
-    (HsJSONPB.object ["token" .= f1])
+    ( HsJSONPB.object
+        [ "token"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
+        ]
+    )
   toEncodingPB (GetMagicJwtRequest f1) =
-    (HsJSONPB.pairs ["token" .= f1])
+    ( HsJSONPB.pairs
+        [ "token"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
+        ]
+    )
 
 instance HsJSONPB.FromJSONPB GetMagicJwtRequest where
   parseJSONPB =
     ( HsJSONPB.withObject
         "GetMagicJwtRequest"
-        (\obj -> (Hs.pure GetMagicJwtRequest) <*> obj .: "token")
+        ( \obj ->
+            (Hs.pure GetMagicJwtRequest)
+              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                      (obj .: "token")
+                  )
+        )
     )
 
 instance HsJSONPB.ToJSON GetMagicJwtRequest where
@@ -155,7 +181,9 @@ newtype GetMagicJwtResponse = GetMagicJwtResponse
   { getMagicJwtResponseResult ::
       Hs.Maybe GetMagicJwtResponseResult
   }
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData GetMagicJwtResponse
 
 instance HsProtobuf.Named GetMagicJwtResponse where
   nameOf _ = (Hs.fromString "GetMagicJwtResponse")
@@ -182,7 +210,9 @@ instance HsProtobuf.Message GetMagicJwtResponse where
                   GetMagicJwtResponseResultJwt y ->
                     ( HsProtobuf.encodeMessageField
                         (HsProtobuf.FieldNumber 2)
-                        (HsProtobuf.ForceEmit y)
+                        ( HsProtobuf.ForceEmit
+                            (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (y))
+                        )
                     )
           ]
       )
@@ -198,7 +228,9 @@ instance HsProtobuf.Message GetMagicJwtResponse where
               ,
                 ( (HsProtobuf.FieldNumber 2)
                 , (Hs.pure (Hs.Just Hs.. GetMagicJwtResponseResultJwt))
-                    <*> HsProtobuf.decodeMessageField
+                    <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                            (HsProtobuf.decodeMessageField)
+                        )
                 )
               ]
           )
@@ -212,7 +244,10 @@ instance HsJSONPB.ToJSONPB GetMagicJwtResponse where
                       Hs.Just (GetMagicJwtResponseResultError f1) ->
                         (HsJSONPB.pair "error" f1)
                       Hs.Just (GetMagicJwtResponseResultJwt f2) ->
-                        (HsJSONPB.pair "jwt" f2)
+                        ( HsJSONPB.pair
+                            "jwt"
+                            (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
+                        )
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -231,7 +266,10 @@ instance HsJSONPB.ToJSONPB GetMagicJwtResponse where
                       Hs.Just (GetMagicJwtResponseResultError f1) ->
                         (HsJSONPB.pair "error" f1)
                       Hs.Just (GetMagicJwtResponseResultJwt f2) ->
-                        (HsJSONPB.pair "jwt" f2)
+                        ( HsJSONPB.pair
+                            "jwt"
+                            (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
+                        )
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -252,7 +290,9 @@ instance HsJSONPB.FromJSONPB GetMagicJwtResponse where
                           Hs.msum
                             [ Hs.Just Hs.. GetMagicJwtResponseResultError
                                 <$> (HsJSONPB.parseField parseObj "error")
-                            , Hs.Just Hs.. GetMagicJwtResponseResultJwt
+                            , Hs.Just
+                                Hs.. GetMagicJwtResponseResultJwt
+                                Hs.. Hs.coerce @(HsProtobuf.String Hs.Text) @(Hs.Text)
                                 <$> (HsJSONPB.parseField parseObj "jwt")
                             , Hs.pure Hs.Nothing
                             ]
@@ -277,13 +317,17 @@ data GetMagicJwtResponseResult
           Monocle.Protob.Auth.GetMagicJwtError
       )
   | GetMagicJwtResponseResultJwt Hs.Text
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData GetMagicJwtResponseResult
 
 instance HsProtobuf.Named GetMagicJwtResponseResult where
   nameOf _ = (Hs.fromString "GetMagicJwtResponseResult")
 
 newtype WhoAmiRequest = WhoAmiRequest {whoAmiRequestVoid :: Hs.Text}
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData WhoAmiRequest
 
 instance HsProtobuf.Named WhoAmiRequest where
   nameOf _ = (Hs.fromString "WhoAmiRequest")
@@ -297,35 +341,54 @@ instance HsProtobuf.Message WhoAmiRequest where
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
-                whoAmiRequestVoid
+                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
+                    (whoAmiRequestVoid)
+                )
             )
           ]
       )
   decodeMessage _ =
     (Hs.pure WhoAmiRequest)
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 1)
+      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
           )
   dotProto _ =
-    [ ( HsProtobuf.DotProtoField
+    [ ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 1)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "void")
+          (HsProtobufAST.Prim HsProtobufAST.String)
+          (HsProtobufAST.Single "void")
           []
           ""
       )
     ]
 
 instance HsJSONPB.ToJSONPB WhoAmiRequest where
-  toJSONPB (WhoAmiRequest f1) = (HsJSONPB.object ["void" .= f1])
-  toEncodingPB (WhoAmiRequest f1) = (HsJSONPB.pairs ["void" .= f1])
+  toJSONPB (WhoAmiRequest f1) =
+    ( HsJSONPB.object
+        [ "void"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
+        ]
+    )
+  toEncodingPB (WhoAmiRequest f1) =
+    ( HsJSONPB.pairs
+        [ "void"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
+        ]
+    )
 
 instance HsJSONPB.FromJSONPB WhoAmiRequest where
   parseJSONPB =
     ( HsJSONPB.withObject
         "WhoAmiRequest"
-        (\obj -> (Hs.pure WhoAmiRequest) <*> obj .: "void")
+        ( \obj ->
+            (Hs.pure WhoAmiRequest)
+              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                      (obj .: "void")
+                  )
+        )
     )
 
 instance HsJSONPB.ToJSON WhoAmiRequest where
@@ -380,7 +443,9 @@ newtype WhoAmiResponse = WhoAmiResponse
   { whoAmiResponseResult ::
       Hs.Maybe WhoAmiResponseResult
   }
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData WhoAmiResponse
 
 instance HsProtobuf.Named WhoAmiResponse where
   nameOf _ = (Hs.fromString "WhoAmiResponse")
@@ -404,7 +469,9 @@ instance HsProtobuf.Message WhoAmiResponse where
                   WhoAmiResponseResultUid y ->
                     ( HsProtobuf.encodeMessageField
                         (HsProtobuf.FieldNumber 2)
-                        (HsProtobuf.ForceEmit y)
+                        ( HsProtobuf.ForceEmit
+                            (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (y))
+                        )
                     )
           ]
       )
@@ -420,7 +487,9 @@ instance HsProtobuf.Message WhoAmiResponse where
               ,
                 ( (HsProtobuf.FieldNumber 2)
                 , (Hs.pure (Hs.Just Hs.. WhoAmiResponseResultUid))
-                    <*> HsProtobuf.decodeMessageField
+                    <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                            (HsProtobuf.decodeMessageField)
+                        )
                 )
               ]
           )
@@ -433,7 +502,11 @@ instance HsJSONPB.ToJSONPB WhoAmiResponse where
                   ( case f1_or_f2 of
                       Hs.Just (WhoAmiResponseResultError f1) ->
                         (HsJSONPB.pair "error" f1)
-                      Hs.Just (WhoAmiResponseResultUid f2) -> (HsJSONPB.pair "uid" f2)
+                      Hs.Just (WhoAmiResponseResultUid f2) ->
+                        ( HsJSONPB.pair
+                            "uid"
+                            (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
+                        )
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -451,7 +524,11 @@ instance HsJSONPB.ToJSONPB WhoAmiResponse where
                   ( case f1_or_f2 of
                       Hs.Just (WhoAmiResponseResultError f1) ->
                         (HsJSONPB.pair "error" f1)
-                      Hs.Just (WhoAmiResponseResultUid f2) -> (HsJSONPB.pair "uid" f2)
+                      Hs.Just (WhoAmiResponseResultUid f2) ->
+                        ( HsJSONPB.pair
+                            "uid"
+                            (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
+                        )
                       Hs.Nothing -> Hs.mempty
                   )
              in \options ->
@@ -472,7 +549,9 @@ instance HsJSONPB.FromJSONPB WhoAmiResponse where
                           Hs.msum
                             [ Hs.Just Hs.. WhoAmiResponseResultError
                                 <$> (HsJSONPB.parseField parseObj "error")
-                            , Hs.Just Hs.. WhoAmiResponseResultUid
+                            , Hs.Just
+                                Hs.. WhoAmiResponseResultUid
+                                Hs.. Hs.coerce @(HsProtobuf.String Hs.Text) @(Hs.Text)
                                 <$> (HsJSONPB.parseField parseObj "uid")
                             , Hs.pure Hs.Nothing
                             ]
@@ -497,7 +576,9 @@ data WhoAmiResponseResult
           Monocle.Protob.Auth.WhoAmiError
       )
   | WhoAmiResponseResultUid Hs.Text
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData WhoAmiResponseResult
 
 instance HsProtobuf.Named WhoAmiResponseResult where
   nameOf _ = (Hs.fromString "WhoAmiResponseResult")
