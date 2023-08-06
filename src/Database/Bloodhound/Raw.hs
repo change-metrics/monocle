@@ -168,16 +168,16 @@ toPair (k, v) = (from k, v)
 
 mkAgg :: [(Text, Value)] -> Maybe Value -> Maybe BH.Query -> Value
 mkAgg agg docvalues query =
-  Aeson.object $
-    [ "aggregations" .= Aeson.object (toPair <$> agg)
-    , "size" .= Aeson.Number 0
-    ]
-      <> case docvalues of
-        Just dv -> ["docvalue_fields" .= dv]
-        Nothing -> []
-      <> case query of
-        Just q -> ["query" .= Aeson.toJSON q]
-        Nothing -> []
+  Aeson.object
+    $ [ "aggregations" .= Aeson.object (toPair <$> agg)
+      , "size" .= Aeson.Number 0
+      ]
+    <> case docvalues of
+      Just dv -> ["docvalue_fields" .= dv]
+      Nothing -> []
+    <> case query of
+      Just q -> ["query" .= Aeson.toJSON q]
+      Nothing -> []
 
 mkTermsCompositeAgg :: Text -> Maybe Value -> (Text, Value)
 mkTermsCompositeAgg term afterM =

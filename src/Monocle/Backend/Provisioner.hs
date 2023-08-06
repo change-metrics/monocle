@@ -60,8 +60,8 @@ setChangeID xs = do
   MkSystemTime sec _ <- getSystemTime
   let mkid x = show sec <> show x
   let newChanges = zipWith (\c x -> c {echangeId = mkid x}) xs ([0 ..] :: [Int])
-  pure $
-    map
+  pure
+    $ map
       ( \c ->
           c
             { echangeChangeId = "change-" <> echangeId c

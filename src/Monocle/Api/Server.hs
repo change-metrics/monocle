@@ -385,8 +385,10 @@ crawlerCommit _auth request = do
       -- TODO: check for CommitDateInferiorThanPrevious
       _ <- I.setLastUpdated (CrawlerName $ from crawlerName) date entity
 
-      pure . CrawlerPB.CommitResponse . Just $
-        CrawlerPB.CommitResponseResultTimestamp ts
+      pure
+        . CrawlerPB.CommitResponse
+        . Just
+        $ CrawlerPB.CommitResponseResultTimestamp ts
     Left err -> pure . toErrorResponse $ err
  where
   toErrorResponse :: CrawlerPB.CommitError -> CrawlerPB.CommitResponse
@@ -462,8 +464,8 @@ searchSuggestions auth request = checkAuth auth . const $ do
       runQueryM tenant (emptyQ now) $ Q.getSuggestions tenant
     Nothing ->
       -- Simply return empty suggestions in case of unknown tenant
-      pure $
-        SearchPB.SuggestionsResponse mempty mempty mempty mempty mempty mempty mempty mempty
+      pure
+        $ SearchPB.SuggestionsResponse mempty mempty mempty mempty mempty mempty mempty mempty
  where
   emptyQ now' = Q.blankQuery now' $ Q.yearAgo now'
 
@@ -525,13 +527,14 @@ searchCheck auth request = checkAuth auth response
     incCounter monocleQueryCheckCounter
     requestE <- validateSearchRequest checkRequestIndex checkRequestQuery username
 
-    pure $
-      SearchPB.CheckResponse $
-        Just $ case requestE of
-          Right _ -> SearchPB.CheckResponseResultSuccess "ok"
-          Left (ParseError msg offset) ->
-            SearchPB.CheckResponseResultError $
-              SearchPB.QueryError (from msg) (fromInteger . toInteger $ offset)
+    pure
+      $ SearchPB.CheckResponse
+      $ Just
+      $ case requestE of
+        Right _ -> SearchPB.CheckResponseResultSuccess "ok"
+        Left (ParseError msg offset) ->
+          SearchPB.CheckResponseResultError
+            $ SearchPB.QueryError (from msg) (fromInteger . toInteger $ offset)
 
 -- | /search/query endpoint
 searchQuery :: ApiEffects es => AuthResult AuthenticatedUser -> SearchPB.QueryRequest -> Eff es SearchPB.QueryResponse
@@ -580,31 +583,43 @@ searchQuery auth request = checkAuth auth response
               . map toRSumResult
               <$> Q.getReposSummary
           SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_LIFECYCLE_STATS ->
-            SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultLifecycleStats
+            SearchPB.QueryResponse
+              . Just
+              . SearchPB.QueryResponseResultLifecycleStats
               <$> Q.getLifecycleStats
           SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_REVIEW_STATS ->
-            SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultReviewStats
+            SearchPB.QueryResponse
+              . Just
+              . SearchPB.QueryResponseResultReviewStats
               <$> Q.getReviewStats
           SearchPB.QueryRequest_QueryTypeQUERY_ACTIVE_AUTHORS_STATS ->
-            SearchPB.QueryResponse . Just . SearchPB.QueryResponseResultActivityStats
+            SearchPB.QueryResponse
+              . Just
+              . SearchPB.QueryResponseResultActivityStats
               <$> Q.getActivityStats
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_COMMENTED ->
-            termsCountWord32ToResult . fromJust
+            termsCountWord32ToResult
+              . fromJust
               <$> Q.runMetricTop Q.metricCommentAuthors queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_REVIEWED ->
-            termsCountWord32ToResult . fromJust
+            termsCountWord32ToResult
+              . fromJust
               <$> Q.runMetricTop Q.metricReviewAuthors queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_CREATED ->
-            termsCountWord32ToResult . fromJust
+            termsCountWord32ToResult
+              . fromJust
               <$> Q.runMetricTop Q.metricChangeAuthors queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_CHANGES_MERGED ->
-            termsCountWord32ToResult . fromJust
+            termsCountWord32ToResult
+              . fromJust
               <$> Q.runMetricTop Q.metricChangeMergedAuthors queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_REVIEWED_AUTHORS ->
-            termsCountWord32ToResult . fromJust
+            termsCountWord32ToResult
+              . fromJust
               <$> Q.runMetricTop Q.metricChangeReviewedAuthors queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_COMMENTED_AUTHORS ->
-            termsCountWord32ToResult . fromJust
+            termsCountWord32ToResult
+              . fromJust
               <$> Q.runMetricTop Q.metricChangeCommentedAuthors queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_TOP_AUTHORS_PEERS ->
             SearchPB.QueryResponse
@@ -616,10 +631,11 @@ searchQuery auth request = checkAuth auth response
               <$> Q.getAuthorsPeersStrength PSModeFilterOnAuthor queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_NEW_CHANGES_AUTHORS -> do
             results <- take (fromInteger . toInteger $ queryRequestLimit) <$> Q.getNewContributors
-            pure $
-              SearchPB.QueryResponse . Just $
-                SearchPB.QueryResponseResultNewAuthors $
-                  toTermsCount (V.fromList $ toTTResult <$> results) 0
+            pure
+              $ SearchPB.QueryResponse
+              . Just
+              $ SearchPB.QueryResponseResultNewAuthors
+              $ toTermsCount (V.fromList $ toTTResult <$> results) 0
           SearchPB.QueryRequest_QueryTypeQUERY_CHANGES_TOPS ->
             SearchPB.QueryResponse
               . Just
@@ -627,18 +643,24 @@ searchQuery auth request = checkAuth auth response
               <$> Q.getChangesTops queryRequestLimit
           SearchPB.QueryRequest_QueryTypeQUERY_RATIO_COMMITS_VS_REVIEWS -> do
             ratio <- Q.getRatio Q.COMMITS_VS_REVIEWS_RATIO
-            pure . SearchPB.QueryResponse . Just $
-              SearchPB.QueryResponseResultRatio ratio
+            pure
+              . SearchPB.QueryResponse
+              . Just
+              $ SearchPB.QueryResponseResultRatio ratio
           SearchPB.QueryRequest_QueryTypeQUERY_HISTO_COMMITS -> do
             histo <- Q.runMetricTrendIntPB Q.metricChangeUpdates
-            pure . SearchPB.QueryResponse . Just $
-              SearchPB.QueryResponseResultHisto $
-                MetricPB.HistoIntStat histo
+            pure
+              . SearchPB.QueryResponse
+              . Just
+              $ SearchPB.QueryResponseResultHisto
+              $ MetricPB.HistoIntStat histo
           SearchPB.QueryRequest_QueryTypeQUERY_HISTO_REVIEWS_AND_COMMENTS -> do
             histo <- Q.runMetricTrendIntPB Q.metricReviewsAndComments
-            pure . SearchPB.QueryResponse . Just $
-              SearchPB.QueryResponseResultHisto $
-                MetricPB.HistoIntStat histo
+            pure
+              . SearchPB.QueryResponse
+              . Just
+              $ SearchPB.QueryResponseResultHisto
+              $ MetricPB.HistoIntStat histo
       Left err -> pure . handleError $ err
 
   handleError :: ParseError -> SearchPB.QueryResponse
@@ -722,8 +744,8 @@ metricInfo auth (MetricPB.InfoRequest {..}) = checkAuth auth . const $ response
     . Just
     $ case Q.getMetricInfo (from infoRequestMetric) of
       Just (Q.MetricInfo {..}) ->
-        MetricPB.InfoResponseResultInfo $
-          MetricPB.MetricInfo
+        MetricPB.InfoResponseResultInfo
+          $ MetricPB.MetricInfo
             { metricInfoName = from miName
             , metricInfoDescription = from miDesc
             , metricInfoLongDescription = from miLongDesc
@@ -761,7 +783,8 @@ instance TrendPB Float where
       . Just
       . MetricPB.GetResponseResultHistoFloat
       . MetricPB.HistoFloatStat
-      $ Q.toPBHistoFloat <$> v
+      $ Q.toPBHistoFloat
+      <$> v
 
 instance TrendPB Word32 where
   toTrendResult v =
@@ -769,7 +792,8 @@ instance TrendPB Word32 where
       . Just
       . MetricPB.GetResponseResultHistoInt
       . MetricPB.HistoIntStat
-      $ Q.toPBHistoInt <$> v
+      $ Q.toPBHistoInt
+      <$> v
 
 instance TrendPB Q.Duration where
   toTrendResult v =
@@ -777,7 +801,8 @@ instance TrendPB Q.Duration where
       . Just
       . MetricPB.GetResponseResultHistoDuration
       . MetricPB.HistoDurationStat
-      $ Q.toPBHistoDuration <$> v
+      $ Q.toPBHistoDuration
+      <$> v
 
 class Num a => TopPB a where
   toTopResult :: Q.TermsCount a -> MetricPB.GetResponse
@@ -961,8 +986,8 @@ handleLoggedIn cookieSettings err codeM stateM = do
     (Nothing, _, _, _) -> forbidden "No OIDC Context"
     (Just oidcEnv, _, Just oauthCode, Just oauthState) -> do
       tokens :: O.Tokens Value <-
-        liftIO $
-          O.getValidTokens
+        liftIO
+          $ O.getValidTokens
             (mkSessionStore oidcEnv (Just $ encodeUtf8 oauthState) Nothing)
             (oidc oidcEnv)
             (manager oidcEnv)
@@ -979,8 +1004,8 @@ handleLoggedIn cookieSettings err codeM stateM = do
       logInfo "OIDCProviderTokenRequested" ["id" .= show @Text idToken]
       -- Here we create the JWT Session Cookie that will be used by the browser to authenticate requests
       mApplyCookies <-
-        liftIO $
-          acceptLogin
+        liftIO
+          $ acceptLogin
             -- The nested JWT owns the expiry
             (cookieSettings {cookieExpires = Just expiry})
             jwtCfg

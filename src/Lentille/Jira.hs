@@ -56,7 +56,9 @@ runJiraEffects manager = runEff . E.runRetry . E.runPrometheus . E.runLoggerEffe
 
 httpJSONRequest :: JiraEffects es => HTTP.Request -> Eff es (Either Text Value)
 httpJSONRequest request =
-  either (Left . from) Right . eitherDecode . HTTP.responseBody
+  either (Left . from) Right
+    . eitherDecode
+    . HTTP.responseBody
     <$> httpRetry (decodeUtf8 request.path) (httpRequest request)
 
 jiraRequest :: JiraEffects es => JiraClient -> Text -> ByteString -> HTTP.RequestBody -> Eff es (Either Text Value)

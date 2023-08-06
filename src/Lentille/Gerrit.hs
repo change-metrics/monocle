@@ -232,7 +232,9 @@ streamChange' env identCB serverUrl query prefixM = go 0
     toIdent
       (getHostFromURL serverUrl)
       identCB
-      $ name <> "/" <> show aAccountId
+      $ name
+      <> "/"
+      <> show aAccountId
    where
     name = fromMaybe nobody aName
   toMEvents :: ChangePB.Change -> [GerritChangeMessage] -> [ChangePB.ChangeEvent]
@@ -293,8 +295,8 @@ streamChange' env identCB serverUrl query prefixM = go 0
      where
       toReviewEvent GerritChangeMessage {..} = case P.parseOnly approvalsParser mMessage of
         Right approvals ->
-          Just $
-            commentBasedEvent
+          Just
+            $ commentBasedEvent
               (ChangePB.ChangeEventTypeChangeReviewed . ChangePB.ChangeReviewedEvent $ V.fromList $ from <$> approvals)
               ("approval_" <> from mId)
               mAuthor

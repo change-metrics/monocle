@@ -87,13 +87,20 @@ instance FromJSON BugWithScore where
             Just str -> fromMaybe (error $ "score is not a number: " <> show str) $ readMaybe str
             Nothing -> 0
       BugWithScore
-        <$> v .: "id"
-        <*> v .: "last_change_time"
-        <*> v .: "keywords"
-        <*> v .: "summary"
-        <*> v .: "priority"
-        <*> v .: "severity"
-        <*> v .: "external_bugs"
+        <$> v
+        .: "id"
+        <*> v
+        .: "last_change_time"
+        <*> v
+        .: "keywords"
+        <*> v
+        .: "summary"
+        <*> v
+        .: "priority"
+        <*> v
+        .: "severity"
+        <*> v
+        .: "external_bugs"
         <*> pure pmScore
   parseJSON _ = mzero
 

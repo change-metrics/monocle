@@ -82,12 +82,12 @@ instance FromJSON EChangeAuthors where
 
 doUpdateIdentsOnChanges :: forall es. QEffects es => BH.IndexName -> (D.Author -> D.Author) -> Eff es Int
 doUpdateIdentsOnChanges indexName updateAuthor' = do
-  withQuery changeQuery $
-    scanChanges
-      & ( Streaming.mapMaybe updateChange
-            >>> Streaming.map mkEChangeBulkUpdate
-            >>> I.bulkStream
-        )
+  withQuery changeQuery
+    $ scanChanges
+    & ( Streaming.mapMaybe updateChange
+          >>> Streaming.map mkEChangeBulkUpdate
+          >>> I.bulkStream
+      )
  where
   scanChanges :: Stream (Of EChangeAuthors) (Eff es) ()
   scanChanges = Q.scanSearchHit
@@ -143,12 +143,12 @@ instance FromJSON EChangeEventAuthors where
 
 doUpdateIdentsOnEvents :: forall es. QEffects es => BH.IndexName -> (D.Author -> D.Author) -> Eff es Int
 doUpdateIdentsOnEvents indexName updateAuthor' =
-  withQuery eventQuery $
-    scanEvents
-      & ( Streaming.mapMaybe updateEvent
-            >>> Streaming.map mkEventBulkUpdate
-            >>> I.bulkStream
-        )
+  withQuery eventQuery
+    $ scanEvents
+    & ( Streaming.mapMaybe updateEvent
+          >>> Streaming.map mkEventBulkUpdate
+          >>> I.bulkStream
+      )
  where
   scanEvents :: Stream (Of EChangeEventAuthors) (Eff es) ()
   scanEvents = Q.scanSearchHit
@@ -243,13 +243,14 @@ removeTDCrawlerData crawlerName = do
   -- - the Streaming.map composition is more natural using `>>>` instead of `.`.
   removeChangeTaskDatas :: BH.IndexName -> Eff es Int
   removeChangeTaskDatas index =
-    withQuery changeTaskDataQuery $
+    withQuery changeTaskDataQuery
+      $
       -- filter on changes which have a task data from that crawler
       Q.scanSearchHit -- scan the Hit (get a Stream (Of EChange))
-        & ( Streaming.map removeTDFromChange -- remove the task data from the EChange
-              >>> Streaming.map mkEChangeBulkUpdate -- create bulk operation
-              >>> I.bulkStream -- perform the bulk operation stream
-          )
+      & ( Streaming.map removeTDFromChange -- remove the task data from the EChange
+            >>> Streaming.map mkEChangeBulkUpdate -- create bulk operation
+            >>> I.bulkStream -- perform the bulk operation stream
+        )
    where
     changeTaskDataQuery =
       mkQuery [mkTerm "tasks_data.crawler_name" crawlerName, Q.documentType D.EChangeDoc]
@@ -271,12 +272,13 @@ removeTDCrawlerData crawlerName = do
 
   removeOrphanTaskDatas :: BH.IndexName -> Eff es Int
   removeOrphanTaskDatas index =
-    withQuery taskDataQuery $
+    withQuery taskDataQuery
+      $
       -- filter on orphaned task data from that crawler
       Q.scanSearchId -- scan the DocId
-        & ( Streaming.map (BulkDelete index) -- create bulk delete operation
-              >>> I.bulkStream -- perform the bulk operation stream
-          )
+      & ( Streaming.map (BulkDelete index) -- create bulk delete operation
+            >>> I.bulkStream -- perform the bulk operation stream
+        )
    where
     taskDataQuery =
       mkQuery
@@ -292,9 +294,9 @@ removeMD entity crawlerName = do
   logInfo "Will delete crawler md" ["crawler" .= crawlerName, "entity" .= entity]
   index <- getIndexName
   deletedCount <-
-    withFilter [crawlerMDQuery entity crawlerName] $
-      Q.scanSearchId
-        & ( Streaming.map (BulkDelete index)
-              >>> I.bulkStream
-          )
+    withFilter [crawlerMDQuery entity crawlerName]
+      $ Q.scanSearchId
+      & ( Streaming.map (BulkDelete index)
+            >>> I.bulkStream
+        )
   logInfo "Deleted metadata" ["crawler" .= crawlerName, "count" .= deletedCount]

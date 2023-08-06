@@ -248,10 +248,11 @@ getClientBZ :: Text -> Secret -> GetClient es BugzillaSession
 getClientBZ url token = do
   clients <- gets clientsBugzilla
   (client, newClients) <-
-    mapMutate clients (url, token) . pure $
-      getBugzillaSession url $
-        Just $
-          getApikey token
+    mapMutate clients (url, token)
+      . pure
+      $ getBugzillaSession url
+      $ Just
+      $ getApikey token
   modify $ \s -> s {clientsBugzilla = newClients}
   pure (url, client)
 

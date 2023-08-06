@@ -131,36 +131,36 @@ toMaybeMergedOrAbandonedEvent change eId getIdent actor createdAt =
 
 toMaybeReviewEvent :: Change -> ID -> (Text -> Ident) -> Text -> DateTime -> PullRequestReviewState -> Maybe ChangeEvent
 toMaybeReviewEvent change eId getIdent actor createdAt reviewState =
-  Just $
-    ( baseEvent
-        (ChangeEventTypeChangeReviewed $ ChangeReviewedEvent $ fromList [from $ toApproval reviewState])
-        (from $ getID eId)
-        change
-    )
+  Just
+    $ ( baseEvent
+          (ChangeEventTypeChangeReviewed $ ChangeReviewedEvent $ fromList [from $ toApproval reviewState])
+          (from $ getID eId)
+          change
+      )
       { changeEventAuthor = Just $ getIdent actor
       , changeEventCreatedAt = Just $ from createdAt
       }
 
 toMaybeForcePushedEvent :: Change -> ID -> (Text -> Ident) -> Text -> DateTime -> Maybe ChangeEvent
 toMaybeForcePushedEvent change eId getIdent actor createdAt =
-  Just $
-    ( baseEvent
-        (ChangeEventTypeChangeCommitForcePushed ChangeCommitForcePushedEvent)
-        (from $ getID eId)
-        change
-    )
+  Just
+    $ ( baseEvent
+          (ChangeEventTypeChangeCommitForcePushed ChangeCommitForcePushedEvent)
+          (from $ getID eId)
+          change
+      )
       { changeEventAuthor = Just $ getIdent actor
       , changeEventCreatedAt = Just $ from createdAt
       }
 
 toMaybeCommentEvent :: Change -> ID -> (Text -> Ident) -> Text -> DateTime -> Maybe ChangeEvent
 toMaybeCommentEvent change eId getIdent actor createdAt =
-  Just $
-    ( baseEvent
-        (ChangeEventTypeChangeCommented ChangeCommentedEvent)
-        (from $ getID eId)
-        change
-    )
+  Just
+    $ ( baseEvent
+          (ChangeEventTypeChangeCommented ChangeCommentedEvent)
+          (from $ getID eId)
+          change
+      )
       { changeEventAuthor = Just $ getIdent actor
       , changeEventCreatedAt = Just $ from createdAt
       }

@@ -52,13 +52,13 @@ main = withOpenSSL do
           ]
 
   defaultMain
-    ( testGroup "Tests" $
-        [ monocleSearchLanguage
-        , monocleConfig
-        , bzClientTests
-        , jiraClientTests
-        ]
-          <> integrationTests
+    ( testGroup "Tests"
+        $ [ monocleSearchLanguage
+          , monocleConfig
+          , bzClientTests
+          , jiraClientTests
+          ]
+        <> integrationTests
     )
 
 -- Create an AppEnv where the supply of a new config can be controled
@@ -147,8 +147,8 @@ monocleApiTests =
   testGetGroups :: Assertion
   testGetGroups = do
     let appEnv =
-          mkAppEnv $
-            (Config.mkTenant "ws")
+          mkAppEnv
+            $ (Config.mkTenant "ws")
               { Config.idents =
                   Just
                     [ Config.Ident [] (Just ["grp1", "grp2"]) "John"

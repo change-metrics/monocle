@@ -211,8 +211,9 @@ transformResponse host getIdentIdCB result =
           changeRepositoryShortname = from shortName
           changeAuthor = Just (maybe (ghostIdent host) (toIdent' . getAuthorUsername) author)
           changeOptionalMergedBy =
-            ( Just . ChangeOptionalMergedByMergedBy $
-                maybe (ghostIdent host) (toIdent' . getMergerUsername) mergeUser
+            ( Just
+                . ChangeOptionalMergedByMergedBy
+                $ maybe (ghostIdent host) (toIdent' . getMergerUsername) mergeUser
             )
           changeBranch = from sourceBranch
           changeTargetBranch = from targetBranch

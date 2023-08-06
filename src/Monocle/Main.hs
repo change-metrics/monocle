@@ -175,8 +175,8 @@ run' ApiConfig {..} aplogger = E.runConcurrent $ runLoggerEffect do
       let configIO = effToIO getReloadConfig
       pure AppEnv {bhEnv, aOIDC, config = configIO}
 
-    E.runReader appEnv $
-      Effectful.Servant.runWarpServerSettingsContext @RootAPI
+    E.runReader appEnv
+      $ Effectful.Servant.runWarpServerSettingsContext @RootAPI
         settings
         cfg
         (rootServer cookieCfg)

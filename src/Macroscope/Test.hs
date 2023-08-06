@@ -99,8 +99,8 @@ testTaskDataMacroscope = withTestApi appEnv $ \client -> testAction client
           [ let name = from crawlerName
                 update_since = "2000-01-01"
                 provider =
-                  Config.BugzillaProvider $
-                    Config.Bugzilla
+                  Config.BugzillaProvider
+                    $ Config.Bugzilla
                       { bugzilla_products = Just ["fake_product"]
                       , bugzilla_token = Nothing
                       , bugzilla_url = ""
@@ -142,8 +142,8 @@ testRunCrawlers = do
       expected = ["gl1", "gl2", "gr", "gl1", "gl2", "gr"]
 
   withClient "http://localhost" Nothing $ \client ->
-    runLentilleM client $
-      Macroscope.runCrawlers' 10_000 70_000 25_000 isReload streams
+    runLentilleM client
+      $ Macroscope.runCrawlers' 10_000 70_000 25_000 isReload streams
 
   got <- reverse <$> readTVarIO logs
   assertEqual "Stream ran" expected got

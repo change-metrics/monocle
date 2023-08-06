@@ -305,7 +305,8 @@ mkRangeValue op field fieldType value = do
         dropTime
           <$> ( toParseError
                   . note ("Invalid date: " <> value)
-                  $ parseRelativeDateValue now value <|> parseDateValue value
+                  $ parseRelativeDateValue now value
+                  <|> parseDateValue value
               )
 
       when (date < oldestDate) (throwParseError $ "Date is too old: " <> show date)
@@ -325,8 +326,8 @@ mkRangeQuery op field value = do
   rangeValue <- mkRangeValue op field fieldType value
 
   let mkQuery fieldName' =
-        BH.QueryRangeQuery $
-          BH.mkRangeQuery (BH.FieldName fieldName') rangeValue
+        BH.QueryRangeQuery
+          $ BH.mkRangeQuery (BH.FieldName fieldName') rangeValue
 
   QueryFlavor _ rf <- asks envFlavor
   pure $ case rf of
@@ -346,10 +347,10 @@ mkProjectQuery :: Config.Project -> BH.Query
 mkProjectQuery Config.Project {..} = BH.QueryBoolQuery $ BH.mkBoolQuery must [] [] []
  where
   must =
-    map BH.QueryRegexpQuery $
-      maybe [] repository repository_regex
-        <> maybe [] branch branch_regex
-        <> maybe [] file file_regex
+    map BH.QueryRegexpQuery
+      $ maybe [] repository repository_regex
+      <> maybe [] branch branch_regex
+      <> maybe [] file file_regex
   mkRegexpQ field value =
     [BH.RegexpQuery (BH.FieldName field) (BH.Regexp value) BH.AllRegexpFlags Nothing]
   repository = mkRegexpQ "repository_fullname"
@@ -389,14 +390,16 @@ mkEqQuery field value' = do
     ("project", _) -> do
       index <- asks envIndex
       project <-
-        toParseError $
-          Config.lookupProject index value `orDie` ("Unknown project: " <> value)
+        toParseError
+          $ Config.lookupProject index value
+          `orDie` ("Unknown project: " <> value)
       pure $ mkProjectQuery project
     ("group", _) -> do
       index <- asks envIndex
       groupMembers <-
-        toParseError $
-          Config.lookupGroupMembers index value `orDie` ("Unknown group: " <> value)
+        toParseError
+          $ Config.lookupGroupMembers index value
+          `orDie` ("Unknown group: " <> value)
       pure $ BH.TermsQuery (from fieldName) groupMembers
     (_, Field_TypeFIELD_BOOL) -> toParseError $ flip BH.TermQuery Nothing . BH.Term (from fieldName) <$> parseBoolean value
     (_, Field_TypeFIELD_REGEX) ->
@@ -501,8 +504,8 @@ loadAliases index = case partitionEithers $ map loadAlias (Config.getSearchAlias
 
     -- Try to evaluate the alias with fake value
     _testQuery <-
-      toError $
-        queryWithMods fakeNow "self" index exprM
+      toError
+        $ queryWithMods fakeNow "self" index exprM
 
     case exprM of
       Just expr ->

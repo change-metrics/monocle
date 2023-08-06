@@ -69,7 +69,8 @@ literal = Combinators.choice [direct, quoted] <* Megaparsec.Char.space
   isValueChar c =
     ('\x23' <= c && c <= '\x27')
       || ('\x2A' <= c && c <= '\x39')
-      || c == '\x3B'
+      || c
+      == '\x3B'
       || ('\x3F' <= c && c <= '\x10FFFF')
   isText c = ('\x20' <= c && c <= '\x21') || ('\x23' <= c && c <= '\x10FFFF')
 
