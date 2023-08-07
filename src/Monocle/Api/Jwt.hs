@@ -77,8 +77,8 @@ newtype LoginInUser = LoginInUser {liRedirectURI :: Text} deriving (Show)
 
 instance ToMarkup LoginInUser where
   toMarkup LoginInUser {..} = H.docTypeHtml do
-    H.head $
-      H.title "Redirecting after a successful login ..."
+    H.head
+      $ H.title "Redirecting after a successful login ..."
     H.body do
       H.script (H.toHtml ("window.location='" <> liRedirectURI <> "';"))
 

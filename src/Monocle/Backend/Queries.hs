@@ -234,12 +234,12 @@ doTermsCompositeAgg term = getPages Nothing
 -- High level queries
 changes :: QEffects es => Maybe SearchPB.Order -> Word32 -> Eff es [EChange]
 changes orderM limit =
-  withDocTypes [EChangeDoc] (QueryFlavor Author UpdatedAt) $
-    doSearch orderM limit
+  withDocTypes [EChangeDoc] (QueryFlavor Author UpdatedAt)
+    $ doSearch orderM limit
 
 changeEvents :: QEffects es => LText -> Word32 -> Eff es (EChange, [EChangeEvent])
-changeEvents changeID limit = dropQuery $
-  withFilter [mkTerm "change_id" (from changeID)] do
+changeEvents changeID limit = dropQuery
+  $ withFilter [mkTerm "change_id" (from changeID)] do
     change <- fromMaybe (error "Unknown change") . headMaybe <$> changes Nothing 1
 
     -- Collect all the events
@@ -565,17 +565,17 @@ getTermKey BH.TermsResult {} = error "Unexpected match"
 getTermsAgg :: QEffects es => Maybe BH.Query -> Text -> Maybe Int -> Eff es TermsResultWTH
 getTermsAgg query onTerm maxBuckets = do
   search <- aggSearch query aggs
-  pure $
-    TermsResultWTH
+  pure
+    $ TermsResultWTH
       (getSimpleTR <$> filter isNotEmptyTerm (unfilteredR $ agResults search))
       (agTH search)
  where
   aggs =
-    BH.mkAggregations "singleTermAgg" $
-      BH.TermsAgg $
-        (BH.mkTermsAggregation onTerm)
-          { BH.termSize = maxBuckets
-          }
+    BH.mkAggregations "singleTermAgg"
+      $ BH.TermsAgg
+      $ (BH.mkTermsAggregation onTerm)
+        { BH.termSize = maxBuckets
+        }
   unfilteredR search' = maybe [] BH.buckets (BH.toTerms "singleTermAgg" search')
   -- Terms agg returns empty terms in a buckets
   isNotEmptyTerm :: BH.TermsResult -> Bool
@@ -628,8 +628,8 @@ openChangesCount = withFilter (changeState EChangeOpen) (withoutDate countDocs)
 -- | The repos_summary query
 getRepos :: QEffects es => Eff es TermsResultWTH
 getRepos =
-  withFlavor (QueryFlavor Author CreatedAt) $
-    getDocTypeTopCountByField (EChangeDoc :| []) "repository_fullname" (Just 5000)
+  withFlavor (QueryFlavor Author CreatedAt)
+    $ getDocTypeTopCountByField (EChangeDoc :| []) "repository_fullname" (Just 5000)
 
 data RepoSummary = RepoSummary
   { fullname :: Text
@@ -696,8 +696,8 @@ getAuthorsPeersStrength = \case
 
 getAndSortToPeerStrength :: Int -> [(Text, [TermResult])] -> [PeerStrengthResult]
 getAndSortToPeerStrength limit authors_peers =
-  take (fromInteger $ toInteger limit) $
-    sortBy
+  take (fromInteger $ toInteger limit)
+    $ sortBy
       (comparing Data.Ord.Down)
       ( concatMap
           (filter (\psr -> psrAuthor psr /= psrPeer psr) . transform)
@@ -783,15 +783,15 @@ getNewContributors = do
   (minDate, _) <- getQueryBound
 
   let getDateLimit constraint =
-        BH.QueryRangeQuery $
-          BH.mkRangeQuery (BH.FieldName "created_at") constraint
+        BH.QueryRangeQuery
+          $ BH.mkRangeQuery (BH.FieldName "created_at") constraint
 
   let beforeBounceQ b = getDateLimit $ BH.RangeDateLt (BH.LessThanD b)
   let afterBounceQ b = getDateLimit $ BH.RangeDateGte (BH.GreaterThanEqD b)
 
   let runQ =
-        withFlavor (QueryFlavor Author CreatedAt) $
-          getDocTypeTopCountByField
+        withFlavor (QueryFlavor Author CreatedAt)
+          $ getDocTypeTopCountByField
             (EChangeCreatedEvent :| [])
             "author.muid"
             (Just 5000)
@@ -807,8 +807,8 @@ getNewContributors = do
 -- | getChangesTop
 getChangesTop :: QEffects es => Word32 -> Text -> Eff es TermsResultWTH
 getChangesTop limit attr =
-  withFlavor (QueryFlavor Author CreatedAt) $
-    getDocTypeTopCountByField
+  withFlavor (QueryFlavor Author CreatedAt)
+    $ getDocTypeTopCountByField
       (EChangeDoc :| [])
       attr
       -- Ask for a large amount of buckets to hopefully
@@ -839,8 +839,8 @@ getChangesTops limit = do
       (toInt trCount)
   toInt c = fromInteger $ toInteger c
   toTermsCount total tsc =
-    Just $
-      MetricPB.TermsCountInt
+    Just
+      $ MetricPB.TermsCountInt
         { termsCountIntTermcount = V.fromList $ toPBTermCount <$> tsc
         , termsCountIntTotalHits = total
         }
@@ -848,8 +848,8 @@ getChangesTops limit = do
 searchBody :: QEffects es => QueryFlavor -> Value -> Eff es Value
 searchBody qf agg = withFlavor qf do
   queryBH <- getQueryBH
-  pure $
-    Aeson.object
+  pure
+    $ Aeson.object
       [ "aggregations" .= Aeson.object ["agg1" .= agg]
       , "size" .= (0 :: Word)
       , "docvalue_fields"
@@ -1363,7 +1363,8 @@ metricChangeUpdates = Metric mi compute computeTrend topNotSupported
       "The count of updates of changes"
       [iii|The metric is the count of commit push and force commit push events. #{queryFlavorToDesc qf}|]
   compute =
-    Num . countToWord
+    Num
+      . countToWord
       <$> withFilter
         [documentTypes $ fromList docs]
         ( withFlavor qf countDocs
@@ -1393,8 +1394,8 @@ metricChangeWithTests =
   qf = QueryFlavor Author CreatedAt
   regexp = ".*[Tt]est.*"
   testIncluded =
-    BH.QueryRegexpQuery $
-      BH.RegexpQuery (BH.FieldName "changed_files.path") (BH.Regexp regexp) BH.AllRegexpFlags Nothing
+    BH.QueryRegexpQuery
+      $ BH.RegexpQuery (BH.FieldName "changed_files.path") (BH.Regexp regexp) BH.AllRegexpFlags Nothing
   computeTrend = flip monoHisto compute
 
 -- | The count of changes self merged
@@ -1430,7 +1431,8 @@ metricReviews = Metric mi compute computeTrend topNotSupported
       "The count of change' reviews"
       [iii|The metric is the count change' code reviews. #{queryFlavorToDesc qf}|]
   compute =
-    Num . countToWord
+    Num
+      . countToWord
       <$> withFilter
         [documentType EChangeReviewedEvent]
         ( withFlavor qf countDocs
@@ -1448,7 +1450,8 @@ metricReviewsAndComments = Metric mi compute computeTrend topNotSupported
       "The count of change' reviews + comments"
       [iii|The metric is the count change' code reviews + comments. #{queryFlavorToDesc qf}|]
   compute =
-    Num . countToWord
+    Num
+      . countToWord
       <$> withFilter
         [documentTypes $ fromList docs]
         (withFlavor qf countDocs)
@@ -1466,7 +1469,8 @@ metricComments = Metric mi compute computeTrend topNotSupported
       "The count of change' comments"
       [iii|The metric is the count of change' comments. #{queryFlavorToDesc qf}|]
   compute =
-    Num . countToWord
+    Num
+      . countToWord
       <$> withFilter [documentType EChangeCommentedEvent] (withFlavor qf countDocs)
   computeTrend interval = withDocType EChangeCommentedEvent qf $ countHisto CreatedAt interval
   qf = QueryFlavor Author CreatedAt
@@ -1481,11 +1485,13 @@ metricChangeReviewedAuthors = Metric mi compute computeTrend computeTop
       "The count of reviewed change's author"
       [iii|The metric is the count of reviewed change's author aggregated by unique author. #{queryFlavorToDesc qf}|]
   compute =
-    Num . countToWord
+    Num
+      . countToWord
       <$> withFilter [documentType ev] (withFlavor qf countOnAuthors)
   computeTrend = onAuthorCountHisto ev
   computeTop limit =
-    Just . toTermsCountWord32
+    Just
+      . toTermsCountWord32
       <$> getChangeEventsTop limit (ev :| []) "on_author.muid" qf
   qf = QueryFlavor OnAuthor CreatedAt
   ev = EChangeReviewedEvent
@@ -1500,11 +1506,13 @@ metricChangeCommentedAuthors = Metric mi compute computeTrend computeTop
       "The count of commented change's author"
       [iii|The metric is the count of commented change's author aggregated by unique author. #{queryFlavorToDesc qf}|]
   compute =
-    Num . countToWord
+    Num
+      . countToWord
       <$> withFilter [documentType ev] (withFlavor qf countOnAuthors)
   computeTrend = onAuthorCountHisto ev
   computeTop limit =
-    Just . toTermsCountWord32
+    Just
+      . toTermsCountWord32
       <$> getChangeEventsTop limit (ev :| []) "on_author.muid" qf
   qf = QueryFlavor OnAuthor CreatedAt
   ev = EChangeCommentedEvent
@@ -1519,11 +1527,13 @@ metricReviewAuthors = Metric mi compute computeTrend computeTop
       "The count of change's reviewer"
       [iii|The metric is the count of change's review authors aggregated by unique author. #{queryFlavorToDesc qf}|]
   compute =
-    Num . countToWord
+    Num
+      . countToWord
       <$> withFilter [documentType ev] (withFlavor qf countAuthors)
   computeTrend = authorCountHisto ev
   computeTop limit =
-    Just . toTermsCountWord32
+    Just
+      . toTermsCountWord32
       <$> getChangeEventsTop limit (ev :| []) "author.muid" qf
   qf = QueryFlavor Author CreatedAt
   ev = EChangeReviewedEvent
@@ -1538,11 +1548,13 @@ metricCommentAuthors = Metric mi compute computeTrend computeTop
       "The count of change's commenter"
       [iii|The metric is the count of change's comment authors aggregated by unique author. #{queryFlavorToDesc qf}|]
   compute =
-    Num . countToWord
+    Num
+      . countToWord
       <$> withFilter [documentType ev] (withFlavor qf countAuthors)
   computeTrend = authorCountHisto ev
   computeTop limit =
-    Just . toTermsCountWord32
+    Just
+      . toTermsCountWord32
       <$> getChangeEventsTop limit (ev :| []) "author.muid" qf
   qf = QueryFlavor Author CreatedAt
   ev = EChangeCommentedEvent
@@ -1557,11 +1569,13 @@ metricChangeMergedAuthors = Metric mi compute computeTrend computeTop
       "The count of merged change's authors"
       [iii|The metric is the count of change merged events aggregated by unique authors. #{queryFlavorToDesc qf}|]
   compute =
-    Num . countToWord
+    Num
+      . countToWord
       <$> withFilter [documentType ev] (withFlavor qf countOnAuthors)
   computeTrend = onAuthorCountHisto ev
   computeTop limit =
-    Just . toTermsCountWord32
+    Just
+      . toTermsCountWord32
       <$> getChangeEventsTop limit (ev :| []) "on_author.muid" qf
   qf = QueryFlavor OnAuthor CreatedAt
   ev = EChangeMergedEvent
@@ -1576,7 +1590,8 @@ metricChangeAuthors = Metric mi compute computeTrend computeTop
       "The count of change's authors"
       [iii|The metric is the count of change created events aggregated by unique authors. #{queryFlavorToDesc qf}|]
   compute =
-    Num . countToWord
+    Num
+      . countToWord
       <$> withFilter [documentType EChangeCreatedEvent] (withFlavor qf countAuthors)
   computeTrend = authorCountHisto EChangeCreatedEvent
   computeTop limit = Just . toTermsCountWord32 <$> getChangesTop limit "author.muid"
@@ -1598,7 +1613,9 @@ metricTimeToMerge =
     topNotSupported
  where
   compute =
-    Duration . truncate . double2Float
+    Duration
+      . truncate
+      . double2Float
       <$> withFilter (changeState EChangeMerged) (averageDuration flavor)
   computeTrend = flip monoHisto compute
   flavor = QueryFlavor Author CreatedAt
@@ -1619,7 +1636,9 @@ metricTimeToMergeVariance =
     topNotSupported
  where
   compute =
-    Duration . truncate . double2Float
+    Duration
+      . truncate
+      . double2Float
       <$> withFilter (changeState EChangeMerged) (medianDeviationDuration flavor)
   computeTrend = flip monoHisto compute
   flavor = QueryFlavor Author CreatedAt
@@ -1688,7 +1707,8 @@ baseMetricFirstEventMeanTime mi qf dt = do
   Metric mi (Num <$> compute) computeTrend topNotSupported
  where
   compute =
-    Duration . firstEventAverageDuration
+    Duration
+      . firstEventAverageDuration
       <$> withEvents [documentType dt] (withFlavor qf firstEventOnChanges)
   computeTrend = flip monoHisto compute
 

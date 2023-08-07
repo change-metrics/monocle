@@ -265,8 +265,10 @@ transformResponse host identCB result = do
             , changeApprovals = fromList $ maybe [] ((: []) . from . toApprovals) reviewDecision
             , changeDraft = isDraft
             , changeOptionalSelfMerged =
-                Just . ChangeOptionalSelfMergedSelfMerged $
-                  (getPRAuthor <$> author) == (getPRMergedBy <$> mergedBy)
+                Just
+                  . ChangeOptionalSelfMergedSelfMerged
+                  $ (getPRAuthor <$> author)
+                  == (getPRMergedBy <$> mergedBy)
             }
      in Just
           ( change

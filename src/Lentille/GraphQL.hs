@@ -143,8 +143,8 @@ doRequest ::
   Eff es (GraphResp a)
 doRequest client mkArgs retryCheck depthM pageInfoM =
   retryingDynamic policy (const retryCheck) $ \rs -> do
-    when (rs.rsIterNumber > 0) $
-      logWarn "Faulty response" ["num" .= rs.rsIterNumber]
+    when (rs.rsIterNumber > 0)
+      $ logWarn "Faulty response" ["num" .= rs.rsIterNumber]
     runFetch rs.rsIterNumber
  where
   delay = 1_100_000 -- 1.1 seconds
@@ -217,23 +217,24 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
          in Right (rateLimitM, (pageInfo, rateLimitM, decodingErrors, xs))
 
   logStep pageInfo rateLimitM xs totalFetched = do
-    lift . logInfo "Fetched from current page" $
-      ["count" .= length xs, "total" .= (totalFetched + length xs), "pageInfo" .= pageInfo, "ratelimit" .= rateLimitM]
+    lift
+      . logInfo "Fetched from current page"
+      $ ["count" .= length xs, "total" .= (totalFetched + length xs), "pageInfo" .= pageInfo, "ratelimit" .= rateLimitM]
 
   retryDelay = 1_100_000
 
   startFetch = do
     --- Perform a pre GraphQL request to gather rateLimit
     fpRespE <- case fpGetRatelimit of
-      Just getRateLimit -> lift $
-        E.modifyMVar rateLimitMVar $
-          const do
-            rlE <- getRateLimit client
-            case rlE of
-              Left err -> do
-                logWarn_ "Could not fetch the current rate limit"
-                pure (Nothing, Just err)
-              Right rl -> pure (rl, Nothing)
+      Just getRateLimit -> lift
+        $ E.modifyMVar rateLimitMVar
+        $ const do
+          rlE <- getRateLimit client
+          case rlE of
+            Left err -> do
+              logWarn_ "Could not fetch the current rate limit"
+              pure (Nothing, Just err)
+            Right rl -> pure (rl, Nothing)
       Nothing -> pure Nothing
 
     case fpRespE of

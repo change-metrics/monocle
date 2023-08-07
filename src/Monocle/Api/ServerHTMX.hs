@@ -39,8 +39,8 @@ searchAuthorsHandler auth (Just index) queryM = do
           div_ [class_ "pf-l-stack__item"] $ do
             div_ $ show totalCount <> " author(s) available in the database"
           div_ [class_ "pf-l-stack__item"] $ do
-            div_ [id_ "search-input"] $
-              input_
+            div_ [id_ "search-input"]
+              $ input_
                 [ type_ "text"
                 , name_ "search"
                 , class_ "pf-c-form-control"

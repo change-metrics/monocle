@@ -30,8 +30,8 @@ bugzillaMockServerThread sem port skt = do
   Warp.runSettingsSocket settings skt bugzillaMockApplication
  where
   settings =
-    Warp.setPort port $
-      Warp.setBeforeMainLoop (QSem.signalQSem sem) Warp.defaultSettings
+    Warp.setPort port
+      $ Warp.setBeforeMainLoop (QSem.signalQSem sem) Warp.defaultSettings
 
 -- | Create a WARP server and return its URL
 bugzillaMockServer :: IO Text

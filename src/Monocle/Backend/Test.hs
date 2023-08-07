@@ -297,8 +297,9 @@ testOrganizationCrawlerMetadata = withTenant doTest
     -- Update the crawler metadata
     I.setLastUpdated (CrawlerName crawlerName) fakeDateA $ Organization "gitlab-org"
     lastUpdated' <- I.getLastUpdated worker entityType 0
-    liftIO $
-      lastUpdated' @?= Just (ECrawlerMetadataObject crawlerName (Organization "gitlab-org") fakeDateA)
+    liftIO
+      $ lastUpdated'
+      @?= Just (ECrawlerMetadataObject crawlerName (Organization "gitlab-org") fakeDateA)
    where
     entityType = CrawlerPB.EntityTypeENTITY_TYPE_ORGANIZATION
     fakeDefaultDate = [utctime|2020-01-01 00:00:00|]
@@ -1228,9 +1229,9 @@ testTaskDataAdoption = withTenant doTest
       changes' <- I.runScanSearch $ I.getChangesByURL [changeUrl]
       events' <- I.runScanSearch $ I.getChangesEventsByURL [changeUrl]
       let haveTDs =
-            and $
-              (isJust . echangeTasksData <$> changes')
-                <> (isJust . echangeeventTasksData <$> events')
+            and
+              $ (isJust . echangeTasksData <$> changes')
+              <> (isJust . echangeeventTasksData <$> events')
       assertEqual' "Check objects related to change 42 got the Tasks data" True haveTDs
    where
     getScenarioEvtObj :: ScenarioEvent -> Maybe EChangeEvent

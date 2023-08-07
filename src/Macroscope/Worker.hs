@@ -206,8 +206,8 @@ runStreamError startTime apiKey indexName (CrawlerName crawlerName) documentStre
        in S.map (fmap DTTaskData) (s oldestAge td)
    where
     extractEntityValue prism =
-      fromMaybe (error $ "Entity is not the right shape: " <> show entity) $
-        preview prism entity
+      fromMaybe (error $ "Entity is not the right shape: " <> show entity)
+        $ preview prism entity
 
   -- 'mkRequest' creates the 'AddDocRequests' for a given oldest entity and a list of documenttype
   -- this is used by the processBatch function.

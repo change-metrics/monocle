@@ -282,7 +282,8 @@ getSecret ::
   Maybe Text ->
   Eff es Secret
 getSecret def keyM =
-  from . fromMaybe (error $ "Missing environment: " <> env)
+  from
+    . fromMaybe (error $ "Missing environment: " <> env)
     <$> envGet (unTagged $ into @(UTF_8 ByteString) env)
  where
   env = fromMaybe def keyM
@@ -326,15 +327,17 @@ getAuthProvider publicUrl Config {auth} = case auth of
                     opEnforceAuth = Just True == enforce_auth
                  in pure . Right . Just $ OIDCProviderConfig {..}
             Just _ ->
-              pure . Left $
-                misconfigMsg
-                  <> from secEnv
-                  <> " environment variable found must not be empty."
+              pure
+                . Left
+                $ misconfigMsg
+                <> from secEnv
+                <> " environment variable found must not be empty."
             Nothing ->
-              pure . Left $
-                misconfigMsg
-                  <> from secEnv
-                  <> " environment variable not found."
+              pure
+                . Left
+                $ misconfigMsg
+                <> from secEnv
+                <> " environment variable not found."
       OIDCProvider _ -> do
         pure . Left $ misconfigMsg <> "At least one mandatory setting is empty."
       GithubAuthProvider _ -> error "GithubAuthProvider not yet supported"

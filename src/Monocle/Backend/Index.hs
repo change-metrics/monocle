@@ -304,12 +304,12 @@ upgradeConfigV3 = do
   indexName <- getIndexName
   logInfo "Applying migration to schema V3 on workspace" ["index" .= indexName]
   count <-
-    withQuery eventQuery $
-      scanEvents
-        & ( Streaming.mapMaybe updateEvent
-              >>> Streaming.map (mkEventBulkUpdate indexName)
-              >>> bulkStream
-          )
+    withQuery eventQuery
+      $ scanEvents
+      & ( Streaming.mapMaybe updateEvent
+            >>> Streaming.map (mkEventBulkUpdate indexName)
+            >>> bulkStream
+        )
   logInfo "Migration to schema V3 affected documents" ["count" .= count]
   pure count
  where
@@ -330,12 +330,12 @@ upgradeConfigV4 = do
   indexName <- getIndexName
   logInfo "Applying migration to schema V4 on workspace " ["index" .= indexName]
   count <-
-    withQuery changeQuery $
-      scanChanges
-        & ( Streaming.map updateChange
-              >>> Streaming.map (mkChangeBulkUpdate indexName)
-              >>> bulkStream
-          )
+    withQuery changeQuery
+      $ scanChanges
+      & ( Streaming.map updateChange
+            >>> Streaming.map (mkChangeBulkUpdate indexName)
+            >>> bulkStream
+        )
   logInfo "Migration to schema V4 affected documents" ["count" .= count]
   pure count
  where
@@ -402,8 +402,8 @@ ensureConfigIndex = do
   -- Apply upgrade processes
   traverse_
     ( \(version, procedure) ->
-        when (currentVersion < version) $
-          traverseWorkspace procedure conf
+        when (currentVersion < version)
+          $ traverseWorkspace procedure conf
     )
     upgrades
 
@@ -528,10 +528,12 @@ toETaskData crawlerName SearchPB.TaskData {..} =
 bulkStream :: MonoQuery :> es => IndexEffects es => Stream (Of BH.BulkOperation) (Eff es) () -> Eff es Int
 bulkStream s = do
   (count :> _) <- S.sum . S.mapM callBulk . S.mapped S.toList . S.chunksOf 500 $ s
-  when (count > 0) $
+  when (count > 0)
+    $
     -- TODO: check for refresh errors ?
-    void $
-      esRefreshIndex =<< getIndexName
+    void
+    $ esRefreshIndex
+    =<< getIndexName
   pure count
  where
   callBulk :: IndexEffects es => [BH.BulkOperation] -> Eff es Int
@@ -745,8 +747,8 @@ taskDataDocToBHDoc TaskDataDoc {..} =
 orphanTaskDataDocToBHDoc :: TaskDataDoc -> (Value, BH.DocId)
 orphanTaskDataDocToBHDoc TaskDataDoc {..} =
   let td = head $ fromList tddTd
-   in ( toJSON $
-          EChangeOrphanTD
+   in ( toJSON
+          $ EChangeOrphanTD
             (from tddId)
             EOrphanTaskData
             td
@@ -769,9 +771,11 @@ taskDataAdd crawlerName tds = do
   taskDataDocs <- fmap snd <$> unsafeEff_ (H.toList changesHT)
   -- Get TDs from matching change events
   taskDataDocs' <-
-    unsafeEff_ $
-      fmap catMaybes <$> sequence $
-        getTDforEventFromHT changesHT <$> changeEvents
+    unsafeEff_
+      $ fmap catMaybes
+      <$> sequence
+      $ getTDforEventFromHT changesHT
+      <$> changeEvents
   -- Let's push the data
   updateDocs (taskDataDocToBHDoc <$> taskDataDocs <> taskDataDocs')
   upsertDocs (orphanTaskDataDocToBHDoc <$> orphanTaskDataDocs)
@@ -960,12 +964,12 @@ populateAuthorCache :: MonoQuery :> es => IndexEffects es => Eff es Int
 populateAuthorCache = do
   indexName <- getIndexName
   -- First wipe the cache
-  void $
-    withFilter [Q.documentType ECachedAuthor] $
-      Q.scanSearchId
-        & ( Streaming.map (BulkDelete indexName)
-              >>> bulkStream
-          )
+  void
+    $ withFilter [Q.documentType ECachedAuthor]
+    $ Q.scanSearchId
+    & ( Streaming.map (BulkDelete indexName)
+          >>> bulkStream
+      )
   -- Second populate the cache
   Q.getAllAuthorsMuid
     & ( Streaming.map (mkECachedAuthorBulkInsert indexName)
@@ -1006,8 +1010,9 @@ searchAuthorCache matchQuery = do
   runSearch index = esScanSearch index search
   search = BH.mkSearch (Just query) Nothing
   query =
-    BH.QueryMatchQuery . BH.mkMatchQuery (BH.FieldName "cached_author_muid") $
-      BH.QueryString matchQuery
+    BH.QueryMatchQuery
+      . BH.mkMatchQuery (BH.FieldName "cached_author_muid")
+      $ BH.QueryString matchQuery
   trans :: BH.Hit CachedAuthor -> Maybe Text
   trans BH.Hit {..} = case hitSource of
     Just CachedAuthor {..} -> Just . from $ caCachedAuthorMuid

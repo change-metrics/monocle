@@ -29,12 +29,19 @@ import Data.Vector qualified as Hs (Vector)
 import Data.Word qualified as Hs (Word16, Word32, Word64)
 import GHC.Enum qualified as Hs
 import GHC.Generics qualified as Hs
+import Google.Protobuf.Wrappers.Polymorphic qualified as HsProtobuf (
+  Wrapped (..),
+ )
 import Proto3.Suite.Class qualified as HsProtobuf
-import Proto3.Suite.DotProto qualified as HsProtobuf
+import Proto3.Suite.DotProto qualified as HsProtobufAST
 import Proto3.Suite.JSONPB ((.:), (.=))
 import Proto3.Suite.JSONPB qualified as HsJSONPB
 import Proto3.Suite.Types qualified as HsProtobuf
 import Proto3.Wire qualified as HsProtobuf
+import Proto3.Wire.Decode qualified as HsProtobuf (
+  Parser,
+  RawField,
+ )
 import Unsafe.Coerce qualified as Hs
 import Prelude qualified as Hs
 
@@ -42,7 +49,9 @@ newtype LoginValidationRequest = LoginValidationRequest
   { loginValidationRequestUsername ::
       Hs.Text
   }
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData LoginValidationRequest
 
 instance HsProtobuf.Named LoginValidationRequest where
   nameOf _ = (Hs.fromString "LoginValidationRequest")
@@ -59,21 +68,25 @@ instance HsProtobuf.Message LoginValidationRequest where
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
-                loginValidationRequestUsername
+                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
+                    (loginValidationRequestUsername)
+                )
             )
           ]
       )
   decodeMessage _ =
     (Hs.pure LoginValidationRequest)
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 1)
+      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
           )
   dotProto _ =
-    [ ( HsProtobuf.DotProtoField
+    [ ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 1)
-          (HsProtobuf.Prim HsProtobuf.String)
-          (HsProtobuf.Single "username")
+          (HsProtobufAST.Prim HsProtobufAST.String)
+          (HsProtobufAST.Single "username")
           []
           ""
       )
@@ -81,15 +94,28 @@ instance HsProtobuf.Message LoginValidationRequest where
 
 instance HsJSONPB.ToJSONPB LoginValidationRequest where
   toJSONPB (LoginValidationRequest f1) =
-    (HsJSONPB.object ["username" .= f1])
+    ( HsJSONPB.object
+        [ "username"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
+        ]
+    )
   toEncodingPB (LoginValidationRequest f1) =
-    (HsJSONPB.pairs ["username" .= f1])
+    ( HsJSONPB.pairs
+        [ "username"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
+        ]
+    )
 
 instance HsJSONPB.FromJSONPB LoginValidationRequest where
   parseJSONPB =
     ( HsJSONPB.withObject
         "LoginValidationRequest"
-        (\obj -> (Hs.pure LoginValidationRequest) <*> obj .: "username")
+        ( \obj ->
+            (Hs.pure LoginValidationRequest)
+              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                      (obj .: "username")
+                  )
+        )
     )
 
 instance HsJSONPB.ToJSON LoginValidationRequest where
@@ -103,7 +129,9 @@ newtype LoginValidationResponse = LoginValidationResponse
   { loginValidationResponseResult ::
       Hs.Maybe LoginValidationResponseResult
   }
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData LoginValidationResponse
 
 instance HsProtobuf.Named LoginValidationResponse where
   nameOf _ = (Hs.fromString "LoginValidationResponse")
@@ -274,7 +302,9 @@ data LoginValidationResponseResult
       ( HsProtobuf.Enumerated
           Monocle.Protob.Login.LoginValidationResponse_ValidationResult
       )
-  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic, Hs.NFData)
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData LoginValidationResponseResult
 
 instance HsProtobuf.Named LoginValidationResponseResult where
   nameOf _ = (Hs.fromString "LoginValidationResponseResult")
