@@ -674,8 +674,11 @@ getChangeEventsTop limit docs qfield qf =
 -- | peer strength authors
 data PeerStrengthResult = PeerStrengthResult
   { psrAuthor :: Text
+  -- ^ The author name
   , psrPeer :: Text
+  -- ^ The peer reviewer name
   , psrStrength :: Word32
+  -- ^ The count of reviews + comments events
   }
   deriving (Show, Eq)
 
@@ -714,14 +717,22 @@ getAndSortToPeerStrength limit authors_peers =
      in
       toPSR <$> peers_authors
 
+-- | This function is used by the API peersStrength metrics (QUERY_TOP_AUTHORS_PEERS)
 getAuthorsPeersStrengthFromChangeAuthors :: QEffects es => Word32 -> Eff es [PeerStrengthResult]
 getAuthorsPeersStrengthFromChangeAuthors limit = withFlavor qf do
+  -- We get the list of change' authors. Authors are sorted by the amount of produced changes and we keep only the top N where N = limit
+  -- This ensures we scope on the change' authors specified in the query (a specific author or a group of authors)
+  -- in order to discover their peers reviewers
   authors <-
     getDocTypeTopCountByField
       (fromList [EChangeDoc])
       "author.muid"
       (Just limit)
+  -- We filter events (only reviews and comments) performed on changes created by each of those authors
+  -- and we extract the list of event' authors sorted by the amount of produced events
+  -- authors_peers is a list of tuple [(change author, [peer reviewers])]
   authors_peers <- traverse (getAuthorPeers . trTerm) (tsrTR authors)
+  -- We transform the data to the PeerStrengthResult data type
   pure $ getAndSortToPeerStrength (fromInteger $ toInteger limit) authors_peers
  where
   qf = QueryFlavor Author CreatedAt
@@ -734,6 +745,8 @@ getAuthorsPeersStrengthFromChangeAuthors limit = withFlavor qf do
         (Just 5000)
     pure (author, tsrTR event_authors)
 
+-- | This function is similar to getAuthorsPeersStrengthFromChangeAuthors except that the filtering
+-- | of authors based on the query is done on event documents.
 getAuthorsPeersStrengthFromPeerReviewers :: QEffects es => Word32 -> Eff es [PeerStrengthResult]
 getAuthorsPeersStrengthFromPeerReviewers limit = withFlavor qf do
   event_authors <-
