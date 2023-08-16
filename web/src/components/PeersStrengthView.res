@@ -66,7 +66,9 @@ let make = (~store: Store.t, ~stacked: bool, ~extraQuery: option<string>=?) => {
   let (state, _) = store
   let (limit, setLimit) = React.useState(() => 25)
   let limit_values = list{10, 25, 50, 100, 500}
-  let tooltip_content = "This shows the strength between change authors and peer reviewers"
+  let tooltip_content =
+    "This shows the strength between change authors and peer reviewers. " ++
+    "Each line of the table shows a strength value between a change's author and a peer reviewer. " ++ "The strength value is the count of comments + the count of reviews performed by the peer on the author' changes."
   let baseRequest = Store.mkSearchRequest(state, SearchTypes.Query_top_authors_peers)
   let request = {
     ...baseRequest,
