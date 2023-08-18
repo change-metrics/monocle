@@ -26,14 +26,17 @@
       "github:NixOS/nixpkgs/ed014c27f4d0ca772fb57d3b8985b772b0503bbd";
     hspkgs.url =
       "github:podenv/hspkgs/e25ca08431a6bab2b9eccda1764269824fe786ea";
+    butler.url =
+      "github:TristanCacqueray/haskell-butler/94af3ff012940511dec2ac62acf830641d636134";
   };
 
-  outputs = { self, nixpkgs, hspkgs }:
+  outputs = { self, nixpkgs, hspkgs, butler }:
     let
       legacy = import ./nix/default.nix {
         nixpkgsPath = nixpkgs;
         hspkgs = hspkgs.pkgs;
         self = self;
+        butler = butler;
       };
     in {
       haskellExtend = legacy.hExtend;

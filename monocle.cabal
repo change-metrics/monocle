@@ -128,6 +128,7 @@ library
                      , binary                     >= 0.8
                      , bloodhound                 ^>= 0.19
                      , bugzilla-redhat            ^>= 1.0
+                     , butler
                      , byteslice                  >= 0.2
                      , bytestring                 >= 0.10
                      , containers                 >= 0.6
@@ -212,6 +213,9 @@ library
                      , Monocle.Effects.Compat
                      , CLI
                      , Tests
+
+                     -- butler
+                     , Monocle.Butler
 
                      -- monocle api
                      , Monocle.Entity

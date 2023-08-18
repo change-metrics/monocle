@@ -1,4 +1,4 @@
-{ elasticsearch-port ? 19200, nixpkgsPath, hspkgs, self }:
+{ elasticsearch-port ? 19200, nixpkgsPath, hspkgs, butler, self }:
 let
   nixpkgsSrc = import nixpkgsPath;
 
@@ -44,7 +44,7 @@ let
     config.allowUnfree = true;
   };
   # final haskell set, see: https://github.com/NixOS/nixpkgs/issues/25887
-  hsPkgs = hspkgs.hspkgs.extend haskellExtend;
+  hsPkgs = (hspkgs.hspkgs.extend butler.haskellExtend).extend haskellExtend;
 
   # manually adds build dependencies for benchmark and codegen that are not managed by cabal2nix
   addExtraDeps = drv:
