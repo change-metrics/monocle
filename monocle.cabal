@@ -201,6 +201,7 @@ library
                      , wai-logger                 >= 2.3
                      , wai-middleware-prometheus  >= 1.0
                      , warp                       >= 3.3.15
+                     , websockets
                      , witch                      >= 0.3
   hs-source-dirs:      src
   exposed-modules:     Monocle.Prelude

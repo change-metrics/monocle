@@ -72,7 +72,7 @@ withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
         (\index -> runEmptyQueryM index I.ensureIndex)
         indexes
       unsafeEff $ \es ->
-        let app = Effectful.Servant.hoistEff @RootAPI es cfg (rootServer cookieCfg)
+        let app = Effectful.Servant.hoistEff @RootAPI es cfg (rootServer (error "butler ws test not implemented") cookieCfg)
             withManager manager = do
               withClient "http://localhost" (Just manager) $ \client -> do
                 testCb client

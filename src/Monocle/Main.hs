@@ -8,6 +8,7 @@ import Monocle.Api.Jwt (doGenJwk, initOIDCEnv)
 import Monocle.Api.Server (handleLoggedIn, handleLogin)
 import Monocle.Api.ServerHTMX (searchAuthorsHandler)
 import Monocle.Backend.Index qualified as I
+import Monocle.Butler qualified as B
 import Monocle.Config (getAuthProvider, opName)
 import Monocle.Config qualified as Config
 import Monocle.Env
@@ -25,6 +26,7 @@ import Prometheus (register)
 import Prometheus.Metric.GHC (ghcMetrics)
 import Servant
 import Servant.Auth.Server (CookieSettings (..), cookieXsrfSetting, defaultCookieSettings, defaultJWTSettings)
+import Servant.Auth.Server qualified as SAS (JWTSettings)
 import System.Directory qualified
 
 import Effectful qualified as E
@@ -34,10 +36,15 @@ import Effectful.Reader.Static qualified as E
 import Effectful.Servant qualified
 import Monocle.Effects
 
-rootServer :: (ApiEffects es, E.Concurrent Monocle.Prelude.:> es) => CookieSettings -> Servant.ServerT RootAPI (Eff es)
-rootServer cookieSettings = app :<|> app
+type CTX = '[SAS.JWTSettings, CookieSettings]
+
+rootServer :: forall es. (ApiEffects es, E.Concurrent Monocle.Prelude.:> es) => Servant.ServerT B.ButlerWSAPI Servant.Handler -> CookieSettings -> Servant.ServerT RootAPI (Eff es)
+rootServer wsApp cookieSettings = app :<|> app :<|> wsAppEff
  where
   app = server :<|> searchAuthorsHandler :<|> handleLogin :<|> handleLoggedIn cookieSettings
+
+  wsAppEff :: Servant.ServerT B.ButlerWSAPI (Eff es)
+  wsAppEff = Servant.hoistServerWithContext (Proxy @B.ButlerWSAPI) (Proxy @CTX) Effectful.Servant.handlerToEff wsApp
 
 fallbackWebAppPath :: FilePath
 fallbackWebAppPath = "web/build/"
@@ -116,7 +123,7 @@ run cfg =
       $ run' cfg aplogger
 
 run' :: (IOE Monocle.Prelude.:> es, MonoConfigEffect Monocle.Prelude.:> es) => ApiConfig -> ApacheLogger -> Eff es ()
-run' ApiConfig {..} aplogger = E.runConcurrent $ runLoggerEffect do
+run' ApiConfig {..} aplogger = B.runButlerEffect \processEnv -> B.withButlerDisplay \display -> E.runConcurrent $ runLoggerEffect do
   conf <- Config.csConfig <$> getReloadConfig
   let workspaces = Config.getWorkspaces conf
 
@@ -163,23 +170,28 @@ run' ApiConfig {..} aplogger = E.runConcurrent $ runLoggerEffect do
     let settings = Warp.setPort port $ Warp.setLogger httpLogger Warp.defaultSettings
         jwtCfg = localJWTSettings
         cookieCfg = defaultCookieSettings {cookieXsrfSetting = Nothing}
+        cfg :: Servant.Context CTX
         cfg = jwtCfg :. cookieCfg :. EmptyContext
         middleware =
           cors (const $ Just corsPolicy)
             . monitoringMiddleware
             . healthMiddleware
             . staticMiddleware
+
+    let wsApp :: Servant.ServerT B.ButlerWSAPI Servant.Handler
+        wsApp = B.butlerWsApp oidcEnv processEnv display [B.dashboardApp bhEnv]
+
     logInfo "SystemReady" ["workspace" .= length workspaces, "port" .= port, "elastic" .= elasticUrl]
 
     appEnv <- E.withEffToIO $ \effToIO -> do
       let configIO = effToIO getReloadConfig
       pure AppEnv {bhEnv, aOIDC, config = configIO}
 
-    E.runReader appEnv
-      $ Effectful.Servant.runWarpServerSettingsContext @RootAPI
+    E.runReader appEnv do
+      Effectful.Servant.runWarpServerSettingsContext @RootAPI
         settings
         cfg
-        (rootServer cookieCfg)
+        (rootServer wsApp cookieCfg)
         middleware
   case r of
     Left e -> error (show e)
