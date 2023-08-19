@@ -480,6 +480,7 @@ in rec {
         # Use fakeroot to avoid `No user exists for uid` error
         "LD_PRELOAD=${pkgs.fakeroot}/lib/libfakeroot.so"
       ];
+      WorkingDir = "/${home}";
     };
   };
 
