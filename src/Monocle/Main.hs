@@ -28,6 +28,8 @@ import Servant
 import Servant.Auth.Server (CookieSettings (..), cookieXsrfSetting, defaultCookieSettings, defaultJWTSettings)
 import Servant.Auth.Server qualified as SAS (JWTSettings)
 import System.Directory qualified
+import XStatic qualified
+import XStatic.Butler (defaultXFiles)
 
 import Effectful qualified as E
 import Effectful.Concurrent.MVar qualified as E
@@ -38,10 +40,13 @@ import Monocle.Effects
 
 type CTX = '[SAS.JWTSettings, CookieSettings]
 
-rootServer :: forall es. (ApiEffects es, E.Concurrent Monocle.Prelude.:> es) => Servant.ServerT B.ButlerWSAPI Servant.Handler -> CookieSettings -> Servant.ServerT RootAPI (Eff es)
-rootServer wsApp cookieSettings = app :<|> app :<|> wsAppEff
+rootServer :: forall es. (ApiEffects es, E.Concurrent Monocle.Prelude.:> es) => Servant.ServerT B.ButlerWSAPI Servant.Handler -> Servant.ServerT B.ButlerHtmlAPI Servant.Handler -> CookieSettings -> Servant.ServerT RootAPI (Eff es)
+rootServer wsApp htmlApp cookieSettings = app :<|> app :<|> htmlAppEff :<|> wsAppEff
  where
   app = server :<|> searchAuthorsHandler :<|> handleLogin :<|> handleLoggedIn cookieSettings
+
+  htmlAppEff :: Servant.ServerT B.ButlerHtmlAPI (Eff es)
+  htmlAppEff = Servant.hoistServerWithContext (Proxy @B.ButlerHtmlAPI) (Proxy @CTX) Effectful.Servant.handlerToEff htmlApp
 
   wsAppEff :: Servant.ServerT B.ButlerWSAPI (Eff es)
   wsAppEff = Servant.hoistServerWithContext (Proxy @B.ButlerWSAPI) (Proxy @CTX) Effectful.Servant.handlerToEff wsApp
@@ -172,14 +177,18 @@ run' ApiConfig {..} aplogger = B.runButlerEffect \processEnv -> B.withButlerDisp
         cookieCfg = defaultCookieSettings {cookieXsrfSetting = Nothing}
         cfg :: Servant.Context CTX
         cfg = jwtCfg :. cookieCfg :. EmptyContext
+        xfiles = defaultXFiles
         middleware =
           cors (const $ Just corsPolicy)
             . monitoringMiddleware
             . healthMiddleware
             . staticMiddleware
+            . XStatic.xstaticMiddleware xfiles
 
     let wsApp :: Servant.ServerT B.ButlerWSAPI Servant.Handler
         wsApp = B.butlerWsApp oidcEnv processEnv display [B.dashboardApp bhEnv]
+
+        htmlApp = B.butlerHtmlApp xfiles
 
     logInfo "SystemReady" ["workspace" .= length workspaces, "port" .= port, "elastic" .= elasticUrl]
 
@@ -191,7 +200,7 @@ run' ApiConfig {..} aplogger = B.runButlerEffect \processEnv -> B.withButlerDisp
       Effectful.Servant.runWarpServerSettingsContext @RootAPI
         settings
         cfg
-        (rootServer wsApp cookieCfg)
+        (rootServer wsApp htmlApp cookieCfg)
         middleware
   case r of
     Left e -> error (show e)

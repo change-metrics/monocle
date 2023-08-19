@@ -4,6 +4,10 @@ module Monocle.Butler (
   ButlerWSAPI,
   butlerWsApp,
 
+  -- * The html API
+  ButlerHtmlAPI,
+  butlerHtmlApp,
+
   -- * UI Apps
   dashboardApp,
 
@@ -19,6 +23,7 @@ import Butler.Core
 import Butler.Display
 import Butler.Display.Session
 import Butler.Display.WebSocket
+import Butler.Frame (butlerHelpersScript)
 import Network.WebSockets qualified as WS
 import Prelude
 
@@ -28,11 +33,16 @@ import Monocle.Effects qualified as E
 import Monocle.Env qualified as M
 import Monocle.Logging qualified as E (runLoggerEffect)
 import Monocle.Prelude (runEff)
+import Monocle.Search.Query qualified as MQ
 
 import Network.HTTP.Types.Status qualified as HTTP
 import Network.Socket (SockAddr)
 import Network.Wai qualified as Wai
 import Servant qualified
+import Servant.HTML.Lucid (HTML)
+
+import Lucid.XStatic qualified
+import XStatic qualified
 
 import Effectful (Dispatch (Static), DispatchOf, Eff, Effect, IOE, withEffToIO, (:>))
 import Effectful.Dispatch.Static (SideEffects (..), StaticRep, evalStaticRep, getStaticRep, unEff, unsafeEff, unsafeEff_)
@@ -72,6 +82,20 @@ withButlerDisplay cb = do
       display <- atomically (newDisplay sessions)
       liftIO $ runInIO (cb display)
 
+type ButlerHtmlAPI = "view" Servant.:> Servant.Get '[HTML] (Html ())
+
+butlerHtmlApp :: [XStatic.XStaticFile] -> Servant.ServerT ButlerHtmlAPI Servant.Handler
+butlerHtmlApp xfiles = pure do
+  doctypehtml_ do
+    head_ do
+      title_ "Monocle"
+      meta_ [charset_ "utf-8"]
+      meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1.0"]
+      Lucid.XStatic.xstaticScripts xfiles
+      script_ butlerHelpersScript
+      body_ do
+        websocketHtml (workspaceUrl Nothing)
+
 type ButlerWSAPI = WebSocketAPI AuthenticatedUser
 
 butlerWsApp :: Maybe OIDCEnv -> ProcessEnv -> Display -> [App] -> Servant.ServerT ButlerWSAPI Servant.Handler
@@ -103,13 +127,16 @@ butlerWsApp mAuth processEnv display apps = websocketServer processEnv adaptMono
 dashboardApp :: E.ElasticEnv -> App
 dashboardApp elasticEnv = defaultApp "dashboard" startDashboard
  where
-  runEffects = liftIO . runEff . E.runLoggerEffect . E.runElasticEffect elasticEnv . E.runMonoQuery queryEnv
+  runEffects queryEnv = liftIO . runEff . E.runLoggerEffect . E.runElasticEffect elasticEnv . E.runMonoQuery queryEnv
 
   startDashboard ctx = do
+    now <- liftIO getCurrentTime
+    let queryEnv = mkQueryEnv (MQ.blankQuery (MQ.yearAgo now) now)
+
     state <- newTVarIO 0
-    let getChanges = runEffects do
+    let getChanges = runEffects queryEnv do
           -- Here is the demo of using the monocle backend:
-          count <- Q.countDocs
+          count <- Q.openChangesCount
           atomically do writeTVar state count
 
     -- make a query
@@ -126,9 +153,9 @@ dashboardApp elasticEnv = defaultApp "dashboard" startDashboard
         _ -> pure ()
 
   -- TODO: make this configurable by the user.
-  queryEnv :: E.MonoQueryEnv
-  queryEnv =
+  mkQueryEnv :: MQ.Query -> E.MonoQueryEnv
+  mkQueryEnv query =
     E.MonoQueryEnv
-      { queryTarget = M.QueryWorkspace (M.mkConfig "openstack")
-      , searchQuery = undefined
+      { queryTarget = M.QueryWorkspace (M.mkConfig "monocle")
+      , searchQuery = query
       }
