@@ -6,26 +6,6 @@ let GithubActions =
 let checkout-step =
       GithubActions.Step::{ uses = Some "actions/checkout@v2.4.0" }
 
-let init-docker-steps =
-      [ GithubActions.Step::{
-        , name = Some "Stop provided Docker"
-        , run = Some "sudo systemctl stop docker containerd"
-        }
-      , GithubActions.Step::{
-        , name = Some "Remove provided Docker"
-        , run = Some
-            "sudo apt-get remove --autoremove -y moby-engine moby-cli moby-buildx moby-containerd moby-runc"
-        }
-      , GithubActions.Step::{
-        , name = Some "Install patched seccomp Docker repository"
-        , run = Some "sudo add-apt-repository -y ppa:pascallj/docker.io-clone3"
-        }
-      , GithubActions.Step::{
-        , name = Some "Install patched seccomp Docker"
-        , run = Some "sudo apt-get install -y docker.io"
-        }
-      ]
-
 let el-sysctl-step =
       GithubActions.Step::{
       , name = Some "Configure sysctl limits"
@@ -208,11 +188,7 @@ in  { GithubActions
               { compose = GithubActions.Job::{
                 , name = Some "compose-tests"
                 , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
-                , steps =
-                      boot "change-metrics"
-                    # init-docker-steps
-                    # [ el-sysctl-step ]
-                    # steps
+                , steps = boot "change-metrics" # [ el-sysctl-step ] # steps
                 }
               }
           }
@@ -228,11 +204,7 @@ in  { GithubActions
                 , name = Some "publish-master-container"
                 , `if` = Some "github.repository_owner == 'change-metrics'"
                 , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
-                , steps =
-                      boot "change-metrics"
-                    # init-docker-steps
-                    # [ el-sysctl-step ]
-                    # steps
+                , steps = boot "change-metrics" # [ el-sysctl-step ] # steps
                 }
               }
           }
@@ -248,11 +220,7 @@ in  { GithubActions
                 , name = Some "publish-tag-container"
                 , `if` = Some "github.repository_owner == 'change-metrics'"
                 , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
-                , steps =
-                      boot "change-metrics"
-                    # init-docker-steps
-                    # [ el-sysctl-step ]
-                    # steps
+                , steps = boot "change-metrics" # [ el-sysctl-step ] # steps
                 }
               }
           }

@@ -11,14 +11,6 @@ jobs:
         with:
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
           name: change-metrics
-      - name: Stop provided Docker
-        run: sudo systemctl stop docker containerd
-      - name: Remove provided Docker
-        run: sudo apt-get remove --autoremove -y moby-engine moby-cli moby-buildx moby-containerd moby-runc
-      - name: Install patched seccomp Docker repository
-        run: sudo add-apt-repository -y ppa:pascallj/docker.io-clone3
-      - name: Install patched seccomp Docker
-        run: sudo apt-get install -y docker.io
       - name: Configure sysctl limits
         run: |
           sudo swapoff -a
