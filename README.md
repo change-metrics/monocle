@@ -599,6 +599,7 @@ in your docker-compose configuration file. You can find [additional information]
 
 To disable TLS verification, set the `TLS_NO_VERIFY` environment variable to `1`.
 
+If you're accessing the web service remotely, make sure to set `MONOCLE_PUBLIC_URL` to the right URL in your `.env` file as this will be used to redirect requests from the UI. If not you'll see the UI fail with a "Network error" message.
 
 ## Wipe crawler data from the database
 
