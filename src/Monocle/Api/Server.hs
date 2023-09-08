@@ -997,10 +997,14 @@ handleLoggedIn cookieSettings err codeM stateM = do
       let idToken = O.idToken tokens
           dayS = 24 * 3600
           expiry = addUTCTime dayS now
-          userId = aUserId oidcEnv idToken
+          (mWarning, userId) = aUserId oidcEnv idToken
           mUidMap = getIdents config $ "AuthProviderUID:" <> userId
           authenticatedUser = AUser mUidMap userId (truncate $ nominalDiffTimeToSeconds $ utcTimeToPOSIXSeconds expiry)
           jwtCfg = localJWTSettings aOIDC
+
+      forM_ mWarning \warning ->
+        logWarn "Could not find oidc_user_claim" ["msg" .= warning, "claims" .= O.otherClaims idToken]
+
       logInfo "OIDCProviderTokenRequested" ["id" .= show @Text idToken]
       -- Here we create the JWT Session Cookie that will be used by the browser to authenticate requests
       mApplyCookies <-
@@ -1026,15 +1030,24 @@ handleLoggedIn cookieSettings err codeM stateM = do
   redirectURI oauthState = case decodeOIDCState $ encodeUtf8 oauthState of
     Just (OIDCState _ (Just uri)) -> uri
     _ -> "/"
+
   -- Get the Token's claim that identify an unique user
-  aUserId :: OIDCEnv -> O.IdTokenClaims Value -> Text
+  aUserId :: OIDCEnv -> O.IdTokenClaims Value -> (Maybe Text, Text)
   aUserId OIDCEnv {providerConfig} idToken = case opUserClaim providerConfig of
+    -- The monocle auth config has a 'oidc_user_claim' defined.
     Just uc -> case O.otherClaims idToken of
+      -- Lookup the claim in the token.
       Object o -> case AKM.lookup (AK.fromText uc) o of
-        Just (String s) -> s
-        _ -> defaultUserId
-      _ -> defaultUserId
-    Nothing -> defaultUserId
+        -- The claim was found, return it.
+        Just (String s) -> (Nothing, s)
+        -- The claim doesn't have the right shape.
+        Just _ -> (Just "The claim isn't a string", defaultUserId)
+        -- The claim was not found.
+        _ -> (Just ("Could not find oidc_user_claim " <> uc), defaultUserId)
+      -- The token doesn't contain other claims.
+      _ -> (Just "The token other claims is not an object!", defaultUserId)
+    -- Otherwise, use the default user id.
+    Nothing -> (Nothing, defaultUserId)
    where
     defaultUserId = sub idToken
 
