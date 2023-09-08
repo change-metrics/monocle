@@ -502,7 +502,7 @@ auth:
 - enfore_auth: (optional) if set to *True* then Monocle requires a valid JWT to access any API endpoints and the
   WEB Application requires the user to login to navigate. (Default: *False*)
 
-The redirect URI to configure on the OIDC provider is: `<MONOCLE_PUBLIC_URL>/auth/cb`.
+The redirect URI to configure on the OIDC provider is: `<MONOCLE_PUBLIC_URL>/api/2/auth/cb`.
 
 Furthermore, two additional settings ([environment variables](#environment-variables)) are required to enable the Authentication provider:
 
