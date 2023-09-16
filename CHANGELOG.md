@@ -1,8 +1,17 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
-
 ## [master]
+
+### Added
+
+### Changed
+
+### Removed
+
+### Fixed
+
+## [1.9.0] - 2023-09-16
 
 ### Added
 
@@ -13,17 +22,17 @@ All notable changes to this project will be documented in this file.
 - [cli] Add a CLI command to stream user Pull Requests.
 - [cli] Add a human readable flag to github-changes and github-user-changes commands.
 - [cli] Add a command to wipe any data created by a Crawler.
+- [api] Add log debug statements to show OIDC token `oidc_user_claim` status.
 
 ### Changed
 
 - [metric] Changed the Peer strength metric computation to enable filtering by change author (#1037).
 - [api] Disable /health and /metrics request logging.
 
-### Removed
-
 ### Fixed
 
 - [crawler] Authentification token are no longer written in the service logs.
+- [doc] Wrong OIDC callback URI.
 
 ## [1.8.0] - 2022-11-28
 ### Added

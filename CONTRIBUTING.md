@@ -44,7 +44,7 @@ The API serves the web UI and the Monocle API. The web App must be built first b
 cd web && npm install && npm run build && cd -
 ```
 
-Then, ensure you have set the Monocle config file `config.yaml` (see [README.md](README.md#create-the-config-yaml-file)) and run:
+Then, ensure you have set the Monocle config file `config.yaml` (see [README.md](README.md#configuration)) and run:
 
 ```ShellSession
 nix develop --command monocle-repl
