@@ -15,7 +15,7 @@ services:
       retries: 6
       test: "curl --silent --fail localhost:8080/health || exit 1"
       timeout: "60s"
-    image: "quay.io/change-metrics/monocle:${COMPOSE_MONOCLE_VERSION:-1.8.0}"
+    image: "quay.io/change-metrics/monocle:${COMPOSE_MONOCLE_VERSION:-1.9.0}"
     ports:
       - "${COMPOSE_MONOCLE_API_ADDR:-0.0.0.0}:${COMPOSE_MONOCLE_API_PORT:-8080}:8080"
     restart: unless-stopped
@@ -33,7 +33,7 @@ services:
       retries: 6
       test: "curl --silent --fail localhost:9001/health || exit 1"
       timeout: "60s"
-    image: "quay.io/change-metrics/monocle:${COMPOSE_MONOCLE_VERSION:-1.8.0}"
+    image: "quay.io/change-metrics/monocle:${COMPOSE_MONOCLE_VERSION:-1.9.0}"
     restart: unless-stopped
     volumes:
       - "./etc:/etc/monocle:z"
