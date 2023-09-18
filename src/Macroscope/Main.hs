@@ -372,6 +372,7 @@ getCrawler inf@(InfoCrawler _ _ crawler idents) = getCompose $ fmap addInfos (Co
                 <> [ghIssuesCrawler ghClient]
                 <> [ghPRCrawler ghClient getIdentByAliasCB]
         pure $ Just (k, crawlers)
+      Config.GithubUserProvider _ -> pure Nothing -- Not yet implemented
       Config.GithubApplicationProvider _ -> pure Nothing -- "Not (yet) implemented"
       Config.TaskDataProvider -> pure Nothing -- This is a generic crawler, not managed by the macroscope
   getIdentByAliasCB :: Text -> Maybe Text

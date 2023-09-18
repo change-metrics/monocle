@@ -114,6 +114,7 @@ Dhall.TH.makeHaskellTypes
         , provider "Gerrit"
         , provider "Gitlab"
         , provider "Github"
+        , provider "GithubUser"
         , provider "GithubApplication"
         , provider "Bugzilla"
         , authProvider "OIDC"
@@ -153,6 +154,9 @@ deriving instance Show Gerrit
 
 deriving instance Eq Github
 deriving instance Show Github
+
+deriving instance Eq GithubUser
+deriving instance Show GithubUser
 
 deriving instance Eq GithubApplication
 deriving instance Show GithubApplication
