@@ -232,6 +232,20 @@ Regarding the Github fine grained tokens (new):
 - To crawl privates repositories, select "All repositories" or "Only select repositories", then in "Repository permissions"
   select "Pull Requests", "Contents" as "Read-only".
 
+The GitHub provider can also be configured to crawl Pull-Requests created by specific GitHub users.
+For instance the following crawler's provider will fetch Pull-Requests and related events for
+users john and jane:
+
+```YAML
+  provider:
+    github_users:
+      - john
+      - jane
+    # Optional settings
+    github_url: https://github.com/api/graphql
+    github_token: GITHUB_TOKEN
+```
+
 A Gerrit provider settings
 
 ```YAML

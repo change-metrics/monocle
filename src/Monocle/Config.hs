@@ -26,6 +26,7 @@ module Monocle.Config (
   Gitlab (..),
   Gerrit (..),
   Github (..),
+  GithubUser (..),
   Bugzilla (..),
   GithubApplication (..),
   Link (..),
@@ -73,6 +74,7 @@ module Monocle.Config (
   getCrawlerProjectIssue,
   getCrawlerOrganization,
   getCrawlerTaskData,
+  getCrawlerUser,
 
   -- * Some utility functions
   mkTenant,
@@ -454,6 +456,12 @@ getCrawlerProject Crawler {..} = case provider of
     let addOrgPrefix = getPath github_organization
      in addOrgPrefix <$> fromMaybe [] github_repositories
   GerritProvider Gerrit {..} -> maybe [] (filter (not . T.isPrefixOf "^")) gerrit_repositories
+  _anyOtherProvider -> []
+
+-- | Get 'Crawler' user names
+getCrawlerUser :: Crawler -> [Text]
+getCrawlerUser Crawler {..} = case provider of
+  GithubUserProvider GithubUser {..} -> github_users
   _anyOtherProvider -> []
 
 -- | Get 'Crawler' organization names

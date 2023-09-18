@@ -48,6 +48,7 @@ import Effectful.Concurrent.MVar qualified as E
 import Effectful.Env
 import Effectful.Prometheus
 import Effectful.Reader.Static qualified as E
+import Lentille.GitHub.UserPullRequests (streamUserPullRequests)
 import Monocle.Effects
 
 -- | A structure to carry a single crawler information.
@@ -362,21 +363,26 @@ getCrawler inf@(InfoCrawler _ _ crawler idents) = getCompose $ fmap addInfos (Co
         pure $ Just (k, [bzCrawler bzClient])
       Config.GithubProvider ghCrawler -> do
         let Config.Github {..} = ghCrawler
-        ghToken <- lift $ Config.getSecret "GITHUB_TOKEN" github_token
-        (k, ghClient) <-
-          getClientGraphQL
-            (fromMaybe "https://api.github.com/graphql" github_url)
-            ghToken
+        (k, ghClient) <- getGHClient github_token github_url
         let crawlers =
               [ghOrgCrawler ghClient | isNothing github_repositories]
                 <> [ghIssuesCrawler ghClient]
                 <> [ghPRCrawler ghClient getIdentByAliasCB]
         pure $ Just (k, crawlers)
-      Config.GithubUserProvider _ -> pure Nothing -- Not yet implemented
+      Config.GithubUserProvider ghUserCrawler -> do
+        let Config.GithubUser {..} = ghUserCrawler
+        (k, ghClient) <- getGHClient github_token github_url
+        pure $ Just (k, [ghUserPRCrawler ghClient getIdentByAliasCB])
       Config.GithubApplicationProvider _ -> pure Nothing -- "Not (yet) implemented"
       Config.TaskDataProvider -> pure Nothing -- This is a generic crawler, not managed by the macroscope
   getIdentByAliasCB :: Text -> Maybe Text
   getIdentByAliasCB = flip Config.getIdentByAliasFromIdents idents
+
+  getGHClient mToken mAPIUrl = do
+    ghToken <- lift $ Config.getSecret "GITHUB_TOKEN" mToken
+    getClientGraphQL
+      (fromMaybe "https://api.github.com/graphql" mAPIUrl)
+      ghToken
 
   glMRCrawler :: GraphClient -> (Text -> Maybe Text) -> DocumentStream es
   glMRCrawler glClient cb = Changes $ streamMergeRequests glClient cb
@@ -395,6 +401,9 @@ getCrawler inf@(InfoCrawler _ _ crawler idents) = getCompose $ fmap addInfos (Co
 
   ghPRCrawler :: GraphClient -> (Text -> Maybe Text) -> DocumentStream es
   ghPRCrawler glClient cb = Changes $ streamPullRequests glClient cb
+
+  ghUserPRCrawler :: GraphClient -> (Text -> Maybe Text) -> DocumentStream es
+  ghUserPRCrawler glClient cb = UserChanges $ streamUserPullRequests glClient cb
 
   gerritRegexProjects :: [Text] -> [Text]
   gerritRegexProjects = filter (T.isPrefixOf "^")

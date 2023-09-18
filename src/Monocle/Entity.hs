@@ -11,6 +11,7 @@ module Monocle.Entity (
   _Project,
   _Organization,
   _TaskDataEntity,
+  _User,
 ) where
 
 import Data.Text qualified
@@ -30,6 +31,8 @@ data Entity
     Organization Text
   | -- | Crawler collect task data
     TaskDataEntity Text
+  | -- | Crawler collect change from User
+    User Text
   deriving (Eq, Show, Generic, ToJSON)
 
 instance From Entity Text where
@@ -38,6 +41,7 @@ instance From Entity Text where
     ProjectIssue _ -> "issue"
     Organization _ -> "organization"
     TaskDataEntity _ -> "taskdata"
+    User _ -> "user"
 
 makePrisms ''Entity
 
@@ -49,6 +53,7 @@ entityTypeName = \case
   CrawlerPB.EntityTypeENTITY_TYPE_PROJECT -> "project"
   CrawlerPB.EntityTypeENTITY_TYPE_ORGANIZATION -> "organization"
   CrawlerPB.EntityTypeENTITY_TYPE_TASK_DATA -> "taskdata"
+  CrawlerPB.EntityTypeENTITY_TYPE_USER -> "user"
 
 -- TODO: check if the value needs to be hashed to prevent escape issue
 entityDocID :: CrawlerName -> Entity -> BH.DocId
@@ -62,6 +67,8 @@ entityDocID (CrawlerName name) e =
       ProjectIssue n -> n
       Organization n -> n
       TaskDataEntity n -> n
+      -- TODO check if a username could lead to troubles with the DocId format
+      User n -> n
 
 instance From Entity CrawlerPB.Entity where
   from e = CrawlerPB.Entity (Just pbe)
@@ -71,6 +78,7 @@ instance From Entity CrawlerPB.Entity where
       ProjectIssue n -> CrawlerPB.EntityEntityProjectIssueName (from n)
       Organization n -> CrawlerPB.EntityEntityOrganizationName (from n)
       TaskDataEntity n -> CrawlerPB.EntityEntityTdName (from n)
+      User n -> CrawlerPB.EntityEntityUserName (from n)
 
 instance From CrawlerPB.Entity Entity where
   from = \case
@@ -79,6 +87,7 @@ instance From CrawlerPB.Entity Entity where
       CrawlerPB.EntityEntityProjectIssueName n -> ProjectIssue (from n)
       CrawlerPB.EntityEntityOrganizationName n -> Organization (from n)
       CrawlerPB.EntityEntityTdName n -> TaskDataEntity (from n)
+      CrawlerPB.EntityEntityUserName n -> User (from n)
     CrawlerPB.Entity Nothing -> error "Missing CrawlerPB.Entity value"
 
 instance From Entity CrawlerPB.EntityType where
@@ -87,3 +96,4 @@ instance From Entity CrawlerPB.EntityType where
     ProjectIssue _ -> CrawlerPB.EntityTypeENTITY_TYPE_TASK_DATA
     Organization _ -> CrawlerPB.EntityTypeENTITY_TYPE_ORGANIZATION
     TaskDataEntity _ -> CrawlerPB.EntityTypeENTITY_TYPE_TASK_DATA
+    User _ -> CrawlerPB.EntityTypeENTITY_TYPE_USER
