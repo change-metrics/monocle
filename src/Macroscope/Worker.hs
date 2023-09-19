@@ -9,6 +9,8 @@
 module Macroscope.Worker (
   runStream,
   DocumentStream (..),
+  -- test helper
+  getStreamOldestEntity,
 ) where
 
 import Data.Vector qualified as V

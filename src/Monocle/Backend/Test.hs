@@ -20,12 +20,14 @@ import Monocle.Config qualified as Config
 import Monocle.Entity
 import Monocle.Env
 import Monocle.Prelude
+import Monocle.Protob.Change qualified as ChangePB
 import Monocle.Protob.Crawler qualified as CrawlerPB
 import Monocle.Protob.Metric qualified as MetricPB
 import Monocle.Protob.Search qualified as MetricPB
 import Monocle.Protob.Search qualified as SearchPB
 import Monocle.Search.Query (defaultQueryFlavor)
 import Monocle.Search.Query qualified as Q
+import Proto3.Suite (Enumerated (Enumerated))
 import Relude.Unsafe ((!!))
 import Streaming.Prelude qualified as Streaming
 import Test.Tasty.HUnit ((@?=))
@@ -44,6 +46,42 @@ bob = Author "bob" "b"
 eve = Author "eve" "e"
 fakeAuthor = Author "John" "John"
 fakeAuthorAlt = Author "John Doe/12" "review.opendev.org/John Doe/12"
+
+fakeChangePB :: ChangePB.Change
+fakeChangePB =
+  ChangePB.Change
+    { changeId = mempty
+    , changeNumber = 42
+    , changeChangeId = mempty
+    , changeTitle = mempty
+    , changeText = mempty
+    , changeUrl = mempty
+    , changeCommitCount = 1
+    , changeAdditions = 2
+    , changeDeletions = 0
+    , changeChangedFilesCount = 1
+    , changeChangedFiles = mempty
+    , changeCommits = mempty
+    , changeRepositoryPrefix = mempty
+    , changeRepositoryFullname = mempty
+    , changeRepositoryShortname = mempty
+    , changeAuthor = Nothing
+    , changeOptionalMergedBy = Nothing
+    , changeBranch = mempty
+    , changeTargetBranch = mempty
+    , changeCreatedAt = Just (from fakeDate)
+    , changeOptionalMergedAt = Nothing
+    , changeUpdatedAt = Just (from fakeDate)
+    , changeOptionalClosedAt = Nothing
+    , changeState = Enumerated (Right ChangePB.Change_ChangeStateOpen)
+    , changeOptionalDuration = Nothing
+    , changeMergeable = mempty
+    , changeLabels = mempty
+    , changeAssignees = mempty
+    , changeApprovals = mempty
+    , changeDraft = False
+    , changeOptionalSelfMerged = Nothing
+    }
 
 fakeChange :: EChange
 fakeChange =
