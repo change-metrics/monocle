@@ -10,7 +10,7 @@ import Lentille.GitHub.Types
 import Lentille.GraphQL
 import Monocle.Prelude
 import Network.HTTP.Client (responseBody, responseStatus)
-import Network.HTTP.Types (Status, badGateway502, forbidden403, ok200)
+import Network.HTTP.Types (Status, badGateway502, forbidden403, ok200, unauthorized401)
 
 import Effectful.Retry
 
@@ -48,6 +48,9 @@ retryCheck :: forall es a. GraphEffects es => Either GraphQLError a -> Eff es Re
 retryCheck = \case
   Right _ -> pure DontRetry
   Left (GraphQLError err (RequestLog _ _ resp _))
+    | status == unauthorized401 -> do
+        logWarn "Authentication error" ["body" .= body]
+        pure DontRetry
     | isTimeoutError status body -> do
         logWarn_ "Server side timeout error. Will retry with lower query depth ..."
         pure ConsultPolicy
