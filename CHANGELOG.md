@@ -14,6 +14,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- [crawler] Correctly handle errors and do not commit new changes.
+
 ## [1.9.0] - 2023-09-16
 
 ### Added
