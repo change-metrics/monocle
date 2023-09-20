@@ -144,7 +144,7 @@ doRequest ::
 doRequest client mkArgs retryCheck depthM pageInfoM =
   retryingDynamic policy (const retryCheck) $ \rs -> do
     when (rs.rsIterNumber > 0)
-      $ logWarn "Faulty response" ["num" .= rs.rsIterNumber]
+      $ logWarn "Retrying request" ["num" .= rs.rsIterNumber]
     runFetch rs.rsIterNumber
  where
   delay = 1_100_000 -- 1.1 seconds
@@ -209,8 +209,8 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
 
   requestWithPageInfo pageInfoM storedRateLimitM = do
     holdOnIfNeeded storedRateLimitM
-    respE <- doRequest client mkArgs fpRetryCheck fpDepth pageInfoM
-    pure $ case respE of
+    eResp <- doRequest client mkArgs fpRetryCheck fpDepth pageInfoM
+    pure $ case eResp of
       Left err -> Left err
       Right resp ->
         let (pageInfo, rateLimitM, decodingErrors, xs) = transformResponse resp
@@ -225,19 +225,19 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
 
   startFetch = do
     --- Perform a pre GraphQL request to gather rateLimit
-    fpRespE <- case fpGetRatelimit of
+    (mErr :: Maybe GraphQLError) <- case fpGetRatelimit of
       Just getRateLimit -> lift
         $ E.modifyMVar rateLimitMVar
         $ const do
-          rlE <- getRateLimit client
-          case rlE of
+          eRateLimit <- getRateLimit client
+          case eRateLimit of
             Left err -> do
               logWarn_ "Could not fetch the current rate limit"
               pure (Nothing, Just err)
-            Right rl -> pure (rl, Nothing)
+            Right rateLimit -> pure (rateLimit, Nothing)
       Nothing -> pure Nothing
 
-    case fpRespE of
+    case mErr of
       Just err -> S.yield (Left $ GraphError err)
       Nothing -> go Nothing 0
 
