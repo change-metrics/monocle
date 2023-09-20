@@ -142,11 +142,13 @@ usageJanitor =
   subparser
     ( mkSubCommand "update-idents" "Update author identities" janitorUpdateIdent
         <> mkSubCommand "wipe-crawler-data" "Remove changes/task-data and events related to a crawler name" janitorRemoveCrawlerData
+        <> mkSubCommand "set-crawler-commit-date" "Overwrite the crawler commit date" janitorSetCrawlerCommitDate
     )
  where
   configOption = strOption (long "config" <> O.help "Path to configuration file" <> metavar "MONOCLE_CONFIG")
   elasticOption = strOption (long "elastic" <> O.help "The Elastic endpoint url" <> metavar "MONOCLE_ELASTIC_URL")
   workspaceOption = strOption (long "workspace" <> O.help "Workspace name" <> metavar "WORKSPACE")
+  crawlerNameOption = strOption (long "crawler-name" <> O.help "The crawler name" <> metavar "CRAWLER_NAME")
   runOnWorkspace env action' workspace = runEff $ runLoggerEffect $ runElasticEffect env $ runEmptyQueryM workspace action'
   noWorkspace workspaceName = "Unable to find the workspace " <> workspaceName <> " in the Monocle config"
   janitorUpdateIdent = io <$> parser
@@ -163,7 +165,6 @@ usageJanitor =
         Nothing -> traverse_ (runOnWorkspace env J.updateIdentsOnWorkspace) $ Config.getWorkspaces config
   janitorRemoveCrawlerData = io <$> parser
    where
-    crawlerNameOption = strOption (long "crawler-name" <> O.help "The crawler name" <> metavar "CRAWLER_NAME")
     parser = (,,,) <$> configOption <*> elasticOption <*> workspaceOption <*> crawlerNameOption
     io (configPath, elasticUrl, workspaceName, crawlerName) = do
       config <- Config.loadConfigWithoutEnv configPath
@@ -173,6 +174,21 @@ usageJanitor =
         Just workspace -> do
           runOnWorkspace env (J.wipeCrawlerData crawlerName) workspace
           runOnWorkspace env (J.removeTDCrawlerData crawlerName) workspace
+  janitorSetCrawlerCommitDate = io <$> parser
+   where
+    newDateOption = strOption (long "commit-date" <> O.help "The new crawler commit-date" <> metavar "COMMIT_DATE")
+    parser = (,,,,) <$> configOption <*> elasticOption <*> workspaceOption <*> crawlerNameOption <*> newDateOption
+    io (configPath, elasticUrl, workspaceName, crawlerName, newDate) = do
+      config <- Config.loadConfigWithoutEnv configPath
+      env <- mkEnv $ getURL elasticUrl
+      void $ case Config.lookupTenant (Config.getWorkspaces config) workspaceName of
+        Nothing -> print $ noWorkspace workspaceName
+        Just workspace ->
+          runOnWorkspace
+            env
+            ( J.updateCrawlerMDLastUpdatedDate workspace crawlerName newDate
+            )
+            workspace
 
 ---------------------------------------------------------------
 -- Lentille cli

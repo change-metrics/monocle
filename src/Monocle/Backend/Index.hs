@@ -931,15 +931,20 @@ initCrawlerEntities entities worker = traverse_ run entities
   defaultUpdatedSince = getWorkerUpdatedSince worker
 
 initCrawlerMetadata :: MonoQuery :> es => IndexEffects es => Config.Crawler -> Eff es ()
-initCrawlerMetadata crawler =
-  initCrawlerEntities
-    ( getProjectEntityFromCrawler
-        <> getOrganizationEntityFromCrawler
-        <> getTaskDataEntityFromCrawler
-        <> getProjectIssueFromCrawler
-        <> getUserEntityFromCrawler
-    )
-    crawler
+initCrawlerMetadata crawler = initCrawlerEntities (getCrawlerEntities crawler) crawler
+
+resetCrawlerMetadataLastUpdatedDate :: MonoQuery :> es => IndexEffects es => Config.Crawler -> UTCTime -> Eff es ()
+resetCrawlerMetadataLastUpdatedDate crawler newDate = do
+  let crawlerName = CrawlerName $ Config.getCrawlerName crawler
+  traverse_ (setLastUpdated crawlerName newDate) (getCrawlerEntities crawler)
+
+getCrawlerEntities :: Config.Crawler -> [Entity]
+getCrawlerEntities crawler =
+  getProjectEntityFromCrawler
+    <> getOrganizationEntityFromCrawler
+    <> getTaskDataEntityFromCrawler
+    <> getProjectIssueFromCrawler
+    <> getUserEntityFromCrawler
  where
   getProjectEntityFromCrawler = Project <$> Config.getCrawlerProject crawler
   getProjectIssueFromCrawler = ProjectIssue <$> Config.getCrawlerProjectIssue crawler

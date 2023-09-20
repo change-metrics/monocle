@@ -379,9 +379,9 @@ lookupProject index projectName = find isProject (fromMaybe [] (projects index))
 
 -- | Find a 'Crawler' in an 'Index'
 lookupCrawler :: Index -> Text -> Maybe Crawler
-lookupCrawler index crawlerName = find isProject index.crawlers
+lookupCrawler index crawlerName = find isCrawler index.crawlers
  where
-  isProject Crawler {..} = name == crawlerName
+  isCrawler Crawler {..} = name == crawlerName
 
 -- | Find an 'Ident' in an 'Index'
 lookupIdent :: Index -> Text -> Maybe Ident
