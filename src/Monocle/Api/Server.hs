@@ -266,11 +266,16 @@ pattern TDEntity :: LText -> Maybe CrawlerPB.Entity
 pattern TDEntity td =
   Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityTdName td)))
 
+pattern UserEntity :: LText -> Maybe CrawlerPB.Entity
+pattern UserEntity user =
+  Just (CrawlerPB.Entity (Just (CrawlerPB.EntityEntityUserName user)))
+
 toEntity :: Maybe CrawlerPB.Entity -> Entity
 toEntity entityPB = case entityPB of
   ProjectEntity projectName -> Project $ from projectName
   OrganizationEntity organizationName -> Organization $ from organizationName
   TDEntity tdName -> TaskDataEntity $ from tdName
+  UserEntity userName -> User $ from userName
   otherEntity -> error $ "Unknown Entity type: " <> show otherEntity
 
 -- | /crawler/add endpoint
@@ -311,6 +316,7 @@ crawlerAddDoc _auth request = do
       ProjectIssue _ -> addIssues crawlerName issues issuesEvents
       Organization organizationName -> addProjects crawler organizationName projects
       TaskDataEntity _ -> addTDs crawlerName taskDatas
+      User _ -> addChanges crawlerName changes events
     Left err -> pure $ toErrorResponse err
  where
   addTDs crawlerName taskDatas = do
