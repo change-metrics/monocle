@@ -14,14 +14,15 @@ import Monocle.Backend.Documents qualified as D
 import Monocle.Backend.Index qualified as I
 import Monocle.Backend.Provisioner qualified
 import Monocle.Backend.Queries qualified as Q
-import Monocle.Backend.Test (withTenantConfig)
+import Monocle.Backend.Test (fakeChangePB, withTenantConfig)
 import Monocle.Backend.Test qualified as BT (fakeChange, fakeDate, fakeDateAlt)
 import Monocle.Client
 import Monocle.Config qualified as Config
 import Monocle.Effects
-import Monocle.Entity (CrawlerName (..))
+import Monocle.Entity (CrawlerName (..), Entity (Project))
 import Monocle.Env
 import Monocle.Prelude
+import Monocle.Protob.Crawler qualified as CrawlerPB
 import Streaming.Prelude qualified as Streaming
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -45,12 +46,36 @@ testCrawlingPoint = do
         fakeChange2 = fakeChange1 {D.echangeId = "efake2", D.echangeUpdatedAt = BT.fakeDateAlt}
     I.indexChanges [fakeChange1, fakeChange2]
   withTestApi (mkAppEnv fakeConfig) $ \client -> do
-    let stream date name
-          | date == BT.fakeDateAlt && name == "opendev/neutron" = pure mempty
-          | otherwise = error "Bad crawling point"
-    void $ runLentilleM client $ Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.Changes stream)
-    assertEqual "Fetched at expected crawling point" True True
+    void $ runLentilleM client do
+      (oldestAge, oldestEntity) <- getOldest
+      liftIO $ assertEqual "Oldest entity is correct" oldestEntity (Project "opendev/neutron")
+
+      Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.Changes badStream)
+
+      (currentOldestAge, _) <- getOldest
+      liftIO $ assertEqual "Commit date is not updated on failure" oldestAge currentOldestAge
+
+      Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.Changes goodStream)
+
+      (newOldestAge, _) <- getOldest
+      liftIO $ assertBool "Commit date updated" (newOldestAge > oldestAge)
  where
+  -- A document stream that yield an error
+  badStream date name
+    | date == BT.fakeDateAlt && name == "opendev/neutron" = do
+        Streaming.yield $ Right (fakeChangePB, [])
+        Streaming.yield $ Left (DecodeError ["Oops"])
+    | otherwise = error "Bad crawling point"
+
+  -- A document stream that yield a change
+  goodStream date name
+    | date == BT.fakeDateAlt && name == "opendev/neutron" = do
+        Streaming.yield $ Right (fakeChangePB, [])
+    | otherwise = error "Bad crawling point"
+
+  -- Helper function to get the oldest entity age
+  getOldest = fromMaybe (error "no entity!") <$> Macroscope.getStreamOldestEntity indexName (from crawlerName) projectEntity 0
+  projectEntity = CrawlerPB.EntityTypeENTITY_TYPE_PROJECT
   fakeConfig =
     (mkConfig (from indexName))
       { Config.crawlers_api_key = Just (from apiKey)
