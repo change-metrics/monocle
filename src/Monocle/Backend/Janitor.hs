@@ -5,6 +5,7 @@ module Monocle.Backend.Janitor (
   updateIdentsOnEvents,
   updateIdentsOnChanges,
   updateIdentsOnWorkspace,
+  updateCrawlerMDLastUpdatedDate,
   removeProjectMD,
 ) where
 
@@ -300,3 +301,20 @@ removeMD entity crawlerName = do
             >>> I.bulkStream
         )
   logInfo "Deleted metadata" ["crawler" .= crawlerName, "count" .= deletedCount]
+
+updateCrawlerMDLastUpdatedDate :: QEffects es => Config.Index -> Text -> Text -> Eff es ()
+updateCrawlerMDLastUpdatedDate index crawlerNameText newDateText = do
+  let eCheckParam = do
+        newDate <-
+          toEither "Unable to parse the date: Expected format YYYY-mm-dd or YYYY-mm-dd hh:mm:ss UTC"
+            $ parseDateValue (from newDateText)
+        crawler <- toEither "Unable to find the crawler" $ Config.lookupCrawler index crawlerNameText
+        pure (newDate, crawler)
+  case eCheckParam of
+    Left err -> logInfo err ["crawler" .= crawlerNameText, "newDate" .= newDateText]
+    Right (newDate, crawler) -> I.resetCrawlerMetadataLastUpdatedDate crawler newDate
+ where
+  toEither :: Text -> Maybe a -> Either Text a
+  toEither msg = \case
+    Just a -> Right a
+    Nothing -> Left msg

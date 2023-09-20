@@ -625,6 +625,15 @@ docker-compose run --rm --no-deps api monocle janitor wipe-crawler-data --elasti
 docker-compose start crawler
 ```
 
+## Reset the crawler commit date
+
+Monocle crawlers keep track of the last date (commit date) when a successful document fetch happened. The command
+below can be used to force a crawler to fetch (again) documents since another date.
+
+```bash
+docker-compose run --rm --no-deps api monocle janitor set-crawler-commit-date --elastic elastic:9200 --config /etc/monocle/config.yaml --workspace <workspace> --crawler-name <crawler-name> --commit-date 2023-01-01
+```
+
 ## Components
 
 ![architecture](./doc/architecture.png)
