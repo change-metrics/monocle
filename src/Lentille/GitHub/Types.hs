@@ -7,7 +7,6 @@ module Lentille.GitHub.Types where
 import Data.Morpheus.Client (declareGlobalTypesByName)
 import Lentille.GraphQL (ghSchemaLocation)
 import Monocle.Prelude
-import Monocle.Protob.Change (Change, ChangeEvent)
 
 newtype DateTime = DateTime Text deriving (Show, Eq, FromJSON)
 
@@ -22,5 +21,3 @@ declareGlobalTypesByName
   , "PullRequestState"
   , "PullRequestReviewState"
   ]
-
-type Changes = (Change, [ChangeEvent])

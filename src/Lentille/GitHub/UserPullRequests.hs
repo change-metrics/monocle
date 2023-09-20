@@ -13,7 +13,6 @@ import Lentille.GitHub.Utils
 import Lentille.GraphQL
 import Monocle.Prelude hiding (id, state)
 import Monocle.Protob.Change
-import Streaming.Prelude qualified as S (break)
 
 -- https://docs.github.com/en/graphql/reference/queries#user
 declareLocalTypesInline
@@ -51,13 +50,10 @@ streamUserPullRequests ::
   Text ->
   LentilleStream es Changes
 streamUserPullRequests client cb untilDate userLogin =
-  breakOnDate $ streamFetch client mkArgs optParams transformResponse'
+  streamDropBefore untilDate $ streamFetch client mkArgs optParams transformResponse'
  where
   mkArgs = GetUserPullRequestsArgs userLogin
   transformResponse' = transformResponse (getHost client) cb
-  -- This transform the stream by adding a limit.
-  -- We don't care about the rest so we replace it with ()
-  breakOnDate = fmap (pure ()) . S.break (isChangeTooOld untilDate)
 
 transformResponse ::
   -- hostname of the provider

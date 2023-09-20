@@ -101,8 +101,6 @@ declareLocalTypesInline
     }
   |]
 
-type Changes = (Change, [ChangeEvent])
-
 fetchMergeRequest :: GraphEffects es => GraphClient -> Text -> Text -> Eff es (Either (FetchError GetProjectMergeRequests) GetProjectMergeRequests, [RequestLog])
 fetchMergeRequest client project mrID =
   fetchWithLog (doGraphRequest client) (GetProjectMergeRequestsArgs (ID project) (Just [mrID]) Nothing)
@@ -116,14 +114,9 @@ streamMergeRequests ::
   Text ->
   LentilleStream es Changes
 streamMergeRequests client getIdentIdCb untilDate project =
-  breakOnDate $ streamFetch client mkArgs defaultStreamFetchOptParams transformResponse'
+  streamDropBefore untilDate $ streamFetch client mkArgs defaultStreamFetchOptParams transformResponse'
  where
   mkArgs _ = GetProjectMergeRequestsArgs (ID project) Nothing
-
-  -- This transform the stream by adding a limit.
-  -- We don't care about the rest so we replace it with ()
-  breakOnDate = fmap (pure ()) . S.break (isChangeTooOld untilDate)
-
   transformResponse' = transformResponse (host client) getIdentIdCb
 
 transformResponse ::
