@@ -17,6 +17,7 @@ message Entity {
     string project_name = 2;
     string project_issue_name = 4;
     string td_name = 3;
+    string user_name = 5;
   }
 }
 
@@ -24,6 +25,7 @@ enum EntityType {
   ENTITY_TYPE_ORGANIZATION = 0;
   ENTITY_TYPE_PROJECT = 1;
   ENTITY_TYPE_TASK_DATA = 2;
+  ENTITY_TYPE_USER = 3;
 }
 
 message AddDocRequest {
@@ -31,9 +33,9 @@ message AddDocRequest {
   string crawler = 2;
   string apikey = 3;
   Entity entity = 4;
-  // changes are added when Entity is project_name
+  // changes are added when Entity is project_name or user_name
   repeated monocle_change.Change changes = 5;
-  // events are added when Entity is project_name
+  // events are added when Entity is project_name or user_name
   repeated monocle_change.ChangeEvent events = 6;
   // projects are added when Entity is organization_name
   repeated Project projects = 7;

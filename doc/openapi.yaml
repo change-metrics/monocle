@@ -642,12 +642,12 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_change_Change'
-                    description: changes are added when Entity is project_name
+                    description: changes are added when Entity is project_name or user_name
                 events:
                     type: array
                     items:
                         $ref: '#/components/schemas/monocle_change_ChangeEvent'
-                    description: events are added when Entity is project_name
+                    description: events are added when Entity is project_name or user_name
                 projects:
                     type: array
                     items:
@@ -724,6 +724,8 @@ components:
                 project_issue_name:
                     type: string
                 td_name:
+                    type: string
+                user_name:
                     type: string
             description: A descriptive name of the entities being added
         monocle_crawler_Project:

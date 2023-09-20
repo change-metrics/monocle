@@ -930,27 +930,22 @@ initCrawlerEntities entities worker = traverse_ run entities
     ensureCrawlerMetadata (CrawlerName $ getWorkerName worker) updated_since entity
   defaultUpdatedSince = getWorkerUpdatedSince worker
 
-getProjectEntityFromCrawler :: Config.Crawler -> [Entity]
-getProjectEntityFromCrawler worker = Project <$> Config.getCrawlerProject worker
-
-getProjectIssueFromCrawler :: Config.Crawler -> [Entity]
-getProjectIssueFromCrawler worker = ProjectIssue <$> Config.getCrawlerProjectIssue worker
-
-getOrganizationEntityFromCrawler :: Config.Crawler -> [Entity]
-getOrganizationEntityFromCrawler worker = Organization <$> Config.getCrawlerOrganization worker
-
-getTaskDataEntityFromCrawler :: Config.Crawler -> [Entity]
-getTaskDataEntityFromCrawler worker = TaskDataEntity <$> Config.getCrawlerTaskData worker
-
 initCrawlerMetadata :: MonoQuery :> es => IndexEffects es => Config.Crawler -> Eff es ()
 initCrawlerMetadata crawler =
   initCrawlerEntities
-    ( getProjectEntityFromCrawler crawler
-        <> getOrganizationEntityFromCrawler crawler
-        <> getTaskDataEntityFromCrawler crawler
-        <> getProjectIssueFromCrawler crawler
+    ( getProjectEntityFromCrawler
+        <> getOrganizationEntityFromCrawler
+        <> getTaskDataEntityFromCrawler
+        <> getProjectIssueFromCrawler
+        <> getUserEntityFromCrawler
     )
     crawler
+ where
+  getProjectEntityFromCrawler = Project <$> Config.getCrawlerProject crawler
+  getProjectIssueFromCrawler = ProjectIssue <$> Config.getCrawlerProjectIssue crawler
+  getOrganizationEntityFromCrawler = Organization <$> Config.getCrawlerOrganization crawler
+  getTaskDataEntityFromCrawler = TaskDataEntity <$> Config.getCrawlerTaskData crawler
+  getUserEntityFromCrawler = User <$> Config.getCrawlerUser crawler
 
 -- Author cache functions
 -------------------------

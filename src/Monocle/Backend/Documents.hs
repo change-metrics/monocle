@@ -624,6 +624,7 @@ instance ToJSON ECrawlerMetadataObject where
       Project n -> n
       ProjectIssue n -> n
       TaskDataEntity n -> n
+      User n -> n
 
 instance FromJSON ECrawlerMetadataObject where
   parseJSON = withObject "CrawlerMetadataObject" $ \v -> do
@@ -635,6 +636,7 @@ instance FromJSON ECrawlerMetadataObject where
       "organization" -> pure $ Organization evalue
       "project" -> pure $ Project evalue
       "taskdata" -> pure $ TaskDataEntity evalue
+      "user" -> pure $ User evalue
       _ -> fail $ "Unknown crawler entity type name: " <> from etype
     pure ECrawlerMetadataObject {..}
 

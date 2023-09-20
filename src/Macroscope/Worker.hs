@@ -36,6 +36,8 @@ data DocumentStream es
     Changes (UTCTime -> Text -> LentilleStream es (Change, [ChangeEvent]))
   | -- | Fetch recent task data
     TaskDatas (UTCTime -> Text -> LentilleStream es TaskData)
+  | -- | Fetch recent changes from a user
+    UserChanges (UTCTime -> Text -> LentilleStream es (Change, [ChangeEvent]))
 
 -- | Get the entity type managed by a given stream
 streamEntity :: DocumentStream es -> CrawlerPB.EntityType
@@ -43,6 +45,7 @@ streamEntity = \case
   Projects _ -> EntityTypeENTITY_TYPE_ORGANIZATION
   Changes _ -> EntityTypeENTITY_TYPE_PROJECT
   TaskDatas _ -> EntityTypeENTITY_TYPE_TASK_DATA
+  UserChanges _ -> EntityTypeENTITY_TYPE_USER
 
 -- | Get a text representation of a stream type
 streamName :: DocumentStream m -> Text
@@ -50,6 +53,7 @@ streamName = \case
   Projects _ -> "Projects"
   Changes _ -> "Changes"
   TaskDatas _ -> "TaskDatas"
+  UserChanges _ -> "UserChanges"
 
 isTDStream :: DocumentStream m -> Bool
 isTDStream = \case
@@ -217,6 +221,9 @@ runStreamError startTime apiKey indexName (CrawlerName crawlerName) documentStre
     TaskDatas s ->
       let td = extractEntityValue _TaskDataEntity
        in S.map (fmap DTTaskData) (s oldestAge td)
+    UserChanges s ->
+      let user = extractEntityValue _User
+       in S.map (fmap DTChanges) (s oldestAge user)
    where
     extractEntityValue prism =
       fromMaybe (error $ "Entity is not the right shape: " <> show entity)

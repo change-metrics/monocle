@@ -94,6 +94,13 @@ instance HsProtobuf.Message Entity where
                           (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (y))
                       )
                   )
+                EntityEntityUserName y ->
+                  ( HsProtobuf.encodeMessageField
+                      (HsProtobuf.FieldNumber 5)
+                      ( HsProtobuf.ForceEmit
+                          (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (y))
+                      )
+                  )
         ]
     )
   decodeMessage _ =
@@ -128,15 +135,22 @@ instance HsProtobuf.Message Entity where
                             (HsProtobuf.decodeMessageField)
                         )
                 )
+              ,
+                ( (HsProtobuf.FieldNumber 5)
+                , (Hs.pure (Hs.Just Hs.. EntityEntityUserName))
+                    <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                            (HsProtobuf.decodeMessageField)
+                        )
+                )
               ]
           )
   dotProto _ = []
 
 instance HsJSONPB.ToJSONPB Entity where
-  toJSONPB (Entity f1_or_f2_or_f4_or_f3) =
+  toJSONPB (Entity f1_or_f2_or_f4_or_f3_or_f5) =
     ( HsJSONPB.object
         [ ( let encodeEntity =
-                  ( case f1_or_f2_or_f4_or_f3 of
+                  ( case f1_or_f2_or_f4_or_f3_or_f5 of
                       Hs.Just (EntityEntityOrganizationName f1) ->
                         ( HsJSONPB.pair
                             "organization_name"
@@ -156,6 +170,11 @@ instance HsJSONPB.ToJSONPB Entity where
                         ( HsJSONPB.pair
                             "td_name"
                             (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f3))
+                        )
+                      Hs.Just (EntityEntityUserName f5) ->
+                        ( HsJSONPB.pair
+                            "user_name"
+                            (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f5))
                         )
                       Hs.Nothing -> Hs.mempty
                   )
@@ -168,10 +187,10 @@ instance HsJSONPB.ToJSONPB Entity where
           )
         ]
     )
-  toEncodingPB (Entity f1_or_f2_or_f4_or_f3) =
+  toEncodingPB (Entity f1_or_f2_or_f4_or_f3_or_f5) =
     ( HsJSONPB.pairs
         [ ( let encodeEntity =
-                  ( case f1_or_f2_or_f4_or_f3 of
+                  ( case f1_or_f2_or_f4_or_f3_or_f5 of
                       Hs.Just (EntityEntityOrganizationName f1) ->
                         ( HsJSONPB.pair
                             "organization_name"
@@ -191,6 +210,11 @@ instance HsJSONPB.ToJSONPB Entity where
                         ( HsJSONPB.pair
                             "td_name"
                             (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f3))
+                        )
+                      Hs.Just (EntityEntityUserName f5) ->
+                        ( HsJSONPB.pair
+                            "user_name"
+                            (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f5))
                         )
                       Hs.Nothing -> Hs.mempty
                   )
@@ -226,6 +250,10 @@ instance HsJSONPB.FromJSONPB Entity where
                                 Hs.. EntityEntityTdName
                                 Hs.. Hs.coerce @(HsProtobuf.String Hs.Text) @(Hs.Text)
                                 <$> (HsJSONPB.parseField parseObj "td_name")
+                            , Hs.Just
+                                Hs.. EntityEntityUserName
+                                Hs.. Hs.coerce @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                                <$> (HsJSONPB.parseField parseObj "user_name")
                             , Hs.pure Hs.Nothing
                             ]
                      in ( (obj .: "entity")
@@ -248,6 +276,7 @@ data EntityEntity
   | EntityEntityProjectName Hs.Text
   | EntityEntityProjectIssueName Hs.Text
   | EntityEntityTdName Hs.Text
+  | EntityEntityUserName Hs.Text
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
 
 instance Hs.NFData EntityEntity
@@ -259,6 +288,7 @@ data EntityType
   = EntityTypeENTITY_TYPE_ORGANIZATION
   | EntityTypeENTITY_TYPE_PROJECT
   | EntityTypeENTITY_TYPE_TASK_DATA
+  | EntityTypeENTITY_TYPE_USER
   deriving (Hs.Show, Hs.Eq, Hs.Generic, Hs.NFData)
 
 instance HsProtobuf.Named EntityType where
@@ -268,7 +298,7 @@ instance HsProtobuf.HasDefault EntityType
 
 instance Hs.Bounded EntityType where
   minBound = EntityTypeENTITY_TYPE_ORGANIZATION
-  maxBound = EntityTypeENTITY_TYPE_TASK_DATA
+  maxBound = EntityTypeENTITY_TYPE_USER
 
 instance Hs.Ord EntityType where
   compare x y =
@@ -280,10 +310,12 @@ instance HsProtobuf.ProtoEnum EntityType where
   toProtoEnumMay 0 = Hs.Just EntityTypeENTITY_TYPE_ORGANIZATION
   toProtoEnumMay 1 = Hs.Just EntityTypeENTITY_TYPE_PROJECT
   toProtoEnumMay 2 = Hs.Just EntityTypeENTITY_TYPE_TASK_DATA
+  toProtoEnumMay 3 = Hs.Just EntityTypeENTITY_TYPE_USER
   toProtoEnumMay _ = Hs.Nothing
   fromProtoEnum (EntityTypeENTITY_TYPE_ORGANIZATION) = 0
   fromProtoEnum (EntityTypeENTITY_TYPE_PROJECT) = 1
   fromProtoEnum (EntityTypeENTITY_TYPE_TASK_DATA) = 2
+  fromProtoEnum (EntityTypeENTITY_TYPE_USER) = 3
 
 instance HsJSONPB.ToJSONPB EntityType where
   toJSONPB x _ = HsJSONPB.enumFieldString x
@@ -296,6 +328,8 @@ instance HsJSONPB.FromJSONPB EntityType where
     Hs.pure EntityTypeENTITY_TYPE_PROJECT
   parseJSONPB (HsJSONPB.String "ENTITY_TYPE_TASK_DATA") =
     Hs.pure EntityTypeENTITY_TYPE_TASK_DATA
+  parseJSONPB (HsJSONPB.String "ENTITY_TYPE_USER") =
+    Hs.pure EntityTypeENTITY_TYPE_USER
   parseJSONPB v = (HsJSONPB.typeMismatch "EntityType" v)
 
 instance HsJSONPB.ToJSON EntityType where
