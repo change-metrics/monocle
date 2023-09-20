@@ -20,8 +20,11 @@ module Lentille (
   toIdent,
   ghostIdent,
   sanitizeID,
-  isChangeTooOld,
   swapDuration,
+
+  -- * Stream helper
+  streamDropBefore,
+  Changes,
 
   -- * Re-export
   module Monocle.Class,
@@ -44,6 +47,7 @@ import Monocle.Protob.Change (
  )
 import Network.HTTP.Client qualified as HTTP
 import Proto3.Suite (Enumerated (Enumerated))
+import Streaming.Prelude qualified as S (break)
 
 import Effectful.Reader.Static qualified as E
 
@@ -126,12 +130,22 @@ toIdent host cb username = Ident {..}
 ghostIdent :: Text -> Ident
 ghostIdent host = toIdent host (const Nothing) nobody
 
+type Changes = (Change, [ChangeEvent])
+
+-- | Drop oldest element
+-- This transform the stream by adding a limit.
+-- We don't care about the rest so we replace it with ()
+-- See: https://hackage.haskell.org/package/streaming-0.2.4.0/docs/Streaming-Prelude.html#v:break
+streamDropBefore :: UTCTime -> LentilleStream es Changes -> LentilleStream es Changes
+streamDropBefore untilDate = fmap (pure ()) . S.break (isChangeTooOld untilDate)
+
+-- | Return False to keep the stream element.
 isChangeTooOld :: UTCTime -> Either LentilleError (Change, [ChangeEvent]) -> Bool
-isChangeTooOld _ (Left _) = True
-isChangeTooOld date (Right (change, _)) =
+isChangeTooOld _ (Left _) = False
+isChangeTooOld untilDate (Right (change, _)) =
   case changeUpdatedAt change of
-    Just changeDate -> T.toUTCTime changeDate < date
-    _ -> True
+    Just changeDate -> T.toUTCTime changeDate < untilDate
+    _ -> False
 
 swapDuration :: ChangeOptionalDuration -> ChangeEventOptionalDuration
 swapDuration (ChangeOptionalDurationDuration v) = ChangeEventOptionalDurationDuration v

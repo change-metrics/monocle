@@ -33,7 +33,6 @@ import Streaming.Prelude qualified as S
 
 import Data.String.Interpolate (i)
 import Effectful.Prometheus
-import Lentille.GitHub.Types (Changes)
 import ListT qualified
 import Monocle.Backend.Documents (EChange (..))
 import Monocle.Effects
