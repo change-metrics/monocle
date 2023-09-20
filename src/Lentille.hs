@@ -47,7 +47,7 @@ import Monocle.Protob.Change (
  )
 import Network.HTTP.Client qualified as HTTP
 import Proto3.Suite (Enumerated (Enumerated))
-import Streaming.Prelude qualified as S (break)
+import Streaming.Prelude qualified as S
 
 import Effectful.Reader.Static qualified as E
 
@@ -136,6 +136,10 @@ type Changes = (Change, [ChangeEvent])
 -- This transform the stream by adding a limit.
 -- We don't care about the rest so we replace it with ()
 -- See: https://hackage.haskell.org/package/streaming-0.2.4.0/docs/Streaming-Prelude.html#v:break
+--
+-- >>> let stream = S.yield (Left (DecodeError ["oops"]))
+-- >>> runEff $ S.length_ $ streamDropBefore [utctime|2021-05-31 00:00:00|] stream
+-- 1
 streamDropBefore :: UTCTime -> LentilleStream es Changes -> LentilleStream es Changes
 streamDropBefore untilDate = fmap (pure ()) . S.break (isChangeTooOld untilDate)
 
