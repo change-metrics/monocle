@@ -160,6 +160,7 @@ fakeChangeEvent from' to = do
       echangeeventAuthor = Nothing
       echangeeventSelfMerged = Nothing
       echangeeventBranch = ""
+      echangeeventTargetBranch = "main"
       echangeeventApproval = Nothing
       echangeeventTasksData = Nothing
       echangeeventLabels = Just []

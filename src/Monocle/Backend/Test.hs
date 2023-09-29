@@ -1313,6 +1313,7 @@ emptyEvent = EChangeEvent {..}
   echangeeventAuthor = Just fakeAuthor
   echangeeventOnAuthor = fakeAuthor
   echangeeventBranch = mempty
+  echangeeventTargetBranch = "main"
   echangeeventSelfMerged = Nothing
   echangeeventCreatedAt = fakeDate
   echangeeventOnCreatedAt = fakeDate
