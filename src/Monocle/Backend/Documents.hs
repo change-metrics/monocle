@@ -566,6 +566,7 @@ data EChangeEvent = EChangeEvent
   , echangeeventOnAuthor :: Author
   , echangeeventSelfMerged :: Maybe Bool
   , echangeeventBranch :: LText
+  , echangeeventTargetBranch :: LText
   , -- Set labels as a Maybe type because existing indexes do not have the event docs with labels
     -- TODO: implement a migration procedure in the Janitor and remove the 'Maybe' from this value
     echangeeventLabels :: Maybe [LText]

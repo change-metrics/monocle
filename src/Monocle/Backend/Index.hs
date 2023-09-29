@@ -478,6 +478,7 @@ toEChangeEvent ChangePB.ChangeEvent {..} =
         EChangeMergedEvent -> Just $ onAuthor == author
         _ -> Nothing
     , echangeeventBranch = changeEventBranch
+    , echangeeventTargetBranch = changeEventTargetBranch
     , echangeeventLabels = Just . toList $ changeEventLabels
     , echangeeventCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventCreatedAt field is mandatory") changeEventCreatedAt
     , echangeeventOnCreatedAt = T.toUTCTime $ fromMaybe (error "changeEventOnCreatedAt field is mandatory") changeEventOnCreatedAt
