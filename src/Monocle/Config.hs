@@ -481,14 +481,14 @@ getIdentByAliasFromIdents alias idents' = case find isMatched idents' of
   isMatched Ident {..} = alias `elem` aliases
 
 mkIndexName :: Text -> Either Text IndexName
-mkIndexName x = do
+mkIndexName name = do
   let check name p = if p then Right () else Left name
-  check "Is empty" $ not $ T.null x
-  check "Is longer than 255 bytes" $ BS.length (T.encodeUtf8 x) < 256
-  check "Contains uppercase letter(s)" $ T.all (\x -> not (isLetter x) || isLowerCase x) x
-  check "Includes [\\/*?\"<>| ,#:]" $ T.all (flip @_ @String notElem "\\/*?\"<>| ,#:") x
-  check "Starts with [-_+.]" $ maybe False (flip @_ @String notElem "-_+." . fst) $ T.uncons x
-  check "Is (.|..)" $ notElem x [".", ".."]
-  return $ IndexName x
+  check "Is empty" $ not $ T.null name
+  check "Is longer than 255 bytes" $ BS.length (T.encodeUtf8 name) < 256
+  check "Contains uppercase letter(s)" $ T.all (\x -> not (isLetter x) || isLowerCase x) name
+  check "Includes [\\/*?\"<>| ,#:]" $ T.all (flip @_ @String notElem "\\/*?\"<>| ,#:") name
+  check "Starts with [-_+.]" $ maybe False (flip @_ @String notElem "-_+." . fst) $ T.uncons name
+  check "Is (.|..)" $ notElem name [".", ".."]
+  return $ IndexName name
 
 -- End - Some utility functions
