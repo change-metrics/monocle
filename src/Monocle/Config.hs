@@ -482,7 +482,7 @@ getIdentByAliasFromIdents alias idents' = case find isMatched idents' of
 
 mkIndexName :: Text -> Either Text IndexName
 mkIndexName name = do
-  let check name p = if p then Right () else Left name
+  let check explanation p = if p then Right () else Left explanation
   check "Is empty" $ not $ T.null name
   check "Is longer than 255 bytes" $ BS.length (T.encodeUtf8 name) < 256
   check "Contains uppercase letter(s)" $ T.all (\x -> not (isLetter x) || isLowerCase x) name
