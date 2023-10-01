@@ -126,7 +126,7 @@ monocleApiTests =
  where
   testAuthMagicTokenEndpoint :: Assertion
   testAuthMagicTokenEndpoint = do
-    let appEnv = mkAppEnv $ Config.mkTenant "ws"
+    let appEnv = mkAppEnv $ Config.mkTenant $ hardcodedIndexName "ws"
     let adminToken = "test"
     setEnv "MONOCLE_ADMIN_TOKEN" adminToken
     withTestApi appEnv $ \client -> do
@@ -148,7 +148,7 @@ monocleApiTests =
   testGetGroups = do
     let appEnv =
           mkAppEnv
-            $ (Config.mkTenant "ws")
+            $ (Config.mkTenant $ hardcodedIndexName "ws")
               { Config.idents =
                   Just
                     [ Config.Ident [] (Just ["grp1", "grp2"]) "John"
@@ -244,8 +244,8 @@ monocleApiTests =
                in Config.Crawler {..}
             ]
         }
-    wsName1 = "ws1"
-    wsName2 = "ws2"
+    wsName1 = hardcodedIndexName "ws1"
+    wsName2 = hardcodedIndexName "ws2"
     crawlerName = "testy"
 
 monocleBackendQueriesTests :: TestTree
@@ -608,7 +608,7 @@ monocleSearchLanguage =
   queryMatchBound = queryDoMatch Q.queryBounds
   testTenant =
     Config.Index
-      { Config.name = "test"
+      { Config.name = hardcodedIndexName "test"
       , Config.projects = Just [testProjects]
       , Config.search_aliases =
           Just
@@ -646,7 +646,7 @@ monocleConfig =
   testGetTenantGroups = testCase "Validate getTenantGroups" do
     let identA = createIdent "alice" [] ["core", "ptl"]
         identB = createIdent "bob" [] ["core"]
-        tenant = (Config.mkTenant "test") {Config.idents = Just [identA, identB]}
+        tenant = (Config.mkTenant $ hardcodedIndexName "test") {Config.idents = Just [identA, identB]}
     assertEqual
       "Ensure groups and members"
       [("core", ["bob", "alice"]), ("ptl", ["alice"])]
@@ -655,7 +655,7 @@ monocleConfig =
   testGetIdentByAlias = testCase "Validate getIdentByAliases" do
     let identA = createIdent "alice" ["opendev.org/Alice Doe/12345", "github.com/alice89"] []
         identB = createIdent "bob" [] []
-        tenant = (Config.mkTenant "test") {Config.idents = Just [identA, identB]}
+        tenant = (Config.mkTenant $ hardcodedIndexName "test") {Config.idents = Just [identA, identB]}
     assertEqual
       "Ensure found alice as ident"
       (Just "alice")

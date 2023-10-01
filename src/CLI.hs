@@ -6,6 +6,7 @@
 module CLI (main) where
 
 import Control.Concurrent.CGroup qualified
+import Data.Text qualified as T
 import Env hiding (Parser, auto, footer)
 import Env qualified
 import Lentille
@@ -146,10 +147,13 @@ usageJanitor =
  where
   configOption = strOption (long "config" <> O.help "Path to configuration file" <> metavar "MONOCLE_CONFIG")
   elasticOption = strOption (long "elastic" <> O.help "The Elastic endpoint url" <> metavar "MONOCLE_ELASTIC_URL")
-  workspaceOption = strOption (long "workspace" <> O.help "Workspace name" <> metavar "WORKSPACE")
+  workspaceOption =
+    option
+      (eitherReader $ (first T.unpack . Config.mkIndexName) . T.pack)
+      (long "workspace" <> O.help "Workspace name" <> metavar "WORKSPACE")
   crawlerNameOption = strOption (long "crawler-name" <> O.help "The crawler name" <> metavar "CRAWLER_NAME")
   runOnWorkspace env action' workspace = runEff $ runLoggerEffect $ runElasticEffect env $ runEmptyQueryM workspace action'
-  noWorkspace workspaceName = "Unable to find the workspace " <> workspaceName <> " in the Monocle config"
+  noWorkspace workspaceName = "Unable to find the workspace " <> Config.getIndexName workspaceName <> " in the Monocle config"
   janitorUpdateIdent = io <$> parser
    where
     parser = (,,) <$> configOption <*> elasticOption <*> optional workspaceOption

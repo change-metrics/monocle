@@ -208,6 +208,7 @@ library
                      , Monocle.Logging
                      , Monocle.Version
                      , Monocle.Config
+                     , Monocle.Config.Generated
                      , Monocle.Effects
                      , Monocle.Effects.Compat
                      , CLI

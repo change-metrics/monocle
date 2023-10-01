@@ -47,7 +47,7 @@ mkEnv' = do
   mkEnv (from url)
 
 -- | Re-export utility function to create a config for testQueryM
-mkConfig :: Text -> Config.Index
+mkConfig :: Config.IndexName -> Config.Index
 mkConfig = Config.mkTenant
 
 indexNamePrefix :: Text
@@ -62,8 +62,8 @@ envToIndexName target = do
   indexName :: Config.Index -> BH.IndexName
   indexName Config.Index {..} = tenantIndexName name
 
-tenantIndexName :: Text -> BH.IndexName
-tenantIndexName indexName = BH.IndexName $ indexNamePrefix <> indexName
+tenantIndexName :: Config.IndexName -> BH.IndexName
+tenantIndexName indexName = BH.IndexName $ indexNamePrefix <> Config.getIndexName indexName
 
 -- | 'mkQuery' creates a Q.Query from a BH.Query
 mkQuery :: [BH.Query] -> Q.Query

@@ -126,7 +126,7 @@ withTenant :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] () -> IO ()
 withTenant = withTenantConfig index
  where
   -- todo: generate random name
-  index = Config.mkTenant "test-tenant"
+  index = Config.mkTenant $ hardcodedIndexName "test-tenant"
 
 testQueryM' :: Config.Index -> Eff [MonoQuery, ElasticEffect, LoggerEffect, E.Fail, IOE] a -> IO a
 testQueryM' config action = do
@@ -400,7 +400,7 @@ testEnsureConfig = withTenantConfig tenantConfig $ localQueryTarget target $ run
   (currentVersion, _) <- I.getConfigVersion
   assertEqual' "Check expected Config Index" I.configVersion currentVersion
  where
-  tenantConfig = Config.mkTenant "test-index"
+  tenantConfig = Config.mkTenant $ hardcodedIndexName "test-index"
   target = QueryConfig $ Config.Config Nothing Nothing Nothing [tenantConfig]
 
 testUpgradeConfigV3 :: Assertion
@@ -512,7 +512,7 @@ testUpgradeConfigV1 = do
   tenantConfig :: Config.Index
   tenantConfig =
     Config.Index
-      { name = "test-tenant"
+      { name = hardcodedIndexName "test-tenant"
       , crawlers = [crawlerGH, crawlerGL]
       , crawlers_api_key = Nothing
       , projects = Nothing
@@ -545,7 +545,7 @@ testJanitorWipeCrawler = withTenant $ localQueryTarget updateEnv doTest
    where
     tenant =
       Config.Index
-        { name = "test-tenant"
+        { name = hardcodedIndexName "test-tenant"
         , crawlers = [workerGerrit]
         , crawlers_api_key = Nothing
         , projects = Nothing
@@ -587,7 +587,7 @@ testJanitorUpdateIdents = do
   tenantConfig :: Config.Index
   tenantConfig =
     Config.Index
-      { name = "test-tenant"
+      { name = hardcodedIndexName "test-tenant"
       , crawlers = []
       , crawlers_api_key = Nothing
       , projects = Nothing
@@ -689,7 +689,7 @@ testAchievements = withTenant doTest
     assertEqual' "event found" (Q.epbType agg) "Change"
     assertEqual' "event count match" (Q.epbCount agg) 1
    where
-    conf = mkConfig "test"
+    conf = mkConfig $ hardcodedIndexName "test"
     query now = case (Q.queryGet $ Q.load now mempty conf "state:merged") id (Just defaultQueryFlavor) of
       [x] -> x
       _ -> error "Could not compile query"
@@ -714,7 +714,7 @@ testGetInfoMetric = withTenantConfig tenant do
       (Just "time_to_merge")
       (getMetricName resp)
  where
-  tenant = Config.mkTenant "demo"
+  tenant = Config.mkTenant $ hardcodedIndexName "demo"
   env = Monocle.Api.Test.mkAppEnv tenant
   getMetricName :: MetricPB.InfoResponse -> Maybe Text
   getMetricName resp = case resp of
@@ -752,7 +752,7 @@ testGetMetrics = withTenantConfig tenant do
       , MetricPB.getRequestOptions = Nothing
       }
   env = Monocle.Api.Test.mkAppEnv tenant
-  tenantName = "test-metric-tenant"
+  tenantName = hardcodedIndexName "test-metric-tenant"
   tenant = Config.mkTenant tenantName
 
 testReposSummary :: Assertion

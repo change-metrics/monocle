@@ -53,7 +53,7 @@ import Monocle.Effects
 
 -- | A structure to carry a single crawler information.
 data InfoCrawler = InfoCrawler
-  { infoWorkspaceName :: Text
+  { infoWorkspaceName :: Config.IndexName
   , infoCrawlerKey :: Text
   , infoCrawler :: Config.Crawler
   , infoIdents :: [Config.Ident]
