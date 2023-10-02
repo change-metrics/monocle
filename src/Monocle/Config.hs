@@ -505,8 +505,8 @@ mkIndexName name = do
   check "Is longer than 255 bytes" $ BS.length (T.encodeUtf8 name) < 256
   check "Contains uppercase letter(s)" $ T.all (\x -> not (isLetter x) || isLowerCase x) name
   check "Includes [\\/*?\"<>| ,#:]" $ T.all (flip @_ @String notElem "\\/*?\"<>| ,#:") name
-  check "Starts with [-_+.]" $ maybe False (flip @_ @String notElem "-_+." . fst) $ T.uncons name
   check "Is (.|..)" $ notElem name [".", ".."]
+  check "Starts with [-_+.]" $ maybe False (flip @_ @String notElem "-_+." . fst) $ T.uncons name
   return $ IndexName name
 
 -- End - Some utility functions
