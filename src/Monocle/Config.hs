@@ -497,7 +497,7 @@ getIdentByAliasFromIdents alias idents' = case find isMatched idents' of
 -- >>> mkIndexName ".."
 -- Left "Is (.|..)"
 -- >>> mkIndexName "hello-world_42"
--- Right (IndexName "hello-world_42")
+-- Right (IndexName {getIndexName = "hello-world_42"})
 mkIndexName :: Text -> Either Text IndexName
 mkIndexName name = do
   let check explanation p = if p then Right () else Left explanation
