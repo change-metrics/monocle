@@ -1,6 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-module Effectful.Servant (runWarpServerSettingsContext, hoistEff) where
+module Effectful.Servant (runWarpServerSettingsContext, hoistEff, handlerToEff) where
 
 import Control.Monad.Except qualified
 import Data.Kind (Type)
@@ -9,10 +9,11 @@ import Effectful
 import Effectful.Dispatch.Static qualified
 import Effectful.Dispatch.Static.Primitive qualified
 import Effectful.Error.Static (Error, runErrorNoCallStack)
+import Effectful.Error.Static qualified as E (throwError)
 import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
 import Servant
-import Prelude (error)
+import Prelude
 
 runWarpServerSettingsContext ::
   forall (api :: Type) (context :: [Type]) (es :: [Effect]).
@@ -44,3 +45,10 @@ hoistEff env ctx = Servant.serveWithContextT (Proxy @api) ctx interpretServer
       es' <- Effectful.Dispatch.Static.Primitive.cloneEnv env
       Effectful.Dispatch.Static.unEff (runErrorNoCallStack action) es'
     Control.Monad.Except.liftEither v
+
+-- | Convert a servant handler to eff
+handlerToEff :: Error Servant.ServerError Effectful.:> es => Servant.Handler a -> Eff es a
+handlerToEff (Servant.Handler (Control.Monad.Except.ExceptT action)) = do
+  Effectful.Dispatch.Static.unsafeEff_ action >>= \case
+    Left e -> E.throwError e
+    Right a -> pure a

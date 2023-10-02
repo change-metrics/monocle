@@ -1,8 +1,46 @@
 {
   "nodes": {
+    "butler": {
+      "inputs": {
+        "hspkgs": "hspkgs"
+      },
+      "locked": {
+        "lastModified": 1692469360,
+        "narHash": "sha256-wXbQuCM9g+pBDetpQl+NIsFyKNfAoc8ABJ8HETMe1TY=",
+        "owner": "TristanCacqueray",
+        "repo": "haskell-butler",
+        "rev": "94af3ff012940511dec2ac62acf830641d636134",
+        "type": "github"
+      },
+      "original": {
+        "owner": "TristanCacqueray",
+        "repo": "haskell-butler",
+        "rev": "94af3ff012940511dec2ac62acf830641d636134",
+        "type": "github"
+      }
+    },
     "hspkgs": {
       "inputs": {
         "nixpkgs": "nixpkgs"
+      },
+      "locked": {
+        "lastModified": 1691345406,
+        "narHash": "sha256-8dXDNPe2kwBVXWvcpdxmkPL4PiPv4099qmOgMNtGOb8=",
+        "owner": "podenv",
+        "repo": "hspkgs",
+        "rev": "f6893161b29a8086c7e1232c886a99a5d815ffae",
+        "type": "github"
+      },
+      "original": {
+        "owner": "podenv",
+        "repo": "hspkgs",
+        "rev": "f6893161b29a8086c7e1232c886a99a5d815ffae",
+        "type": "github"
+      }
+    },
+    "hspkgs_2": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_2"
       },
       "locked": {
         "lastModified": 1691350685,
@@ -37,6 +75,22 @@
     },
     "nixpkgs_2": {
       "locked": {
+        "lastModified": 1691280800,
+        "narHash": "sha256-/0CqbbXO5qfyZ2DgyLIYGP7wT3ONNE3gtiE5gYG9zXE=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "e365e1db48d060b3e31b02ec8177f66f386f39b8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "e365e1db48d060b3e31b02ec8177f66f386f39b8",
+        "type": "github"
+      }
+    },
+    "nixpkgs_3": {
+      "locked": {
         "lastModified": 1652483617,
         "narHash": "sha256-Jxyn3uXFr5LdZNNiippI/obtLXAVBM18uVfiKVP4j9Q=",
         "owner": "NixOS",
@@ -53,8 +107,9 @@
     },
     "root": {
       "inputs": {
-        "hspkgs": "hspkgs",
-        "nixpkgs": "nixpkgs_2"
+        "butler": "butler",
+        "hspkgs": "hspkgs_2",
+        "nixpkgs": "nixpkgs_3"
       }
     }
   },
