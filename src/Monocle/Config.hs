@@ -90,7 +90,7 @@ import Data.ByteString qualified as BS
 import Data.Char (isLetter, isLowerCase)
 import Data.Either.Validation (Validation (Failure, Success))
 import Data.Map qualified as Map
-import Data.Text qualified as T (all, dropWhileEnd, isPrefixOf, null, replace, toUpper, uncons, unpack)
+import Data.Text qualified as T
 import Data.Text.Encoding qualified as T
 import Data.Text.Lazy qualified as TL
 import Dhall qualified
@@ -480,6 +480,24 @@ getIdentByAliasFromIdents alias idents' = case find isMatched idents' of
   isMatched :: Ident -> Bool
   isMatched Ident {..} = alias `elem` aliases
 
+-- | Create an IndexName with checked constraints
+--
+-- >>> mkIndexName ""
+-- Left "Is empty"
+-- >>> mkIndexName $ T.replicate 256 "x"
+-- Left "Is longer than 255 bytes"
+-- >>> mkIndexName "azerTY"
+-- Left "Contains uppercase letter(s)"
+-- >>> mkIndexName "hello#world"
+-- Left "Includes [\\/*?\"<>| ,#:]"
+-- >>> mkIndexName "-test"
+-- Left "Starts with [-_+.]"
+-- >>> mkIndexName "."
+-- Left "Is (.|..)"
+-- >>> mkIndexName ".."
+-- Left "Is (.|..)"
+-- >>> mkIndexName "hello-world_42"
+-- Right (IndexName "hello-world_42")
 mkIndexName :: Text -> Either Text IndexName
 mkIndexName name = do
   let check explanation p = if p then Right () else Left explanation

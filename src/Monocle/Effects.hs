@@ -70,7 +70,7 @@ import Effectful.Dispatch.Static.Primitive qualified as EffStatic
 import Monocle.Effects.Compat ()
 
 import GHC.IO.Handle (hClose)
-import Monocle.Config (ConfigStatus)
+import Monocle.Config (ConfigStatus, IndexName, mkIndexName)
 import System.Directory
 import System.Posix.Temp (mkstemp)
 import Test.Tasty
@@ -99,7 +99,6 @@ import Effectful.Reader.Static qualified as E
 import Effectful.Retry as Retry
 import Monocle.Client (MonocleClient)
 import Monocle.Client.Api (crawlerAddDoc, crawlerCommit, crawlerCommitInfo)
-import Monocle.Config (IndexName, mkIndexName)
 
 import Monocle.Protob.Crawler qualified as CrawlerPB
 
