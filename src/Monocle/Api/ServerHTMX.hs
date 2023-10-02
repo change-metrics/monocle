@@ -9,6 +9,7 @@ import Monocle.Api.Jwt (AuthenticatedUser)
 import Monocle.Api.Server (searchAuthor)
 import Monocle.Backend.Documents (EDocType (ECachedAuthor))
 import Monocle.Backend.Queries (documentType)
+import Monocle.Config qualified as Config
 import Monocle.Effects (ApiEffects, esCountByIndex)
 import Monocle.Env (tenantIndexName)
 import Monocle.Prelude
@@ -22,7 +23,7 @@ hxTrigger = makeAttribute "hx-trigger"
 hxTarget = makeAttribute "hx-target"
 hxVals = makeAttribute "hx-vals"
 
-searchAuthorsHandler :: ApiEffects es => AuthResult AuthenticatedUser -> Maybe Text -> Maybe Text -> Eff es (Html ())
+searchAuthorsHandler :: ApiEffects es => AuthResult AuthenticatedUser -> Maybe Config.IndexName -> Maybe Text -> Eff es (Html ())
 searchAuthorsHandler _ Nothing _ = pure $ pure ()
 searchAuthorsHandler auth (Just index) queryM = do
   case queryM of

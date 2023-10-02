@@ -80,8 +80,8 @@ aesonDecodeData dat =
 getJsonData :: IO LBS.ByteString
 getJsonData = do
   xs <-
-    Faker.generateWithSettings (Faker.setRandomGen stdGen $ Faker.setNonDeterministic Faker.defaultFakerSettings) $
-      Faker.Combinators.listOf total (fakeChangeEvent minDate maxDate)
+    Faker.generateWithSettings (Faker.setRandomGen stdGen $ Faker.setNonDeterministic Faker.defaultFakerSettings)
+      $ Faker.Combinators.listOf total (fakeChangeEvent minDate maxDate)
   pure $ Aeson.encode $ mkObj xs
  where
   minDate = [utctime|1970-01-01 00:00:00|]

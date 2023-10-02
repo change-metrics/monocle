@@ -70,7 +70,7 @@ import Effectful.Dispatch.Static.Primitive qualified as EffStatic
 import Monocle.Effects.Compat ()
 
 import GHC.IO.Handle (hClose)
-import Monocle.Config (ConfigStatus)
+import Monocle.Config (ConfigStatus, IndexName, mkIndexName)
 import System.Directory
 import System.Posix.Temp (mkstemp)
 import Test.Tasty
@@ -156,7 +156,7 @@ testTree =
       liftIO do writeFile fp "workspaces:\n- name: test\n  crawlers: []"
       config <- getReloadConfig
       Monocle.Config.csReloaded config `testEff` True
-      getNames config `testEff` ["test"]
+      getNames config `testEff` [hardcodedIndexName "test"]
 
     -- make sure reload is avoided when the file doesn't change
     do
@@ -243,7 +243,7 @@ runMonoQuery :: MonoQueryEnv -> Eff (MonoQuery : es) a -> Eff es a
 runMonoQuery env = evalStaticRep (MonoQuery env)
 
 runMonoQueryConfig :: SearchQuery.Query -> Eff (MonoQuery : es) a -> Eff es a
-runMonoQueryConfig q = evalStaticRep (MonoQuery $ MonoQueryEnv (Monocle.Env.QueryWorkspace $ Monocle.Config.mkTenant "test-tenant") q)
+runMonoQueryConfig q = evalStaticRep (MonoQuery $ MonoQueryEnv (Monocle.Env.QueryWorkspace $ Monocle.Config.mkTenant $ hardcodedIndexName "test-tenant") q)
 
 runQueryM :: Monocle.Config.Index -> SearchQuery.Query -> Eff (MonoQuery : es) a -> Eff es a
 runQueryM ws query = evalStaticRep (MonoQuery $ MonoQueryEnv target query)
@@ -589,3 +589,10 @@ loggerDemo = logInfo "Hello effectful" []
 
 subDemo :: E.Fail :> es => Eff es ()
 subDemo = fail "Toto"
+
+hardcodedIndexName :: Text -> IndexName
+hardcodedIndexName x =
+  either
+    (\e -> error $ "hardcodedIndexName: cannot make IndexName from " <> show x <> " (" <> show e <> ")")
+    id
+    $ mkIndexName x

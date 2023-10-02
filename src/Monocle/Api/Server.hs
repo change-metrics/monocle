@@ -517,7 +517,7 @@ searchAuthor auth request = checkAuth auth . const $ do
 
   pure . SearchPB.AuthorResponse $ V.fromList authors
 
-getMuidByIndexName :: Text -> AuthenticatedUser -> Maybe Text
+getMuidByIndexName :: Config.IndexName -> AuthenticatedUser -> Maybe Text
 getMuidByIndexName index = Map.lookup index . aMuidMap
 
 -- | /search/check endpoint
@@ -1058,7 +1058,7 @@ handleLoggedIn cookieSettings err codeM stateM = do
     defaultUserId = sub idToken
 
   -- Given a Claim, get a mapping of index (workspace) name to Monocle UID (mUid)
-  getIdents :: Config -> Text -> Map.Map Text Text
+  getIdents :: Config -> Text -> Map.Map Config.IndexName Text
   getIdents config auid = foldr go Map.empty $ Config.getWorkspaces config
    where
     go index acc = case Config.getIdentByAlias index auid of

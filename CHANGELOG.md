@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- `workspaceName` is typed as `IndexName`, which respect ElasticSearch constraints
+
 ### Removed
 
 ### Fixed

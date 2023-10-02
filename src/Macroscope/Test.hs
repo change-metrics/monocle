@@ -186,7 +186,7 @@ testGetStream = do
     assertEqual' "Stream group named" expected (map fst $ Macroscope.mkStreamsActions (catMaybes streams))
  where
   conf =
-    [ (Config.mkTenant "test-stream")
+    [ (Config.mkTenant $ hardcodedIndexName "test-stream")
         { Config.crawlers = [gl "org1" "GITLAB_TOKEN", gl "org2" "GITLAB_TOKEN", gl "org3" "OTHER_TOKEN"]
         , Config.crawlers_api_key = Just "CRAWLERS_API_KEY"
         }

@@ -30,7 +30,7 @@ import Faker.TvShow.TheExpanse qualified
 import Google.Protobuf.Timestamp qualified (fromUTCTime)
 import Monocle.Backend.Documents
 import Monocle.Backend.Test qualified as T
-import Monocle.Config (csConfig, getWorkspaces, lookupTenant)
+import Monocle.Config (csConfig, getWorkspaces, lookupTenant, mkIndexName)
 import Monocle.Effects (getReloadConfig, runElasticEffect, runEmptyQueryM, runMonoConfig)
 import Monocle.Env (mkEnv)
 import Monocle.Prelude
@@ -38,20 +38,26 @@ import Monocle.Protob.Search (TaskData (..))
 
 -- | Provision fakedata for a tenant
 runProvisioner :: FilePath -> Text -> Text -> Int -> IO ()
-runProvisioner configPath elasticUrl tenantName docCount = runEff . runMonoConfig configPath . runLoggerEffect $ do
-  conf <- csConfig <$> getReloadConfig
-  let tenantM = lookupTenant (getWorkspaces conf) tenantName
-  case tenantM of
-    Just tenant -> do
-      bhEnv <- mkEnv elasticUrl
-      r <- runRetry $ runFail $ runElasticEffect bhEnv $ do
-        events <- liftIO $ createFakeEvents docCount
-        runEmptyQueryM tenant $ T.indexScenario events
-        logInfo "Provisionned" ["index" .= tenantName, "doc count" .= length events]
-      case r of
-        Left err -> logInfo "Unable to perform the provisionning" ["error" .= err]
-        Right _ -> pure ()
-    Nothing -> pure ()
+runProvisioner configPath elasticUrl tenantName docCount = do
+  indexName <-
+    either
+      (\e -> fail $ "Invalid tenantName " <> show tenantName <> " (" <> show e <> ")")
+      return
+      $ mkIndexName tenantName
+  runEff . runMonoConfig configPath . runLoggerEffect $ do
+    conf <- csConfig <$> getReloadConfig
+    let tenantM = lookupTenant (getWorkspaces conf) indexName
+    case tenantM of
+      Just tenant -> do
+        bhEnv <- mkEnv elasticUrl
+        r <- runRetry $ runFail $ runElasticEffect bhEnv $ do
+          events <- liftIO $ createFakeEvents docCount
+          runEmptyQueryM tenant $ T.indexScenario events
+          logInfo "Provisionned" ["index" .= indexName, "doc count" .= length events]
+        case r of
+          Left err -> logInfo "Unable to perform the provisionning" ["error" .= err]
+          Right _ -> pure ()
+      Nothing -> pure ()
 
 -- | Ensure changes have a unique ID
 setChangeID :: [EChange] -> IO [EChange]

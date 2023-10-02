@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 -- |
 -- Module      : Monocle.Api.Config
@@ -17,6 +17,7 @@ module Monocle.Config (
   Config (..),
   Workspace,
   Index (..),
+  IndexName,
   Project (..),
   Ident (..),
   SearchAlias (..),
@@ -80,115 +81,80 @@ module Monocle.Config (
   mkTenant,
   getIdentByAliasFromIdents,
   links,
+  getIndexName,
+  mkIndexName,
 ) where
 
+import Data.Aeson qualified as Aeson
 import Data.ByteString qualified as BS
+import Data.Char (isLetter, isLowerCase)
 import Data.Either.Validation (Validation (Failure, Success))
 import Data.Map qualified as Map
-import Data.Text qualified as T (dropWhileEnd, isPrefixOf, null, replace, toUpper)
+import Data.Text qualified as T
+import Data.Text.Encoding qualified as T
+import Data.Text.Lazy qualified as TL
 import Dhall qualified
 import Dhall.Core qualified
-import Dhall.Src qualified
-import Dhall.TH qualified
 import Dhall.YamlToDhall qualified as Dhall
 import Effectful.Env
+import Monocle.Config.Generated
 import Monocle.Prelude
+import Servant.API (FromHttpApiData (..))
 import System.Directory (getModificationTime)
+import Witch qualified
 
--- | Generate Haskell Type from Dhall Type
--- See: https://hackage.haskell.org/package/dhall-1.38.0/docs/Dhall-TH.html
-Dhall.TH.makeHaskellTypes
-  ( let providerPath name = "./schemas/monocle/config/Provider/" <> name <> "/Type.dhall"
-        authProviderPath name = "./schemas/monocle/config/AuthProvider/" <> name <> "/Type.dhall"
-        provider name = Dhall.TH.SingleConstructor name name $ providerPath name
-        authProvider name = Dhall.TH.SingleConstructor name name $ authProviderPath name
-        mainPath name = "./schemas/monocle/config/" <> name <> "/Type.dhall"
-        main name = Dhall.TH.SingleConstructor name name $ mainPath name
-     in [ main "Project"
-        , main "Ident"
-        , main "SearchAlias"
-        , main "Crawler"
-        , main "Crawlers"
-        , main "Auth"
-        , main "Config"
-        , main "About"
-        , main "Link"
-        , provider "Gerrit"
-        , provider "Gitlab"
-        , provider "Github"
-        , provider "GithubUser"
-        , provider "GithubApplication"
-        , provider "Bugzilla"
-        , authProvider "OIDC"
-        , authProvider "GithubAuth"
-        , Dhall.TH.MultipleConstructors
-            "Provider"
-            "./schemas/monocle/config/Crawler/Provider.dhall"
-        , Dhall.TH.MultipleConstructors
-            "AuthProvider"
-            "./schemas/monocle/config/Auth/Provider.dhall"
-        , -- To support backward compatible schema, we replace Index and Crawler schemas
-          Dhall.TH.SingleConstructor "Index" "Index" $ mainPath "Workspace"
-        ]
-  )
+data Config = Config
+  { about :: Maybe About
+  , auth :: Maybe Auth
+  , crawlers :: Maybe Crawlers
+  , workspaces :: [Workspace]
+  }
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (Dhall.FromDhall, Dhall.ToDhall)
 
 -- | Workspace are not index name.
 type Workspace = Index
 
--- | Embed the expected configuration schema
-configurationSchema :: Dhall.Core.Expr Dhall.Src.Src Void
-configurationSchema = $(Dhall.TH.staticDhallExpression "./schemas/monocle/config/Config/Type.dhall")
+data Index = Index
+  { name :: IndexName
+  , crawlers_api_key :: Maybe Text
+  , crawlers :: [Crawler]
+  , projects :: Maybe [Project]
+  , idents :: Maybe [Ident]
+  , search_aliases :: Maybe [SearchAlias]
+  }
+  deriving stock (Eq, Show, Generic)
+  deriving anyclass (Dhall.FromDhall, Dhall.ToDhall)
 
-deriving instance Eq OIDC
-deriving instance Show OIDC
+newtype IndexName = IndexName {getIndexName :: Text}
+  deriving stock (Eq, Ord, Show)
+  deriving newtype (Semigroup, Dhall.ToDhall, Aeson.ToJSON, Aeson.ToJSONKey, Aeson.FromJSONKey)
 
-deriving instance Eq GithubAuth
-deriving instance Show GithubAuth
+instance Aeson.FromJSON IndexName where
+  parseJSON x =
+    parseJSON x >>= either (fail . T.unpack) return . mkIndexName
 
-deriving instance Eq Auth
-deriving instance Show Auth
+instance Dhall.FromDhall IndexName where
+  autoWith _ = Dhall.Decoder {..}
+   where
+    expected = pure Dhall.Core.Text
+    extract =
+      \case
+        Dhall.Core.TextLit (Dhall.Core.Chunks [] t) -> either Dhall.extractError pure $ mkIndexName t
+        expr -> Dhall.typeError expected expr
 
-deriving instance Eq AuthProvider
-deriving instance Show AuthProvider
+deriving anyclass instance Witch.From Text IndexName
 
-deriving instance Eq Gerrit
-deriving instance Show Gerrit
+deriving instance Witch.From IndexName Text
 
-deriving instance Eq Github
-deriving instance Show Github
+instance Witch.From TL.Text IndexName where
+  from = IndexName . TL.toStrict
 
-deriving instance Eq GithubUser
-deriving instance Show GithubUser
+instance Witch.From IndexName TL.Text where
+  from = TL.fromStrict . getIndexName
 
-deriving instance Eq GithubApplication
-deriving instance Show GithubApplication
-
-deriving instance Eq Gitlab
-deriving instance Show Gitlab
-
-deriving instance Eq Bugzilla
-deriving instance Show Bugzilla
-
-deriving instance Eq Project
-deriving instance Show Project
-
-deriving instance Eq Provider
-deriving instance Show Provider
-
-deriving instance Eq Crawlers
-deriving instance Show Crawlers
-
-deriving instance Eq Crawler
-deriving instance Show Crawler
-
-deriving instance Eq Ident
-deriving instance Show Ident
-
-deriving instance Eq SearchAlias
-deriving instance Show SearchAlias
-
-deriving instance Eq Index
-deriving instance Show Index
+instance FromHttpApiData IndexName where
+  parseUrlPiece = mkIndexName
 
 -- End - Loading of Types from the dhall-monocle
 
@@ -231,7 +197,7 @@ loadConfig configPath = do
 -- | A Type to express if a 'Workspace' needs refresh
 data Status = NeedRefresh | Ready
 
-type WorkspaceName = Text
+type WorkspaceName = IndexName
 
 type WorkspaceStatus = Map WorkspaceName Status
 
@@ -361,11 +327,11 @@ getAuthProvider publicUrl Config {auth} = case auth of
 ---------------------------------------
 
 -- | Get the 'Index' name
-getWorkspaceName :: Index -> Text
+getWorkspaceName :: Index -> IndexName
 getWorkspaceName Index {..} = name
 
 -- | Find an 'Index' by name
-lookupTenant :: [Index] -> Text -> Maybe Index
+lookupTenant :: [Index] -> IndexName -> Maybe Index
 lookupTenant xs tenantName = find isTenant xs
  where
   isTenant Index {..} = name == tenantName
@@ -493,7 +459,7 @@ getCrawlerProjectIssue crawler@Crawler {..} = case provider of
 ---------------------------------
 
 -- | Create an empty 'Index'
-mkTenant :: Text -> Index
+mkTenant :: IndexName -> Index
 mkTenant name =
   Index
     { name
@@ -512,5 +478,34 @@ getIdentByAliasFromIdents alias idents' = case find isMatched idents' of
  where
   isMatched :: Ident -> Bool
   isMatched Ident {..} = alias `elem` aliases
+
+-- | Create an IndexName with checked constraints
+--
+-- >>> mkIndexName ""
+-- Left "Is empty"
+-- >>> mkIndexName $ T.replicate 256 "x"
+-- Left "Is longer than 255 bytes"
+-- >>> mkIndexName "azerTY"
+-- Left "Contains uppercase letter(s)"
+-- >>> mkIndexName "hello#world"
+-- Left "Includes [\\/*?\"<>| ,#:]"
+-- >>> mkIndexName "-test"
+-- Left "Starts with [-_+.]"
+-- >>> mkIndexName "."
+-- Left "Is (.|..)"
+-- >>> mkIndexName ".."
+-- Left "Is (.|..)"
+-- >>> mkIndexName "hello-world_42"
+-- Right (IndexName {getIndexName = "hello-world_42"})
+mkIndexName :: Text -> Either Text IndexName
+mkIndexName name = do
+  let check explanation p = if p then Right () else Left explanation
+  check "Is empty" $ not $ T.null name
+  check "Is longer than 255 bytes" $ BS.length (T.encodeUtf8 name) < 256
+  check "Contains uppercase letter(s)" $ T.all (\x -> not (isLetter x) || isLowerCase x) name
+  check "Includes [\\/*?\"<>| ,#:]" $ T.all (flip @_ @String notElem "\\/*?\"<>| ,#:") name
+  check "Is (.|..)" $ notElem name [".", ".."]
+  check "Starts with [-_+.]" $ maybe False (flip @_ @String notElem "-_+." . fst) $ T.uncons name
+  return $ IndexName name
 
 -- End - Some utility functions

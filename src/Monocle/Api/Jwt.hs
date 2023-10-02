@@ -21,6 +21,7 @@ import Data.ByteString.Base64 qualified as B64
 import Data.ByteString.Lazy qualified as BSL
 import Data.Map.Strict qualified as HM
 import Monocle.Config (OIDCProviderConfig (..))
+import Monocle.Config qualified as Config
 import Monocle.Prelude hiding (Error)
 import Network.HTTP.Client (Manager)
 import Servant.Auth.Server (
@@ -41,7 +42,7 @@ doGenJwk keyM = case keyM of
   randomJWK = keyFromBS <$> genRandom
   keyFromBS = fromOctets . take 64 . BSL.unpack . from
 
-type MUidMap = Map Text Text
+type MUidMap = Map Config.IndexName Text
 
 -- Will be added as the 'dat' unregistered claim
 data AuthenticatedUser = AUser
