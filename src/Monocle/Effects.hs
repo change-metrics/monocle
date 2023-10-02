@@ -593,5 +593,6 @@ subDemo = fail "Toto"
 hardcodedIndexName :: Text -> IndexName
 hardcodedIndexName x =
   either
-    (\e -> error $ "hardcodedIndexName: cannot make IndexName from " <> show x <> " (" <> show e <> ")") id
+    (\e -> error $ "hardcodedIndexName: cannot make IndexName from " <> show x <> " (" <> show e <> ")")
+    id
     $ mkIndexName x

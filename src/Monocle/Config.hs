@@ -99,7 +99,7 @@ import Dhall.YamlToDhall qualified as Dhall
 import Effectful.Env
 import Monocle.Config.Generated
 import Monocle.Prelude
-import Servant.API (FromHttpApiData(..))
+import Servant.API (FromHttpApiData (..))
 import System.Directory (getModificationTime)
 import Witch qualified
 
@@ -126,8 +126,7 @@ data Index = Index
   deriving stock (Eq, Show, Generic)
   deriving anyclass (Dhall.FromDhall, Dhall.ToDhall)
 
-newtype IndexName
-  = IndexName { getIndexName :: Text }
+newtype IndexName = IndexName {getIndexName :: Text}
   deriving stock (Eq, Ord, Show)
   deriving newtype (Semigroup, Dhall.ToDhall, Aeson.ToJSON, Aeson.ToJSONKey, Aeson.FromJSONKey)
 
@@ -137,12 +136,12 @@ instance Aeson.FromJSON IndexName where
 
 instance Dhall.FromDhall IndexName where
   autoWith _ = Dhall.Decoder {..}
-    where
-      expected = pure Dhall.Core.Text
-      extract =
-        \case
-          Dhall.Core.TextLit (Dhall.Core.Chunks [] t) -> either Dhall.extractError pure $ mkIndexName t
-          expr                                        -> Dhall.typeError expected expr
+   where
+    expected = pure Dhall.Core.Text
+    extract =
+      \case
+        Dhall.Core.TextLit (Dhall.Core.Chunks [] t) -> either Dhall.extractError pure $ mkIndexName t
+        expr -> Dhall.typeError expected expr
 
 deriving anyclass instance Witch.From Text IndexName
 

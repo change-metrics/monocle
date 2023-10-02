@@ -41,7 +41,8 @@ runProvisioner :: FilePath -> Text -> Text -> Int -> IO ()
 runProvisioner configPath elasticUrl tenantName docCount = do
   indexName <-
     either
-      (\e -> fail $ "Invalid tenantName " <> show tenantName <> " (" <> show e <> ")") return
+      (\e -> fail $ "Invalid tenantName " <> show tenantName <> " (" <> show e <> ")")
+      return
       $ mkIndexName tenantName
   runEff . runMonoConfig configPath . runLoggerEffect $ do
     conf <- csConfig <$> getReloadConfig

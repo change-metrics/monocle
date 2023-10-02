@@ -21,8 +21,8 @@ import Data.ByteString.Base64 qualified as B64
 import Data.ByteString.Lazy qualified as BSL
 import Data.Map.Strict qualified as HM
 import Monocle.Config (OIDCProviderConfig (..))
+import Monocle.Config qualified as Config
 import Monocle.Prelude hiding (Error)
-import qualified Monocle.Config as Config
 import Network.HTTP.Client (Manager)
 import Servant.Auth.Server (
   FromJWT,
