@@ -7,9 +7,20 @@ let
   else
     throw "Refusing to build from a dirty Git tree!";
 
+  src = pkgs.lib.cleanSourceWith {
+    src = self; # The original, unfiltered source
+    filter = path: type:
+      type == "directory" || (pkgs.lib.hasSuffix ".cabal" path)
+      || (pkgs.lib.hasSuffix ".hs" path) || (pkgs.lib.hasSuffix ".dhall" path)
+      || (pkgs.lib.hasSuffix ".json" path) || (pkgs.lib.hasSuffix ".yaml" path)
+      || (pkgs.lib.hasSuffix "LICENSE" path)
+      || (pkgs.lib.hasSuffix ".graphql" path);
+
+  };
+
   # Add monocle and patch broken dependency to the haskell package set
   haskellExtend = hpFinal: hpPrev: {
-    monocle = hpPrev.callCabal2nix "monocle" self { };
+    monocle = hpPrev.callCabal2nix "monocle" src { };
 
     # upgrade to bloodhound 0.20 needs some work
     bloodhound = pkgs.haskell.lib.overrideCabal hpPrev.bloodhound {
