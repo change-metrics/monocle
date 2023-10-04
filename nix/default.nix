@@ -462,35 +462,41 @@ in rec {
   monocle-exe = pkgs.haskell.lib.justStaticExecutables
     (hsPkgs.monocle.overrideAttrs (_: { MONOCLE_COMMIT = rev; }));
 
+  monocle-wrapper = pkgs.writeScriptBin "monocle" ''
+    #!/usr/bin/sh -e
+    # Use fakeroot to avoid `No user exists for uid` error
+    env LD_PRELOAD=${pkgs.fakeroot}/lib/libfakeroot.so ${monocle-exe}/bin/monocle $*
+  '';
+
   containerMonocle = let
     # Container user info
     user = "monocle";
     home = "var/lib/${user}";
 
     # Create a passwd entry so that openssh can find the .ssh config
-    createPasswd = "echo ${user}:x:0:0:monocle:/${home}:/bin/bash > etc/passwd";
-
-    # Make ca-bundles.crt available to HSOpenSSL as plain file
-    # https://hackage.haskell.org/package/HsOpenSSL-x509-system-0.1.0.4/docs/src/OpenSSL.X509.SystemStore.Unix.html#contextLoadSystemCerts
-    fixCABundle =
-      "mkdir -p etc/pki/tls/certs/ && cp etc/ssl/certs/ca-bundle.crt etc/pki/tls/certs/ca-bundle.crt";
+    createPasswd =
+      "mkdir etc; echo ${user}:x:0:0:monocle:/${home}:/bin/bash >> etc/passwd";
 
     # Ensure the home directory is r/w for any uid
     rwHome = "mkdir -p -m 1777 ${home}";
   in pkgs.dockerTools.buildLayeredImage {
     name = "quay.io/change-metrics/monocle-exe";
-    contents = [ pkgs.coreutils pkgs.cacert pkgs.bash pkgs.curl monocle-exe ];
-    extraCommands = "${createPasswd} && ${fixCABundle} && ${rwHome}";
+    contents = [ monocle-wrapper ];
+    extraCommands = "${createPasswd} && ${rwHome}";
     tag = "latest";
     created = "now";
     config = {
       USER = "1000";
-      Env = [
-        "SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt"
-        "HOME=/${home}"
-        # Use fakeroot to avoid `No user exists for uid` error
-        "LD_PRELOAD=${pkgs.fakeroot}/lib/libfakeroot.so"
-      ];
+      Env = [ "HOME=/${home}" ];
+    };
+    # To update, run: nix run github:TristanCacqueray/nixpkgs/skopeo-fix#nix-prefetch-docker -- -c nix-prefetch-docker --image-name registry.access.redhat.com/ubi8/ubi --image-tag 8.8-1067
+    fromImage = pkgs.dockerTools.pullImage {
+      imageName = "registry.access.redhat.com/ubi8/ubi";
+      imageDigest =
+        "sha256:269e9753043a4066af12649e921c6ad3201702fda5b2652f7a4aa010c2ed4c1a";
+      sha256 = "0wc566pph59mwn1dyw9h06lmfzc4x2p665lxffplpgqc10cr3w2c";
+      finalImageName = "registry.access.redhat.com/ubi8/ubi";
+      finalImageTag = "8.8-1067";
     };
   };
 
