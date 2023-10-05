@@ -87,7 +87,7 @@ module Monocle.Config (
 
 import Data.Aeson qualified as Aeson
 import Data.ByteString qualified as BS
-import Data.Char (isLetter, isLowerCase)
+import Data.Char (isLetter, isLower)
 import Data.Either.Validation (Validation (Failure, Success))
 import Data.Map qualified as Map
 import Data.Text qualified as T
@@ -502,7 +502,7 @@ mkIndexName name = do
   let check explanation p = if p then Right () else Left explanation
   check "Is empty" $ not $ T.null name
   check "Is longer than 255 bytes" $ BS.length (T.encodeUtf8 name) < 256
-  check "Contains uppercase letter(s)" $ T.all (\x -> not (isLetter x) || isLowerCase x) name
+  check "Contains uppercase letter(s)" $ T.all (\x -> not (isLetter x) || isLower x) name
   check "Includes [\\/*?\"<>| ,#:]" $ T.all (flip @_ @String notElem "\\/*?\"<>| ,#:") name
   check "Is (.|..)" $ notElem name [".", ".."]
   check "Starts with [-_+.]" $ maybe False (flip @_ @String notElem "-_+." . fst) $ T.uncons name

@@ -108,7 +108,7 @@ common codegen
                      , containers                 >= 0.6
                      , deepseq                    >= 1.4
                      , proto3-suite               >= 0.5.0
-                     , proto3-wire                >= 1.2.0
+                     , proto3-wire                >= 1.4.0
                      , text
                      , vector                     >= 0.12
 
@@ -137,7 +137,7 @@ library
                      , dhall-yaml                 >= 1.2
                      , directory
                      , either                     >= 5
-                     , effectful
+                     , effectful                  < 2.3.0.0
                      , effectful-core
                      -- , effectful-plugin
                      , envparse                   >= 0.4
@@ -152,7 +152,7 @@ library
                      , http-client                >= 0.6
                      , http-client-openssl        >= 0.3
                      , http-mock                  >= 0.1
-                     , http-types                 >=0.12
+                     , http-types                 >= 0.12
                      , json-syntax                >= 0.2
                      , jose                       >= 0.9
                      , list-t
@@ -170,7 +170,7 @@ library
                      , parser-combinators         >= 1.2
                      , prometheus-client          >= 1.0
                      , prometheus-metrics-ghc     >= 1.0
-                     , proto3-suite               >= 0.5.0
+                     , proto3-suite               >= 0.6.0
                      , qq-literals
                      , relude                     >= 1.0
                      , retry-effectful

@@ -1,0 +1,108 @@
+# Monocle.
+# Copyright (C) 2023 Monocle authors
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+# This Container file builds an an alternative image based on the Universal Base Image
+# maintained by Red Hat. This Monocle build might be slightly different than
+# the build from the official Monocle base image based on Nix (ghc version and some
+# dependencies version might differ).
+
+
+##### Monocle binary build #####
+
+FROM registry.access.redhat.com/ubi8/ubi as ubi-builder
+
+# Install gpg keys
+RUN gpg --batch --keyserver keyserver.ubuntu.com --recv-keys 7D1E8AFD1D4A16D71FADA2F2CCC85C0E40C06A8C
+RUN gpg --batch --keyserver keyserver.ubuntu.com --recv-keys FE5AB6C91FEA597C3B31180B73EDE9E8CFBAEF01
+RUN gpg --batch --keyserver keyserver.ubuntu.com --recv-keys 88B57FCF7DB53B4DB3BFA4B1588764FBE22D19C4
+RUN gpg --batch --keyserver keyserver.ubuntu.com --recv-keys EAF2A9A722C0C96F2B431CA511AAD8CEDEE0CAEF
+
+# Install ghcup
+RUN \
+    curl https://downloads.haskell.org/~ghcup/x86_64-linux-ghcup > /usr/bin/ghcup && \
+    chmod +x /usr/bin/ghcup && \
+    ghcup config set gpg-setting GPGStrict
+
+# Install build deps for ghcup
+RUN dnf install -y \
+    make \
+    gcc \
+    gcc-c++
+
+
+ARG GHC=9.4.6
+ARG CABAL=latest
+
+# Install GHC and cabal
+RUN \
+    ghcup -v install ghc --isolate /usr/local --force ${GHC} && \
+    ghcup -v install cabal --isolate /usr/local/bin --force ${CABAL}
+
+# Install build deps for Monocle
+RUN dnf install -y \
+    git \
+    openssl-devel \
+    gmp-devel \
+    ncurses-devel \
+    ncurses-compat-libs \
+    zlib-devel
+
+# Copy source tree
+COPY . /build
+
+# Build Monocle
+RUN cd /build && \
+    cabal update && \
+    cabal build --project-file=cabal-override.project && \
+    cp $(find dist-newstyle/build/*/*/*/*/monocle/build/ -name monocle -type f) /
+
+##### Monocle Web UI build #####
+
+FROM registry.fedoraproject.org/fedora:35 as web-builder
+
+RUN dnf update -y && dnf install -y nodejs git
+
+# set working directory
+WORKDIR /monocle-webapp
+ENV PATH /monocle-webapp/node_modules/.bin:$PATH
+
+# copy files to install js modules
+COPY web/package.json /monocle-webapp/
+COPY web/bsconfig.json /monocle-webapp/
+COPY web/package-lock.json /monocle-webapp/
+
+# install dependencies
+RUN npm install
+
+# copy source files
+COPY web/build.js /monocle-webapp/
+COPY web/public /monocle-webapp/public/
+COPY web/src /monocle-webapp/src/
+
+# install dependencies (sed is ugly hack to make warning errors)
+RUN sed -e 's|-bs-no-version-header|-bs-no-version-header", "-warn-error -a+5+6+27+101+109|' -i bsconfig.json && npm run build
+
+##### Setup final image #####
+
+FROM registry.access.redhat.com/ubi8/ubi
+
+COPY --from=ubi-builder /monocle /bin/
+COPY --from=web-builder /monocle-webapp/build /usr/share/monocle/webapp/
+
+# Ensure runtime commands
+RUN dnf install -y curl && \
+    dnf clean all && \
+    rm -rf /var/cache/yum
