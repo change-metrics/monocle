@@ -40,6 +40,10 @@ fragmentPRData =
     bodyText
     state
     reviewDecision
+    mergeCommit {
+      __typename
+      mergedCommitOid: oid
+    }
     number
     mergeable
     isDraft

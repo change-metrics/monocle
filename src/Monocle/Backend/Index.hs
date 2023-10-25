@@ -61,12 +61,12 @@ instance ToJSON AuthorIndexMapping where
   toJSON AuthorIndexMapping =
     object ["properties" .= AuthorMapping]
 
-cachedAuthorFields :: [Pair]
-cachedAuthorFields = ["cached_author_muid" .= TextAndKWMapping]
+cachedAuthorField :: [Pair]
+cachedAuthorField = ["cached_author_muid" .= TextAndKWMapping]
 
 instance ToJSON CachedAuthorIndexMapping where
   toJSON CachedAuthorIndexMapping =
-    object ["properties" .= object cachedAuthorFields]
+    object ["properties" .= object cachedAuthorField]
 
 data DateIndexMapping = DateIndexMapping deriving (Eq, Show)
 
@@ -76,6 +76,19 @@ instance ToJSON DateIndexMapping where
       [ "type" .= ("date" :: Text)
       , "format" .= ("date_time_no_millis" :: Text)
       ]
+
+-- https://www.elastic.co/guide/en/elasticsearch/reference/7.17/enabled.html#enabled
+data NonIndexedMapping = NonIndexedMapping deriving (Eq, Show)
+
+instance ToJSON NonIndexedMapping where
+  toJSON NonIndexedMapping =
+    object
+      [ "type" .= ("object" :: Text)
+      , "enabled" .= (False :: Bool)
+      ]
+
+mergedCommitField :: [Pair]
+mergedCommitField = ["merged_commit_sha" .= NonIndexedMapping]
 
 data TextAndKWMapping = TextAndKWMapping deriving (Eq, Show)
 
@@ -207,7 +220,8 @@ instance ToJSON ChangesIndexMapping where
                           ]
                     ]
               ]
-                <> cachedAuthorFields
+                <> cachedAuthorField
+                <> mergedCommitField
             )
       ]
 
@@ -226,7 +240,7 @@ createIndex indexName mapping = do
   retryPolicy = exponentialBackoff 500_000 <> limitRetries 7
 
 configVersion :: ConfigVersion
-configVersion = ConfigVersion 4
+configVersion = ConfigVersion 5
 
 configIndex :: BH.IndexName
 configIndex = BH.IndexName "monocle.config"
@@ -353,12 +367,19 @@ upgradeConfigV4 = do
   mkChangeBulkUpdate indexName change =
     BulkUpdate indexName (getChangeDocId change) $ toJSON change
 
+upgradeConfigV5 :: forall es. MonoQuery :> es => IndexEffects es => Eff es ()
+upgradeConfigV5 = do
+  indexName <- getIndexName
+  logInfo "Applying migration to schema V5 on workspace" ["index" .= indexName]
+  void $ esPutMapping indexName mergedCommitField
+
 upgrades :: forall es. (E.Fail :> es, MonoQuery :> es) => IndexEffects es => [(ConfigVersion, Eff es ())]
 upgrades =
   [ (ConfigVersion 1, upgradeConfigV1)
   , (ConfigVersion 2, upgradeConfigV2)
   , (ConfigVersion 3, void upgradeConfigV3)
   , (ConfigVersion 4, void upgradeConfigV4)
+  , (ConfigVersion 5, void upgradeConfigV5)
   ]
 
 newtype ConfigVersion = ConfigVersion Integer
@@ -488,12 +509,14 @@ toEChangeEvent ChangePB.ChangeEvent {..} =
     , echangeeventTasksData = Nothing
     , echangeeventDuration = toDuration <$> changeEventOptionalDuration
     , echangeeventDraft = Just changeEventDraft
+    , echangeeventMergedCommitSha = toMergedCommitSha <$> changeEventOptionalMergedCommitSha
     }
  where
   author = toAuthor changeEventAuthor
   onAuthor = toAuthor changeEventOnAuthor
   eType = getEventType changeEventType
   toDuration (ChangePB.ChangeEventOptionalDurationDuration v) = fromInteger $ toInteger v
+  toMergedCommitSha (ChangePB.ChangeEventOptionalMergedCommitShaMergedCommitSha sha) = sha
 
 getEventType :: Maybe ChangePB.ChangeEventType -> EDocType
 getEventType eventTypeM = case eventTypeM of

@@ -67,6 +67,9 @@ toDuration d1 d2 = ChangeOptionalDurationDuration . from $ diffTimeSec (from d1)
 toChangeFilePath :: ChangedFile -> ChangedFilePath
 toChangeFilePath (ChangedFile _ _ path) = ChangedFilePath path
 
+toChangeEventMergedCommitSha :: ChangeOptionalMergedCommitSha -> ChangeEventOptionalMergedCommitSha
+toChangeEventMergedCommitSha (ChangeOptionalMergedCommitShaMergedCommitSha sha) = ChangeEventOptionalMergedCommitShaMergedCommitSha sha
+
 baseEvent :: ChangeEventType -> LText -> Change -> ChangeEvent
 baseEvent eType eId change =
   ChangeEvent
@@ -89,6 +92,7 @@ baseEvent eType eId change =
       changeEventCreatedAt = Nothing
     , changeEventAuthor = Nothing
     , changeEventOptionalDuration = swapDuration <$> changeOptionalDuration change
+    , changeEventOptionalMergedCommitSha = toChangeEventMergedCommitSha <$> changeOptionalMergedCommitSha change
     }
 
 instance From DateTime ChangeOptionalClosedAt where

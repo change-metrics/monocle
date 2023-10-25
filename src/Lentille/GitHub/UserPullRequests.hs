@@ -146,6 +146,9 @@ transformResponse host identCB result = do
   getPRMergedBy :: GetUserPullRequestsUserPullRequestsNodesMergedBy -> Text
   getPRMergedBy (GetUserPullRequestsUserPullRequestsNodesMergedBy _ login) = login
 
+  getPRMergedCommitSHA :: GetUserPullRequestsUserPullRequestsNodesMergeCommit -> LText
+  getPRMergedCommitSHA (GetUserPullRequestsUserPullRequestsNodesMergeCommit _ sha) = from $ getSHA sha
+
   toLabels :: GetUserPullRequestsUserPullRequestsNodesLabels -> [Text]
   toLabels (GetUserPullRequestsUserPullRequestsNodesLabels nodes) =
     toLabel <$> catMaybes (fromMaybe [] nodes)
@@ -247,6 +250,7 @@ transformResponse host identCB result = do
             , changeRepositoryShortname = from . snd $ repoOwnerName repository
             , changeAuthor = Just $ maybe getGhostIdent (getIdent . getPRAuthor) author
             , changeOptionalMergedBy = ChangeOptionalMergedByMergedBy . getIdent . getPRMergedBy <$> mergedBy
+            , changeOptionalMergedCommitSha = ChangeOptionalMergedCommitShaMergedCommitSha . getPRMergedCommitSHA <$> mergeCommit
             , changeBranch = from headRefName
             , changeTargetBranch = from baseRefName
             , changeCreatedAt = Just $ from createdAt

@@ -67,6 +67,7 @@ fakeChangePB =
     , changeRepositoryShortname = mempty
     , changeAuthor = Nothing
     , changeOptionalMergedBy = Nothing
+    , changeOptionalMergedCommitSha = Nothing
     , changeBranch = mempty
     , changeTargetBranch = mempty
     , changeCreatedAt = Just (from fakeDate)
@@ -107,6 +108,7 @@ fakeChange =
     , echangeCreatedAt = fakeDate
     , echangeUpdatedAt = fakeDate
     , echangeMergedBy = Nothing
+    , echangeMergedCommitSha = Nothing
     , echangeTargetBranch = "main"
     , echangeMergedAt = Nothing
     , echangeClosedAt = Nothing
@@ -195,6 +197,10 @@ testIndexChanges = withTenant doTest
       (I.getChangeDocId fakeChange1Updated)
       echangeTitle
       (echangeTitle fakeChange1Updated)
+    checkEChangeField
+      (I.getChangeDocId fakeChange1Updated)
+      echangeMergedCommitSha
+      (echangeMergedCommitSha fakeChange1Updated)
     -- Check we can get the most recently updated change
     dateM <- I.getLastUpdatedDate $ from . echangeRepositoryFullname $ fakeChange1
     assertEqual' "Got most recent change" (Just fakeDateAlt) dateM
@@ -213,6 +219,7 @@ testIndexChanges = withTenant doTest
       fakeChange1
         { echangeTitle = "My change 1 updated"
         , echangeUpdatedAt = fakeDateAlt
+        , echangeMergedCommitSha = Just "123"
         }
     fakeChange2 = mkFakeChange 2 "My change 2"
     mkFakeChange :: Int -> LText -> EChange
@@ -1322,6 +1329,7 @@ emptyEvent = EChangeEvent {..}
   echangeeventLabels = mempty
   echangeeventDuration = Nothing
   echangeeventDraft = Nothing
+  echangeeventMergedCommitSha = Nothing
 
 showEvents :: [ScenarioEvent] -> Text
 showEvents xs = Text.intercalate ", " $ sort (map go xs)

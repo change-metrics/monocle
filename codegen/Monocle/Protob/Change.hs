@@ -680,6 +680,8 @@ data Change = Change
   , changeApprovals :: Hs.Vector Hs.Text
   , changeDraft :: Hs.Bool
   , changeOptionalSelfMerged :: Hs.Maybe ChangeOptionalSelfMerged
+  , changeOptionalMergedCommitSha ::
+      Hs.Maybe ChangeOptionalMergedCommitSha
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
 
@@ -725,6 +727,7 @@ instance HsProtobuf.Message Change where
       , changeApprovals = changeApprovals
       , changeDraft = changeDraft
       , changeOptionalSelfMerged = changeOptionalSelfMerged
+      , changeOptionalMergedCommitSha = changeOptionalMergedCommitSha
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -922,6 +925,17 @@ instance HsProtobuf.Message Change where
                     ( HsProtobuf.encodeMessageField
                         (HsProtobuf.FieldNumber 31)
                         (HsProtobuf.ForceEmit y)
+                    )
+          , case changeOptionalMergedCommitSha of
+              Hs.Nothing -> Hs.mempty
+              Hs.Just x ->
+                case x of
+                  ChangeOptionalMergedCommitShaMergedCommitSha y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 32)
+                        ( HsProtobuf.ForceEmit
+                            (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (y))
+                        )
                     )
           ]
       )
@@ -1139,6 +1153,19 @@ instance HsProtobuf.Message Change where
                 ( (HsProtobuf.FieldNumber 31)
                 , (Hs.pure (Hs.Just Hs.. ChangeOptionalSelfMergedSelfMerged))
                     <*> HsProtobuf.decodeMessageField
+                )
+              ]
+          )
+      <*> ( HsProtobuf.oneof
+              Hs.Nothing
+              [
+                ( (HsProtobuf.FieldNumber 32)
+                , ( Hs.pure
+                      (Hs.Just Hs.. ChangeOptionalMergedCommitShaMergedCommitSha)
+                  )
+                    <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                            (HsProtobuf.decodeMessageField)
+                        )
                 )
               ]
           )
@@ -1383,6 +1410,7 @@ instance HsJSONPB.ToJSONPB Change where
         f29
         f30
         f31
+        f32
       ) =
       ( HsJSONPB.object
           [ "id" .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
@@ -1526,6 +1554,24 @@ instance HsJSONPB.ToJSONPB Change where
                           options
                       else encodeOptional_self_merged options
             )
+          , ( let encodeOptional_merged_commit_sha =
+                    ( case f32 of
+                        Hs.Just (ChangeOptionalMergedCommitShaMergedCommitSha f32) ->
+                          ( HsJSONPB.pair
+                              "merged_commit_sha"
+                              (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f32))
+                          )
+                        Hs.Nothing -> Hs.mempty
+                    )
+               in \options ->
+                    if HsJSONPB.optEmitNamedOneof options
+                      then
+                        ( "optional_merged_commit_sha"
+                            .= (HsJSONPB.objectOrNull [encodeOptional_merged_commit_sha] options)
+                        )
+                          options
+                      else encodeOptional_merged_commit_sha options
+            )
           ]
       )
   toEncodingPB
@@ -1561,6 +1607,7 @@ instance HsJSONPB.ToJSONPB Change where
         f29
         f30
         f31
+        f32
       ) =
       ( HsJSONPB.pairs
           [ "id" .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
@@ -1703,6 +1750,24 @@ instance HsJSONPB.ToJSONPB Change where
                         )
                           options
                       else encodeOptional_self_merged options
+            )
+          , ( let encodeOptional_merged_commit_sha =
+                    ( case f32 of
+                        Hs.Just (ChangeOptionalMergedCommitShaMergedCommitSha f32) ->
+                          ( HsJSONPB.pair
+                              "merged_commit_sha"
+                              (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f32))
+                          )
+                        Hs.Nothing -> Hs.mempty
+                    )
+               in \options ->
+                    if HsJSONPB.optEmitNamedOneof options
+                      then
+                        ( "optional_merged_commit_sha"
+                            .= (HsJSONPB.pairsOrNull [encodeOptional_merged_commit_sha] options)
+                        )
+                          options
+                      else encodeOptional_merged_commit_sha options
             )
           ]
       )
@@ -1851,6 +1916,22 @@ instance HsJSONPB.FromJSONPB Change where
                         )
                           <|> (parseOptional_self_merged obj)
                   )
+              <*> ( let parseOptional_merged_commit_sha parseObj =
+                          Hs.msum
+                            [ Hs.Just
+                                Hs.. ChangeOptionalMergedCommitShaMergedCommitSha
+                                Hs.. Hs.coerce @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                                <$> (HsJSONPB.parseField parseObj "merged_commit_sha")
+                            , Hs.pure Hs.Nothing
+                            ]
+                     in ( (obj .: "optional_merged_commit_sha")
+                            Hs.>>= ( HsJSONPB.withObject
+                                      "optional_merged_commit_sha"
+                                      parseOptional_merged_commit_sha
+                                   )
+                        )
+                          <|> (parseOptional_merged_commit_sha obj)
+                  )
         )
     )
 
@@ -1952,6 +2033,14 @@ instance Hs.NFData ChangeOptionalSelfMerged
 
 instance HsProtobuf.Named ChangeOptionalSelfMerged where
   nameOf _ = (Hs.fromString "ChangeOptionalSelfMerged")
+
+data ChangeOptionalMergedCommitSha = ChangeOptionalMergedCommitShaMergedCommitSha Hs.Text
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData ChangeOptionalMergedCommitSha
+
+instance HsProtobuf.Named ChangeOptionalMergedCommitSha where
+  nameOf _ = (Hs.fromString "ChangeOptionalMergedCommitSha")
 
 data ChangeCreatedEvent = ChangeCreatedEvent {}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
@@ -2265,6 +2354,8 @@ data ChangeEvent = ChangeEvent
   , changeEventOptionalDuration ::
       Hs.Maybe ChangeEventOptionalDuration
   , changeEventDraft :: Hs.Bool
+  , changeEventOptionalMergedCommitSha ::
+      Hs.Maybe ChangeEventOptionalMergedCommitSha
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
 
@@ -2297,6 +2388,8 @@ instance HsProtobuf.Message ChangeEvent where
       , changeEventLabels = changeEventLabels
       , changeEventOptionalDuration = changeEventOptionalDuration
       , changeEventDraft = changeEventDraft
+      , changeEventOptionalMergedCommitSha =
+        changeEventOptionalMergedCommitSha
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -2471,6 +2564,17 @@ instance HsProtobuf.Message ChangeEvent where
                 (HsProtobuf.FieldNumber 24)
                 changeEventDraft
             )
+          , case changeEventOptionalMergedCommitSha of
+              Hs.Nothing -> Hs.mempty
+              Hs.Just x ->
+                case x of
+                  ChangeEventOptionalMergedCommitShaMergedCommitSha y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 25)
+                        ( HsProtobuf.ForceEmit
+                            (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (y))
+                        )
+                    )
           ]
       )
   decodeMessage _ =
@@ -2655,6 +2759,19 @@ instance HsProtobuf.Message ChangeEvent where
               HsProtobuf.decodeMessageField
               (HsProtobuf.FieldNumber 24)
           )
+      <*> ( HsProtobuf.oneof
+              Hs.Nothing
+              [
+                ( (HsProtobuf.FieldNumber 25)
+                , ( Hs.pure
+                      (Hs.Just Hs.. ChangeEventOptionalMergedCommitShaMergedCommitSha)
+                  )
+                    <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                            (HsProtobuf.decodeMessageField)
+                        )
+                )
+              ]
+          )
   dotProto _ =
     [ ( HsProtobufAST.DotProtoField
           (HsProtobuf.FieldNumber 1)
@@ -2809,6 +2926,7 @@ instance HsJSONPB.ToJSONPB ChangeEvent where
         f22
         f23
         f24
+        f25
       ) =
       ( HsJSONPB.object
           [ "id" .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
@@ -2895,6 +3013,24 @@ instance HsJSONPB.ToJSONPB ChangeEvent where
                       else encodeOptional_duration options
             )
           , "draft" .= f24
+          , ( let encodeOptional_merged_commit_sha =
+                    ( case f25 of
+                        Hs.Just (ChangeEventOptionalMergedCommitShaMergedCommitSha f25) ->
+                          ( HsJSONPB.pair
+                              "merged_commit_sha"
+                              (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f25))
+                          )
+                        Hs.Nothing -> Hs.mempty
+                    )
+               in \options ->
+                    if HsJSONPB.optEmitNamedOneof options
+                      then
+                        ( "optional_merged_commit_sha"
+                            .= (HsJSONPB.objectOrNull [encodeOptional_merged_commit_sha] options)
+                        )
+                          options
+                      else encodeOptional_merged_commit_sha options
+            )
           ]
       )
   toEncodingPB
@@ -2917,6 +3053,7 @@ instance HsJSONPB.ToJSONPB ChangeEvent where
         f22
         f23
         f24
+        f25
       ) =
       ( HsJSONPB.pairs
           [ "id" .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
@@ -3003,6 +3140,24 @@ instance HsJSONPB.ToJSONPB ChangeEvent where
                       else encodeOptional_duration options
             )
           , "draft" .= f24
+          , ( let encodeOptional_merged_commit_sha =
+                    ( case f25 of
+                        Hs.Just (ChangeEventOptionalMergedCommitShaMergedCommitSha f25) ->
+                          ( HsJSONPB.pair
+                              "merged_commit_sha"
+                              (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f25))
+                          )
+                        Hs.Nothing -> Hs.mempty
+                    )
+               in \options ->
+                    if HsJSONPB.optEmitNamedOneof options
+                      then
+                        ( "optional_merged_commit_sha"
+                            .= (HsJSONPB.pairsOrNull [encodeOptional_merged_commit_sha] options)
+                        )
+                          options
+                      else encodeOptional_merged_commit_sha options
+            )
           ]
       )
 
@@ -3100,6 +3255,22 @@ instance HsJSONPB.FromJSONPB ChangeEvent where
                           <|> (parseOptional_duration obj)
                   )
               <*> obj .: "draft"
+              <*> ( let parseOptional_merged_commit_sha parseObj =
+                          Hs.msum
+                            [ Hs.Just
+                                Hs.. ChangeEventOptionalMergedCommitShaMergedCommitSha
+                                Hs.. Hs.coerce @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                                <$> (HsJSONPB.parseField parseObj "merged_commit_sha")
+                            , Hs.pure Hs.Nothing
+                            ]
+                     in ( (obj .: "optional_merged_commit_sha")
+                            Hs.>>= ( HsJSONPB.withObject
+                                      "optional_merged_commit_sha"
+                                      parseOptional_merged_commit_sha
+                                   )
+                        )
+                          <|> (parseOptional_merged_commit_sha obj)
+                  )
         )
     )
 
@@ -3132,3 +3303,11 @@ instance Hs.NFData ChangeEventOptionalDuration
 
 instance HsProtobuf.Named ChangeEventOptionalDuration where
   nameOf _ = (Hs.fromString "ChangeEventOptionalDuration")
+
+data ChangeEventOptionalMergedCommitSha = ChangeEventOptionalMergedCommitShaMergedCommitSha Hs.Text
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData ChangeEventOptionalMergedCommitSha
+
+instance HsProtobuf.Named ChangeEventOptionalMergedCommitSha where
+  nameOf _ = (Hs.fromString "ChangeEventOptionalMergedCommitSha")

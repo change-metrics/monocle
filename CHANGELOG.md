@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file.
 
 - [crawler] Enable usage of the GitHub user PRs crawler via the Monocle config.
 - [cli] Add a Janitor command to reset the commit date of a crawler
+- [crawler] Github crawler gathers the `mergeCommit`'s SHA. `Change` and `ChangeEvent*` objects
+  get a new field `merged_commit_sha` in the database.
 
 ### Changed
 

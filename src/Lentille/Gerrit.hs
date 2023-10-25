@@ -266,6 +266,7 @@ streamChange' env identCB serverUrl query prefixM = go 0
           changeEventType = Just eType
           changeEventOptionalDuration = swapDuration <$> changeOptionalDuration
           changeEventDraft = changeDraft
+          changeEventOptionalMergedCommitSha = Nothing
        in ChangePB.ChangeEvent {..}
     toChangeCreatedEvent =
       baseEvent (ChangePB.ChangeEventTypeChangeCreated ChangePB.ChangeCreatedEvent) $ "CCE" <> changeId
@@ -343,6 +344,7 @@ streamChange' env identCB serverUrl query prefixM = go 0
           if status == MERGED
             then ChangePB.ChangeOptionalMergedByMergedBy <$> merger
             else Nothing
+        changeOptionalMergedCommitSha = Nothing
         changeBranch = from branch
         changeTargetBranch = from branch
         changeCreatedAt = Just $ toTimestamp created

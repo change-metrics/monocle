@@ -366,6 +366,7 @@ data EChange = EChange
   , echangeRepositoryFullname :: LText
   , echangeAuthor :: Author
   , echangeMergedBy :: Maybe Author
+  , echangeMergedCommitSha :: Maybe LText
   , echangeBranch :: LText
   , echangeTargetBranch :: LText
   , echangeCreatedAt :: UTCTime
@@ -442,6 +443,7 @@ instance From ChangePB.Change EChange where
       , echangeRepositoryShortname = changeRepositoryShortname
       , echangeAuthor = from (ensureAuthor changeAuthor)
       , echangeMergedBy = toMergedByAuthor <$> changeOptionalMergedBy
+      , echangeMergedCommitSha = toMergedCommitSha <$> changeOptionalMergedCommitSha
       , echangeBranch = changeBranch
       , echangeTargetBranch = changeTargetBranch
       , echangeCreatedAt = from $ fromMaybe (error "CreatedAt field is mandatory") changeCreatedAt
@@ -468,6 +470,7 @@ instance From ChangePB.Change EChange where
       ChangePB.Change_ChangeStateOpen -> EChangeOpen
       ChangePB.Change_ChangeStateMerged -> EChangeMerged
       ChangePB.Change_ChangeStateClosed -> EChangeClosed
+    toMergedCommitSha (ChangePB.ChangeOptionalMergedCommitShaMergedCommitSha sha) = sha
 
 instance From ChangePB.ChangedFile File where
   from ChangePB.ChangedFile {..} =
@@ -576,6 +579,7 @@ data EChangeEvent = EChangeEvent
   , echangeeventTasksData :: Maybe [ETaskData]
   , echangeeventDuration :: Maybe Int
   , echangeeventDraft :: Maybe Bool
+  , echangeeventMergedCommitSha :: Maybe LText
   }
   deriving (Show, Eq, Generic)
 

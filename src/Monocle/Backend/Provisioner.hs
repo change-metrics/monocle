@@ -130,6 +130,7 @@ fakeChange from' to = do
   echangeCreatedAt <- dropTime <$> Faker.DateTime.utcBetween from' to
   echangeUpdatedAt <- dropTime <$> Faker.DateTime.utcBetween echangeCreatedAt to
   let echangeMergedBy = Nothing
+  let echangeMergedCommitSha = Nothing
   let echangeTargetBranch = "main"
   let echangeMergedAt = Nothing
   let echangeClosedAt = Nothing
@@ -172,6 +173,7 @@ fakeChangeEvent from' to = do
       echangeeventLabels = Just []
       echangeeventDuration = Nothing
       echangeeventDraft = Nothing
+      echangeeventMergedCommitSha = Nothing
   pure $ EChangeEvent {..}
 
 fakeTaskId :: Faker.Fake Text
