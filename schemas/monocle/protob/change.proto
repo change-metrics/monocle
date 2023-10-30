@@ -80,6 +80,9 @@ message Change {
   oneof optional_self_merged {
     bool self_merged = 31;
   }
+  oneof optional_merged_commit_sha {
+    string merged_commit_sha = 32;
+  }
 }
 
 message ChangeCreatedEvent {}
@@ -127,4 +130,7 @@ message ChangeEvent {
     int32 duration = 23;
   }
   bool draft = 24;
+  oneof optional_merged_commit_sha {
+    string merged_commit_sha = 25;
+  }
 }

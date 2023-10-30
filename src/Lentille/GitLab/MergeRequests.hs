@@ -208,6 +208,7 @@ transformResponse host getIdentIdCB result =
                 . ChangeOptionalMergedByMergedBy
                 $ maybe (ghostIdent host) (toIdent' . getMergerUsername) mergeUser
             )
+          changeOptionalMergedCommitSha = Nothing
           changeBranch = from sourceBranch
           changeTargetBranch = from targetBranch
           changeCreatedAt = (Just $ timeToTimestamp Nothing createdAt)
@@ -287,6 +288,7 @@ transformResponse host getIdentIdCB result =
           changeEventLabels = changeLabels
           changeEventOptionalDuration = swapDuration <$> changeOptionalDuration
           changeEventId = ""
+          changeEventOptionalMergedCommitSha = Nothing
        in ChangeEvent {..}
      where
       toChangeFilePath ChangedFile {..} = ChangedFilePath changedFilePath
