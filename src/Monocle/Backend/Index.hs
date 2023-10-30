@@ -88,7 +88,7 @@ instance ToJSON NonIndexedMapping where
       ]
 
 mergedCommitField :: [Pair]
-mergedCommitField = ["merged_commit_sha" .= NonIndexedMapping]
+mergedCommitField = ["merged_commit_sha" .= KWMapping]
 
 data TextAndKWMapping = TextAndKWMapping deriving (Eq, Show)
 
