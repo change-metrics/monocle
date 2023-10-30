@@ -208,7 +208,7 @@ transformResponse host identCB result = do
           change
       )
         { changeEventAuthor = Just $ getCommitter $ committer commit
-        , changeEventCreatedAt = maybe (changeCreatedAt change) (Just . from) (pushedDate commit)
+        , changeEventCreatedAt = Just . from $ committedDate commit
         }
      where
       getCommitter :: Maybe GetProjectPullRequestsRepositoryPullRequestsNodesCommitsNodesCommitCommitter -> Ident
@@ -241,7 +241,7 @@ transformResponse host identCB result = do
             , changeChangeId = getChangeId (repoFullname repository) (show number)
             , changeTitle = from title
             , changeText = from bodyText
-            , changeUrl = from . getURL $ fromMaybe (error "Unable to decode change w/o webURL") webURL
+            , changeUrl = from . getURL $ webURL
             , changeCommitCount = from $ commitCount commits
             , changeAdditions = from additions
             , changeDeletions = from deletions

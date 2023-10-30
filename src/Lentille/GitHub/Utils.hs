@@ -88,11 +88,11 @@ baseEvent eType eId change =
     , changeEventId = eId
     , changeEventType = Just eType
     , changeEventDraft = changeDraft change
+    , changeEventOptionalDuration = swapDuration <$> changeOptionalDuration change
+    , changeEventOptionalMergedCommitSha = toChangeEventMergedCommitSha <$> changeOptionalMergedCommitSha change
     , -- To be filled by caller function
       changeEventCreatedAt = Nothing
     , changeEventAuthor = Nothing
-    , changeEventOptionalDuration = swapDuration <$> changeOptionalDuration change
-    , changeEventOptionalMergedCommitSha = toChangeEventMergedCommitSha <$> changeOptionalMergedCommitSha change
     }
 
 instance From DateTime ChangeOptionalClosedAt where
