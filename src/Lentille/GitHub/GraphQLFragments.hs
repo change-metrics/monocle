@@ -68,7 +68,6 @@ fragmentPRData =
       nodes {
         commit {
           oid
-          pushedDate
           authoredDate
           committedDate
           additions

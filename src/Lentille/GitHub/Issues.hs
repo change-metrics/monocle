@@ -192,7 +192,7 @@ transformResponse searchResult =
           ( GetLinkedIssuesSearchNodesTimelineItemsNodesConnectedEvent
               "ConnectedEvent"
               ( GetLinkedIssuesSearchNodesTimelineItemsNodesSubjectVariantPullRequest
-                  (GetLinkedIssuesSearchNodesTimelineItemsNodesSubjectPullRequest _ (Just (URI url')))
+                  (GetLinkedIssuesSearchNodesTimelineItemsNodesSubjectPullRequest _ (URI url'))
                 )
             )
         ) -> Just url'
@@ -201,7 +201,7 @@ transformResponse searchResult =
           ( GetLinkedIssuesSearchNodesTimelineItemsNodesCrossReferencedEvent
               "CrossReferencedEvent"
               ( GetLinkedIssuesSearchNodesTimelineItemsNodesSourceVariantPullRequest
-                  (GetLinkedIssuesSearchNodesTimelineItemsNodesSourcePullRequest _ (Just (URI url')))
+                  (GetLinkedIssuesSearchNodesTimelineItemsNodesSourcePullRequest _ (URI url'))
                 )
             )
         ) -> Just url'
