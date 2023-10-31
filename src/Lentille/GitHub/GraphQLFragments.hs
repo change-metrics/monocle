@@ -109,10 +109,12 @@ fragmentPRData =
         }
         ... on HeadRefForcePushedEvent {
           id
-          createdAt
           fpactor: actor {
             __typename
             login
+          }
+          afterCommit {
+            forcePushCommittedDate: committedDate
           }
         }
       }

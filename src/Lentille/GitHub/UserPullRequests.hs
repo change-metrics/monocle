@@ -188,9 +188,9 @@ transformResponse host identCB result = do
         ( GetUserPullRequestsUserPullRequestsNodesTimelineItemsNodesHeadRefForcePushedEvent
             _
             eId
-            createdAt
             (Just (GetUserPullRequestsUserPullRequestsNodesTimelineItemsNodesFpactor _ actor))
-          ) -> toMaybeForcePushedEvent change eId getIdent actor createdAt
+            (Just (GetUserPullRequestsUserPullRequestsNodesTimelineItemsNodesAfterCommit createdAt'))
+          ) -> toMaybeForcePushedEvent change eId getIdent actor createdAt'
       _ -> Nothing
 
   getCommitEvents :: Change -> GetUserPullRequestsUserPullRequestsNodesCommits -> [ChangeEvent]
