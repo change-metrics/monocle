@@ -13,6 +13,8 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - `workspaceName` is typed as `IndexName`, which respect ElasticSearch constraints
+- [crawler] `ChangeCommitPushedEvent` and `ChangeCommitForcePushedEvent` events date (`created_at`) is the commit date of the
+  related commit.
 
 ### Removed
 
