@@ -479,10 +479,14 @@ in rec {
 
     # Ensure the home directory is r/w for any uid
     rwHome = "mkdir -p -m 1777 ${home}";
+
+    # Ensure /bin/sh (docker healthcheck assumes /bin/sh)
+    binSh = "ln -s usr/bin/sh bin/sh";
+
   in pkgs.dockerTools.buildLayeredImage {
     name = "quay.io/change-metrics/monocle-exe";
     contents = [ monocle-wrapper ];
-    extraCommands = "${createPasswd} && ${rwHome}";
+    extraCommands = "${createPasswd} && ${rwHome} && ${binSh}";
     tag = "latest";
     created = "now";
     config = {
