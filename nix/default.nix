@@ -481,7 +481,7 @@ in rec {
     rwHome = "mkdir -p -m 1777 ${home}";
 
     # Ensure /bin/sh (docker healthcheck assumes /bin/sh)
-    binSh = "ln -s usr/bin/sh bin/sh";
+    binSh = "ln -s /usr/bin/sh bin/sh";
 
   in pkgs.dockerTools.buildLayeredImage {
     name = "quay.io/change-metrics/monocle-exe";
