@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 ## [master]
+### Added
+### Changed
+### Removed
+### Fixed
+
+## [1.10.0] - 2023-11-06
 
 ### Added
 
@@ -15,8 +21,6 @@ All notable changes to this project will be documented in this file.
 - `workspaceName` is typed as `IndexName`, which respect ElasticSearch constraints
 - [crawler] `ChangeCommitPushedEvent` and `ChangeCommitForcePushedEvent` events date (`created_at`) is the commit date of the
   related commit.
-
-### Removed
 
 ### Fixed
 
