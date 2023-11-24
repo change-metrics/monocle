@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file.
 ### Removed
 ### Fixed
 
+- [web] authors search returning no results #1082
+
 ## [1.10.0] - 2023-11-06
 
 ### Added
