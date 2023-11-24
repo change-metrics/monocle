@@ -473,6 +473,8 @@ about:
 
 This section configures global crawlers setting.
 
+> Note that, `crawlers` is a config root level parameter.
+
 Here is an example:
 
 ```YAML
@@ -480,6 +482,7 @@ crawlers:
   # Wait one hour between iteration
   loop_delay_sec: 3600
 ```
+
 
 #### Authentication
 
