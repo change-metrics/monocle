@@ -27,9 +27,10 @@ searchAuthorsHandler :: ApiEffects es => AuthResult AuthenticatedUser -> Maybe C
 searchAuthorsHandler _ Nothing _ = pure $ pure ()
 searchAuthorsHandler auth (Just index) queryM = do
   case queryM of
-    Just query -> do
+    Just authorName -> do
+      logInfo "Search request for author" ["author" .= authorName, "index" .= index]
       (SearchPB.AuthorResponse results) <-
-        searchAuthor auth (AuthorRequest (from index) (from query))
+        searchAuthor auth (AuthorRequest (from index) (from authorName))
       case toList results of
         [] -> pure $ div_ "No Results"
         _xs -> pure $ mapM_ authorToMarkup results
@@ -47,7 +48,7 @@ searchAuthorsHandler auth (Just index) queryM = do
                 , class_ "pf-c-form-control"
                 , placeholder_ "Start typing to search authors"
                 , hxGet "/htmx/authors_search"
-                , hxVals [iii|{"index": "#{index}"}|]
+                , hxVals [iii|{"index": "#{indexVal}"}|]
                 , hxTrigger "keyup changed delay:500ms, search"
                 , hxTarget "#search-results"
                 ]
@@ -55,6 +56,8 @@ searchAuthorsHandler auth (Just index) queryM = do
             div_ [id_ "search-results"] ""
           script_ pushToRouter
  where
+  indexVal :: Text
+  indexVal = from index
   countCachedAuthors = do
     resp <- esCountByIndex (tenantIndexName index) $ BH.CountQuery $ documentType ECachedAuthor
     case resp of
