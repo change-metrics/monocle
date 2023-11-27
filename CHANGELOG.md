@@ -3,6 +3,9 @@
 All notable changes to this project will be documented in this file.
 ## [master]
 ### Added
+
+- [crawler] Proxy can be configured with `http_proxy` and `https_proxy` environment.
+
 ### Changed
 ### Removed
 ### Fixed
