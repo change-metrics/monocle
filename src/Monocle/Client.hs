@@ -26,6 +26,7 @@ import Network.HTTP.Client (
   requestHeaders,
   responseBody,
  )
+import Network.HTTP.Client qualified
 import Network.HTTP.Client.OpenSSL qualified as OpenSSL
 import OpenSSL.Session (VerificationMode (VerifyNone))
 import Proto3.Suite.JSONPB (FromJSONPB (..), ToJSONPB (..))
@@ -59,7 +60,11 @@ mkManager' verify = do
         Verify -> OpenSSL.defaultOpenSSLSettings
   tlsCiphers <- fromMaybe "DEFAULT" <$> lookupEnv "TLS_CIPHERS"
   ctx <- OpenSSL.defaultMakeContext (opensslSettings {OpenSSL.osslSettingsCiphers = tlsCiphers})
-  newManager $ OpenSSL.opensslManagerSettings (pure ctx)
+  let settings = OpenSSL.opensslManagerSettings (pure ctx)
+
+  -- setup proxy
+  let proxy = Network.HTTP.Client.proxyEnvironment Nothing
+  newManager (Network.HTTP.Client.managerSetProxy proxy settings)
 
 -- | Create the 'MonocleClient'
 withClient ::
