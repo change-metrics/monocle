@@ -126,6 +126,7 @@ toIdent host cb username = Ident {..}
   uid = host <> "/" <> username
   identUid = from uid
   identMuid = from $ fromMaybe username (cb uid)
+  identGroups = mempty
 
 ghostIdent :: Text -> Ident
 ghostIdent host = toIdent host (const Nothing) nobody

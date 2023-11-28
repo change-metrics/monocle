@@ -482,11 +482,13 @@ toAuthor (Just ChangePB.Ident {..}) =
   Monocle.Backend.Documents.Author
     { authorMuid = identMuid
     , authorUid = identUid
+    , authorGroups = toList identGroups
     }
 toAuthor Nothing =
   Monocle.Backend.Documents.Author
     "backend-ghost"
     "backend-ghost"
+    mempty
 
 -- TODO: change that to a From instance
 toEChangeEvent :: ChangePB.ChangeEvent -> EChangeEvent

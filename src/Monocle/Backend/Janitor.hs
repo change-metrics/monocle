@@ -28,9 +28,9 @@ import Streaming.Prelude qualified as Streaming
 
 updateAuthor :: Config.Index -> D.Author -> D.Author
 updateAuthor index author@D.Author {..} = case getIdent of
-  Just ident -> D.Author ident authorUid
+  Just ident -> D.Author ident authorUid mempty
   Nothing
-    | newMuid /= from authorMuid -> D.Author (from newMuid) authorUid
+    | newMuid /= from authorMuid -> D.Author (from newMuid) authorUid mempty
     | otherwise -> author
  where
   getIdent :: Maybe LText

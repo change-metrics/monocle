@@ -33,6 +33,7 @@ import Monocle.Protob.Search qualified as SearchPB
 data Author = Author
   { authorMuid :: LText
   , authorUid :: LText
+  , authorGroups :: [LText]
   }
   deriving (Show, Eq, Generic)
 
@@ -47,12 +48,13 @@ instance From ChangePB.Ident Author where
     Author
       { authorMuid = identMuid
       , authorUid = identUid
+      , authorGroups = mempty
       }
 
 fromMaybeIdent :: Maybe ChangePB.Ident -> Author
 fromMaybeIdent = maybe ghostAuthor from
  where
-  ghostAuthor = Author "backend-ghost" "backend-ghost"
+  ghostAuthor = Author "backend-ghost" "backend-ghost" mempty
 
 -- | CachedAuthor is used by the Author search cache
 data CachedAuthor = CachedAuthor
@@ -116,7 +118,7 @@ instance FromJSON Commit where
 ensureAuthor :: Maybe ChangePB.Ident -> ChangePB.Ident
 ensureAuthor = \case
   Just i -> i
-  Nothing -> ChangePB.Ident "backend-ghost" "backend-host"
+  Nothing -> ChangePB.Ident "backend-ghost" "backend-host" mempty
 
 instance From ChangePB.Commit Commit where
   from ChangePB.Commit {..} =
