@@ -50,6 +50,7 @@ import Proto3.Suite (Enumerated (Enumerated))
 import Streaming.Prelude qualified as S
 
 import Effectful.Reader.Static qualified as E
+import Monocle.Config qualified as Config
 
 -------------------------------------------------------------------------------
 -- The Lentille context
@@ -120,13 +121,17 @@ sanitizeID = T.replace ":" "@" . T.replace "/" "@"
 nobody :: Text
 nobody = "ghost"
 
-toIdent :: Text -> (Text -> Maybe Text) -> Text -> Ident
-toIdent host cb username = Ident {..}
+toIdent :: Text -> (Text -> Maybe Config.IdentUG) -> Text -> Ident
+toIdent host cb username =
+  Ident
+    { identUid
+    , identMuid = from identMuid
+    , identGroups = fromList $ from <$> identGroups
+    }
  where
   uid = host <> "/" <> username
   identUid = from uid
-  identMuid = from $ fromMaybe username (cb uid)
-  identGroups = mempty
+  (identMuid, identGroups) = fromMaybe (username, mempty) (cb uid)
 
 ghostIdent :: Text -> Ident
 ghostIdent host = toIdent host (const Nothing) nobody

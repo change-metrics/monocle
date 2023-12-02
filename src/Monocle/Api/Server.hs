@@ -1062,5 +1062,5 @@ handleLoggedIn cookieSettings err codeM stateM = do
   getIdents config auid = foldr go Map.empty $ Config.getWorkspaces config
    where
     go index acc = case Config.getIdentByAlias index auid of
-      Just muid -> Map.insert (Config.getWorkspaceName index) muid acc
+      Just (muid, _) -> Map.insert (Config.getWorkspaceName index) muid acc
       Nothing -> acc

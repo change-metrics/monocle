@@ -12,6 +12,7 @@ import Lentille.GitHub.GraphQLFragments (fragmentPRData)
 import Lentille.GitHub.Types
 import Lentille.GitHub.Utils
 import Lentille.GraphQL
+import Monocle.Config qualified as Config
 import Monocle.Prelude hiding (id, state)
 import Monocle.Protob.Change
 
@@ -46,7 +47,7 @@ streamPullRequests ::
   GraphEffects es =>
   GraphClient ->
   -- A callback to get Ident ID from an alias
-  (Text -> Maybe Text) ->
+  (Text -> Maybe Config.IdentUG) ->
   UTCTime ->
   Text ->
   LentilleStream es Changes
@@ -62,7 +63,7 @@ transformResponse ::
   -- hostname of the provider
   Text ->
   -- A callback to get Ident ID from an alias
-  (Text -> Maybe Text) ->
+  (Text -> Maybe Config.IdentUG) ->
   -- The response payload
   GetProjectPullRequests ->
   (PageInfo, Maybe RateLimit, [Text], [Changes])

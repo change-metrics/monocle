@@ -34,7 +34,7 @@ updateAuthor index author@D.Author {..} = case getIdent of
     | otherwise -> author
  where
   getIdent :: Maybe LText
-  getIdent = from <$> Config.getIdentByAlias index (from authorUid)
+  getIdent = from . fst <$> Config.getIdentByAlias index (from authorUid)
   -- Remove the host prefix
   newMuid = T.drop 1 $ T.dropWhile (/= '/') (from authorUid)
 
