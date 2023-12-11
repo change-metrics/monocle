@@ -185,6 +185,10 @@ testIndexChanges = withTenant doTest
       (I.getChangeDocId fakeChange1)
       echangeTitle
       (echangeTitle fakeChange1)
+    checkEChangeField
+      (I.getChangeDocId fakeChange1)
+      echangeAuthor
+      (echangeAuthor fakeChange1)
     checkDocExists' $ I.getChangeDocId fakeChange2
     checkEChangeField
       (I.getChangeDocId fakeChange2)
@@ -230,6 +234,7 @@ testIndexChanges = withTenant doTest
         , echangeTitle = title
         , echangeRepositoryFullname = "fakerepo"
         , echangeUrl = "https://fakehost/change/" <> show number
+        , echangeAuthor = Author "John" "John" ["dev", "core"]
         }
 
 testIndexEvents :: Assertion
@@ -598,12 +603,10 @@ testJanitorUpdateIdents = do
       , crawlers = []
       , crawlers_api_key = Nothing
       , projects = Nothing
-      , idents = Just [mkIdent ["github.com/john"] "John Doe"]
+      , idents = Just [Config.Ident ["github.com/john"] (Just ["dev", "core"]) "John Doe"]
       , search_aliases = Nothing
       }
-  mkIdent :: [Text] -> Text -> Config.Ident
-  mkIdent uid = Config.Ident uid Nothing
-  expectedAuthor = Author "John Doe" "github.com/john" mempty
+  expectedAuthor = Author "John Doe" "github.com/john" ["dev", "core"]
 
   doUpdateIndentOnEventsTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doUpdateIndentOnEventsTest = E.runFailIO do
@@ -617,7 +620,7 @@ testJanitorUpdateIdents = do
     evt2' <- I.getChangeEventById $ I.getEventDocId evt2
     assertEqual' "Ensure event not changed" evt2' $ Just evt2
    where
-    evt1 = mkEventWithAuthor "e1" (Author "john" "github.com/john" mempty)
+    evt1 = mkEventWithAuthor "e1" (Author "john" "github.com/john" ["not-core"])
     evt2 = mkEventWithAuthor "e2" (Author "paul" "github.com/paul" mempty)
     mkEventWithAuthor ::
       -- eventId

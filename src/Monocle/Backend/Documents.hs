@@ -48,7 +48,7 @@ instance From ChangePB.Ident Author where
     Author
       { authorMuid = identMuid
       , authorUid = identUid
-      , authorGroups = mempty
+      , authorGroups = toList identGroups
       }
 
 fromMaybeIdent :: Maybe ChangePB.Ident -> Author

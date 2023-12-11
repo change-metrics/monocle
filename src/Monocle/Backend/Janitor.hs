@@ -28,13 +28,13 @@ import Streaming.Prelude qualified as Streaming
 
 updateAuthor :: Config.Index -> D.Author -> D.Author
 updateAuthor index author@D.Author {..} = case getIdent of
-  Just ident -> D.Author ident authorUid mempty
+  Just (identMuid, identGroups) -> D.Author (from identMuid) authorUid (from <$> identGroups)
   Nothing
-    | newMuid /= from authorMuid -> D.Author (from newMuid) authorUid mempty
+    | newMuid /= from authorMuid -> D.Author (from newMuid) authorUid authorGroups
     | otherwise -> author
  where
-  getIdent :: Maybe LText
-  getIdent = from . fst <$> Config.getIdentByAlias index (from authorUid)
+  getIdent :: Maybe (Text, [Text])
+  getIdent = Config.getIdentByAlias index (from authorUid)
   -- Remove the host prefix
   newMuid = T.drop 1 $ T.dropWhile (/= '/') (from authorUid)
 
