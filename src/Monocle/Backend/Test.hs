@@ -40,12 +40,15 @@ fakeDate, fakeDateAlt :: UTCTime
 fakeDate = [utctime|2021-05-31 10:00:00|]
 fakeDateAlt = [utctime|2021-06-01 20:00:00|]
 
+mkAuthorWithNoGroup :: LText -> LText -> Author
+mkAuthorWithNoGroup muid uid = Author muid uid mempty
+
 alice, bob, eve, fakeAuthor, fakeAuthorAlt :: Author
-alice = Author "alice" "a" mempty
-bob = Author "bob" "b" mempty
-eve = Author "eve" "e" mempty
-fakeAuthor = Author "John" "John" mempty
-fakeAuthorAlt = Author "John Doe/12" "review.opendev.org/John Doe/12" mempty
+alice = mkAuthorWithNoGroup "alice" "a"
+bob = mkAuthorWithNoGroup "bob" "b"
+eve = mkAuthorWithNoGroup "eve" "e"
+fakeAuthor = mkAuthorWithNoGroup "John" "John"
+fakeAuthorAlt = mkAuthorWithNoGroup "John Doe/12" "review.opendev.org/John Doe/12"
 
 fakeChangePB :: ChangePB.Change
 fakeChangePB =
