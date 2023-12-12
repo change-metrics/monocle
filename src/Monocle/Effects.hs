@@ -482,7 +482,7 @@ newtype instance StaticRep HttpEffect = HttpEffect HttpEnv
 -- | 'runHttpEffect' simply add a Manager to the static rep env.
 runHttpEffect :: IOE :> es => Eff (HttpEffect : es) a -> Eff es a
 runHttpEffect action = do
-  manager <- liftIO Monocle.Client.mkManager
+  manager <- liftIO $ Monocle.Client.mkManager Nothing
   runHttpEffectWithManager manager action
 
 runHttpEffectWithManager :: IOE :> es => HTTP.Manager -> Eff (HttpEffect : es) a -> Eff es a
