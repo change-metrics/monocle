@@ -40,12 +40,15 @@ fakeDate, fakeDateAlt :: UTCTime
 fakeDate = [utctime|2021-05-31 10:00:00|]
 fakeDateAlt = [utctime|2021-06-01 20:00:00|]
 
+mkAuthorWithNoGroup :: LText -> LText -> Author
+mkAuthorWithNoGroup muid uid = Author muid uid mempty
+
 alice, bob, eve, fakeAuthor, fakeAuthorAlt :: Author
-alice = Author "alice" "a"
-bob = Author "bob" "b"
-eve = Author "eve" "e"
-fakeAuthor = Author "John" "John"
-fakeAuthorAlt = Author "John Doe/12" "review.opendev.org/John Doe/12"
+alice = mkAuthorWithNoGroup "alice" "a"
+bob = mkAuthorWithNoGroup "bob" "b"
+eve = mkAuthorWithNoGroup "eve" "e"
+fakeAuthor = mkAuthorWithNoGroup "John" "John"
+fakeAuthorAlt = mkAuthorWithNoGroup "John Doe/12" "review.opendev.org/John Doe/12"
 
 fakeChangePB :: ChangePB.Change
 fakeChangePB =
@@ -185,6 +188,10 @@ testIndexChanges = withTenant doTest
       (I.getChangeDocId fakeChange1)
       echangeTitle
       (echangeTitle fakeChange1)
+    checkEChangeField
+      (I.getChangeDocId fakeChange1)
+      echangeAuthor
+      (echangeAuthor fakeChange1)
     checkDocExists' $ I.getChangeDocId fakeChange2
     checkEChangeField
       (I.getChangeDocId fakeChange2)
@@ -230,6 +237,7 @@ testIndexChanges = withTenant doTest
         , echangeTitle = title
         , echangeRepositoryFullname = "fakerepo"
         , echangeUrl = "https://fakehost/change/" <> show number
+        , echangeAuthor = Author "John" "John" ["dev", "core"]
         }
 
 testIndexEvents :: Assertion
@@ -598,12 +606,10 @@ testJanitorUpdateIdents = do
       , crawlers = []
       , crawlers_api_key = Nothing
       , projects = Nothing
-      , idents = Just [mkIdent ["github.com/john"] "John Doe"]
+      , idents = Just [Config.Ident ["github.com/john"] (Just ["dev", "core"]) "John Doe"]
       , search_aliases = Nothing
       }
-  mkIdent :: [Text] -> Text -> Config.Ident
-  mkIdent uid = Config.Ident uid Nothing
-  expectedAuthor = Author "John Doe" "github.com/john"
+  expectedAuthor = Author "John Doe" "github.com/john" ["dev", "core"]
 
   doUpdateIndentOnEventsTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doUpdateIndentOnEventsTest = E.runFailIO do
@@ -617,8 +623,8 @@ testJanitorUpdateIdents = do
     evt2' <- I.getChangeEventById $ I.getEventDocId evt2
     assertEqual' "Ensure event not changed" evt2' $ Just evt2
    where
-    evt1 = mkEventWithAuthor "e1" (Author "john" "github.com/john")
-    evt2 = mkEventWithAuthor "e2" (Author "paul" "github.com/paul")
+    evt1 = mkEventWithAuthor "e1" (Author "john" "github.com/john" ["not-core"])
+    evt2 = mkEventWithAuthor "e2" (Author "paul" "github.com/paul" mempty)
     mkEventWithAuthor ::
       -- eventId
       Text ->
@@ -647,10 +653,10 @@ testJanitorUpdateIdents = do
     -- then default is to remove the "<provider-host>/" prefix
     checkEChangeField (I.getChangeDocId change3) echangeAuthor expectedAuthor'
    where
-    expectedAuthor' = Author "jane" "github.com/jane"
-    change1 = mkChangeWithAuthor "c1" (Author "john" "github.com/john")
-    change2 = mkChangeWithAuthor "c2" (Author "paul" "github.com/paul")
-    change3 = mkChangeWithAuthor "c3" (Author "Ident will revert" "github.com/jane")
+    expectedAuthor' = Author "jane" "github.com/jane" mempty
+    change1 = mkChangeWithAuthor "c1" (Author "john" "github.com/john" mempty)
+    change2 = mkChangeWithAuthor "c2" (Author "paul" "github.com/paul" mempty)
+    change3 = mkChangeWithAuthor "c3" (Author "Ident will revert" "github.com/jane" mempty)
     mkChangeWithAuthor ::
       -- changeId
       Text ->

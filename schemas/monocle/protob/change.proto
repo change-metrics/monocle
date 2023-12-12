@@ -10,6 +10,7 @@ import "google/protobuf/timestamp.proto";
 message Ident {
   string uid = 1;
   string muid = 2;
+  repeated string groups = 3;
 }
 
 message ChangedFile {

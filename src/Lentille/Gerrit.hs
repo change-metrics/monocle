@@ -48,6 +48,7 @@ import Prelude (init, last)
 
 import Effectful (Dispatch (Static), DispatchOf)
 import Effectful.Dispatch.Static (SideEffects (..), evalStaticRep)
+import Monocle.Config qualified as Config
 
 -------------------------------------------------------------------------------
 -- Gerrit context
@@ -84,7 +85,7 @@ data GerritEnv = GerritEnv
   -- ^ The Gerrit connexion client
   , prefix :: Maybe Text
   -- ^ A project fullname prefix as defined in the Monocle configuration
-  , identAliasCB :: Text -> Maybe Text
+  , identAliasCB :: Text -> Maybe Config.IdentUG
   -- ^ The identity alias callback
   , crawlerName :: Text
   -- ^ The crawler name
@@ -214,7 +215,7 @@ streamChange' ::
   GerritEffects es =>
   GerritEnv ->
   -- A callback to get Ident ID from an alias
-  (Text -> Maybe Text) ->
+  (Text -> Maybe Config.IdentUG) ->
   Text ->
   [GerritQuery] ->
   Maybe Text ->

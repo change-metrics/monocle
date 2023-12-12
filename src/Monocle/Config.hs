@@ -42,6 +42,9 @@ module Monocle.Config (
   ConfigStatus (..),
   Status (..),
 
+  -- * Additional data types
+  IdentUG,
+
   -- * Functions related to config loading
   loadConfig,
   loadConfigWithoutEnv,
@@ -200,6 +203,9 @@ data Status = NeedRefresh | Ready
 type WorkspaceName = IndexName
 
 type WorkspaceStatus = Map WorkspaceName Status
+
+-- | IdentInfo is the Monocle UID and the list of Groups
+type IdentUG = (Text, [Text])
 
 -- | The 'ConfigStatus' wraps the loaded Monocle config
 data ConfigStatus = ConfigStatus
@@ -393,8 +399,8 @@ getSearchAliases index = maybe [] (fmap toTuple) (search_aliases index)
  where
   toTuple SearchAlias {..} = (name, alias)
 
--- | Get the Ident name for a Given alias
-getIdentByAlias :: Index -> Text -> Maybe Text
+-- | Get the Monocle UID and belonging Groups from an Ident's Alias
+getIdentByAlias :: Index -> Text -> Maybe (Text, [Text])
 getIdentByAlias Index {..} alias = getIdentByAliasFromIdents alias =<< idents
 
 -- End - Functions to handle an Index
@@ -470,14 +476,17 @@ mkTenant name =
     , search_aliases = Nothing
     }
 
--- | Get 'Ident' ident from a list of 'Ident'
-getIdentByAliasFromIdents :: Text -> [Ident] -> Maybe Text
+-- | Get the Monocle UID and belonging Groups from an Ident's Alias
+getIdentByAliasFromIdents :: Text -> [Ident] -> Maybe (Text, [Text])
 getIdentByAliasFromIdents alias idents' = case find isMatched idents' of
   Nothing -> Nothing
-  Just Ident {..} -> Just ident
+  Just Ident {..} -> Just (ident, toGroups groups)
  where
   isMatched :: Ident -> Bool
   isMatched Ident {..} = alias `elem` aliases
+  toGroups = \case
+    Nothing -> mempty
+    Just grps -> grps
 
 -- | Create an IndexName with checked constraints
 --

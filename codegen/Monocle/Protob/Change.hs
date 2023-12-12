@@ -46,7 +46,11 @@ import Proto3.Wire.Decode qualified as HsProtobuf (
 import Unsafe.Coerce qualified as Hs
 import Prelude qualified as Hs
 
-data Ident = Ident {identUid :: Hs.Text, identMuid :: Hs.Text}
+data Ident = Ident
+  { identUid :: Hs.Text
+  , identMuid :: Hs.Text
+  , identGroups :: Hs.Vector Hs.Text
+  }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
 
 instance Hs.NFData Ident
@@ -57,18 +61,31 @@ instance HsProtobuf.Named Ident where
 instance HsProtobuf.HasDefault Ident
 
 instance HsProtobuf.Message Ident where
-  encodeMessage _ Ident {identUid = identUid, identMuid = identMuid} =
-    ( Hs.mconcat
-        [ ( HsProtobuf.encodeMessageField
-              (HsProtobuf.FieldNumber 1)
-              (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (identUid))
-          )
-        , ( HsProtobuf.encodeMessageField
-              (HsProtobuf.FieldNumber 2)
-              (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (identMuid))
-          )
-        ]
-    )
+  encodeMessage
+    _
+    Ident
+      { identUid = identUid
+      , identMuid = identMuid
+      , identGroups = identGroups
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (identUid))
+            )
+          , ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (identMuid))
+            )
+          , ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 3)
+                ( Hs.coerce @(Hs.Vector Hs.Text)
+                    @(HsProtobuf.UnpackedVec (HsProtobuf.String Hs.Text))
+                    (identGroups)
+                )
+            )
+          ]
+      )
   decodeMessage _ =
     (Hs.pure Ident)
       <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
@@ -81,6 +98,14 @@ instance HsProtobuf.Message Ident where
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 2)
+              )
+          )
+      <*> ( HsProtobuf.coerceOver
+              @(HsProtobuf.UnpackedVec (HsProtobuf.String Hs.Text))
+              @(Hs.Vector Hs.Text)
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 3)
               )
           )
   dotProto _ =
@@ -98,21 +123,36 @@ instance HsProtobuf.Message Ident where
           []
           ""
       )
+    , ( HsProtobufAST.DotProtoField
+          (HsProtobuf.FieldNumber 3)
+          (HsProtobufAST.Repeated HsProtobufAST.String)
+          (HsProtobufAST.Single "groups")
+          []
+          ""
+      )
     ]
 
 instance HsJSONPB.ToJSONPB Ident where
-  toJSONPB (Ident f1 f2) =
+  toJSONPB (Ident f1 f2 f3) =
     ( HsJSONPB.object
         [ "uid" .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
-        , "muid"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
+        , "muid" .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
+        , "groups"
+            .= ( Hs.coerce @(Hs.Vector Hs.Text)
+                  @(HsProtobuf.UnpackedVec (HsProtobuf.String Hs.Text))
+                  (f3)
+               )
         ]
     )
-  toEncodingPB (Ident f1 f2) =
+  toEncodingPB (Ident f1 f2 f3) =
     ( HsJSONPB.pairs
         [ "uid" .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
-        , "muid"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
+        , "muid" .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
+        , "groups"
+            .= ( Hs.coerce @(Hs.Vector Hs.Text)
+                  @(HsProtobuf.UnpackedVec (HsProtobuf.String Hs.Text))
+                  (f3)
+               )
         ]
     )
 
@@ -127,6 +167,11 @@ instance HsJSONPB.FromJSONPB Ident where
                   )
               <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
                       (obj .: "muid")
+                  )
+              <*> ( HsProtobuf.coerceOver
+                      @(HsProtobuf.UnpackedVec (HsProtobuf.String Hs.Text))
+                      @(Hs.Vector Hs.Text)
+                      (obj .: "groups")
                   )
         )
     )

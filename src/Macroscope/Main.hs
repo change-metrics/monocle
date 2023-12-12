@@ -375,7 +375,7 @@ getCrawler inf@(InfoCrawler _ _ crawler idents) = getCompose $ fmap addInfos (Co
         pure $ Just (k, [ghUserPRCrawler ghClient getIdentByAliasCB])
       Config.GithubApplicationProvider _ -> pure Nothing -- "Not (yet) implemented"
       Config.TaskDataProvider -> pure Nothing -- This is a generic crawler, not managed by the macroscope
-  getIdentByAliasCB :: Text -> Maybe Text
+  getIdentByAliasCB :: Text -> Maybe (Text, [Text])
   getIdentByAliasCB = flip Config.getIdentByAliasFromIdents idents
 
   getGHClient mToken mAPIUrl = do
@@ -384,7 +384,7 @@ getCrawler inf@(InfoCrawler _ _ crawler idents) = getCompose $ fmap addInfos (Co
       (fromMaybe "https://api.github.com/graphql" mAPIUrl)
       ghToken
 
-  glMRCrawler :: GraphClient -> (Text -> Maybe Text) -> DocumentStream es
+  glMRCrawler :: GraphClient -> (Text -> Maybe Config.IdentUG) -> DocumentStream es
   glMRCrawler glClient cb = Changes $ streamMergeRequests glClient cb
 
   glOrgCrawler :: GraphClient -> DocumentStream es
@@ -399,10 +399,10 @@ getCrawler inf@(InfoCrawler _ _ crawler idents) = getCompose $ fmap addInfos (Co
   ghOrgCrawler :: GraphClient -> DocumentStream es
   ghOrgCrawler ghClient = Projects $ streamOrganizationProjects ghClient
 
-  ghPRCrawler :: GraphClient -> (Text -> Maybe Text) -> DocumentStream es
+  ghPRCrawler :: GraphClient -> (Text -> Maybe Config.IdentUG) -> DocumentStream es
   ghPRCrawler glClient cb = Changes $ streamPullRequests glClient cb
 
-  ghUserPRCrawler :: GraphClient -> (Text -> Maybe Text) -> DocumentStream es
+  ghUserPRCrawler :: GraphClient -> (Text -> Maybe Config.IdentUG) -> DocumentStream es
   ghUserPRCrawler glClient cb = UserChanges $ streamUserPullRequests glClient cb
 
   gerritRegexProjects :: [Text] -> [Text]

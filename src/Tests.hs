@@ -653,12 +653,12 @@ monocleConfig =
       (Config.getTenantGroups tenant)
 
   testGetIdentByAlias = testCase "Validate getIdentByAliases" do
-    let identA = createIdent "alice" ["opendev.org/Alice Doe/12345", "github.com/alice89"] []
+    let identA = createIdent "alice" ["opendev.org/Alice Doe/12345", "github.com/alice89"] ["cores", "devs"]
         identB = createIdent "bob" [] []
         tenant = (Config.mkTenant $ hardcodedIndexName "test") {Config.idents = Just [identA, identB]}
     assertEqual
       "Ensure found alice as ident"
-      (Just "alice")
+      (Just ("alice", ["cores", "devs"]))
       $ Config.getIdentByAlias tenant "github.com/alice89"
     assertEqual
       "Ensure found no ident"

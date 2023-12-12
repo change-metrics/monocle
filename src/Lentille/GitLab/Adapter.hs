@@ -12,6 +12,7 @@ import Data.Time.Clock
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeOrError)
 import Google.Protobuf.Timestamp qualified as T
 import Lentille (ghostIdent, nobody, toIdent)
+import Monocle.Config qualified as Config
 import Monocle.Prelude
 import Monocle.Protob.Change
 import Proto3.Suite (Enumerated (..))
@@ -97,7 +98,7 @@ getChangeNumber :: Text -> Int32
 getChangeNumber iid =
   from $ fromMaybe 0 ((readMaybe $ from iid) :: Maybe Int)
 
-toCommit :: Text -> (Text -> Maybe Text) -> MRCommit -> Commit
+toCommit :: Text -> (Text -> Maybe Config.IdentUG) -> MRCommit -> Commit
 toCommit host cb MRCommit {..} =
   Commit
     (from sha)

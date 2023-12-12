@@ -100,7 +100,7 @@ fakeTitle = from <$> Faker.Movie.BackToTheFuture.quotes
 fakeAuthor :: Faker.Fake Author
 fakeAuthor = do
   name <- from <$> Faker.TvShow.Futurama.characters
-  pure $ Author name name
+  pure $ Author name name mempty
 
 fakeText :: Faker.Fake LText
 fakeText = from <$> Faker.TvShow.Futurama.quotes

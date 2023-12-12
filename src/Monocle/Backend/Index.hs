@@ -55,6 +55,7 @@ instance ToJSON AuthorMapping where
     object
       [ "uid" .= object ["type" .= ("keyword" :: Text)]
       , "muid" .= object ["type" .= ("keyword" :: Text)]
+      , "groups" .= object ["type" .= ("keyword" :: Text)]
       ]
 
 instance ToJSON AuthorIndexMapping where
@@ -240,7 +241,7 @@ createIndex indexName mapping = do
   retryPolicy = exponentialBackoff 500_000 <> limitRetries 7
 
 configVersion :: ConfigVersion
-configVersion = ConfigVersion 5
+configVersion = ConfigVersion 6
 
 configIndex :: BH.IndexName
 configIndex = BH.IndexName "monocle.config"
@@ -373,6 +374,12 @@ upgradeConfigV5 = do
   logInfo "Applying migration to schema V5 on workspace" ["index" .= indexName]
   void $ esPutMapping indexName mergedCommitField
 
+upgradeConfigV6 :: forall es. MonoQuery :> es => IndexEffects es => Eff es ()
+upgradeConfigV6 = do
+  indexName <- getIndexName
+  logInfo "Applying migration to schema V6 on workspace" ["index" .= indexName]
+  void $ esPutMapping indexName ChangesIndexMapping
+
 upgrades :: forall es. (E.Fail :> es, MonoQuery :> es) => IndexEffects es => [(ConfigVersion, Eff es ())]
 upgrades =
   [ (ConfigVersion 1, upgradeConfigV1)
@@ -380,6 +387,7 @@ upgrades =
   , (ConfigVersion 3, void upgradeConfigV3)
   , (ConfigVersion 4, void upgradeConfigV4)
   , (ConfigVersion 5, void upgradeConfigV5)
+  , (ConfigVersion 6, void upgradeConfigV6)
   ]
 
 newtype ConfigVersion = ConfigVersion Integer
@@ -474,11 +482,13 @@ toAuthor (Just ChangePB.Ident {..}) =
   Monocle.Backend.Documents.Author
     { authorMuid = identMuid
     , authorUid = identUid
+    , authorGroups = toList identGroups
     }
 toAuthor Nothing =
   Monocle.Backend.Documents.Author
     "backend-ghost"
     "backend-ghost"
+    mempty
 
 -- TODO: change that to a From instance
 toEChangeEvent :: ChangePB.ChangeEvent -> EChangeEvent

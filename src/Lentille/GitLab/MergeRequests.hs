@@ -16,6 +16,7 @@ import Google.Protobuf.Timestamp qualified as T
 import Lentille
 import Lentille.GitLab.Adapter
 import Lentille.GraphQL
+import Monocle.Config qualified as Config
 import Monocle.Entity
 import Monocle.Prelude hiding (id, state)
 import Monocle.Protob.Change
@@ -109,7 +110,7 @@ streamMergeRequests ::
   GraphEffects es =>
   GraphClient ->
   -- A callback to get Ident ID from an alias
-  (Text -> Maybe Text) ->
+  (Text -> Maybe Config.IdentUG) ->
   UTCTime ->
   Text ->
   LentilleStream es Changes
@@ -122,7 +123,7 @@ streamMergeRequests client getIdentIdCb untilDate project =
 transformResponse ::
   Text ->
   -- A callback to get Ident ID from an alias
-  (Text -> Maybe Text) ->
+  (Text -> Maybe Config.IdentUG) ->
   GetProjectMergeRequests ->
   (PageInfo, Maybe RateLimit, [Text], [(Change, [ChangeEvent])])
 transformResponse host getIdentIdCB result =

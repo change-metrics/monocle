@@ -2,12 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 ## [master]
+
 ### Added
 
 - [crawler] Proxy can be configured with `http_proxy` and `https_proxy` environment.
+- [crawler] A new `groups` sub-field in all Author fields (`on_author` and `author`) for `Change` and `Events`.
+  Groups memberships are reflected from the config file to the database.
 
 ### Changed
+
 ### Removed
+
 ### Fixed
 
 - [web] authors search returning no results #1082
