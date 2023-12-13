@@ -50,11 +50,11 @@ lookupTlsVerify = do
     _ -> Verify
 
 -- | Create a HTTP manager
-mkManager :: IO Manager
-mkManager = mkManager' =<< lookupTlsVerify
+mkManager :: Maybe Text -> IO Manager
+mkManager proxyEnv = mkManager' proxyEnv =<< lookupTlsVerify
 
-mkManager' :: TlsVerify -> IO Manager
-mkManager' verify = do
+mkManager' :: Maybe Text -> TlsVerify -> IO Manager
+mkManager' proxyEnv verify = do
   let opensslSettings = case verify of
         Insecure -> OpenSSL.defaultOpenSSLSettings {OpenSSL.osslSettingsVerifyMode = VerifyNone}
         Verify -> OpenSSL.defaultOpenSSLSettings
@@ -63,7 +63,9 @@ mkManager' verify = do
   let settings = OpenSSL.opensslManagerSettings (pure ctx)
 
   -- setup proxy
-  let proxy = Network.HTTP.Client.proxyEnvironment Nothing
+  let proxy = case proxyEnv of
+        Nothing -> Network.HTTP.Client.proxyEnvironment Nothing
+        Just proxyEnvName -> Network.HTTP.Client.proxyEnvironmentNamed proxyEnvName Nothing
   newManager (Network.HTTP.Client.managerSetProxy proxy settings)
 
 -- | Create the 'MonocleClient'
@@ -81,7 +83,7 @@ withClient url managerM callBack =
   do
     tokenM' <- liftIO $ lookupEnv "MONOCLE_ADMIN_TOKEN"
     let tokenM = from <$> tokenM'
-    manager <- maybe (liftIO mkManager) pure managerM
+    manager <- maybe (liftIO (mkManager (Just "API_PROXY"))) pure managerM
     callBack MonocleClient {..}
  where
   baseUrl = T.dropWhileEnd (== '/') url <> "/"

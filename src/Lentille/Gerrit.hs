@@ -74,7 +74,7 @@ queryChanges env count queries startM = unsafeEff_ $ G.queryChanges count querie
 
 getClient :: Text -> Maybe (Text, Secret) -> IO G.GerritClient
 getClient url auth = do
-  manager <- mkManager
+  manager <- mkManager Nothing
   pure $ G.getClientWithManager manager url (getGerritAuth <$> auth)
 
 getGerritAuth :: (Text, Secret) -> (Text, Text)
