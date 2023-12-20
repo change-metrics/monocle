@@ -429,6 +429,8 @@ components:
                     type: boolean
                 self_merged:
                     type: boolean
+                merged_commit_sha:
+                    type: string
         monocle_change_ChangeAbandonedEvent:
             properties: {}
         monocle_change_ChangeCommentedEvent:
@@ -497,6 +499,8 @@ components:
                     format: int32
                 draft:
                     type: boolean
+                merged_commit_sha:
+                    type: string
         monocle_change_ChangeMergedEvent:
             properties: {}
         monocle_change_ChangeReviewedEvent:
@@ -547,6 +551,10 @@ components:
                     type: string
                 muid:
                     type: string
+                groups:
+                    type: array
+                    items:
+                        type: string
         monocle_config_About:
             properties:
                 version:
