@@ -55,11 +55,6 @@ streamName = \case
   TaskDatas _ -> "TaskDatas"
   UserChanges _ -> "UserChanges"
 
-isTDStream :: DocumentStream m -> Bool
-isTDStream = \case
-  TaskDatas _ -> True
-  _anyOtherStream -> False
-
 -------------------------------------------------------------------------------
 -- Adapter between protobuf api and crawler stream
 -------------------------------------------------------------------------------
@@ -84,7 +79,6 @@ data DocumentType
 data ProcessError es
   = CommitError Text
   | AddError Text
-  | StreamError (LentilleError, LentilleStream es DocumentType)
 
 -- | 'processStream' read the stream of document and post to the monocle API
 processStream ::
@@ -106,12 +100,11 @@ processStream logFunc postFunc = go (0 :: Word) [] []
         -- The end of the stream
         res <- processBatch acc
         pure $ reverse (res : results)
-      Right (Left err, rest) -> do
-        -- An error occured in the stream, abort now
-        let res = Just (StreamError (err, rest))
-        pure $ reverse (res : results)
-      Right (Right doc, rest) -> do
+      Right (edoc, rest) -> do
         -- We got a new document
+        let doc = case edoc of
+             Right x -> x
+             Left err -> DTError $ from err
         let newAcc = doc : acc
         if count == 499
           then do
@@ -150,16 +143,6 @@ runStream apiKey indexName crawlerName documentStream = do
       forM_ errors \case
         AddError err -> logWarn "Could not add documents" ["err" .= err]
         CommitError err -> logWarn "Could not commit update date" ["err" .= err]
-        StreamError (err, rest) -> do
-          logWarn "Error occured when consuming the document stream" ["err" .= err]
-          S.toList_ rest >>= \case
-            [] -> pure ()
-            items -> logWarn "Left over documents found after error" ["items" .= items]
-
-          -- TODO: explains why TDStream don't support offset?
-          unless (isTDStream documentStream) do
-            -- Try the next entity by incrementing the offset
-            go startTime (offset + 1)
 
 -- | 'runStreamError' is the stream processor
 runStreamError ::

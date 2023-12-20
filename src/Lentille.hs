@@ -45,6 +45,7 @@ import Monocle.Protob.Change (
   Change_ChangeState (Change_ChangeStateClosed, Change_ChangeStateMerged),
   Ident (..),
  )
+import Monocle.Protob.Crawler (CrawlerError (..))
 import Network.HTTP.Client qualified as HTTP
 import Proto3.Suite (Enumerated (Enumerated))
 import Streaming.Prelude qualified as S
@@ -95,6 +96,11 @@ data LentilleError
   deriving (Show, Generic, ToJSON)
 
 instance Exception LentilleError
+
+instance From LentilleError CrawlerError where
+  from = \case
+    DecodeError xs -> CrawlerError "decode error" (decodeUtf8 $ encode xs)
+    GraphError x -> CrawlerError "graph error" (decodeUtf8 $ encode x)
 
 type LentilleStream es a = Stream (Of (Either LentilleError a)) (Eff es) ()
 
