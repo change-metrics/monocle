@@ -78,6 +78,7 @@ data DocumentType
   | DTChanges (Change, [ChangeEvent])
   | DTTaskData TaskData
   | DTIssues (Issue, [IssueEvent])
+  | DTError CrawlerError
   deriving (Generic, ToJSON)
 
 data ProcessError es
@@ -246,6 +247,7 @@ runStreamError startTime apiKey indexName (CrawlerName crawlerName) documentStre
         addDocRequestTaskDatas = V.fromList $ mapMaybe getTD xs
         addDocRequestIssues = V.fromList $ mapMaybe getIssue xs
         addDocRequestIssueEvents = V.fromList $ concat $ mapMaybe getIssueEvent xs
+        addDocRequestErrors = V.fromList $ mapMaybe getError xs
      in AddDocRequest {..}
    where
     getIssue = \case
@@ -265,6 +267,9 @@ runStreamError startTime apiKey indexName (CrawlerName crawlerName) documentStre
       _ -> Nothing
     getTD = \case
       DTTaskData td -> Just td
+      _ -> Nothing
+    getError = \case
+      DTError e -> Just e
       _ -> Nothing
 
   -- 'commitTimestamp' post the commit date.

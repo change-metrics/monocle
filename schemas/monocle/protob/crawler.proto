@@ -28,6 +28,11 @@ enum EntityType {
   ENTITY_TYPE_USER = 3;
 }
 
+message CrawlerError {
+  string message = 1;
+  string body = 2;
+}
+
 message AddDocRequest {
   string index = 1;
   string crawler = 2;
@@ -45,6 +50,7 @@ message AddDocRequest {
   repeated monocle_issue.Issue issues = 10;
   // issue_events are added when Entity is project_issue_name
   repeated monocle_issue.IssueEvent issue_events = 11;
+  repeated CrawlerError errors = 12;
 }
 
 enum AddDocError {

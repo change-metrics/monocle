@@ -293,6 +293,7 @@ crawlerAddDoc _auth request = do
           taskDatas
           issues
           issuesEvents
+          _errors
         ) = request
 
   let requestE = do

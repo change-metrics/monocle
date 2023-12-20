@@ -676,6 +676,10 @@ components:
                     items:
                         $ref: '#/components/schemas/monocle_issue_IssueEvent'
                     description: issue_events are added when Entity is project_issue_name
+                errors:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_crawler_CrawlerError'
         monocle_crawler_AddDocResponse:
             properties:
                 error:
@@ -723,6 +727,12 @@ components:
                 timestamp:
                     type: string
                     format: RFC3339
+        monocle_crawler_CrawlerError:
+            properties:
+                message:
+                    type: string
+                body:
+                    type: string
         monocle_crawler_Entity:
             properties:
                 organization_name:

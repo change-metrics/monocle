@@ -341,6 +341,112 @@ instance HsJSONPB.FromJSON EntityType where
 
 instance HsProtobuf.Finite EntityType
 
+data CrawlerError = CrawlerError
+  { crawlerErrorMessage :: Hs.Text
+  , crawlerErrorBody :: Hs.Text
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData CrawlerError
+
+instance HsProtobuf.Named CrawlerError where
+  nameOf _ = (Hs.fromString "CrawlerError")
+
+instance HsProtobuf.HasDefault CrawlerError
+
+instance HsProtobuf.Message CrawlerError where
+  encodeMessage
+    _
+    CrawlerError
+      { crawlerErrorMessage = crawlerErrorMessage
+      , crawlerErrorBody = crawlerErrorBody
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
+                    (crawlerErrorMessage)
+                )
+            )
+          , ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
+                    (crawlerErrorBody)
+                )
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure CrawlerError)
+      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
+          )
+      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 2)
+              )
+          )
+  dotProto _ =
+    [ ( HsProtobufAST.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobufAST.Prim HsProtobufAST.String)
+          (HsProtobufAST.Single "message")
+          []
+          ""
+      )
+    , ( HsProtobufAST.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobufAST.Prim HsProtobufAST.String)
+          (HsProtobufAST.Single "body")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB CrawlerError where
+  toJSONPB (CrawlerError f1 f2) =
+    ( HsJSONPB.object
+        [ "message"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
+        , "body"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
+        ]
+    )
+  toEncodingPB (CrawlerError f1 f2) =
+    ( HsJSONPB.pairs
+        [ "message"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
+        , "body"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
+        ]
+    )
+
+instance HsJSONPB.FromJSONPB CrawlerError where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "CrawlerError"
+        ( \obj ->
+            (Hs.pure CrawlerError)
+              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                      (obj .: "message")
+                  )
+              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                      (obj .: "body")
+                  )
+        )
+    )
+
+instance HsJSONPB.ToJSON CrawlerError where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON CrawlerError where
+  parseJSON = HsJSONPB.parseJSONPB
+
 data AddDocRequest = AddDocRequest
   { addDocRequestIndex :: Hs.Text
   , addDocRequestCrawler :: Hs.Text
@@ -356,6 +462,8 @@ data AddDocRequest = AddDocRequest
   , addDocRequestIssues :: Hs.Vector Monocle.Protob.Issue.Issue
   , addDocRequestIssueEvents ::
       Hs.Vector Monocle.Protob.Issue.IssueEvent
+  , addDocRequestErrors ::
+      Hs.Vector Monocle.Protob.Crawler.CrawlerError
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
 
@@ -380,6 +488,7 @@ instance HsProtobuf.Message AddDocRequest where
       , addDocRequestTaskDatas = addDocRequestTaskDatas
       , addDocRequestIssues = addDocRequestIssues
       , addDocRequestIssueEvents = addDocRequestIssueEvents
+      , addDocRequestErrors = addDocRequestErrors
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -447,6 +556,13 @@ instance HsProtobuf.Message AddDocRequest where
                 ( Hs.coerce @(Hs.Vector Monocle.Protob.Issue.IssueEvent)
                     @(HsProtobuf.NestedVec Monocle.Protob.Issue.IssueEvent)
                     (addDocRequestIssueEvents)
+                )
+            )
+          , ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 12)
+                ( Hs.coerce @(Hs.Vector Monocle.Protob.Crawler.CrawlerError)
+                    @(HsProtobuf.NestedVec Monocle.Protob.Crawler.CrawlerError)
+                    (addDocRequestErrors)
                 )
             )
           ]
@@ -525,6 +641,14 @@ instance HsProtobuf.Message AddDocRequest where
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 11)
+              )
+          )
+      <*> ( HsProtobuf.coerceOver
+              @(HsProtobuf.NestedVec Monocle.Protob.Crawler.CrawlerError)
+              @(Hs.Vector Monocle.Protob.Crawler.CrawlerError)
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 12)
               )
           )
   dotProto _ =
@@ -632,10 +756,19 @@ instance HsProtobuf.Message AddDocRequest where
           []
           ""
       )
+    , ( HsProtobufAST.DotProtoField
+          (HsProtobuf.FieldNumber 12)
+          ( HsProtobufAST.Repeated
+              (HsProtobufAST.Named (HsProtobufAST.Single "CrawlerError"))
+          )
+          (HsProtobufAST.Single "errors")
+          []
+          ""
+      )
     ]
 
 instance HsJSONPB.ToJSONPB AddDocRequest where
-  toJSONPB (AddDocRequest f1 f2 f3 f4 f5 f6 f7 f8 f10 f11) =
+  toJSONPB (AddDocRequest f1 f2 f3 f4 f5 f6 f7 f8 f10 f11 f12) =
     ( HsJSONPB.object
         [ "index"
             .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
@@ -678,9 +811,14 @@ instance HsJSONPB.ToJSONPB AddDocRequest where
                   @(HsProtobuf.NestedVec Monocle.Protob.Issue.IssueEvent)
                   (f11)
                )
+        , "errors"
+            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Crawler.CrawlerError)
+                  @(HsProtobuf.NestedVec Monocle.Protob.Crawler.CrawlerError)
+                  (f12)
+               )
         ]
     )
-  toEncodingPB (AddDocRequest f1 f2 f3 f4 f5 f6 f7 f8 f10 f11) =
+  toEncodingPB (AddDocRequest f1 f2 f3 f4 f5 f6 f7 f8 f10 f11 f12) =
     ( HsJSONPB.pairs
         [ "index"
             .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
@@ -722,6 +860,11 @@ instance HsJSONPB.ToJSONPB AddDocRequest where
             .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Issue.IssueEvent)
                   @(HsProtobuf.NestedVec Monocle.Protob.Issue.IssueEvent)
                   (f11)
+               )
+        , "errors"
+            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Crawler.CrawlerError)
+                  @(HsProtobuf.NestedVec Monocle.Protob.Crawler.CrawlerError)
+                  (f12)
                )
         ]
     )
@@ -775,6 +918,11 @@ instance HsJSONPB.FromJSONPB AddDocRequest where
                       @(HsProtobuf.NestedVec Monocle.Protob.Issue.IssueEvent)
                       @(Hs.Vector Monocle.Protob.Issue.IssueEvent)
                       (obj .: "issue_events")
+                  )
+              <*> ( HsProtobuf.coerceOver
+                      @(HsProtobuf.NestedVec Monocle.Protob.Crawler.CrawlerError)
+                      @(Hs.Vector Monocle.Protob.Crawler.CrawlerError)
+                      (obj .: "errors")
                   )
         )
     )
