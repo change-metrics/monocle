@@ -649,6 +649,17 @@ indexChanges changes = indexDocs $ fmap (toDoc . ensureType) changes
   toDoc change = (toJSON change, getChangeDocId change)
   ensureType change = change {echangeType = EChangeDoc}
 
+indexErrors :: MonoQuery :> es => IndexEffects es => [EError] -> Eff es ()
+indexErrors errors = indexDocs $ fmap toDoc errors
+ where
+  toDoc err = (getErrorDoc err, getErrorDocId err)
+
+  getErrorDoc :: EError -> Value
+  getErrorDoc err = object ["type" .= EErrorDoc, "error_data" .= toJSON err]
+
+  getErrorDocId :: EError -> BH.DocId
+  getErrorDocId = getBHDocID . erBody
+
 indexIssues :: [EIssue] -> Eff es ()
 indexIssues = error "todo"
 

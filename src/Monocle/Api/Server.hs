@@ -23,6 +23,7 @@ import Monocle.Api.Jwt (
 import Monocle.Backend.Documents (
   EChange (..),
   EChangeEvent (..),
+  EError (..),
  )
 import Monocle.Backend.Index as I
 import Monocle.Backend.Queries qualified as Q
@@ -69,6 +70,7 @@ import Effectful.Reader.Static (asks)
 import Monocle.Effects
 
 import Monocle.Backend.Queries (PeersStrengthMode (PSModeFilterOnAuthor))
+import Monocle.Protob.Crawler (CrawlerError)
 import Servant.API (Headers)
 import Servant.API.Header (Header)
 import Servant.Auth.Server.Internal.JWT (makeJWT)
@@ -293,7 +295,7 @@ crawlerAddDoc _auth request = do
           taskDatas
           issues
           issuesEvents
-          _errors
+          errors
         ) = request
 
   let requestE = do
@@ -312,14 +314,28 @@ crawlerAddDoc _auth request = do
         pure (index, crawler)
 
   case requestE of
-    Right (index, crawler) -> runEmptyQueryM index $ case toEntity entity of
-      Project _ -> addChanges crawlerName changes events
-      ProjectIssue _ -> addIssues crawlerName issues issuesEvents
-      Organization organizationName -> addProjects crawler organizationName projects
-      TaskDataEntity _ -> addTDs crawlerName taskDatas
-      User _ -> addChanges crawlerName changes events
+    Right (index, crawler) -> runEmptyQueryM index do
+      addErrors crawlerName (toEntity entity) errors
+      case toEntity entity of
+        Project _ -> addChanges crawlerName changes events
+        ProjectIssue _ -> addIssues crawlerName issues issuesEvents
+        Organization organizationName -> addProjects crawler organizationName projects
+        TaskDataEntity _ -> addTDs crawlerName taskDatas
+        User _ -> addChanges crawlerName changes events
     Left err -> pure $ toErrorResponse err
  where
+  addErrors crawlerName entity errors = do
+    logInfo "AddingErrors" ["crawler" .= crawlerName, "errors" .= length errors]
+    let toError :: CrawlerError -> EError
+        toError ce =
+          EError
+            { erCrawlerName = from crawlerName
+            , erEntity = from entity
+            , erMessage = from ce.crawlerErrorMessage
+            , erBody = from ce.crawlerErrorBody
+            }
+    I.indexErrors $ toList (toError <$> errors)
+
   addTDs crawlerName taskDatas = do
     logInfo "AddingTaskData" ["crawler" .= crawlerName, "tds" .= length taskDatas]
     I.taskDataAdd (from crawlerName) $ toList taskDatas
