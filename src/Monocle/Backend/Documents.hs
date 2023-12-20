@@ -195,6 +195,20 @@ instance From ETaskData SearchPB.TaskData where
         taskDataPrefix = from $ fromMaybe "" $ tdPrefix td
      in SearchPB.TaskData {..}
 
+data EError = EError
+  { erCrawlerName :: Text
+  , erEntity :: Text
+  , erMessage :: Text
+  , erBody :: Text
+  }
+  deriving (Show, Eq, Generic)
+
+instance ToJSON EError where
+  toJSON = genericToJSON $ aesonPrefix snakeCase
+
+instance FromJSON EError where
+  parseJSON = genericParseJSON $ aesonPrefix snakeCase
+
 data EChangeState
   = EChangeOpen
   | EChangeMerged
@@ -240,6 +254,7 @@ data EDocType
   | EIssueDoc
   | EOrphanTaskData
   | ECachedAuthor
+  | EErrorDoc
   deriving (Eq, Show, Enum, Bounded)
 
 allEventTypes :: [EDocType]
@@ -262,6 +277,7 @@ instance From EDocType Text where
     EIssueDoc -> "Issue"
     EOrphanTaskData -> "OrphanTaskData"
     ECachedAuthor -> "CachedAuthor"
+    EErrorDoc -> "Error"
 
 instance From EDocType LText where
   from = via @Text
@@ -300,6 +316,7 @@ instance FromJSON EDocType where
           "Issue" -> pure EIssueDoc
           "OrphanTaskData" -> pure EOrphanTaskData
           "CachedAuthor" -> pure ECachedAuthor
+          "Error" -> pure EErrorDoc
           anyOtherValue -> fail $ "Unknown Monocle Elastic doc type: " <> from anyOtherValue
       )
 

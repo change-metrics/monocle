@@ -58,6 +58,14 @@ instance ToJSON AuthorMapping where
       , "groups" .= object ["type" .= ("keyword" :: Text)]
       ]
 
+data BlobMapping = BlobMapping deriving (Eq, Show)
+
+instance ToJSON BlobMapping where
+  toJSON BlobMapping =
+    object
+      [ "type" .= ("binary" :: Text)
+      ]
+
 instance ToJSON AuthorIndexMapping where
   toJSON AuthorIndexMapping =
     object ["properties" .= AuthorMapping]
@@ -218,6 +226,16 @@ instance ToJSON ChangesIndexMapping where
                           , "prefix" .= KWMapping
                           , "title" .= TextAndKWMapping
                           , "_adopted" .= BoolMapping
+                          ]
+                    ]
+              , "error_data"
+                  .= object
+                    [ "properties"
+                        .= object
+                          [ "crawler_name" .= KWMapping
+                          , "entity" .= TextAndKWMapping
+                          , "message" .= TextAndKWMapping
+                          , "body" .= BlobMapping
                           ]
                     ]
               ]
