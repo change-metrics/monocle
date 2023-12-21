@@ -326,14 +326,16 @@ crawlerAddDoc _auth request = do
  where
   addErrors crawlerName entity errors = do
     logInfo "AddingErrors" ["crawler" .= crawlerName, "errors" .= length errors]
-    let toError :: CrawlerError -> EError
+    let toError :: CrawlerError -> (UTCTime, EError)
         toError ce =
-          EError
-            { erCrawlerName = from crawlerName
-            , erEntity = from entity
-            , erMessage = from ce.crawlerErrorMessage
-            , erBody = from ce.crawlerErrorBody
-            }
+          ( from $ fromMaybe (error "missing timestamp") ce.crawlerErrorCreatedAt
+          , EError
+              { erCrawlerName = from crawlerName
+              , erEntity = from entity
+              , erMessage = from ce.crawlerErrorMessage
+              , erBody = from ce.crawlerErrorBody
+              }
+          )
     I.indexErrors $ toList (toError <$> errors)
 
   addTDs crawlerName taskDatas = do

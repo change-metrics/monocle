@@ -64,7 +64,7 @@ testCrawlingPoint = do
   badStream date name
     | date == BT.fakeDateAlt && name == "opendev/neutron" = do
         Streaming.yield $ Right (fakeChangePB, [])
-        Streaming.yield $ Left (DecodeError ["Oops"])
+        Streaming.yield $ Left (DecodeError BT.fakeDateAlt ["Oops"])
     | otherwise = error "Bad crawling point"
 
   -- A document stream that yield a change

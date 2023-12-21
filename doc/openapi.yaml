@@ -733,6 +733,9 @@ components:
                     type: string
                 body:
                     type: string
+                created_at:
+                    type: string
+                    format: RFC3339
         monocle_crawler_Entity:
             properties:
                 organization_name:

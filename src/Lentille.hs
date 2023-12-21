@@ -91,16 +91,14 @@ data GraphQLError = GraphQLError
   deriving (Show, Generic, ToJSON)
 
 data LentilleError
-  = DecodeError [Text]
-  | GraphError GraphQLError
+  = DecodeError UTCTime [Text]
+  | GraphError UTCTime GraphQLError
   deriving (Show, Generic, ToJSON)
-
-instance Exception LentilleError
 
 instance From LentilleError CrawlerError where
   from = \case
-    DecodeError xs -> CrawlerError "decode error" (decodeUtf8 $ encode xs)
-    GraphError x -> CrawlerError "graph error" (decodeUtf8 $ encode x)
+    DecodeError ts xs -> CrawlerError "decode error" (decodeUtf8 $ encode xs) (Just $ from ts)
+    GraphError ts x -> CrawlerError "graph error" (decodeUtf8 $ encode x) (Just $ from ts)
 
 type LentilleStream es a = Stream (Of (Either LentilleError a)) (Eff es) ()
 
