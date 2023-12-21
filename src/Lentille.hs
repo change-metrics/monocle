@@ -151,7 +151,7 @@ type Changes = (Change, [ChangeEvent])
 -- We don't care about the rest so we replace it with ()
 -- See: https://hackage.haskell.org/package/streaming-0.2.4.0/docs/Streaming-Prelude.html#v:break
 --
--- >>> let stream = S.yield (Left (DecodeError ["oops"]))
+-- >>> let stream = S.yield (Left (DecodeError [utctime|2021-05-31 00:00:00|] ["oops"]))
 -- >>> runEff $ S.length_ $ streamDropBefore [utctime|2021-05-31 00:00:00|] stream
 -- 1
 streamDropBefore :: UTCTime -> LentilleStream es Changes -> LentilleStream es Changes

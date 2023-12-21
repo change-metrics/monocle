@@ -53,9 +53,11 @@ testCrawlingPoint = do
       Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.Changes badStream)
 
       (currentOldestAge, _) <- getOldest
-      liftIO $ assertEqual "Commit date is not updated on failure" oldestAge currentOldestAge
+      liftIO $ assertBool "Commit date is updated on failure" (currentOldestAge > oldestAge)
 
-      Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.Changes goodStream)
+      -- TODO: check that the errors got indexed
+
+      Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.Changes $ goodStream currentOldestAge)
 
       (newOldestAge, _) <- getOldest
       liftIO $ assertBool "Commit date updated" (newOldestAge > oldestAge)
@@ -68,8 +70,8 @@ testCrawlingPoint = do
     | otherwise = error "Bad crawling point"
 
   -- A document stream that yield a change
-  goodStream date name
-    | date == BT.fakeDateAlt && name == "opendev/neutron" = do
+  goodStream expected date name
+    | date == expected && name == "opendev/neutron" = do
         Streaming.yield $ Right (fakeChangePB, [])
     | otherwise = error "Bad crawling point"
 

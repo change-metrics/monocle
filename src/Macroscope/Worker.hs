@@ -103,8 +103,8 @@ processStream logFunc postFunc = go (0 :: Word) [] []
       Right (edoc, rest) -> do
         -- We got a new document
         let doc = case edoc of
-             Right x -> x
-             Left err -> DTError $ from err
+              Right x -> x
+              Left err -> DTError $ from err
         let newAcc = doc : acc
         if count == 499
           then do
