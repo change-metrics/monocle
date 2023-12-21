@@ -31,6 +31,7 @@ module Lentille (
   module Monocle.Logging,
 ) where
 
+import Data.ByteString.Base64.Lazy qualified as B64
 import Data.Text qualified as T
 import Google.Protobuf.Timestamp qualified as T
 import Monocle.Class
@@ -97,8 +98,11 @@ data LentilleError
 
 instance From LentilleError CrawlerError where
   from = \case
-    DecodeError ts xs -> CrawlerError "decode error" (decodeUtf8 $ encode xs) (Just $ from ts)
-    GraphError ts x -> CrawlerError "graph error" (decodeUtf8 $ encode x) (Just $ from ts)
+    DecodeError ts xs -> CrawlerError "decode error" (encodeBlob xs) (Just $ from ts)
+    GraphError ts x -> CrawlerError "graph error" (encodeBlob x) (Just $ from ts)
+
+encodeBlob :: ToJSON a => a -> LText
+encodeBlob = decodeUtf8 . B64.encode . encode
 
 type LentilleStream es a = Stream (Of (Either LentilleError a)) (Eff es) ()
 
