@@ -34,6 +34,22 @@ message CrawlerError {
   google.protobuf.Timestamp created_at = 3;
 }
 
+message ErrorsRequest {
+  string index = 1;
+  string query = 2;
+}
+
+message ErrorsList {
+  repeated CrawlerError errors = 1;
+}
+
+message ErrorsResponse {
+  oneof result {
+    ErrorsList success = 1;
+    string error = 2;
+  }
+}
+
 message AddDocRequest {
   string index = 1;
   string crawler = 2;

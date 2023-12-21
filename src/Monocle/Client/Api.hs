@@ -72,3 +72,6 @@ crawlerCommit = monocleReq "api/2/crawler/commit"
 
 crawlerCommitInfo :: MonadIO m => MonocleClient -> CommitInfoRequest -> m CommitInfoResponse
 crawlerCommitInfo = monocleReq "api/2/crawler/get_commit_info"
+
+crawlerErrors :: MonadIO m => MonocleClient -> ErrorsRequest -> m ErrorsResponse
+crawlerErrors = monocleReq "api/2/crawler/errors"

@@ -90,6 +90,23 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/monocle_crawler_CommitResponse'
+    /api/2/crawler/errors:
+        post:
+            summary: Get crawler errors
+            operationId: Crawler_Errors
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/monocle_crawler_ErrorsRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/monocle_crawler_ErrorsResponse'
     /api/2/crawler/get_commit_info:
         post:
             summary: Get commit message
@@ -749,6 +766,24 @@ components:
                 user_name:
                     type: string
             description: A descriptive name of the entities being added
+        monocle_crawler_ErrorsList:
+            properties:
+                errors:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_crawler_CrawlerError'
+        monocle_crawler_ErrorsRequest:
+            properties:
+                index:
+                    type: string
+                query:
+                    type: string
+        monocle_crawler_ErrorsResponse:
+            properties:
+                success:
+                    $ref: '#/components/schemas/monocle_crawler_ErrorsList'
+                error:
+                    type: string
         monocle_crawler_Project:
             properties:
                 full_path:

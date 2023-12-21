@@ -26,6 +26,7 @@ import Data.Vector qualified as V
 import Monocle.Entity
 import Monocle.Prelude
 import Monocle.Protob.Change qualified as ChangePB
+import Monocle.Protob.Crawler (CrawlerError (..))
 import Monocle.Protob.Crawler qualified as CrawlerPB
 import Monocle.Protob.Issue qualified as IssuePB
 import Monocle.Protob.Search qualified as SearchPB
@@ -202,6 +203,14 @@ data EError = EError
   , erBody :: Text
   }
   deriving (Show, Eq, Generic)
+
+instance From EError CrawlerError where
+  from eerror =
+    CrawlerError
+      { crawlerErrorBody = from eerror.erBody
+      , crawlerErrorMessage = from eerror.erMessage
+      , crawlerErrorCreatedAt = undefined
+      }
 
 instance ToJSON EError where
   toJSON = genericToJSON $ aesonPrefix snakeCase

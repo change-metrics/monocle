@@ -491,6 +491,348 @@ instance HsJSONPB.ToJSON CrawlerError where
 instance HsJSONPB.FromJSON CrawlerError where
   parseJSON = HsJSONPB.parseJSONPB
 
+data ErrorsRequest = ErrorsRequest
+  { errorsRequestIndex :: Hs.Text
+  , errorsRequestQuery :: Hs.Text
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData ErrorsRequest
+
+instance HsProtobuf.Named ErrorsRequest where
+  nameOf _ = (Hs.fromString "ErrorsRequest")
+
+instance HsProtobuf.HasDefault ErrorsRequest
+
+instance HsProtobuf.Message ErrorsRequest where
+  encodeMessage
+    _
+    ErrorsRequest
+      { errorsRequestIndex = errorsRequestIndex
+      , errorsRequestQuery = errorsRequestQuery
+      } =
+      ( Hs.mconcat
+          [ ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 1)
+                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
+                    (errorsRequestIndex)
+                )
+            )
+          , ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 2)
+                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
+                    (errorsRequestQuery)
+                )
+            )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure ErrorsRequest)
+      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
+          )
+      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 2)
+              )
+          )
+  dotProto _ =
+    [ ( HsProtobufAST.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          (HsProtobufAST.Prim HsProtobufAST.String)
+          (HsProtobufAST.Single "index")
+          []
+          ""
+      )
+    , ( HsProtobufAST.DotProtoField
+          (HsProtobuf.FieldNumber 2)
+          (HsProtobufAST.Prim HsProtobufAST.String)
+          (HsProtobufAST.Single "query")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB ErrorsRequest where
+  toJSONPB (ErrorsRequest f1 f2) =
+    ( HsJSONPB.object
+        [ "index"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
+        , "query"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
+        ]
+    )
+  toEncodingPB (ErrorsRequest f1 f2) =
+    ( HsJSONPB.pairs
+        [ "index"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
+        , "query"
+            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
+        ]
+    )
+
+instance HsJSONPB.FromJSONPB ErrorsRequest where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "ErrorsRequest"
+        ( \obj ->
+            (Hs.pure ErrorsRequest)
+              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                      (obj .: "index")
+                  )
+              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                      (obj .: "query")
+                  )
+        )
+    )
+
+instance HsJSONPB.ToJSON ErrorsRequest where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON ErrorsRequest where
+  parseJSON = HsJSONPB.parseJSONPB
+
+newtype ErrorsList = ErrorsList
+  { errorsListErrors ::
+      Hs.Vector Monocle.Protob.Crawler.CrawlerError
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData ErrorsList
+
+instance HsProtobuf.Named ErrorsList where
+  nameOf _ = (Hs.fromString "ErrorsList")
+
+instance HsProtobuf.HasDefault ErrorsList
+
+instance HsProtobuf.Message ErrorsList where
+  encodeMessage _ ErrorsList {errorsListErrors = errorsListErrors} =
+    ( Hs.mconcat
+        [ ( HsProtobuf.encodeMessageField
+              (HsProtobuf.FieldNumber 1)
+              ( Hs.coerce @(Hs.Vector Monocle.Protob.Crawler.CrawlerError)
+                  @(HsProtobuf.NestedVec Monocle.Protob.Crawler.CrawlerError)
+                  (errorsListErrors)
+              )
+          )
+        ]
+    )
+  decodeMessage _ =
+    (Hs.pure ErrorsList)
+      <*> ( HsProtobuf.coerceOver
+              @(HsProtobuf.NestedVec Monocle.Protob.Crawler.CrawlerError)
+              @(Hs.Vector Monocle.Protob.Crawler.CrawlerError)
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 1)
+              )
+          )
+  dotProto _ =
+    [ ( HsProtobufAST.DotProtoField
+          (HsProtobuf.FieldNumber 1)
+          ( HsProtobufAST.Repeated
+              (HsProtobufAST.Named (HsProtobufAST.Single "CrawlerError"))
+          )
+          (HsProtobufAST.Single "errors")
+          []
+          ""
+      )
+    ]
+
+instance HsJSONPB.ToJSONPB ErrorsList where
+  toJSONPB (ErrorsList f1) =
+    ( HsJSONPB.object
+        [ "errors"
+            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Crawler.CrawlerError)
+                  @(HsProtobuf.NestedVec Monocle.Protob.Crawler.CrawlerError)
+                  (f1)
+               )
+        ]
+    )
+  toEncodingPB (ErrorsList f1) =
+    ( HsJSONPB.pairs
+        [ "errors"
+            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Crawler.CrawlerError)
+                  @(HsProtobuf.NestedVec Monocle.Protob.Crawler.CrawlerError)
+                  (f1)
+               )
+        ]
+    )
+
+instance HsJSONPB.FromJSONPB ErrorsList where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "ErrorsList"
+        ( \obj ->
+            (Hs.pure ErrorsList)
+              <*> ( HsProtobuf.coerceOver
+                      @(HsProtobuf.NestedVec Monocle.Protob.Crawler.CrawlerError)
+                      @(Hs.Vector Monocle.Protob.Crawler.CrawlerError)
+                      (obj .: "errors")
+                  )
+        )
+    )
+
+instance HsJSONPB.ToJSON ErrorsList where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON ErrorsList where
+  parseJSON = HsJSONPB.parseJSONPB
+
+newtype ErrorsResponse = ErrorsResponse
+  { errorsResponseResult ::
+      Hs.Maybe ErrorsResponseResult
+  }
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData ErrorsResponse
+
+instance HsProtobuf.Named ErrorsResponse where
+  nameOf _ = (Hs.fromString "ErrorsResponse")
+
+instance HsProtobuf.HasDefault ErrorsResponse
+
+instance HsProtobuf.Message ErrorsResponse where
+  encodeMessage
+    _
+    ErrorsResponse {errorsResponseResult = errorsResponseResult} =
+      ( Hs.mconcat
+          [ case errorsResponseResult of
+              Hs.Nothing -> Hs.mempty
+              Hs.Just x ->
+                case x of
+                  ErrorsResponseResultSuccess y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 1)
+                        ( Hs.coerce @(Hs.Maybe Monocle.Protob.Crawler.ErrorsList)
+                            @(HsProtobuf.Nested Monocle.Protob.Crawler.ErrorsList)
+                            (Hs.Just y)
+                        )
+                    )
+                  ErrorsResponseResultError y ->
+                    ( HsProtobuf.encodeMessageField
+                        (HsProtobuf.FieldNumber 2)
+                        ( HsProtobuf.ForceEmit
+                            (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (y))
+                        )
+                    )
+          ]
+      )
+  decodeMessage _ =
+    (Hs.pure ErrorsResponse)
+      <*> ( HsProtobuf.oneof
+              Hs.Nothing
+              [
+                ( (HsProtobuf.FieldNumber 1)
+                , (Hs.pure (Hs.fmap ErrorsResponseResultSuccess))
+                    <*> ( HsProtobuf.coerceOver
+                            @(HsProtobuf.Nested Monocle.Protob.Crawler.ErrorsList)
+                            @(Hs.Maybe Monocle.Protob.Crawler.ErrorsList)
+                            (HsProtobuf.decodeMessageField)
+                        )
+                )
+              ,
+                ( (HsProtobuf.FieldNumber 2)
+                , (Hs.pure (Hs.Just Hs.. ErrorsResponseResultError))
+                    <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                            (HsProtobuf.decodeMessageField)
+                        )
+                )
+              ]
+          )
+  dotProto _ = []
+
+instance HsJSONPB.ToJSONPB ErrorsResponse where
+  toJSONPB (ErrorsResponse f1_or_f2) =
+    ( HsJSONPB.object
+        [ ( let encodeResult =
+                  ( case f1_or_f2 of
+                      Hs.Just (ErrorsResponseResultSuccess f1) ->
+                        (HsJSONPB.pair "success" f1)
+                      Hs.Just (ErrorsResponseResultError f2) ->
+                        ( HsJSONPB.pair
+                            "error"
+                            (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
+                        )
+                      Hs.Nothing -> Hs.mempty
+                  )
+             in \options ->
+                  if HsJSONPB.optEmitNamedOneof options
+                    then
+                      ("result" .= (HsJSONPB.objectOrNull [encodeResult] options))
+                        options
+                    else encodeResult options
+          )
+        ]
+    )
+  toEncodingPB (ErrorsResponse f1_or_f2) =
+    ( HsJSONPB.pairs
+        [ ( let encodeResult =
+                  ( case f1_or_f2 of
+                      Hs.Just (ErrorsResponseResultSuccess f1) ->
+                        (HsJSONPB.pair "success" f1)
+                      Hs.Just (ErrorsResponseResultError f2) ->
+                        ( HsJSONPB.pair
+                            "error"
+                            (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
+                        )
+                      Hs.Nothing -> Hs.mempty
+                  )
+             in \options ->
+                  if HsJSONPB.optEmitNamedOneof options
+                    then ("result" .= (HsJSONPB.pairsOrNull [encodeResult] options)) options
+                    else encodeResult options
+          )
+        ]
+    )
+
+instance HsJSONPB.FromJSONPB ErrorsResponse where
+  parseJSONPB =
+    ( HsJSONPB.withObject
+        "ErrorsResponse"
+        ( \obj ->
+            (Hs.pure ErrorsResponse)
+              <*> ( let parseResult parseObj =
+                          Hs.msum
+                            [ Hs.Just Hs.. ErrorsResponseResultSuccess
+                                <$> (HsJSONPB.parseField parseObj "success")
+                            , Hs.Just
+                                Hs.. ErrorsResponseResultError
+                                Hs.. Hs.coerce @(HsProtobuf.String Hs.Text) @(Hs.Text)
+                                <$> (HsJSONPB.parseField parseObj "error")
+                            , Hs.pure Hs.Nothing
+                            ]
+                     in ( (obj .: "result")
+                            Hs.>>= (HsJSONPB.withObject "result" parseResult)
+                        )
+                          <|> (parseResult obj)
+                  )
+        )
+    )
+
+instance HsJSONPB.ToJSON ErrorsResponse where
+  toJSON = HsJSONPB.toAesonValue
+  toEncoding = HsJSONPB.toAesonEncoding
+
+instance HsJSONPB.FromJSON ErrorsResponse where
+  parseJSON = HsJSONPB.parseJSONPB
+
+data ErrorsResponseResult
+  = ErrorsResponseResultSuccess Monocle.Protob.Crawler.ErrorsList
+  | ErrorsResponseResultError Hs.Text
+  deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
+
+instance Hs.NFData ErrorsResponseResult
+
+instance HsProtobuf.Named ErrorsResponseResult where
+  nameOf _ = (Hs.fromString "ErrorsResponseResult")
+
 data AddDocRequest = AddDocRequest
   { addDocRequestIndex :: Hs.Text
   , addDocRequestCrawler :: Hs.Text

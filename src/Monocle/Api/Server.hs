@@ -561,6 +561,25 @@ searchCheck auth request = checkAuth auth response
           SearchPB.CheckResponseResultError
             $ SearchPB.QueryError (from msg) (fromInteger . toInteger $ offset)
 
+-- | /crawler/errors endpoint
+crawlerErrors :: ApiEffects es => AuthResult AuthenticatedUser -> CrawlerPB.ErrorsRequest -> Eff es CrawlerPB.ErrorsResponse
+crawlerErrors auth request = checkAuth auth response
+ where
+  response _authenticatedUserM = do
+    requestE <- validateSearchRequest request.errorsRequestIndex request.errorsRequestQuery "nobody"
+
+    case requestE of
+      Right (tenant, query) -> runQueryM tenant (Q.ensureMinBound query) $ do
+        logInfo "ListingErrors" ["index" .= request.errorsRequestIndex]
+        errors <- fmap from <$> Q.crawlerErrors
+        pure $ CrawlerPB.ErrorsResponse $ Just $ CrawlerPB.ErrorsResponseResultSuccess $ CrawlerPB.ErrorsList $ fromList errors
+      Left (ParseError msg offset) ->
+        pure
+          $ CrawlerPB.ErrorsResponse
+          $ Just
+          $ CrawlerPB.ErrorsResponseResultError
+          $ (show offset <> ":" <> from msg)
+
 -- | /search/query endpoint
 searchQuery :: ApiEffects es => AuthResult AuthenticatedUser -> SearchPB.QueryRequest -> Eff es SearchPB.QueryResponse
 searchQuery auth request = checkAuth auth response

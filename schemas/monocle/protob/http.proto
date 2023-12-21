@@ -172,6 +172,14 @@ service Crawler {
       body: "*"
     };
   }
+  // Get crawler errors
+  rpc Errors(monocle_crawler.ErrorsRequest)
+      returns (monocle_crawler.ErrorsResponse) {
+    option (google.api.http) = {
+      post: "/api/2/crawler/errors"
+      body: "*"
+    };
+  }
 }
 
 // The monocle HTTP API
