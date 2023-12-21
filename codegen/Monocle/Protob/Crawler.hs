@@ -346,6 +346,7 @@ data CrawlerError = CrawlerError
   , crawlerErrorBody :: Hs.Text
   , crawlerErrorCreatedAt ::
       Hs.Maybe Google.Protobuf.Timestamp.Timestamp
+  , crawlerErrorEntity :: Hs.Maybe Monocle.Protob.Crawler.Entity
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
 
@@ -363,6 +364,7 @@ instance HsProtobuf.Message CrawlerError where
       { crawlerErrorMessage = crawlerErrorMessage
       , crawlerErrorBody = crawlerErrorBody
       , crawlerErrorCreatedAt = crawlerErrorCreatedAt
+      , crawlerErrorEntity = crawlerErrorEntity
       } =
       ( Hs.mconcat
           [ ( HsProtobuf.encodeMessageField
@@ -382,6 +384,13 @@ instance HsProtobuf.Message CrawlerError where
                 ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
                     @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
                     (crawlerErrorCreatedAt)
+                )
+            )
+          , ( HsProtobuf.encodeMessageField
+                (HsProtobuf.FieldNumber 4)
+                ( Hs.coerce @(Hs.Maybe Monocle.Protob.Crawler.Entity)
+                    @(HsProtobuf.Nested Monocle.Protob.Crawler.Entity)
+                    (crawlerErrorEntity)
                 )
             )
           ]
@@ -406,6 +415,14 @@ instance HsProtobuf.Message CrawlerError where
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 3)
+              )
+          )
+      <*> ( HsProtobuf.coerceOver
+              @(HsProtobuf.Nested Monocle.Protob.Crawler.Entity)
+              @(Hs.Maybe Monocle.Protob.Crawler.Entity)
+              ( HsProtobuf.at
+                  HsProtobuf.decodeMessageField
+                  (HsProtobuf.FieldNumber 4)
               )
           )
   dotProto _ =
@@ -436,10 +453,19 @@ instance HsProtobuf.Message CrawlerError where
           []
           ""
       )
+    , ( HsProtobufAST.DotProtoField
+          (HsProtobuf.FieldNumber 4)
+          ( HsProtobufAST.Prim
+              (HsProtobufAST.Named (HsProtobufAST.Single "Entity"))
+          )
+          (HsProtobufAST.Single "entity")
+          []
+          ""
+      )
     ]
 
 instance HsJSONPB.ToJSONPB CrawlerError where
-  toJSONPB (CrawlerError f1 f2 f3) =
+  toJSONPB (CrawlerError f1 f2 f3 f4) =
     ( HsJSONPB.object
         [ "message"
             .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
@@ -449,9 +475,14 @@ instance HsJSONPB.ToJSONPB CrawlerError where
                   @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
                   (f3)
                )
+        , "entity"
+            .= ( Hs.coerce @(Hs.Maybe Monocle.Protob.Crawler.Entity)
+                  @(HsProtobuf.Nested Monocle.Protob.Crawler.Entity)
+                  (f4)
+               )
         ]
     )
-  toEncodingPB (CrawlerError f1 f2 f3) =
+  toEncodingPB (CrawlerError f1 f2 f3 f4) =
     ( HsJSONPB.pairs
         [ "message"
             .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
@@ -460,6 +491,11 @@ instance HsJSONPB.ToJSONPB CrawlerError where
             .= ( Hs.coerce @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
                   @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
                   (f3)
+               )
+        , "entity"
+            .= ( Hs.coerce @(Hs.Maybe Monocle.Protob.Crawler.Entity)
+                  @(HsProtobuf.Nested Monocle.Protob.Crawler.Entity)
+                  (f4)
                )
         ]
     )
@@ -480,6 +516,11 @@ instance HsJSONPB.FromJSONPB CrawlerError where
                       @(HsProtobuf.Nested Google.Protobuf.Timestamp.Timestamp)
                       @(Hs.Maybe Google.Protobuf.Timestamp.Timestamp)
                       (obj .: "created_at")
+                  )
+              <*> ( HsProtobuf.coerceOver
+                      @(HsProtobuf.Nested Monocle.Protob.Crawler.Entity)
+                      @(Hs.Maybe Monocle.Protob.Crawler.Entity)
+                      (obj .: "entity")
                   )
         )
     )

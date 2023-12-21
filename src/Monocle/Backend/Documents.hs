@@ -21,6 +21,7 @@ module Monocle.Backend.Documents where
 
 import Data.Aeson (Value (String), defaultOptions, genericParseJSON, genericToJSON, withObject, withText, (.:))
 import Data.Aeson.Casing (aesonPrefix, snakeCase)
+import Data.Aeson.Types qualified
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import Data.Vector qualified as V
 import Monocle.Entity
@@ -198,7 +199,8 @@ instance From ETaskData SearchPB.TaskData where
 
 data EError = EError
   { erCrawlerName :: Text
-  , erEntity :: Text
+  , erEntity :: Entity
+  , erCreatedAt :: UTCTime
   , erMessage :: Text
   , erBody :: Text
   }
@@ -209,14 +211,52 @@ instance From EError CrawlerError where
     CrawlerError
       { crawlerErrorBody = from eerror.erBody
       , crawlerErrorMessage = from eerror.erMessage
-      , crawlerErrorCreatedAt = undefined
+      , crawlerErrorCreatedAt = Just $ from eerror.erCreatedAt
+      , crawlerErrorEntity = Just $ from eerror.erEntity
       }
 
+-- Custom encoder to manually serialize the entity type
+-- This needs to match the "error_data" schema above
 instance ToJSON EError where
-  toJSON = genericToJSON $ aesonPrefix snakeCase
+  toJSON e =
+    object
+      [ ("crawler_name", toJSON e.erCrawlerName)
+      , ("created_at", toJSON e.erCreatedAt)
+      , ("entity_type", String (entityTypeName (from e.erEntity)))
+      , ("entity_value", String $ entityValue e.erEntity)
+      , ("message", String $ e.erMessage)
+      , ("body", String $ e.erBody)
+      ]
 
 instance FromJSON EError where
-  parseJSON = genericParseJSON $ aesonPrefix snakeCase
+  parseJSON = withObject "EError" $ \root -> do
+    v <- root .: "error_data"
+    erCrawlerName <- v .: "crawler_name"
+    erCreatedAt <- v .: "created_at"
+    evalue <- v .: "entity_value"
+    etype <- v .: "entity_type"
+    erEntity <- parseEntity evalue etype
+    erMessage <- v .: "message"
+    erBody <- v .: "body"
+    pure EError {..}
+
+-- | Helper to encode entity
+-- WARNING: don't forget to update the parseEntity implementation below when changing the entity document encoding
+entityValue :: Entity -> Text
+entityValue = \case
+  Organization n -> n
+  Project n -> n
+  ProjectIssue n -> n
+  TaskDataEntity n -> n
+  User n -> n
+
+parseEntity :: Text -> Text -> Data.Aeson.Types.Parser Entity
+parseEntity evalue = \case
+  "organization" -> pure $ Organization evalue
+  "project" -> pure $ Project evalue
+  "taskdata" -> pure $ TaskDataEntity evalue
+  "user" -> pure $ User evalue
+  etype -> fail $ "Unknown crawler entity type name: " <> from etype
 
 data EChangeState
   = EChangeOpen
@@ -648,29 +688,16 @@ instance ToJSON ECrawlerMetadataObject where
       [ ("crawler_name", toJSON (ecmCrawlerName e))
       , ("last_commit_at", toJSON (ecmLastCommitAt e))
       , ("crawler_type", String (entityTypeName (from $ ecmCrawlerEntity e)))
-      , ("crawler_type_value", String entityValue)
+      , ("crawler_type_value", String $ entityValue $ e.ecmCrawlerEntity)
       ]
-   where
-    -- WARNING: don't forget to update the FromJSON implementation below when changing the entity document encoding
-    entityValue = case ecmCrawlerEntity e of
-      Organization n -> n
-      Project n -> n
-      ProjectIssue n -> n
-      TaskDataEntity n -> n
-      User n -> n
 
 instance FromJSON ECrawlerMetadataObject where
   parseJSON = withObject "CrawlerMetadataObject" $ \v -> do
     ecmCrawlerName <- v .: "crawler_name"
     ecmLastCommitAt <- v .: "last_commit_at"
-    (etype :: Text) <- v .: "crawler_type"
+    etype <- v .: "crawler_type"
     evalue <- v .: "crawler_type_value"
-    ecmCrawlerEntity <- case etype of
-      "organization" -> pure $ Organization evalue
-      "project" -> pure $ Project evalue
-      "taskdata" -> pure $ TaskDataEntity evalue
-      "user" -> pure $ User evalue
-      _ -> fail $ "Unknown crawler entity type name: " <> from etype
+    ecmCrawlerEntity <- parseEntity evalue etype
     pure ECrawlerMetadataObject {..}
 
 newtype ECrawlerMetadata = ECrawlerMetadata

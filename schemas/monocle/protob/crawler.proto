@@ -32,6 +32,7 @@ message CrawlerError {
   string message = 1;
   string body = 2;
   google.protobuf.Timestamp created_at = 3;
+  Entity entity = 4;
 }
 
 message ErrorsRequest {

@@ -753,6 +753,8 @@ components:
                 created_at:
                     type: string
                     format: RFC3339
+                entity:
+                    $ref: '#/components/schemas/monocle_crawler_Entity'
         monocle_crawler_Entity:
             properties:
                 organization_name:

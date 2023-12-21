@@ -83,6 +83,7 @@ data ProcessError es
 -- | 'processStream' read the stream of document and post to the monocle API
 processStream ::
   forall es.
+  Entity ->
   -- | Funtion to log about the processing
   (Int -> Eff es ()) ->
   -- | Function to post on the Monocle API
@@ -91,7 +92,7 @@ processStream ::
   LentilleStream es DocumentType ->
   -- | The processing results
   Eff es [Maybe (ProcessError es)]
-processStream logFunc postFunc = go (0 :: Word) [] []
+processStream entity logFunc postFunc = go (0 :: Word) [] []
  where
   go count acc results stream = do
     eDocument <- S.next stream
@@ -104,7 +105,8 @@ processStream logFunc postFunc = go (0 :: Word) [] []
         -- We got a new document
         let doc = case edoc of
               Right x -> x
-              Left err -> DTError $ from err
+              Left (DecodeError ts err) -> DTError $ CrawlerError "decode" (encodeBlob err) (Just $ from ts) (Just $ from entity)
+              Left (GraphError ts err) -> DTError $ CrawlerError "graph" (encodeBlob err) (Just $ from ts) (Just $ from entity)
         let newAcc = doc : acc
         if count == 499
           then do
@@ -179,6 +181,7 @@ runStreamError startTime apiKey indexName (CrawlerName crawlerName) documentStre
     -- Run the document stream for that entity
     postResult <-
       processStream
+        entity
         (\c -> logInfo "Posting documents" ["count" .= c])
         (httpRetry "api/commit/add" . mCrawlerAddDoc . mkRequest entity)
         (getStream oldestAge entity)

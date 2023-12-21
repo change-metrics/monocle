@@ -22,7 +22,7 @@ import Monocle.Config qualified as Config
 import Monocle.Prelude
 import Monocle.Protob.Metric qualified as MetricPB
 import Monocle.Protob.Search qualified as SearchPB
-import Monocle.Search.Query (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), blankQuery, rangeField)
+import Monocle.Search.Query (AuthorFlavor (..), QueryFlavor (..), RangeFlavor (..), rangeField)
 import Monocle.Search.Query qualified as Q
 import Streaming.Prelude qualified as Streaming
 
@@ -239,14 +239,20 @@ orderDesc = Enumerated $ Right SearchPB.Order_DirectionDESC
 crawlerErrors :: QEffects es => Eff es [EError]
 crawlerErrors = do
   (since, to) <- getQueryBound
+  let queryFilter =
+        [ BH.QueryRangeQuery
+            $ BH.mkRangeQuery (BH.FieldName "error_data.created_at")
+            $ BH.RangeDateGteLte (coerce since) (coerce to)
+        ]
   -- keep only the time range of the user query
-  withQuery (blankQuery since to) do
-    withDocTypes [EErrorDoc] (QueryFlavor Author CreatedAt) do
-      doSearch (Just order) 500
+  dropQuery do
+    withFilter queryFilter do
+      withDocTypes [EErrorDoc] (QueryFlavor Author CreatedAt) do
+        doSearch (Just order) 500
  where
   order =
     SearchPB.Order
-      { orderField = "created_at"
+      { orderField = "error_data.created_at"
       , orderDirection = orderDesc
       }
 

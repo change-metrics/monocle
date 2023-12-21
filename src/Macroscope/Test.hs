@@ -26,6 +26,7 @@ import Monocle.Protob.Crawler qualified as CrawlerPB
 import Streaming.Prelude qualified as Streaming
 import Test.Tasty
 import Test.Tasty.HUnit
+import Monocle.Client.Api (crawlerErrors)
 
 runLentilleM :: MonocleClient -> Eff [E.Reader CrawlerEnv, MonoClientEffect, LoggerEffect, GerritEffect, BZEffect, TimeEffect, HttpEffect, PrometheusEffect, EnvEffect, Fail, Retry, Concurrent, IOE] a -> IO a
 runLentilleM client action = do
@@ -55,7 +56,11 @@ testCrawlingPoint = do
       (currentOldestAge, _) <- getOldest
       liftIO $ assertBool "Commit date is updated on failure" (currentOldestAge > oldestAge)
 
-      -- TODO: check that the errors got indexed
+      errorResponse <- crawlerErrors client (CrawlerPB.ErrorsRequest (from indexName) "from:2020")
+      case errorResponse of
+        CrawlerPB.ErrorsResponse Nothing -> error "Bad response"
+        CrawlerPB.ErrorsResponse (Just (CrawlerPB.ErrorsResponseResultError err)) -> error $ from err
+        CrawlerPB.ErrorsResponse (Just (CrawlerPB.ErrorsResponseResultSuccess errors)) -> liftIO $ assertEqual "Error got indexed" (length errors.errorsListErrors) 1
 
       Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.Changes $ goodStream currentOldestAge)
 

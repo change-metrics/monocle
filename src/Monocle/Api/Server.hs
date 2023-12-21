@@ -315,7 +315,8 @@ crawlerAddDoc _auth request = do
 
   case requestE of
     Right (index, crawler) -> runEmptyQueryM index do
-      addErrors crawlerName (toEntity entity) errors
+      unless (V.null errors) do
+        addErrors crawlerName (toEntity entity) errors
       case toEntity entity of
         Project _ -> addChanges crawlerName changes events
         ProjectIssue _ -> addIssues crawlerName issues issuesEvents
@@ -325,17 +326,17 @@ crawlerAddDoc _auth request = do
     Left err -> pure $ toErrorResponse err
  where
   addErrors crawlerName entity errors = do
-    logInfo "AddingErrors" ["crawler" .= crawlerName, "errors" .= length errors]
-    let toError :: CrawlerError -> (UTCTime, EError)
+    logInfo "AddingErrors" ["crawler" .= crawlerName, "entity" .= entity, "errors" .= length errors]
+    let toError :: CrawlerError -> EError
         toError ce =
-          ( from $ fromMaybe (error "missing timestamp") ce.crawlerErrorCreatedAt
-          , EError
-              { erCrawlerName = from crawlerName
-              , erEntity = from entity
-              , erMessage = from ce.crawlerErrorMessage
-              , erBody = from ce.crawlerErrorBody
-              }
-          )
+          EError
+            { erCrawlerName = from crawlerName
+            , erEntity = from entity
+            , erMessage = from ce.crawlerErrorMessage
+            , erBody = from ce.crawlerErrorBody
+            , erCreatedAt = from $ fromMaybe (error "missing timestamp") ce.crawlerErrorCreatedAt
+            }
+
     I.indexErrors $ toList (toError <$> errors)
 
   addTDs crawlerName taskDatas = do

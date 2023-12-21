@@ -233,9 +233,11 @@ instance ToJSON ChangesIndexMapping where
                     [ "properties"
                         .= object
                           [ "crawler_name" .= KWMapping
-                          , "entity" .= TextAndKWMapping
+                          , "entity_type" .= KWMapping
+                          , "entity_value" .= KWMapping
                           , "message" .= TextAndKWMapping
                           , "body" .= BlobMapping
+                          , "created_at" .= DateIndexMapping
                           ]
                     ]
               ]
@@ -649,13 +651,13 @@ indexChanges changes = indexDocs $ fmap (toDoc . ensureType) changes
   toDoc change = (toJSON change, getChangeDocId change)
   ensureType change = change {echangeType = EChangeDoc}
 
-indexErrors :: MonoQuery :> es => IndexEffects es => [(UTCTime, EError)] -> Eff es ()
+indexErrors :: MonoQuery :> es => IndexEffects es => [EError] -> Eff es ()
 indexErrors errors = indexDocs $ fmap toDoc errors
  where
-  toDoc (ts, err) = (getErrorDoc ts err, getErrorDocId err)
+  toDoc err = (getErrorDoc err, getErrorDocId err)
 
-  getErrorDoc :: UTCTime -> EError -> Value
-  getErrorDoc ts err = object ["created_at" .= ts, "type" .= EErrorDoc, "error_data" .= toJSON err]
+  getErrorDoc :: EError -> Value
+  getErrorDoc err = object ["type" .= EErrorDoc, "error_data" .= toJSON err]
 
   getErrorDocId :: EError -> BH.DocId
   getErrorDocId = getBHDocID . erBody
