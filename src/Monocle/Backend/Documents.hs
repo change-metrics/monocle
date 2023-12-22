@@ -235,8 +235,8 @@ instance ToJSON EError where
       , ("created_at", toJSON e.erCreatedAt)
       , ("entity_type", String (entityTypeName (from e.erEntity)))
       , ("entity_value", String $ entityValue e.erEntity)
-      , ("message", String $ e.erMessage)
-      , ("body", String $ e.erBody)
+      , ("message", String e.erMessage)
+      , ("body", String e.erBody)
       ]
 
 instance FromJSON EError where
@@ -698,7 +698,7 @@ instance ToJSON ECrawlerMetadataObject where
       [ ("crawler_name", toJSON (ecmCrawlerName e))
       , ("last_commit_at", toJSON (ecmLastCommitAt e))
       , ("crawler_type", String (entityTypeName (from $ ecmCrawlerEntity e)))
-      , ("crawler_type_value", String $ entityValue $ e.ecmCrawlerEntity)
+      , ("crawler_type_value", String $ entityValue e.ecmCrawlerEntity)
       ]
 
 instance FromJSON ECrawlerMetadataObject where

@@ -578,8 +578,7 @@ crawlerErrors auth request = checkAuth auth response
         pure
           $ CrawlerPB.ErrorsResponse
           $ Just
-          $ CrawlerPB.ErrorsResponseResultError
-          $ (show offset <> ":" <> from msg)
+          $ CrawlerPB.ErrorsResponseResultError (show offset <> ":" <> from msg)
 
 -- | /search/query endpoint
 searchQuery :: ApiEffects es => AuthResult AuthenticatedUser -> SearchPB.QueryRequest -> Eff es SearchPB.QueryResponse

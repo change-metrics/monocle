@@ -265,8 +265,8 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
         logStep pageInfo rateLimitM xs totalFetched
 
         unless (null decodingErrors) do
-            now <- lift mGetCurrentTime
-            S.yield (Left $ DecodeError now decodingErrors)
+          now <- lift mGetCurrentTime
+          S.yield (Left $ DecodeError now decodingErrors)
 
         -- Yield the results
         S.each (Right <$> xs)
