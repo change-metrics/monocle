@@ -777,6 +777,7 @@ getOrphanTaskDataAndDeclareAdoption urls = do
     )
 
 updateChangesAndEventsFromOrphanTaskData :: MonoQuery :> es => IndexEffects es => [EChange] -> [EChangeEvent] -> Eff es ()
+updateChangesAndEventsFromOrphanTaskData [] [] = pure ()
 updateChangesAndEventsFromOrphanTaskData changes events = do
   let mapping = uMapping Map.empty getFlatMapping
   adoptedTDs <- getOrphanTaskDataAndDeclareAdoption $ from <$> Map.keys mapping
@@ -1047,6 +1048,7 @@ populateAuthorCache = do
 
 -- | This function extacts authors from events and adds them to the author cache
 addCachedAuthors :: MonoQuery :> es => IndexEffects es => [EChangeEvent] -> Eff es ()
+addCachedAuthors [] = pure ()
 addCachedAuthors events = do
   indexName <- getIndexName
   let muids = from . authorMuid <$> mapMaybe echangeeventAuthor events
