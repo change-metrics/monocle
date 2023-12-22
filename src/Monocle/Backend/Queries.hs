@@ -17,7 +17,7 @@ import Database.Bloodhound qualified as BH
 import Database.Bloodhound.Raw (TermsCompositeAggBucket)
 import Database.Bloodhound.Raw qualified as BHR
 import Json.Extras qualified as Json
-import Monocle.Backend.Documents (EChange (..), EChangeEvent (..), EChangeState (..), EDocType (..), EError, allEventTypes)
+import Monocle.Backend.Documents (EChange (..), EChangeEvent (..), EChangeState (..), EDocType (..), EError, EErrorData, allEventTypes, eeErrorData)
 import Monocle.Config qualified as Config
 import Monocle.Prelude
 import Monocle.Protob.Metric qualified as MetricPB
@@ -248,8 +248,12 @@ crawlerErrors = do
   dropQuery do
     withFilter queryFilter do
       withDocTypes [EErrorDoc] (QueryFlavor Author CreatedAt) do
-        doSearch (Just order) 500
+        fmap toError <$> doSearch (Just order) 500
  where
+  -- it is necessary to request the EErrorData so that the source fields are correctly set in BHR.search
+  toError :: EErrorData -> EError
+  toError = eeErrorData
+
   order =
     SearchPB.Order
       { orderField = "error_data.created_at"

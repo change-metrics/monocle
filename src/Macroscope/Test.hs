@@ -1,6 +1,7 @@
 -- | Tests for the macroscope process
 module Macroscope.Test where
 
+import Data.ByteString.Base64.Lazy qualified as B64
 import Effectful.Env
 import Effectful.Prometheus
 import Effectful.Reader.Static qualified as E
@@ -17,6 +18,7 @@ import Monocle.Backend.Queries qualified as Q
 import Monocle.Backend.Test (fakeChangePB, withTenantConfig)
 import Monocle.Backend.Test qualified as BT (fakeChange, fakeDate, fakeDateAlt)
 import Monocle.Client
+import Monocle.Client.Api (crawlerErrors)
 import Monocle.Config qualified as Config
 import Monocle.Effects
 import Monocle.Entity (CrawlerName (..), Entity (Project))
@@ -26,7 +28,6 @@ import Monocle.Protob.Crawler qualified as CrawlerPB
 import Streaming.Prelude qualified as Streaming
 import Test.Tasty
 import Test.Tasty.HUnit
-import Monocle.Client.Api (crawlerErrors)
 
 runLentilleM :: MonocleClient -> Eff [E.Reader CrawlerEnv, MonoClientEffect, LoggerEffect, GerritEffect, BZEffect, TimeEffect, HttpEffect, PrometheusEffect, EnvEffect, Fail, Retry, Concurrent, IOE] a -> IO a
 runLentilleM client action = do
@@ -56,11 +57,14 @@ testCrawlingPoint = do
       (currentOldestAge, _) <- getOldest
       liftIO $ assertBool "Commit date is updated on failure" (currentOldestAge > oldestAge)
 
+      -- Check that the error got indexed
       errorResponse <- crawlerErrors client (CrawlerPB.ErrorsRequest (from indexName) "from:2020")
       case errorResponse of
-        CrawlerPB.ErrorsResponse Nothing -> error "Bad response"
-        CrawlerPB.ErrorsResponse (Just (CrawlerPB.ErrorsResponseResultError err)) -> error $ from err
-        CrawlerPB.ErrorsResponse (Just (CrawlerPB.ErrorsResponseResultSuccess errors)) -> liftIO $ assertEqual "Error got indexed" (length errors.errorsListErrors) 1
+        CrawlerPB.ErrorsResponse (Just (CrawlerPB.ErrorsResponseResultSuccess (CrawlerPB.ErrorsList (toList -> [e])))) -> liftIO do
+          e.crawlerErrorMessage @?= "decode"
+          (B64.decode . encodeUtf8 $ e.crawlerErrorBody) @?= Right "[\"Oops\"]"
+          (from <$> e.crawlerErrorEntity) @?= Just (Project "opendev/neutron")
+        _ -> error $ "Expected one error, got: " <> show errorResponse
 
       Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.Changes $ goodStream currentOldestAge)
 

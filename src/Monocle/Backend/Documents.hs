@@ -197,6 +197,17 @@ instance From ETaskData SearchPB.TaskData where
         taskDataPrefix = from $ fromMaybe "" $ tdPrefix td
      in SearchPB.TaskData {..}
 
+newtype EErrorData = EErrorData
+  { eeErrorData :: EError
+  }
+  deriving (Show, Eq, Generic)
+
+instance ToJSON EErrorData where
+  toJSON = genericToJSON $ aesonPrefix snakeCase
+
+instance FromJSON EErrorData where
+  parseJSON = genericParseJSON $ aesonPrefix snakeCase
+
 data EError = EError
   { erCrawlerName :: Text
   , erEntity :: Entity
@@ -229,8 +240,7 @@ instance ToJSON EError where
       ]
 
 instance FromJSON EError where
-  parseJSON = withObject "EError" $ \root -> do
-    v <- root .: "error_data"
+  parseJSON = withObject "EError" $ \v -> do
     erCrawlerName <- v .: "crawler_name"
     erCreatedAt <- v .: "created_at"
     evalue <- v .: "entity_value"
