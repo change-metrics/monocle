@@ -66,6 +66,7 @@ module Store = {
     about: ConfigTypes.about,
     dexie: Dexie.Database.t,
     toasts: list<string>,
+    errors: list<CrawlerTypes.crawler_error>,
   }
   type action =
     | ChangeIndex(string)
@@ -74,6 +75,7 @@ module Store = {
     | SetLimit(int)
     | SetOrder(option<SearchTypes.order>)
     | SetAuthorScopedTab(authorScopedTab)
+    | SetErrors(list<CrawlerTypes.crawler_error>)
     | FetchFields(fieldsRespR)
     | FetchSuggestions(suggestionsR)
     | FetchProjects(projectsR)
@@ -121,6 +123,7 @@ module Store = {
     changes_pies_panel: false,
     dexie: MonoIndexedDB.mkDexie(),
     toasts: list{},
+    errors: list{},
   }
 
   let reducer = (state: t, action: action) =>
@@ -151,6 +154,7 @@ module Store = {
         Prelude.setLocationSearch("l", limit->string_of_int)->ignore
         {...state, limit: limit}
       }
+    | SetErrors(errors) => {...state, errors: errors}
     | FetchFields(res) => {...state, fields: res->RemoteData.fmap(resp => resp.fields)}
     | FetchSuggestions(res) => {...state, suggestions: res}
     | FetchProjects(res) => {...state, projects: res}
