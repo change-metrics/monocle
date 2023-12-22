@@ -264,13 +264,12 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
         -- Log crawling status
         logStep pageInfo rateLimitM xs totalFetched
 
-        case decodingErrors of
-          _ : _ -> do
+        unless (null decodingErrors) do
             now <- lift mGetCurrentTime
             S.yield (Left $ DecodeError now decodingErrors)
-          [] -> do
-            -- Yield the results
-            S.each (Right <$> xs)
 
-            -- Call recursively when response has a next page
-            when (hasNextPage pageInfo) $ go (Just pageInfo) (totalFetched + length xs)
+        -- Yield the results
+        S.each (Right <$> xs)
+
+        -- Call recursively when response has a next page
+        when (hasNextPage pageInfo) $ go (Just pageInfo) (totalFetched + length xs)
