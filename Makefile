@@ -35,7 +35,7 @@ codegen-haskell:
 
 codegen-javascript:
 	rm -f web/src/messages/*
-	sh -c 'for pb in $(MESSAGES); do ocaml-protoc $(PINCLUDE) -bs -ml_out web/src/messages/ schemas/$${pb}; done'
+	sh -c 'for pb in $(MESSAGES) $(CRAWLER); do ocaml-protoc $(PINCLUDE) -bs -ml_out web/src/messages/ schemas/$${pb}; done'
 	python3 ./codegen/rename_bs_module.py ./web/src/messages/
 
 codegen-openapi:
