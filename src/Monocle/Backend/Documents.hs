@@ -209,12 +209,33 @@ instance ToJSON EErrorData where
 instance FromJSON EErrorData where
   parseJSON = genericParseJSON $ aesonPrefix snakeCase
 
+-- | Helper type to store binary text in elasticsearch using b64 encoding
+newtype BinaryText = BinaryText Text
+  deriving newtype (Show, Eq)
+
+instance ToJSON BinaryText where
+  toJSON = String . B64.encodeBase64 . from
+
+instance FromJSON BinaryText where
+  parseJSON = withText "binary" $ \v -> case B64.decodeBase64 v of
+    Right x -> pure (BinaryText x)
+    Left e -> fail ("Binary text decode failed: " <> from e)
+
+instance From BinaryText Text where
+  from (BinaryText txt) = txt
+
+instance From BinaryText LText where
+  from = via @Text
+
+instance From LText BinaryText where
+  from = BinaryText . from
+
 data EError = EError
   { erCrawlerName :: Text
   , erEntity :: Entity
   , erCreatedAt :: UTCTime
   , erMessage :: Text
-  , erBody :: Text
+  , erBody :: BinaryText
   }
   deriving (Show, Eq, Generic)
 
@@ -237,7 +258,7 @@ instance ToJSON EError where
       , ("entity_type", String (entityTypeName (from e.erEntity)))
       , ("entity_value", String $ entityValue e.erEntity)
       , ("message", String e.erMessage)
-      , ("body", String (B64.encodeBase64 e.erBody))
+      , ("body", toJSON e.erBody)
       ]
 
 instance FromJSON EError where
@@ -248,10 +269,7 @@ instance FromJSON EError where
     etype <- v .: "entity_type"
     erEntity <- parseEntity evalue etype
     erMessage <- v .: "message"
-    ebody <- v .: "body"
-    erBody <- case B64.decodeBase64 ebody of
-      Right x -> pure x
-      Left e -> fail ("Body decode failed: " <> from e)
+    erBody <- v .: "body"
     pure EError {..}
 
 -- | Helper to encode entity

@@ -660,7 +660,7 @@ indexErrors errors = indexDocs $ fmap toDoc errors
   getErrorDoc err = object ["type" .= EErrorDoc, "error_data" .= toJSON err]
 
   getErrorDocId :: EError -> BH.DocId
-  getErrorDocId = getBHDocID . erBody
+  getErrorDocId = getBHDocID . from . erBody
 
 indexIssues :: [EIssue] -> Eff es ()
 indexIssues = error "todo"
