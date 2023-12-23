@@ -261,7 +261,7 @@ createIndex indexName mapping = do
   retryPolicy = exponentialBackoff 500_000 <> limitRetries 7
 
 configVersion :: ConfigVersion
-configVersion = ConfigVersion 6
+configVersion = ConfigVersion 7
 
 configIndex :: BH.IndexName
 configIndex = BH.IndexName "monocle.config"
@@ -394,10 +394,10 @@ upgradeConfigV5 = do
   logInfo "Applying migration to schema V5 on workspace" ["index" .= indexName]
   void $ esPutMapping indexName mergedCommitField
 
-upgradeConfigV6 :: forall es. MonoQuery :> es => IndexEffects es => Eff es ()
-upgradeConfigV6 = do
+upgradeGlobalMapping :: forall es. MonoQuery :> es => IndexEffects es => Eff es ()
+upgradeGlobalMapping = do
   indexName <- getIndexName
-  logInfo "Applying migration to schema V6 on workspace" ["index" .= indexName]
+  logInfo "Applying migration to new ChangesIndexMapping" ["index" .= indexName]
   void $ esPutMapping indexName ChangesIndexMapping
 
 upgrades :: forall es. (E.Fail :> es, MonoQuery :> es) => IndexEffects es => [(ConfigVersion, Eff es ())]
@@ -407,7 +407,7 @@ upgrades =
   , (ConfigVersion 3, void upgradeConfigV3)
   , (ConfigVersion 4, void upgradeConfigV4)
   , (ConfigVersion 5, void upgradeConfigV5)
-  , (ConfigVersion 6, void upgradeConfigV6)
+  , (ConfigVersion 7, void upgradeGlobalMapping)
   ]
 
 newtype ConfigVersion = ConfigVersion Integer
