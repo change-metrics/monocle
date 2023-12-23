@@ -16,7 +16,7 @@ module Monocle.Prelude (
   setEnv,
   headMaybe,
   (:::),
-  encodeBlob,
+  encodeJSON,
 
   -- * secret
   Secret,
@@ -223,7 +223,6 @@ import Data.Aeson.Encode.Pretty qualified as Aeson
 import Data.Aeson.Key qualified as AesonKey
 import Data.Aeson.Lens (_Integer, _Object)
 import Data.Aeson.Types (Pair)
-import Data.ByteString.Base64.Lazy qualified as B64
 import Data.Fixed (Deci, Fixed (..), HasResolution (resolution), Pico)
 import Data.Map qualified as Map
 import Data.Tagged
@@ -607,5 +606,5 @@ streamingFromListT = S.unfoldr go
     res <- ListT.uncons listT
     pure $ res `orDie` ()
 
-encodeBlob :: ToJSON a => a -> LText
-encodeBlob = decodeUtf8 . B64.encode . encode
+encodeJSON :: ToJSON a => a -> LText
+encodeJSON = decodeUtf8 . encode

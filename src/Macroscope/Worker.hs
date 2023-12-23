@@ -105,8 +105,8 @@ processStream entity logFunc postFunc = go (0 :: Word) [] []
         -- We got a new document
         let doc = case edoc of
               Right x -> x
-              Left (DecodeError ts err) -> DTError $ CrawlerError "decode" (encodeBlob err) (Just $ from ts) (Just $ from entity)
-              Left (GraphError ts err) -> DTError $ CrawlerError "graph" (encodeBlob err) (Just $ from ts) (Just $ from entity)
+              Left (DecodeError ts err) -> DTError $ CrawlerError "decode" (encodeJSON err) (Just $ from ts) (Just $ from entity)
+              Left (GraphError ts err) -> DTError $ CrawlerError "graph" (encodeJSON err) (Just $ from ts) (Just $ from entity)
         let newAcc = doc : acc
         if count == 499
           then do

@@ -632,7 +632,7 @@ upsertDocs = runAddDocsBulkOPs toBulkUpsert
 
 -- | Generate a Text suitable for ElasticSearch Document ID from Text
 getDocID :: Text -> Text
-getDocID = decodeUtf8 . B64.encode . hash . encodeUtf8
+getDocID = B64.encodeBase64 . hash . encodeUtf8
 
 -- | Generate an DocID from Text
 getBHDocID :: Text -> BH.DocId

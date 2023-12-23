@@ -22,6 +22,7 @@ module Monocle.Backend.Documents where
 import Data.Aeson (Value (String), defaultOptions, genericParseJSON, genericToJSON, withObject, withText, (.:))
 import Data.Aeson.Casing (aesonPrefix, snakeCase)
 import Data.Aeson.Types qualified
+import Data.Text.Encoding.Base64 qualified as B64
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import Data.Vector qualified as V
 import Monocle.Entity
@@ -236,7 +237,7 @@ instance ToJSON EError where
       , ("entity_type", String (entityTypeName (from e.erEntity)))
       , ("entity_value", String $ entityValue e.erEntity)
       , ("message", String e.erMessage)
-      , ("body", String e.erBody)
+      , ("body", String (B64.encodeBase64 e.erBody))
       ]
 
 instance FromJSON EError where
@@ -247,7 +248,10 @@ instance FromJSON EError where
     etype <- v .: "entity_type"
     erEntity <- parseEntity evalue etype
     erMessage <- v .: "message"
-    erBody <- v .: "body"
+    ebody <- v .: "body"
+    erBody <- case B64.decodeBase64 ebody of
+      Right x -> pure x
+      Left e -> fail ("Body decode failed: " <> from e)
     pure EError {..}
 
 -- | Helper to encode entity

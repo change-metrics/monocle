@@ -1,7 +1,6 @@
 -- | Tests for the macroscope process
 module Macroscope.Test where
 
-import Data.ByteString.Base64.Lazy qualified as B64
 import Effectful.Env
 import Effectful.Prometheus
 import Effectful.Reader.Static qualified as E
@@ -62,7 +61,7 @@ testCrawlingPoint = do
       case errorResponse of
         CrawlerPB.ErrorsResponse (Just (CrawlerPB.ErrorsResponseResultSuccess (CrawlerPB.ErrorsList (toList -> [e])))) -> liftIO do
           e.crawlerErrorMessage @?= "decode"
-          (B64.decode . encodeUtf8 $ e.crawlerErrorBody) @?= Right "[\"Oops\"]"
+          e.crawlerErrorBody @?= "[\"Oops\"]"
           (from <$> e.crawlerErrorEntity) @?= Just (Project "opendev/neutron")
         _ -> error $ "Expected one error, got: " <> show errorResponse
 
