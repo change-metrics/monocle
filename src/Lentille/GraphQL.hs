@@ -238,7 +238,7 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
       Nothing -> pure Nothing
 
     case mErr of
-      Just err -> yieldStreamError $ GraphError err
+      Just err -> yieldStreamError $ PageInfoError err
       Nothing -> go Nothing 0
 
   go pageInfoM totalFetched = do
@@ -256,7 +256,7 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
     case respE of
       Left e ->
         -- Yield the error and stop the stream
-        yieldStreamError $ GraphError e
+        yieldStreamError $ RequestError e
       Right (pageInfo, rateLimitM, decodingErrors, xs) -> do
         -- Log crawling status
         logStep pageInfo rateLimitM xs totalFetched

@@ -118,7 +118,8 @@ processStream entity logFunc postFunc = go (0 :: Word) [] []
    where
     (msg, body) = case err of
       DecodeError xs -> ("decode", encodeJSON xs)
-      GraphError e -> ("graph", encodeJSON e)
+      RequestError e -> ("graph", encodeJSON e)
+      PageInfoError e -> ("page-info", encodeJSON e)
 
   processBatch :: [DocumentType] -> Eff es (Maybe (ProcessError es))
   processBatch [] = pure Nothing
