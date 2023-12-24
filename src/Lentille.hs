@@ -114,6 +114,7 @@ data LentilleErrorKind
   = DecodeError [Text]
   | RequestError GraphQLError
   | PageInfoError GraphQLError
+  | PartialErrors Value
   deriving (Show, Generic, ToJSON)
 
 yieldStreamError :: TimeEffect :> es => LentilleErrorKind -> LentilleStream es a
