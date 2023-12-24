@@ -238,9 +238,7 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
       Nothing -> pure Nothing
 
     case mErr of
-      Just err -> do
-        now <- lift mGetCurrentTime
-        S.yield (Left $ GraphError now err)
+      Just err -> yieldStreamError $ GraphError err
       Nothing -> go Nothing 0
 
   go pageInfoM totalFetched = do
@@ -256,17 +254,15 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
 
     -- Handle the response
     case respE of
-      Left e -> do
+      Left e ->
         -- Yield the error and stop the stream
-        now <- lift mGetCurrentTime
-        S.yield (Left $ GraphError now e)
+        yieldStreamError $ GraphError e
       Right (pageInfo, rateLimitM, decodingErrors, xs) -> do
         -- Log crawling status
         logStep pageInfo rateLimitM xs totalFetched
 
         unless (null decodingErrors) do
-          now <- lift mGetCurrentTime
-          S.yield (Left $ DecodeError now decodingErrors)
+          yieldStreamError $ DecodeError decodingErrors
 
         -- Yield the results
         S.each (Right <$> xs)

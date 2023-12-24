@@ -9,8 +9,10 @@ module Lentille (
 
   -- * Lentille Errors
   LentilleError (..),
+  LentilleErrorKind (..),
   RequestLog (..),
   GraphQLError (..),
+  yieldStreamError,
 
   -- * Facilities
   getChangeId,
@@ -89,10 +91,18 @@ data GraphQLError = GraphQLError
   }
   deriving (Show, Generic, ToJSON)
 
-data LentilleError
-  = DecodeError UTCTime [Text]
-  | GraphError UTCTime GraphQLError
+data LentilleError = LentilleError UTCTime LentilleErrorKind
   deriving (Show, Generic, ToJSON)
+
+data LentilleErrorKind
+  = DecodeError [Text]
+  | GraphError GraphQLError
+  deriving (Show, Generic, ToJSON)
+
+yieldStreamError :: TimeEffect :> es => LentilleErrorKind -> LentilleStream es a
+yieldStreamError e = do
+  now <- lift mGetCurrentTime
+  S.yield (Left $ LentilleError now e)
 
 type LentilleStream es a = Stream (Of (Either LentilleError a)) (Eff es) ()
 
@@ -141,8 +151,8 @@ type Changes = (Change, [ChangeEvent])
 -- We don't care about the rest so we replace it with ()
 -- See: https://hackage.haskell.org/package/streaming-0.2.4.0/docs/Streaming-Prelude.html#v:break
 --
--- >>> let stream = S.yield (Left (DecodeError [utctime|2021-05-31 00:00:00|] ["oops"]))
--- >>> runEff $ S.length_ $ streamDropBefore [utctime|2021-05-31 00:00:00|] stream
+-- >>> let stream = yieldStreamError (DecodeError ["oops"])
+-- >>> runEff $ runTime $ S.length_ $ streamDropBefore [utctime|2021-05-31 00:00:00|] stream
 -- 1
 streamDropBefore :: UTCTime -> LentilleStream es Changes -> LentilleStream es Changes
 streamDropBefore untilDate = fmap (pure ()) . S.break (isChangeTooOld untilDate)

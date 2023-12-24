@@ -105,14 +105,20 @@ processStream entity logFunc postFunc = go (0 :: Word) [] []
         -- We got a new document
         let doc = case edoc of
               Right x -> x
-              Left (DecodeError ts err) -> DTError $ CrawlerError "decode" (encodeJSON err) (Just $ from ts) (Just $ from entity)
-              Left (GraphError ts err) -> DTError $ CrawlerError "graph" (encodeJSON err) (Just $ from ts) (Just $ from entity)
+              Left err -> DTError $ toCrawlerError err
         let newAcc = doc : acc
         if count == 499
           then do
             res <- processBatch newAcc
             go 0 [] (res : results) rest
           else go (count + 1) newAcc results rest
+
+  toCrawlerError (LentilleError ts err) =
+    CrawlerError msg body (Just $ from ts) (Just $ from entity)
+   where
+    (msg, body) = case err of
+      DecodeError xs -> ("decode", encodeJSON xs)
+      GraphError e -> ("graph", encodeJSON e)
 
   processBatch :: [DocumentType] -> Eff es (Maybe (ProcessError es))
   processBatch [] = pure Nothing
