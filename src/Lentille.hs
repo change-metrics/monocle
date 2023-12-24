@@ -13,6 +13,7 @@ module Lentille (
   RequestLog (..),
   GraphQLError (..),
   yieldStreamError,
+  fmapFetchError,
 
   -- * Facilities
   getChangeId,
@@ -33,6 +34,7 @@ module Lentille (
   module Monocle.Logging,
 ) where
 
+import Data.Morpheus.Client (FetchError (..))
 import Data.Text qualified as T
 import Google.Protobuf.Timestamp qualified as T
 import Monocle.Class
@@ -85,11 +87,25 @@ instance ToJSON RequestLog where
 
 -- | ErrorGraphQL is a wrapper around the morpheus's FetchError.
 data GraphQLError = GraphQLError
-  { -- TODO: keep the original error data type (instead of the Text)
-    err :: Text
+  { err :: FetchError ()
   , request :: RequestLog
   }
-  deriving (Show, Generic, ToJSON)
+  deriving (Show, Generic)
+
+fmapFetchError :: (a -> b) -> FetchError a -> FetchError b
+fmapFetchError f = \case
+  FetchErrorProducedErrors es Nothing -> FetchErrorProducedErrors es Nothing
+  FetchErrorProducedErrors es (Just a) -> FetchErrorProducedErrors es (Just $ f a)
+  FetchErrorNoResult -> FetchErrorNoResult
+  FetchErrorParseFailure s -> FetchErrorParseFailure s
+
+instance ToJSON GraphQLError where
+  toJSON e = object ["request" .= e.request, "fetch_error" .= fetchError]
+   where
+    fetchError = case e.err of
+      FetchErrorParseFailure s -> toJSON @Text $ "parse failure: " <> from s
+      FetchErrorNoResult -> toJSON @Text "no result"
+      FetchErrorProducedErrors es _ -> toJSON es
 
 data LentilleError = LentilleError UTCTime LentilleErrorKind
   deriving (Show, Generic, ToJSON)

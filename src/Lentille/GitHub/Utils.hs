@@ -104,8 +104,7 @@ instance From DateTime ChangeOptionalMergedAt where
 instance From DateTime T.Timestamp where
   from = dateTimeToTimestamp
 
-optParams ::
-  GraphEffects es => StreamFetchOptParams es a
+optParams :: Show a => GraphEffects es => StreamFetchOptParams es a
 optParams =
   let fpRetryCheck = retryCheck
       fpDepth = Just 25

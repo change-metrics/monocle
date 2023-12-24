@@ -26,8 +26,8 @@ declareLocalTypesInline
     }
   |]
 
-transformResponse :: GetRateLimit -> Maybe RateLimit
-transformResponse = \case
+transformResponseRL :: GetRateLimit -> Maybe RateLimit
+transformResponseRL = \case
   GetRateLimit
     ( Just
         (GetRateLimitRateLimit used remaining (DateTime resetAt'))
@@ -37,17 +37,22 @@ transformResponse = \case
   GetRateLimit Nothing -> Nothing
   respOther -> error ("Invalid response: " <> show respOther)
 
-getRateLimit :: GraphEffects es => GraphClient -> Eff es (Either GraphQLError (Maybe RateLimit))
+transformResponse :: GraphResp GetRateLimit -> GraphResp (Maybe RateLimit)
+transformResponse = \case
+  Right x -> Right $ transformResponseRL x
+  Left (l, e) -> Left (l, fmapFetchError transformResponseRL e)
+
+getRateLimit :: GraphEffects es => GraphClient -> Eff es (GraphResp (Maybe RateLimit))
 getRateLimit client = do
-  fmap transformResponse
+  transformResponse
     <$> doRequest client mkRateLimitArgs retryCheck Nothing Nothing
  where
   mkRateLimitArgs = const . const $ ()
 
-retryCheck :: forall es a. GraphEffects es => Either GraphQLError a -> Eff es RetryAction
+retryCheck :: forall es a. Show a => GraphEffects es => GraphResp a -> Eff es RetryAction
 retryCheck = \case
   Right _ -> pure DontRetry
-  Left (GraphQLError err (RequestLog _ _ resp _))
+  Left (RequestLog _ _ resp _, err)
     | status == unauthorized401 -> do
         logWarn "Authentication error" ["body" .= body]
         pure DontRetry

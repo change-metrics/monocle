@@ -23,6 +23,7 @@ module Lentille.GraphQL (
   GraphEffects,
   GraphResponse,
   GraphResp,
+  GraphError,
   RateLimit (..),
   PageInfo (..),
   StreamFetchOptParams (..),
@@ -127,7 +128,8 @@ data RateLimit = RateLimit {used :: Int, remaining :: Int, resetAt :: UTCTime}
 instance From RateLimit Text where
   from RateLimit {..} = "remains:" <> show remaining <> ", reset at: " <> show resetAt
 
-type GraphResp a = Either GraphQLError a
+type GraphError a = (RequestLog, FetchError a)
+type GraphResp a = Either (GraphError a) a
 
 -- | wrapper around fetchWithLog than can optionaly handle fetch retries
 -- based on the returned data inspection via a provided function (see RetryCheck).
@@ -159,7 +161,7 @@ doRequest client mkArgs retryCheck depthM pageInfoM =
     pure $ case resp of
       (Right x, _) -> Right x
       -- Throw an exception for the retryCheckM
-      (Left e, [req]) -> Left $ GraphQLError (show e) req
+      (Left e, [req]) -> Left (req, e)
       _ -> error $ "Unknown response: " <> show resp
    where
     aDepthM = decreaseValue retried <$> depthM
@@ -185,6 +187,9 @@ data StreamFetchOptParams es a = StreamFetchOptParams
 
 defaultStreamFetchOptParams :: StreamFetchOptParams m a
 defaultStreamFetchOptParams = StreamFetchOptParams (const $ pure DontRetry) Nothing Nothing
+
+mkGraphQLError :: GraphError a -> GraphQLError
+mkGraphQLError (req, fe) = GraphQLError (fmapFetchError (const ()) fe) req
 
 streamFetch ::
   forall es a b.
@@ -225,7 +230,7 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
 
   startFetch = do
     --- Perform a pre GraphQL request to gather rateLimit
-    (mErr :: Maybe GraphQLError) <- case fpGetRatelimit of
+    (mErr :: Maybe (GraphError (Maybe RateLimit))) <- case fpGetRatelimit of
       Just getRateLimit -> lift
         $ E.modifyMVar rateLimitMVar
         $ const do
@@ -238,7 +243,7 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
       Nothing -> pure Nothing
 
     case mErr of
-      Just err -> yieldStreamError $ PageInfoError err
+      Just err -> yieldStreamError $ PageInfoError $ mkGraphQLError err
       Nothing -> go Nothing 0
 
   go pageInfoM totalFetched = do
@@ -254,9 +259,9 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
 
     -- Handle the response
     case respE of
-      Left e ->
+      Left err ->
         -- Yield the error and stop the stream
-        yieldStreamError $ RequestError e
+        yieldStreamError $ RequestError (mkGraphQLError err)
       Right (pageInfo, rateLimitM, decodingErrors, xs) -> do
         -- Log crawling status
         logStep pageInfo rateLimitM xs totalFetched
