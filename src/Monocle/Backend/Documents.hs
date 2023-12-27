@@ -245,7 +245,6 @@ instance From EError CrawlerError where
       { crawlerErrorBody = from eerror.erBody
       , crawlerErrorMessage = from eerror.erMessage
       , crawlerErrorCreatedAt = Just $ from eerror.erCreatedAt
-      , crawlerErrorEntity = Just $ from eerror.erEntity
       }
 
 -- Custom encoder to manually serialize the entity type

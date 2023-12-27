@@ -753,8 +753,16 @@ components:
                 created_at:
                     type: string
                     format: RFC3339
+        monocle_crawler_CrawlerErrorList:
+            properties:
+                crawler:
+                    type: string
                 entity:
                     $ref: '#/components/schemas/monocle_crawler_Entity'
+                errors:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/monocle_crawler_CrawlerError'
         monocle_crawler_Entity:
             properties:
                 organization_name:
@@ -773,7 +781,7 @@ components:
                 errors:
                     type: array
                     items:
-                        $ref: '#/components/schemas/monocle_crawler_CrawlerError'
+                        $ref: '#/components/schemas/monocle_crawler_CrawlerErrorList'
         monocle_crawler_ErrorsRequest:
             properties:
                 index:

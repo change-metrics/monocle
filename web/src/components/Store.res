@@ -66,7 +66,7 @@ module Store = {
     about: ConfigTypes.about,
     dexie: Dexie.Database.t,
     toasts: list<string>,
-    errors: list<CrawlerTypes.crawler_error>,
+    errors: list<CrawlerTypes.crawler_error_list>,
   }
   type action =
     | ChangeIndex(string)
@@ -75,7 +75,7 @@ module Store = {
     | SetLimit(int)
     | SetOrder(option<SearchTypes.order>)
     | SetAuthorScopedTab(authorScopedTab)
-    | SetErrors(list<CrawlerTypes.crawler_error>)
+    | SetErrors(list<CrawlerTypes.crawler_error_list>)
     | FetchFields(fieldsRespR)
     | FetchSuggestions(suggestionsR)
     | FetchProjects(projectsR)

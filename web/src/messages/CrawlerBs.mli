@@ -12,6 +12,9 @@ val encode_entity_type : CrawlerTypes.entity_type -> string
 val encode_crawler_error : CrawlerTypes.crawler_error -> Js.Json.t Js.Dict.t
 (** [encode_crawler_error v dict] encodes [v] int the given JSON [dict] *)
 
+val encode_crawler_error_list : CrawlerTypes.crawler_error_list -> Js.Json.t Js.Dict.t
+(** [encode_crawler_error_list v dict] encodes [v] int the given JSON [dict] *)
+
 val encode_errors_request : CrawlerTypes.errors_request -> Js.Json.t Js.Dict.t
 (** [encode_errors_request v dict] encodes [v] int the given JSON [dict] *)
 
@@ -65,6 +68,9 @@ val decode_entity_type : Js.Json.t -> CrawlerTypes.entity_type
 
 val decode_crawler_error : Js.Json.t Js.Dict.t -> CrawlerTypes.crawler_error
 (** [decode_crawler_error decoder] decodes a [crawler_error] value from [decoder] *)
+
+val decode_crawler_error_list : Js.Json.t Js.Dict.t -> CrawlerTypes.crawler_error_list
+(** [decode_crawler_error_list decoder] decodes a [crawler_error_list] value from [decoder] *)
 
 val decode_errors_request : Js.Json.t Js.Dict.t -> CrawlerTypes.errors_request
 (** [decode_errors_request decoder] decodes a [errors_request] value from [decoder] *)

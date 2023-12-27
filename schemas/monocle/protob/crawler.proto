@@ -29,10 +29,15 @@ enum EntityType {
 }
 
 message CrawlerError {
-  string message = 1;
-  string body = 2;
-  google.protobuf.Timestamp created_at = 3;
-  Entity entity = 4;
+  string message = 2;
+  string body = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+message CrawlerErrorList {
+  string crawler = 1;
+  Entity entity = 2;
+  repeated CrawlerError errors = 3;
 }
 
 message ErrorsRequest {
@@ -41,7 +46,7 @@ message ErrorsRequest {
 }
 
 message ErrorsList {
-  repeated CrawlerError errors = 1;
+  repeated CrawlerErrorList errors = 1;
 }
 
 message ErrorsResponse {

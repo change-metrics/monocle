@@ -4,14 +4,24 @@ type crawler_error_mutable = {
   mutable message : string;
   mutable body : string;
   mutable created_at : TimestampTypes.timestamp option;
-  mutable entity : CrawlerTypes.entity option;
 }
 
 let default_crawler_error_mutable () : crawler_error_mutable = {
   message = "";
   body = "";
   created_at = None;
+}
+
+type crawler_error_list_mutable = {
+  mutable crawler : string;
+  mutable entity : CrawlerTypes.entity option;
+  mutable errors : CrawlerTypes.crawler_error list;
+}
+
+let default_crawler_error_list_mutable () : crawler_error_list_mutable = {
+  crawler = "";
   entity = None;
+  errors = [];
 }
 
 type errors_request_mutable = {
@@ -25,7 +35,7 @@ let default_errors_request_mutable () : errors_request_mutable = {
 }
 
 type errors_list_mutable = {
-  mutable errors : CrawlerTypes.crawler_error list;
+  mutable errors : CrawlerTypes.crawler_error_list list;
 }
 
 let default_errors_list_mutable () : errors_list_mutable = {
@@ -160,9 +170,6 @@ let rec decode_crawler_error json =
     | "created_at" -> 
       let json = Js.Dict.unsafeGet json "created_at" in
       v.created_at <- Some ((TimestampBs.decode_timestamp (Pbrt_bs.string json "crawler_error" "created_at")))
-    | "entity" -> 
-      let json = Js.Dict.unsafeGet json "entity" in
-      v.entity <- Some ((decode_entity (Pbrt_bs.object_ json "crawler_error" "entity")))
     
     | _ -> () (*Unknown fields are ignored*)
   done;
@@ -170,8 +177,37 @@ let rec decode_crawler_error json =
     CrawlerTypes.message = v.message;
     CrawlerTypes.body = v.body;
     CrawlerTypes.created_at = v.created_at;
-    CrawlerTypes.entity = v.entity;
   } : CrawlerTypes.crawler_error)
+
+let rec decode_crawler_error_list json =
+  let v = default_crawler_error_list_mutable () in
+  let keys = Js.Dict.keys json in
+  let last_key_index = Array.length keys - 1 in
+  for i = 0 to last_key_index do
+    match Array.unsafe_get keys i with
+    | "crawler" -> 
+      let json = Js.Dict.unsafeGet json "crawler" in
+      v.crawler <- Pbrt_bs.string json "crawler_error_list" "crawler"
+    | "entity" -> 
+      let json = Js.Dict.unsafeGet json "entity" in
+      v.entity <- Some ((decode_entity (Pbrt_bs.object_ json "crawler_error_list" "entity")))
+    | "errors" -> begin
+      let a = 
+        let a = Js.Dict.unsafeGet json "errors" in 
+        Pbrt_bs.array_ a "crawler_error_list" "errors"
+      in
+      v.errors <- Array.map (fun json -> 
+        (decode_crawler_error (Pbrt_bs.object_ json "crawler_error_list" "errors"))
+      ) a |> Array.to_list;
+    end
+    
+    | _ -> () (*Unknown fields are ignored*)
+  done;
+  ({
+    CrawlerTypes.crawler = v.crawler;
+    CrawlerTypes.entity = v.entity;
+    CrawlerTypes.errors = v.errors;
+  } : CrawlerTypes.crawler_error_list)
 
 let rec decode_errors_request json =
   let v = default_errors_request_mutable () in
@@ -205,7 +241,7 @@ let rec decode_errors_list json =
         Pbrt_bs.array_ a "errors_list" "errors"
       in
       v.errors <- Array.map (fun json -> 
-        (decode_crawler_error (Pbrt_bs.object_ json "errors_list" "errors"))
+        (decode_crawler_error_list (Pbrt_bs.object_ json "errors_list" "errors"))
       ) a |> Array.to_list;
     end
     
@@ -540,6 +576,11 @@ let rec encode_crawler_error (v:CrawlerTypes.crawler_error) =
       Js.Dict.set json "created_at" (Js.Json.string json');
     end;
   end;
+  json
+
+let rec encode_crawler_error_list (v:CrawlerTypes.crawler_error_list) = 
+  let json = Js.Dict.empty () in
+  Js.Dict.set json "crawler" (Js.Json.string v.CrawlerTypes.crawler);
   begin match v.CrawlerTypes.entity with
   | None -> ()
   | Some v ->
@@ -547,6 +588,17 @@ let rec encode_crawler_error (v:CrawlerTypes.crawler_error) =
       let json' = encode_entity v in
       Js.Dict.set json "entity" (Js.Json.object_ json');
     end;
+  end;
+  begin (* errors field *)
+    let (errors':Js.Json.t) =
+      v.CrawlerTypes.errors
+      |> Array.of_list
+      |> Array.map (fun v ->
+        v |> encode_crawler_error |> Js.Json.object_
+      )
+      |> Js.Json.array
+    in
+    Js.Dict.set json "errors" errors';
   end;
   json
 
@@ -563,7 +615,7 @@ let rec encode_errors_list (v:CrawlerTypes.errors_list) =
       v.CrawlerTypes.errors
       |> Array.of_list
       |> Array.map (fun v ->
-        v |> encode_crawler_error |> Js.Json.object_
+        v |> encode_crawler_error_list |> Js.Json.object_
       )
       |> Js.Json.array
     in

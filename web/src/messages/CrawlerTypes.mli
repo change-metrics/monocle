@@ -21,7 +21,12 @@ type crawler_error = {
   message : string;
   body : string;
   created_at : TimestampTypes.timestamp option;
+}
+
+type crawler_error_list = {
+  crawler : string;
   entity : entity option;
+  errors : crawler_error list;
 }
 
 type errors_request = {
@@ -30,7 +35,7 @@ type errors_request = {
 }
 
 type errors_list = {
-  errors : crawler_error list;
+  errors : crawler_error_list list;
 }
 
 type errors_response =
@@ -117,10 +122,17 @@ val default_crawler_error :
   ?message:string ->
   ?body:string ->
   ?created_at:TimestampTypes.timestamp option ->
-  ?entity:entity option ->
   unit ->
   crawler_error
 (** [default_crawler_error ()] is the default value for type [crawler_error] *)
+
+val default_crawler_error_list : 
+  ?crawler:string ->
+  ?entity:entity option ->
+  ?errors:crawler_error list ->
+  unit ->
+  crawler_error_list
+(** [default_crawler_error_list ()] is the default value for type [crawler_error_list] *)
 
 val default_errors_request : 
   ?index:string ->
@@ -130,7 +142,7 @@ val default_errors_request :
 (** [default_errors_request ()] is the default value for type [errors_request] *)
 
 val default_errors_list : 
-  ?errors:crawler_error list ->
+  ?errors:crawler_error_list list ->
   unit ->
   errors_list
 (** [default_errors_list ()] is the default value for type [errors_list] *)

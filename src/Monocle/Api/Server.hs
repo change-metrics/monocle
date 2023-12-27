@@ -572,13 +572,30 @@ crawlerErrors auth request = checkAuth auth response
     case requestE of
       Right (tenant, query) -> runQueryM tenant (Q.ensureMinBound query) $ do
         logInfo "ListingErrors" ["index" .= request.errorsRequestIndex]
-        errors <- fmap from <$> Q.crawlerErrors
+        errors <- toErrorsList <$> Q.crawlerErrors
         pure $ CrawlerPB.ErrorsResponse $ Just $ CrawlerPB.ErrorsResponseResultSuccess $ CrawlerPB.ErrorsList $ fromList errors
       Left (ParseError msg offset) ->
         pure
           $ CrawlerPB.ErrorsResponse
           $ Just
           $ CrawlerPB.ErrorsResponseResultError (show offset <> ":" <> from msg)
+
+  -- Group eerror by crawler name and entity
+  toErrorsList :: [EError] -> [CrawlerPB.CrawlerErrorList]
+  toErrorsList = fmap mkErrorList . Map.toList . mergeErrors
+
+  mkErrorList :: ((LText, CrawlerPB.Entity), [EError]) -> CrawlerPB.CrawlerErrorList
+  mkErrorList ((crawlerErrorListCrawler, entity), errors) = CrawlerPB.CrawlerErrorList {..}
+   where
+    crawlerErrorListEntity = Just (from entity)
+    crawlerErrorListErrors = fromList (from <$> errors)
+
+  mergeErrors :: [EError] -> Map (LText, CrawlerPB.Entity) [EError]
+  mergeErrors = Map.fromListWith (<>) . fmap toKVList
+   where
+    toKVList eerror =
+      let k = (from eerror.erCrawlerName, from eerror.erEntity)
+       in (k, [eerror])
 
 -- | /search/query endpoint
 searchQuery :: ApiEffects es => AuthResult AuthenticatedUser -> SearchPB.QueryRequest -> Eff es SearchPB.QueryResponse

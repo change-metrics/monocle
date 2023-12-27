@@ -1,6 +1,7 @@
 -- | Tests for the macroscope process
 module Macroscope.Test where
 
+import Data.Vector qualified as V
 import Effectful.Env
 import Effectful.Prometheus
 import Effectful.Reader.Static qualified as E
@@ -60,9 +61,11 @@ testCrawlingPoint = do
       errorResponse <- crawlerErrors client (CrawlerPB.ErrorsRequest (from indexName) "from:2020")
       case errorResponse of
         CrawlerPB.ErrorsResponse (Just (CrawlerPB.ErrorsResponseResultSuccess (CrawlerPB.ErrorsList (toList -> [e])))) -> liftIO do
-          e.crawlerErrorMessage @?= "decode"
-          e.crawlerErrorBody @?= "[\"Oops\"]"
-          (from <$> e.crawlerErrorEntity) @?= Just (Project "opendev/neutron")
+          length e.crawlerErrorListErrors @?= 1
+          let err = V.head e.crawlerErrorListErrors
+          err.crawlerErrorMessage @?= "decode"
+          err.crawlerErrorBody @?= "[\"Oops\"]"
+          (from <$> e.crawlerErrorListEntity) @?= Just (Project "opendev/neutron")
         _ -> error $ "Expected one error, got: " <> show errorResponse
 
       Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.Changes $ goodStream currentOldestAge)

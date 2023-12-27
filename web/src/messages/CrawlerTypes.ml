@@ -18,7 +18,12 @@ type crawler_error = {
   message : string;
   body : string;
   created_at : TimestampTypes.timestamp option;
+}
+
+type crawler_error_list = {
+  crawler : string;
   entity : entity option;
+  errors : crawler_error list;
 }
 
 type errors_request = {
@@ -27,7 +32,7 @@ type errors_request = {
 }
 
 type errors_list = {
-  errors : crawler_error list;
+  errors : crawler_error_list list;
 }
 
 type errors_response =
@@ -109,12 +114,20 @@ let rec default_crawler_error
   ?message:((message:string) = "")
   ?body:((body:string) = "")
   ?created_at:((created_at:TimestampTypes.timestamp option) = None)
-  ?entity:((entity:entity option) = None)
   () : crawler_error  = {
   message;
   body;
   created_at;
+}
+
+let rec default_crawler_error_list 
+  ?crawler:((crawler:string) = "")
+  ?entity:((entity:entity option) = None)
+  ?errors:((errors:crawler_error list) = [])
+  () : crawler_error_list  = {
+  crawler;
   entity;
+  errors;
 }
 
 let rec default_errors_request 
@@ -126,7 +139,7 @@ let rec default_errors_request
 }
 
 let rec default_errors_list 
-  ?errors:((errors:crawler_error list) = [])
+  ?errors:((errors:crawler_error_list list) = [])
   () : errors_list  = {
   errors;
 }
