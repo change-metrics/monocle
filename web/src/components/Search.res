@@ -399,6 +399,20 @@ module Top = {
       None
     }, [state.query])
 
+    // Update crawler error
+    let handleErrors = (resp: WebApi.axiosResponse<CrawlerTypes.errors_response>) =>
+      switch resp.data {
+      | CrawlerTypes.Success(errors_list) =>
+        SetErrors(errors_list.errors)->dispatch->Js.Promise.resolve
+      | CrawlerTypes.Error(err) => Js.Console.error(err)->Js.Promise.resolve
+      }
+
+    React.useEffect1(() => {
+      ({index: state.index, query: state.query}->WebApi.Crawler.errors
+        |> Js.Promise.then_(handleErrors))->ignore
+      None
+    }, [state.query])
+
     // Dispatch the value upstream
     let handleCheck = (newValue, res: WebApi.axiosResponse<SearchTypes.check_response>) => {
       switch res.data {

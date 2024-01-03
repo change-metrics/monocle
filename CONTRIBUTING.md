@@ -52,6 +52,12 @@ nix develop --command monocle-repl
 λ> run $ defaultApiConfig 8080 "http://localhost:19200" "etc/config.yaml"
 ```
 
+… or by running the executable:
+
+```ShellSession
+CRAWLERS_API_KEY=secret MONOCLE_CONFIG=./etc/config.yaml nix develop --command cabal run -O0 monocle -- api
+```
+
 The Monocle UI should be accessible:
 
 ```ShellSession
@@ -143,6 +149,12 @@ Run the full test suite with:
 
 ```ShellSession
 nix develop --command monocle-ci-run
+```
+
+Run a single test:
+
+```ShellSession
+cabal test --test-options='-p "Change stream"'
 ```
 
 ## Start the web development server
@@ -238,4 +250,37 @@ Test the containers:
 ```ShellSession
 podman run --network host -v prom-data:/var/lib/prometheus:Z -e API_TARGET=localhost:8080 --rm quay.io/change-metrics/monocle-prometheus:latest
 podman run -it --rm --network host quay.io/change-metrics/monocle-grafana:latest
+```
+
+## Example query
+
+Add a crawler error:
+
+```ShellSession
+curl -X POST -d '{"index": "monocle", "crawler": "demo", "apikey": "secret", "entity": {"project_name": "neutron"}, "errors": [{"created_at": "2023-12-22T10:11:12Z"}]}' -H "Content-type: application/json" localhost:8080/api/2/crawler/add
+```
+
+Get crawler errors:
+
+```ShellSession
+curl -X POST -d '{"index": "monocle"}' -H "Content-type: application/json" localhost:8080/api/2/crawler/errors
+```
+
+## Debug by dumping every stacktrace
+
+When the service fails with an obscure `NonEmpty.fromList: empty list`, run the following commands to get the full stacktrace:
+
+```ShellSession
+cabal --ghc-options="-fprof-auto" --enable-executable-profiling --enable-profiling --enable-library-profiling -O0 run exe:monocle -- api +RTS -xc -RTS
+```
+
+Note that this also shows legitimate exceptions that are correctly caught, but hopefully you should see something like:
+
+```
+*** Exception (reporting due to +RTS -xc): (THUNK_1_0), stack trace:
+  GHC.IsList.CAF
+  --> evaluated by: Monocle.Backend.Index.getChangesByURL,
+  called from Monocle.Backend.Index.taskDataAdd,
+  called ...
+NonEmpty.fromList: empty list
 ```

@@ -58,6 +58,14 @@ instance ToJSON AuthorMapping where
       , "groups" .= object ["type" .= ("keyword" :: Text)]
       ]
 
+data BlobMapping = BlobMapping deriving (Eq, Show)
+
+instance ToJSON BlobMapping where
+  toJSON BlobMapping =
+    object
+      [ "type" .= ("binary" :: Text)
+      ]
+
 instance ToJSON AuthorIndexMapping where
   toJSON AuthorIndexMapping =
     object ["properties" .= AuthorMapping]
@@ -220,6 +228,18 @@ instance ToJSON ChangesIndexMapping where
                           , "_adopted" .= BoolMapping
                           ]
                     ]
+              , "error_data"
+                  .= object
+                    [ "properties"
+                        .= object
+                          [ "crawler_name" .= KWMapping
+                          , "entity_type" .= KWMapping
+                          , "entity_value" .= KWMapping
+                          , "message" .= TextAndKWMapping
+                          , "body" .= BlobMapping
+                          , "created_at" .= DateIndexMapping
+                          ]
+                    ]
               ]
                 <> cachedAuthorField
                 <> mergedCommitField
@@ -241,7 +261,7 @@ createIndex indexName mapping = do
   retryPolicy = exponentialBackoff 500_000 <> limitRetries 7
 
 configVersion :: ConfigVersion
-configVersion = ConfigVersion 6
+configVersion = ConfigVersion 7
 
 configIndex :: BH.IndexName
 configIndex = BH.IndexName "monocle.config"
@@ -374,10 +394,10 @@ upgradeConfigV5 = do
   logInfo "Applying migration to schema V5 on workspace" ["index" .= indexName]
   void $ esPutMapping indexName mergedCommitField
 
-upgradeConfigV6 :: forall es. MonoQuery :> es => IndexEffects es => Eff es ()
-upgradeConfigV6 = do
+upgradeGlobalMapping :: forall es. MonoQuery :> es => IndexEffects es => Eff es ()
+upgradeGlobalMapping = do
   indexName <- getIndexName
-  logInfo "Applying migration to schema V6 on workspace" ["index" .= indexName]
+  logInfo "Applying migration to new ChangesIndexMapping" ["index" .= indexName]
   void $ esPutMapping indexName ChangesIndexMapping
 
 upgrades :: forall es. (E.Fail :> es, MonoQuery :> es) => IndexEffects es => [(ConfigVersion, Eff es ())]
@@ -387,7 +407,7 @@ upgrades =
   , (ConfigVersion 3, void upgradeConfigV3)
   , (ConfigVersion 4, void upgradeConfigV4)
   , (ConfigVersion 5, void upgradeConfigV5)
-  , (ConfigVersion 6, void upgradeConfigV6)
+  , (ConfigVersion 7, void upgradeGlobalMapping)
   ]
 
 newtype ConfigVersion = ConfigVersion Integer
@@ -612,7 +632,7 @@ upsertDocs = runAddDocsBulkOPs toBulkUpsert
 
 -- | Generate a Text suitable for ElasticSearch Document ID from Text
 getDocID :: Text -> Text
-getDocID = decodeUtf8 . B64.encode . hash . encodeUtf8
+getDocID = B64.encodeBase64 . hash . encodeUtf8
 
 -- | Generate an DocID from Text
 getBHDocID :: Text -> BH.DocId
@@ -630,6 +650,17 @@ indexChanges changes = indexDocs $ fmap (toDoc . ensureType) changes
  where
   toDoc change = (toJSON change, getChangeDocId change)
   ensureType change = change {echangeType = EChangeDoc}
+
+indexErrors :: MonoQuery :> es => IndexEffects es => [EError] -> Eff es ()
+indexErrors errors = indexDocs $ fmap toDoc errors
+ where
+  toDoc err = (getErrorDoc err, getErrorDocId err)
+
+  getErrorDoc :: EError -> Value
+  getErrorDoc err = object ["type" .= EErrorDoc, "error_data" .= toJSON err]
+
+  getErrorDocId :: EError -> BH.DocId
+  getErrorDocId = getBHDocID . from . erBody
 
 indexIssues :: [EIssue] -> Eff es ()
 indexIssues = error "todo"
@@ -746,6 +777,7 @@ getOrphanTaskDataAndDeclareAdoption urls = do
     )
 
 updateChangesAndEventsFromOrphanTaskData :: MonoQuery :> es => IndexEffects es => [EChange] -> [EChangeEvent] -> Eff es ()
+updateChangesAndEventsFromOrphanTaskData [] [] = pure ()
 updateChangesAndEventsFromOrphanTaskData changes events = do
   let mapping = uMapping Map.empty getFlatMapping
   adoptedTDs <- getOrphanTaskDataAndDeclareAdoption $ from <$> Map.keys mapping
@@ -790,6 +822,7 @@ orphanTaskDataDocToBHDoc TaskDataDoc {..} =
       )
 
 taskDataAdd :: MonoQuery :> es => IndexEffects es => Text -> [SearchPB.TaskData] -> Eff es ()
+taskDataAdd _ [] = pure ()
 taskDataAdd crawlerName tds = do
   -- extract change URLs from input TDs
   let urls = from . SearchPB.taskDataChangeUrl <$> tds
@@ -1016,6 +1049,7 @@ populateAuthorCache = do
 
 -- | This function extacts authors from events and adds them to the author cache
 addCachedAuthors :: MonoQuery :> es => IndexEffects es => [EChangeEvent] -> Eff es ()
+addCachedAuthors [] = pure ()
 addCachedAuthors events = do
   indexName <- getIndexName
   let muids = from . authorMuid <$> mapMaybe echangeeventAuthor events

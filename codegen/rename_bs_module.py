@@ -35,38 +35,73 @@ def fix_field_name(content):
         )
         .replace("Task_data_types", "TaskDataTypes")
         .replace("Task_data_bs", "TaskDataBs")
-        #.replace("Ratio", "_ratio")
+        .replace("Change_types", "ChangeTypes")
+        .replace("Change_bs", "ChangeBs")
+        .replace("Search_types", "SearchTypes")
+        .replace("Search_bs", "SearchBs")
+        .replace("Issue_types", "IssueTypes")
+        .replace("Issue_bs", "IssueBs")
         .replace("_ofChanges", "_of_changes")
         .replace("_withTests", "_with_tests")
         .replace("_perChange", "_per_change")
         # on_createdAt -> on_created_at
         .replace("edAt", "ed_at")
+        .replace("commitAt", "commit_at")
         .replace("Count", "_count")
     )
 
 
 def fix_timestamp(content):
     # Fix timestamp message encoding which is a rfc3339 string, not an object
+    return (
+        functools.reduce(
+            lambda acc, field: acc.replace(
+                field + '" (Js.Json.object_', field + '" (Js.Json.string'
+            ),
+            # TODO: add new timestamp field to this list, e.g. when this error happens:
+            #   Js.Dict.set json "updated_at" (Js.Json.object_ json');
+            # This has type: string,  Somewhere wanted: Js.Json.t Js.Dict.t
+            [
+                "timestamp",
+                "updated_at",
+                "closed_at",
+                "created_at",
+                "changed_at",
+                "authored_at",
+                "committed_at",
+                "merged_at",
+                "commit_at",
+            ],
+            content,
+        )
+        .replace(
+            "TimestampBs.decode_timestamp (Pbrt_bs.object_",
+            "TimestampBs.decode_timestamp (Pbrt_bs.string",
+        )
+        .replace(
+            # The codegen believes that TimestampTypes.default_timestamp is a function but it is a term
+            "TimestampTypes.default_timestamp ()",
+            "TimestampTypes.default_timestamp",
+        )
+    )
+
+
+def fix_enum(content):
+    # Fix the following error:
+    # This variant constructor, Change_commit_pushed, expects 0 arguments; here, we've found 1.
     return functools.reduce(
-        lambda acc, field: acc.replace(
-            field + '" (Js.Json.object_', field + '" (Js.Json.string'
-        ),
-        # TODO: add new timestamp field to this list, e.g. when this error happens:
-        #   Js.Dict.set json "updated_at" (Js.Json.object_ json');
-        # This has type: string,  Somewhere wanted: Js.Json.t Js.Dict.t
+        lambda acc, field: acc.replace("| " + field + " v ->", "| " + field + " ->"),
         [
-            "timestamp",
-            "updated_at",
-            "created_at",
-            "changed_at",
-            "authored_at",
-            "committed_at",
-            "merged_at",
+            "Change_created",
+            "Change_commented",
+            "Change_abandoned",
+            "Change_commit_force_pushed",
+            "Change_commit_pushed",
+            "Change_merged",
+            "Issue_created",
+            "Issue_closed",
         ],
         content,
-    ).replace(
-        "TimestampBs.decode_timestamp (Pbrt_bs.object_",
-        "TimestampBs.decode_timestamp (Pbrt_bs.string",
     )
 
 
@@ -83,7 +118,7 @@ def fix_module(filepath):
         typeName = pascalCase(filepath.name.split("_bs")[0] + "_types")
         newTypeName = pascalCases(typeName)
         content = content.replace(typeName, newTypeName)
-    newFile.write_text(fix_timestamp(fix_field_name(content)))
+    newFile.write_text(fix_enum(fix_timestamp(fix_field_name(content))))
 
 
 def fixable_file(filename):

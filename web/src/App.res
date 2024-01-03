@@ -290,6 +290,45 @@ module About = {
   }
 }
 
+module Errors = {
+  module CrawlerError = {
+    @react.component
+    let make = (~err: CrawlerTypes.crawler_error) => {
+      <div>
+        <Change.RelativeDate title="Created " date={err.created_at->getDate} />
+        <div> {("message: " ++ err.message)->str} </div>
+        <div> {("body: " ++ err.body)->str} </div>
+        <br />
+      </div>
+    }
+  }
+
+  module CrawlerErrors = {
+    @react.component
+    let make = (~err: CrawlerTypes.crawler_error_list) => {
+      let entity: option<string> = err.entity->Belt.Option.flatMap(Js.Json.stringifyAny)
+      <div>
+        <div> {("entity: " ++ entity->Belt.Option.getWithDefault(""))->str} </div>
+        <div> {("crawler: " ++ err.crawler)->str} </div>
+        {err.errors->Belt.List.map(e => <CrawlerError err=e />)->Belt.List.toArray->React.array}
+        <br />
+      </div>
+    }
+  }
+
+  @react.component
+  let make = (~store: Store.t) => {
+    let (state, _) = store
+    <TextContent>
+      <h4> {"Crawler Errors"->str} </h4>
+      <p>
+        {"The following errors happened when updating the index. This is likely causing some data to be missing."->str}
+      </p>
+      {state.errors->Belt.List.map(e => <CrawlerErrors err=e />)->Belt.List.toArray->React.array}
+    </TextContent>
+  }
+}
+
 module App = {
   @react.component
   let make = (~about: ConfigTypes.about) => {
@@ -350,6 +389,16 @@ module App = {
                   <Patternfly.Icons.InfoAlt />
                 </div>
               </PageHeaderToolsItem>
+              {state.errors->Belt.List.head->Belt.Option.isNone
+                ? React.null
+                : <PageHeaderToolsItem>
+                    <div
+                      onClick={_ => ("/" ++ state.index ++ "/errors")->RescriptReactRouter.push}
+                      style={ReactDOM.Style.make(~cursor="pointer", ~paddingLeft="5px", ())}>
+                      <Patternfly.Icons.Bell color="red" size=#MD />
+                    </div>
+                  </PageHeaderToolsItem>}
+
               // <PageHeaderToolsItem>
               //   <div
               //     onClick={showSettings}
@@ -391,6 +440,7 @@ module App = {
               | list{_, "search_author"} => <AuthorSearch store />
               | list{_, "metrics"} => <Metrics store />
               | list{_, "metric", name} => <Metric store name />
+              | list{_, "errors"} => <Errors store />
               | _ => <p> {"Not found"->str} </p>
               }}
             </PageSection>

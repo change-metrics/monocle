@@ -16,6 +16,7 @@ module Monocle.Prelude (
   setEnv,
   headMaybe,
   (:::),
+  encodeJSON,
 
   -- * secret
   Secret,
@@ -376,7 +377,7 @@ utctime = qqLiteral eitherParseUTCTime 'eitherParseUTCTime
 -- | dropTime ensures the encoded date does not have millisecond.
 -- This actually discard hour differences
 dropTime :: UTCTime -> UTCTime
-dropTime (UTCTime day _sec) = UTCTime day 0
+dropTime (UTCTime day sec) = UTCTime day (fromInteger $ ceiling sec)
 
 -- | A newtype for UTCTime which doesn't have milli second and tolerates a missing trailing 'Z' when decoding from JSON
 newtype MonocleTime = MonocleTime UTCTime
@@ -604,3 +605,6 @@ streamingFromListT = S.unfoldr go
   go listT = do
     res <- ListT.uncons listT
     pure $ res `orDie` ()
+
+encodeJSON :: ToJSON a => a -> LText
+encodeJSON = decodeUtf8 . encode

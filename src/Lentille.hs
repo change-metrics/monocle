@@ -9,8 +9,11 @@ module Lentille (
 
   -- * Lentille Errors
   LentilleError (..),
+  LentilleErrorKind (..),
   RequestLog (..),
   GraphQLError (..),
+  yieldStreamError,
+  fmapFetchError,
 
   -- * Facilities
   getChangeId,
@@ -31,6 +34,7 @@ module Lentille (
   module Monocle.Logging,
 ) where
 
+import Data.Morpheus.Client (FetchError (..))
 import Data.Text qualified as T
 import Google.Protobuf.Timestamp qualified as T
 import Monocle.Class
@@ -83,18 +87,40 @@ instance ToJSON RequestLog where
 
 -- | ErrorGraphQL is a wrapper around the morpheus's FetchError.
 data GraphQLError = GraphQLError
-  { -- TODO: keep the original error data type (instead of the Text)
-    err :: Text
+  { err :: FetchError ()
   , request :: RequestLog
   }
+  deriving (Show, Generic)
+
+fmapFetchError :: (a -> b) -> FetchError a -> FetchError b
+fmapFetchError f = \case
+  FetchErrorProducedErrors es Nothing -> FetchErrorProducedErrors es Nothing
+  FetchErrorProducedErrors es (Just a) -> FetchErrorProducedErrors es (Just $ f a)
+  FetchErrorNoResult -> FetchErrorNoResult
+  FetchErrorParseFailure s -> FetchErrorParseFailure s
+
+instance ToJSON GraphQLError where
+  toJSON e = object ["request" .= e.request, "fetch_error" .= fetchError]
+   where
+    fetchError = case e.err of
+      FetchErrorParseFailure s -> toJSON @Text $ "parse failure: " <> from s
+      FetchErrorNoResult -> toJSON @Text "no result"
+      FetchErrorProducedErrors es _ -> toJSON es
+
+data LentilleError = LentilleError UTCTime LentilleErrorKind
   deriving (Show, Generic, ToJSON)
 
-data LentilleError
+data LentilleErrorKind
   = DecodeError [Text]
-  | GraphError GraphQLError
+  | RequestError GraphQLError
+  | RateLimitInfoError GraphQLError
+  | PartialErrors Value
   deriving (Show, Generic, ToJSON)
 
-instance Exception LentilleError
+yieldStreamError :: TimeEffect :> es => LentilleErrorKind -> LentilleStream es a
+yieldStreamError e = do
+  now <- lift mGetCurrentTime
+  S.yield (Left $ LentilleError now e)
 
 type LentilleStream es a = Stream (Of (Either LentilleError a)) (Eff es) ()
 
@@ -143,8 +169,8 @@ type Changes = (Change, [ChangeEvent])
 -- We don't care about the rest so we replace it with ()
 -- See: https://hackage.haskell.org/package/streaming-0.2.4.0/docs/Streaming-Prelude.html#v:break
 --
--- >>> let stream = S.yield (Left (DecodeError ["oops"]))
--- >>> runEff $ S.length_ $ streamDropBefore [utctime|2021-05-31 00:00:00|] stream
+-- >>> let stream = yieldStreamError (DecodeError ["oops"])
+-- >>> runEff $ runTime $ S.length_ $ streamDropBefore [utctime|2021-05-31 00:00:00|] stream
 -- 1
 streamDropBefore :: UTCTime -> LentilleStream es Changes -> LentilleStream es Changes
 streamDropBefore untilDate = fmap (pure ()) . S.break (isChangeTooOld untilDate)

@@ -21,11 +21,14 @@ module Monocle.Backend.Documents where
 
 import Data.Aeson (Value (String), defaultOptions, genericParseJSON, genericToJSON, withObject, withText, (.:))
 import Data.Aeson.Casing (aesonPrefix, snakeCase)
+import Data.Aeson.Types qualified
+import Data.Text.Encoding.Base64 qualified as B64
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import Data.Vector qualified as V
 import Monocle.Entity
 import Monocle.Prelude
 import Monocle.Protob.Change qualified as ChangePB
+import Monocle.Protob.Crawler (CrawlerError (..))
 import Monocle.Protob.Crawler qualified as CrawlerPB
 import Monocle.Protob.Issue qualified as IssuePB
 import Monocle.Protob.Search qualified as SearchPB
@@ -195,6 +198,97 @@ instance From ETaskData SearchPB.TaskData where
         taskDataPrefix = from $ fromMaybe "" $ tdPrefix td
      in SearchPB.TaskData {..}
 
+newtype EErrorData = EErrorData
+  { eeErrorData :: EError
+  }
+  deriving (Show, Eq, Generic)
+
+instance ToJSON EErrorData where
+  toJSON = genericToJSON $ aesonPrefix snakeCase
+
+instance FromJSON EErrorData where
+  parseJSON = genericParseJSON $ aesonPrefix snakeCase
+
+-- | Helper type to store binary text in elasticsearch using b64 encoding
+newtype BinaryText = BinaryText Text
+  deriving newtype (Show, Eq)
+
+instance ToJSON BinaryText where
+  toJSON = String . B64.encodeBase64 . from
+
+instance FromJSON BinaryText where
+  parseJSON = withText "binary" $ \v -> case B64.decodeBase64 v of
+    Right x -> pure (BinaryText x)
+    Left e -> fail ("Binary text decode failed: " <> from e)
+
+instance From BinaryText Text where
+  from (BinaryText txt) = txt
+
+instance From BinaryText LText where
+  from = via @Text
+
+instance From LText BinaryText where
+  from = BinaryText . from
+
+data EError = EError
+  { erCrawlerName :: Text
+  , erEntity :: Entity
+  , erCreatedAt :: UTCTime
+  , erMessage :: Text
+  , erBody :: BinaryText
+  }
+  deriving (Show, Eq, Generic)
+
+instance From EError CrawlerError where
+  from eerror =
+    CrawlerError
+      { crawlerErrorBody = from eerror.erBody
+      , crawlerErrorMessage = from eerror.erMessage
+      , crawlerErrorCreatedAt = Just $ from eerror.erCreatedAt
+      }
+
+-- Custom encoder to manually serialize the entity type
+-- This needs to match the "error_data" schema above
+instance ToJSON EError where
+  toJSON e =
+    object
+      [ ("crawler_name", toJSON e.erCrawlerName)
+      , ("created_at", toJSON e.erCreatedAt)
+      , ("entity_type", String (entityTypeName (from e.erEntity)))
+      , ("entity_value", String $ entityValue e.erEntity)
+      , ("message", String e.erMessage)
+      , ("body", toJSON e.erBody)
+      ]
+
+instance FromJSON EError where
+  parseJSON = withObject "EError" $ \v -> do
+    erCrawlerName <- v .: "crawler_name"
+    erCreatedAt <- v .: "created_at"
+    evalue <- v .: "entity_value"
+    etype <- v .: "entity_type"
+    erEntity <- parseEntity evalue etype
+    erMessage <- v .: "message"
+    erBody <- v .: "body"
+    pure EError {..}
+
+-- | Helper to encode entity
+-- WARNING: don't forget to update the parseEntity implementation below when changing the entity document encoding
+entityValue :: Entity -> Text
+entityValue = \case
+  Organization n -> n
+  Project n -> n
+  ProjectIssue n -> n
+  TaskDataEntity n -> n
+  User n -> n
+
+parseEntity :: Text -> Text -> Data.Aeson.Types.Parser Entity
+parseEntity evalue = \case
+  "organization" -> pure $ Organization evalue
+  "project" -> pure $ Project evalue
+  "taskdata" -> pure $ TaskDataEntity evalue
+  "user" -> pure $ User evalue
+  etype -> fail $ "Unknown crawler entity type name: " <> from etype
+
 data EChangeState
   = EChangeOpen
   | EChangeMerged
@@ -240,6 +334,7 @@ data EDocType
   | EIssueDoc
   | EOrphanTaskData
   | ECachedAuthor
+  | EErrorDoc
   deriving (Eq, Show, Enum, Bounded)
 
 allEventTypes :: [EDocType]
@@ -262,6 +357,7 @@ instance From EDocType Text where
     EIssueDoc -> "Issue"
     EOrphanTaskData -> "OrphanTaskData"
     ECachedAuthor -> "CachedAuthor"
+    EErrorDoc -> "Error"
 
 instance From EDocType LText where
   from = via @Text
@@ -300,6 +396,7 @@ instance FromJSON EDocType where
           "Issue" -> pure EIssueDoc
           "OrphanTaskData" -> pure EOrphanTaskData
           "CachedAuthor" -> pure ECachedAuthor
+          "Error" -> pure EErrorDoc
           anyOtherValue -> fail $ "Unknown Monocle Elastic doc type: " <> from anyOtherValue
       )
 
@@ -622,29 +719,16 @@ instance ToJSON ECrawlerMetadataObject where
       [ ("crawler_name", toJSON (ecmCrawlerName e))
       , ("last_commit_at", toJSON (ecmLastCommitAt e))
       , ("crawler_type", String (entityTypeName (from $ ecmCrawlerEntity e)))
-      , ("crawler_type_value", String entityValue)
+      , ("crawler_type_value", String $ entityValue e.ecmCrawlerEntity)
       ]
-   where
-    -- WARNING: don't forget to update the FromJSON implementation below when changing the entity document encoding
-    entityValue = case ecmCrawlerEntity e of
-      Organization n -> n
-      Project n -> n
-      ProjectIssue n -> n
-      TaskDataEntity n -> n
-      User n -> n
 
 instance FromJSON ECrawlerMetadataObject where
   parseJSON = withObject "CrawlerMetadataObject" $ \v -> do
     ecmCrawlerName <- v .: "crawler_name"
     ecmLastCommitAt <- v .: "last_commit_at"
-    (etype :: Text) <- v .: "crawler_type"
+    etype <- v .: "crawler_type"
     evalue <- v .: "crawler_type_value"
-    ecmCrawlerEntity <- case etype of
-      "organization" -> pure $ Organization evalue
-      "project" -> pure $ Project evalue
-      "taskdata" -> pure $ TaskDataEntity evalue
-      "user" -> pure $ User evalue
-      _ -> fail $ "Unknown crawler entity type name: " <> from etype
+    ecmCrawlerEntity <- parseEntity evalue etype
     pure ECrawlerMetadataObject {..}
 
 newtype ECrawlerMetadata = ECrawlerMetadata

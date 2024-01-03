@@ -157,6 +157,7 @@ fields =
   ]
 
 queryFieldToDocument :: Field -> Maybe Field
+queryFieldToDocument "error_data.created_at" = Just "error_data.created_at"
 queryFieldToDocument name = do
   (_, field, _) <- lookup name fields
   pure field

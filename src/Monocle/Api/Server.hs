@@ -23,6 +23,7 @@ import Monocle.Api.Jwt (
 import Monocle.Backend.Documents (
   EChange (..),
   EChangeEvent (..),
+  EError (..),
  )
 import Monocle.Backend.Index as I
 import Monocle.Backend.Queries qualified as Q
@@ -69,6 +70,7 @@ import Effectful.Reader.Static (asks)
 import Monocle.Effects
 
 import Monocle.Backend.Queries (PeersStrengthMode (PSModeFilterOnAuthor))
+import Monocle.Protob.Crawler (CrawlerError)
 import Servant.API (Headers)
 import Servant.API.Header (Header)
 import Servant.Auth.Server.Internal.JWT (makeJWT)
@@ -293,6 +295,7 @@ crawlerAddDoc _auth request = do
           taskDatas
           issues
           issuesEvents
+          errors
         ) = request
 
   let requestE = do
@@ -311,14 +314,31 @@ crawlerAddDoc _auth request = do
         pure (index, crawler)
 
   case requestE of
-    Right (index, crawler) -> runEmptyQueryM index $ case toEntity entity of
-      Project _ -> addChanges crawlerName changes events
-      ProjectIssue _ -> addIssues crawlerName issues issuesEvents
-      Organization organizationName -> addProjects crawler organizationName projects
-      TaskDataEntity _ -> addTDs crawlerName taskDatas
-      User _ -> addChanges crawlerName changes events
+    Right (index, crawler) -> runEmptyQueryM index do
+      unless (V.null errors) do
+        addErrors crawlerName (toEntity entity) errors
+      case toEntity entity of
+        Project _ -> addChanges crawlerName changes events
+        ProjectIssue _ -> addIssues crawlerName issues issuesEvents
+        Organization organizationName -> addProjects crawler organizationName projects
+        TaskDataEntity _ -> addTDs crawlerName taskDatas
+        User _ -> addChanges crawlerName changes events
     Left err -> pure $ toErrorResponse err
  where
+  addErrors crawlerName entity errors = do
+    logInfo "AddingErrors" ["crawler" .= crawlerName, "entity" .= entity, "errors" .= length errors]
+    let toError :: CrawlerError -> EError
+        toError ce =
+          EError
+            { erCrawlerName = from crawlerName
+            , erEntity = from entity
+            , erMessage = from ce.crawlerErrorMessage
+            , erBody = from ce.crawlerErrorBody
+            , erCreatedAt = from $ fromMaybe (error "missing timestamp") ce.crawlerErrorCreatedAt
+            }
+
+    I.indexErrors $ toList (toError <$> errors)
+
   addTDs crawlerName taskDatas = do
     logInfo "AddingTaskData" ["crawler" .= crawlerName, "tds" .= length taskDatas]
     I.taskDataAdd (from crawlerName) $ toList taskDatas
@@ -541,6 +561,41 @@ searchCheck auth request = checkAuth auth response
         Left (ParseError msg offset) ->
           SearchPB.CheckResponseResultError
             $ SearchPB.QueryError (from msg) (fromInteger . toInteger $ offset)
+
+-- | /crawler/errors endpoint
+crawlerErrors :: ApiEffects es => AuthResult AuthenticatedUser -> CrawlerPB.ErrorsRequest -> Eff es CrawlerPB.ErrorsResponse
+crawlerErrors auth request = checkAuth auth response
+ where
+  response _authenticatedUserM = do
+    requestE <- validateSearchRequest request.errorsRequestIndex request.errorsRequestQuery "nobody"
+
+    case requestE of
+      Right (tenant, query) -> runQueryM tenant (Q.ensureMinBound query) $ do
+        logInfo "ListingErrors" ["index" .= request.errorsRequestIndex]
+        errors <- toErrorsList <$> Q.crawlerErrors
+        pure $ CrawlerPB.ErrorsResponse $ Just $ CrawlerPB.ErrorsResponseResultSuccess $ CrawlerPB.ErrorsList $ fromList errors
+      Left (ParseError msg offset) ->
+        pure
+          $ CrawlerPB.ErrorsResponse
+          $ Just
+          $ CrawlerPB.ErrorsResponseResultError (show offset <> ":" <> from msg)
+
+  -- Group eerror by crawler name and entity
+  toErrorsList :: [EError] -> [CrawlerPB.CrawlerErrorList]
+  toErrorsList = fmap mkErrorList . Map.toList . mergeErrors
+
+  mkErrorList :: ((LText, CrawlerPB.Entity), [EError]) -> CrawlerPB.CrawlerErrorList
+  mkErrorList ((crawlerErrorListCrawler, entity), errors) = CrawlerPB.CrawlerErrorList {..}
+   where
+    crawlerErrorListEntity = Just (from entity)
+    crawlerErrorListErrors = fromList (from <$> errors)
+
+  mergeErrors :: [EError] -> Map (LText, CrawlerPB.Entity) [EError]
+  mergeErrors = Map.fromListWith (<>) . fmap toKVList
+   where
+    toKVList eerror =
+      let k = (from eerror.erCrawlerName, from eerror.erEntity)
+       in (k, [eerror])
 
 -- | /search/query endpoint
 searchQuery :: ApiEffects es => AuthResult AuthenticatedUser -> SearchPB.QueryRequest -> Eff es SearchPB.QueryResponse

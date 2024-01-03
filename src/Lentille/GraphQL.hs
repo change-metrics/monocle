@@ -23,6 +23,7 @@ module Lentille.GraphQL (
   GraphEffects,
   GraphResponse,
   GraphResp,
+  GraphError,
   RateLimit (..),
   PageInfo (..),
   StreamFetchOptParams (..),
@@ -127,7 +128,8 @@ data RateLimit = RateLimit {used :: Int, remaining :: Int, resetAt :: UTCTime}
 instance From RateLimit Text where
   from RateLimit {..} = "remains:" <> show remaining <> ", reset at: " <> show resetAt
 
-type GraphResp a = Either GraphQLError a
+type GraphError a = (RequestLog, FetchError a)
+type GraphResp a = Either (GraphError a) a
 
 -- | wrapper around fetchWithLog than can optionaly handle fetch retries
 -- based on the returned data inspection via a provided function (see RetryCheck).
@@ -159,7 +161,7 @@ doRequest client mkArgs retryCheck depthM pageInfoM =
     pure $ case resp of
       (Right x, _) -> Right x
       -- Throw an exception for the retryCheckM
-      (Left e, [req]) -> Left $ GraphQLError (show e) req
+      (Left e, [req]) -> Left (req, e)
       _ -> error $ "Unknown response: " <> show resp
    where
     aDepthM = decreaseValue retried <$> depthM
@@ -186,6 +188,11 @@ data StreamFetchOptParams es a = StreamFetchOptParams
 defaultStreamFetchOptParams :: StreamFetchOptParams m a
 defaultStreamFetchOptParams = StreamFetchOptParams (const $ pure DontRetry) Nothing Nothing
 
+mkGraphQLError :: GraphError a -> GraphQLError
+mkGraphQLError (req, fe) = GraphQLError (fmapFetchError (const ()) fe) req
+
+data RequestResult a = RequestResult (Maybe Value) a
+
 streamFetch ::
   forall es a b.
   (GraphEffects es, Fetch a, Show a) =>
@@ -210,11 +217,15 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
   requestWithPageInfo pageInfoM storedRateLimitM = do
     holdOnIfNeeded storedRateLimitM
     eResp <- doRequest client mkArgs fpRetryCheck fpDepth pageInfoM
+    let handleResp mPartial resp =
+          let (pageInfo, rateLimitM, decodingErrors, xs) = transformResponse resp
+           in Right (rateLimitM, RequestResult mPartial (pageInfo, rateLimitM, decodingErrors, xs))
     pure $ case eResp of
+      -- This is not a fatal error, it contains the desired response so handle it as a success.
+      -- The handler below will insert a 'PartialErrors'
+      Left (_, FetchErrorProducedErrors err (Just resp)) -> handleResp (Just (toJSON err)) resp
       Left err -> Left err
-      Right resp ->
-        let (pageInfo, rateLimitM, decodingErrors, xs) = transformResponse resp
-         in Right (rateLimitM, (pageInfo, rateLimitM, decodingErrors, xs))
+      Right resp -> handleResp Nothing resp
 
   logStep pageInfo rateLimitM xs totalFetched = do
     lift
@@ -225,7 +236,7 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
 
   startFetch = do
     --- Perform a pre GraphQL request to gather rateLimit
-    (mErr :: Maybe GraphQLError) <- case fpGetRatelimit of
+    (mErr :: Maybe (GraphError (Maybe RateLimit))) <- case fpGetRatelimit of
       Just getRateLimit -> lift
         $ E.modifyMVar rateLimitMVar
         $ const do
@@ -238,7 +249,7 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
       Nothing -> pure Nothing
 
     case mErr of
-      Just err -> S.yield (Left $ GraphError err)
+      Just err -> yieldStreamError $ RateLimitInfoError $ mkGraphQLError err
       Nothing -> go Nothing 0
 
   go pageInfoM totalFetched = do
@@ -254,18 +265,22 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
 
     -- Handle the response
     case respE of
-      Left e ->
+      Left err ->
         -- Yield the error and stop the stream
-        S.yield (Left $ GraphError e)
-      Right (pageInfo, rateLimitM, decodingErrors, xs) -> do
+        yieldStreamError $ RequestError (mkGraphQLError err)
+      Right (RequestResult mPartial (pageInfo, rateLimitM, decodingErrors, xs)) -> do
         -- Log crawling status
         logStep pageInfo rateLimitM xs totalFetched
 
-        case decodingErrors of
-          _ : _ -> S.yield (Left $ DecodeError decodingErrors)
-          [] -> do
-            -- Yield the results
-            S.each (Right <$> xs)
+        forM_ mPartial \partial -> do
+          lift $ logWarn "Fetched partial result" ["err" .= partial]
+          yieldStreamError $ PartialErrors partial
 
-            -- Call recursively when response has a next page
-            when (hasNextPage pageInfo) $ go (Just pageInfo) (totalFetched + length xs)
+        unless (null decodingErrors) do
+          yieldStreamError $ DecodeError decodingErrors
+
+        -- Yield the results
+        S.each (Right <$> xs)
+
+        -- Call recursively when response has a next page
+        when (hasNextPage pageInfo) $ go (Just pageInfo) (totalFetched + length xs)

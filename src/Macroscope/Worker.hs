@@ -55,11 +55,6 @@ streamName = \case
   TaskDatas _ -> "TaskDatas"
   UserChanges _ -> "UserChanges"
 
-isTDStream :: DocumentStream m -> Bool
-isTDStream = \case
-  TaskDatas _ -> True
-  _anyOtherStream -> False
-
 -------------------------------------------------------------------------------
 -- Adapter between protobuf api and crawler stream
 -------------------------------------------------------------------------------
@@ -78,12 +73,17 @@ data DocumentType
   | DTChanges (Change, [ChangeEvent])
   | DTTaskData TaskData
   | DTIssues (Issue, [IssueEvent])
+  | DTError CrawlerError
   deriving (Generic, ToJSON)
 
-data ProcessError es
-  = CommitError Text
-  | AddError Text
-  | StreamError (LentilleError, LentilleStream es DocumentType)
+-- | ProcessError are produced by the processStream.
+data ProcessError
+  = -- | Monocle crawler commit API failed
+    CommitError Text
+  | -- | Monocle crawler add API failed
+    AddError Text
+  | -- | External API failed
+    StreamError LentilleError
 
 -- | 'processStream' read the stream of document and post to the monocle API
 processStream ::
@@ -95,7 +95,7 @@ processStream ::
   -- | The stream of documents to read
   LentilleStream es DocumentType ->
   -- | The processing results
-  Eff es [Maybe (ProcessError es)]
+  Eff es [Maybe ProcessError]
 processStream logFunc postFunc = go (0 :: Word) [] []
  where
   go count acc results stream = do
@@ -105,20 +105,35 @@ processStream logFunc postFunc = go (0 :: Word) [] []
         -- The end of the stream
         res <- processBatch acc
         pure $ reverse (res : results)
-      Right (Left err, rest) -> do
-        -- An error occured in the stream, abort now
-        let res = Just (StreamError (err, rest))
-        pure $ reverse (res : results)
-      Right (Right doc, rest) -> do
+      Right (edoc, rest) -> do
         -- We got a new document
+        let doc = case edoc of
+              Right x -> x
+              Left err -> DTError $ toCrawlerError err
+        let addStreamError :: [Maybe ProcessError] -> [Maybe ProcessError]
+            addStreamError = case edoc of
+              Right _ -> id
+              -- This is likely an error we can't recover, so don't add stream error
+              Left (LentilleError _ (PartialErrors _)) -> id
+              -- Every other 'LentilleError' are fatal$
+              Left err -> (Just (StreamError err) :)
         let newAcc = doc : acc
         if count == 499
           then do
             res <- processBatch newAcc
-            go 0 [] (res : results) rest
-          else go (count + 1) newAcc results rest
+            go 0 [] (addStreamError (res : results)) rest
+          else go (count + 1) newAcc (addStreamError results) rest
 
-  processBatch :: [DocumentType] -> Eff es (Maybe (ProcessError es))
+  toCrawlerError (LentilleError ts err) = CrawlerError {..}
+   where
+    crawlerErrorCreatedAt = Just $ from ts
+    (crawlerErrorMessage, crawlerErrorBody) = case err of
+      DecodeError xs -> ("decode", encodeJSON xs)
+      RequestError e -> ("graph", encodeJSON e)
+      RateLimitInfoError e -> ("rate-limit-info", encodeJSON e)
+      PartialErrors es -> ("partial", encodeJSON es)
+
+  processBatch :: [DocumentType] -> Eff es (Maybe ProcessError)
   processBatch [] = pure Nothing
   processBatch (reverse -> docs) = do
     logFunc (length docs)
@@ -149,16 +164,7 @@ runStream apiKey indexName crawlerName documentStream = do
       forM_ errors \case
         AddError err -> logWarn "Could not add documents" ["err" .= err]
         CommitError err -> logWarn "Could not commit update date" ["err" .= err]
-        StreamError (err, rest) -> do
-          logWarn "Error occured when consuming the document stream" ["err" .= err]
-          S.toList_ rest >>= \case
-            [] -> pure ()
-            items -> logWarn "Left over documents found after error" ["items" .= items]
-
-          -- TODO: explains why TDStream don't support offset?
-          unless (isTDStream documentStream) do
-            -- Try the next entity by incrementing the offset
-            go startTime (offset + 1)
+        StreamError err -> logWarn "Stream produced a fatal error" ["err" .= err]
 
 -- | 'runStreamError' is the stream processor
 runStreamError ::
@@ -170,7 +176,7 @@ runStreamError ::
   CrawlerName ->
   DocumentStream es ->
   Word32 ->
-  Eff es [ProcessError es]
+  Eff es [ProcessError]
 runStreamError startTime apiKey indexName (CrawlerName crawlerName) documentStream offset = go
  where
   go = do
@@ -246,6 +252,7 @@ runStreamError startTime apiKey indexName (CrawlerName crawlerName) documentStre
         addDocRequestTaskDatas = V.fromList $ mapMaybe getTD xs
         addDocRequestIssues = V.fromList $ mapMaybe getIssue xs
         addDocRequestIssueEvents = V.fromList $ concat $ mapMaybe getIssueEvent xs
+        addDocRequestErrors = V.fromList $ mapMaybe getError xs
      in AddDocRequest {..}
    where
     getIssue = \case
@@ -265,6 +272,9 @@ runStreamError startTime apiKey indexName (CrawlerName crawlerName) documentStre
       _ -> Nothing
     getTD = \case
       DTTaskData td -> Just td
+      _ -> Nothing
+    getError = \case
+      DTError e -> Just e
       _ -> Nothing
 
   -- 'commitTimestamp' post the commit date.

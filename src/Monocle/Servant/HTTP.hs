@@ -11,11 +11,11 @@ import Effectful (Eff)
 import Effectful qualified as E
 import Effectful.Concurrent qualified as E
 import Monocle.Api.Jwt (AuthenticatedUser)
-import Monocle.Api.Server (authGetMagicJwt, authWhoAmi, configGetAbout, configGetGroupMembers, configGetGroups, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, loginLoginValidation, metricGet, metricInfo, metricList, searchAuthor, searchCheck, searchFields, searchQuery, searchSuggestions)
+import Monocle.Api.Server (authGetMagicJwt, authWhoAmi, configGetAbout, configGetGroupMembers, configGetGroups, configGetProjects, configGetWorkspaces, crawlerAddDoc, crawlerCommit, crawlerCommitInfo, crawlerErrors, loginLoginValidation, metricGet, metricInfo, metricList, searchAuthor, searchCheck, searchFields, searchQuery, searchSuggestions)
 import Monocle.Effects (ApiEffects)
 import Monocle.Protob.Auth (GetMagicJwtRequest, GetMagicJwtResponse, WhoAmiRequest, WhoAmiResponse)
 import Monocle.Protob.Config (GetAboutRequest, GetAboutResponse, GetGroupMembersRequest, GetGroupMembersResponse, GetGroupsRequest, GetGroupsResponse, GetProjectsRequest, GetProjectsResponse, GetWorkspacesRequest, GetWorkspacesResponse)
-import Monocle.Protob.Crawler (AddDocRequest, AddDocResponse, CommitInfoRequest, CommitInfoResponse, CommitRequest, CommitResponse)
+import Monocle.Protob.Crawler (AddDocRequest, AddDocResponse, CommitInfoRequest, CommitInfoResponse, CommitRequest, CommitResponse, ErrorsRequest, ErrorsResponse)
 import Monocle.Protob.Login (LoginValidationRequest, LoginValidationResponse)
 import Monocle.Protob.Metric (GetRequest, GetResponse, InfoRequest, InfoResponse, ListRequest, ListResponse)
 import Monocle.Protob.Search (AuthorRequest, AuthorResponse, CheckRequest, CheckResponse, FieldsRequest, FieldsResponse, QueryRequest, QueryResponse, SuggestionsRequest, SuggestionsResponse)
@@ -43,6 +43,7 @@ type MonocleAPI =
     :<|> "crawler" :> "add" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.AddDocRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.AddDocResponse
     :<|> "crawler" :> "commit" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.CommitRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.CommitResponse
     :<|> "crawler" :> "get_commit_info" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.CommitInfoRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.CommitInfoResponse
+    :<|> "crawler" :> "errors" :> Auth '[JWT, Cookie] AuthenticatedUser :> ReqBody '[JSON] Monocle.Protob.Crawler.ErrorsRequest :> Post '[PBJSON, JSON] Monocle.Protob.Crawler.ErrorsResponse
 server :: ApiEffects es => E.Concurrent E.:> es => ServerT MonocleAPI (Eff es)
 server =
   loginLoginValidation
@@ -64,3 +65,4 @@ server =
     :<|> crawlerAddDoc
     :<|> crawlerCommit
     :<|> crawlerCommitInfo
+    :<|> crawlerErrors

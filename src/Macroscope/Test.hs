@@ -1,6 +1,7 @@
 -- | Tests for the macroscope process
 module Macroscope.Test where
 
+import Data.Vector qualified as V
 import Effectful.Env
 import Effectful.Prometheus
 import Effectful.Reader.Static qualified as E
@@ -17,6 +18,7 @@ import Monocle.Backend.Queries qualified as Q
 import Monocle.Backend.Test (fakeChangePB, withTenantConfig)
 import Monocle.Backend.Test qualified as BT (fakeChange, fakeDate, fakeDateAlt)
 import Monocle.Client
+import Monocle.Client.Api (crawlerErrors)
 import Monocle.Config qualified as Config
 import Monocle.Effects
 import Monocle.Entity (CrawlerName (..), Entity (Project))
@@ -55,7 +57,18 @@ testCrawlingPoint = do
       (currentOldestAge, _) <- getOldest
       liftIO $ assertEqual "Commit date is not updated on failure" oldestAge currentOldestAge
 
-      Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.Changes goodStream)
+      -- Check that the error got indexed
+      errorResponse <- crawlerErrors client (CrawlerPB.ErrorsRequest (from indexName) "from:2020")
+      case errorResponse of
+        CrawlerPB.ErrorsResponse (Just (CrawlerPB.ErrorsResponseResultSuccess (CrawlerPB.ErrorsList (toList -> [e])))) -> liftIO do
+          length e.crawlerErrorListErrors @?= 1
+          let err = V.head e.crawlerErrorListErrors
+          err.crawlerErrorMessage @?= "decode"
+          err.crawlerErrorBody @?= "[\"Oops\"]"
+          (from <$> e.crawlerErrorListEntity) @?= Just (Project "opendev/neutron")
+        _ -> error $ "Expected one error, got: " <> show errorResponse
+
+      Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.Changes $ goodStream currentOldestAge)
 
       (newOldestAge, _) <- getOldest
       liftIO $ assertBool "Commit date updated" (newOldestAge > oldestAge)
@@ -64,12 +77,12 @@ testCrawlingPoint = do
   badStream date name
     | date == BT.fakeDateAlt && name == "opendev/neutron" = do
         Streaming.yield $ Right (fakeChangePB, [])
-        Streaming.yield $ Left (DecodeError ["Oops"])
+        yieldStreamError $ DecodeError ["Oops"]
     | otherwise = error "Bad crawling point"
 
   -- A document stream that yield a change
-  goodStream date name
-    | date == BT.fakeDateAlt && name == "opendev/neutron" = do
+  goodStream expected date name
+    | date == expected && name == "opendev/neutron" = do
         Streaming.yield $ Right (fakeChangePB, [])
     | otherwise = error "Bad crawling point"
 

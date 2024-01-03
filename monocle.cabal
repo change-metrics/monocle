@@ -120,8 +120,8 @@ library
                      , aeson-casing
                      , aeson-pretty
                      , attoparsec                 >= 0.13
+                     , base64                     >= 0.4
                      , cgroup-rts-threads
-                     , base64-bytestring          >= 1.1
                      , blaze-markup               >= 0.8.2.8
                      , blaze-html                 >= 0.9.1.2
                      , binary                     >= 0.8

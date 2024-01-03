@@ -17,7 +17,7 @@ import Database.Bloodhound qualified as BH
 import Database.Bloodhound.Raw (TermsCompositeAggBucket)
 import Database.Bloodhound.Raw qualified as BHR
 import Json.Extras qualified as Json
-import Monocle.Backend.Documents (EChange (..), EChangeEvent (..), EChangeState (..), EDocType (..), allEventTypes)
+import Monocle.Backend.Documents (EChange (..), EChangeEvent (..), EChangeState (..), EDocType (..), EError, EErrorData, allEventTypes, eeErrorData)
 import Monocle.Config qualified as Config
 import Monocle.Prelude
 import Monocle.Protob.Metric qualified as MetricPB
@@ -27,6 +27,7 @@ import Monocle.Search.Query qualified as Q
 import Streaming.Prelude qualified as Streaming
 
 import Monocle.Effects
+import Proto3.Suite (Enumerated (Enumerated))
 
 -- Legacy wrappers
 simpleSearchLegacy :: (LoggerEffect :> es, ElasticEffect :> es, FromJSON a) => BH.IndexName -> BH.Search -> Eff es [BH.Hit a]
@@ -232,6 +233,33 @@ doTermsCompositeAgg term = getPages Nothing
 
 -------------------------------------------------------------------------------
 -- High level queries
+orderDesc :: Enumerated SearchPB.Order_Direction
+orderDesc = Enumerated $ Right SearchPB.Order_DirectionDESC
+
+crawlerErrors :: QEffects es => Eff es [EError]
+crawlerErrors = do
+  (since, to) <- getQueryBound
+  let queryFilter =
+        [ BH.QueryRangeQuery
+            $ BH.mkRangeQuery (BH.FieldName "error_data.created_at")
+            $ BH.RangeDateGteLte (coerce since) (coerce to)
+        ]
+  -- keep only the time range of the user query
+  dropQuery do
+    withFilter queryFilter do
+      withDocTypes [EErrorDoc] (QueryFlavor Author CreatedAt) do
+        fmap toError <$> doSearch (Just order) 500
+ where
+  -- it is necessary to request the EErrorData so that the source fields are correctly set in BHR.search
+  toError :: EErrorData -> EError
+  toError = eeErrorData
+
+  order =
+    SearchPB.Order
+      { orderField = "error_data.created_at"
+      , orderDirection = orderDesc
+      }
+
 changes :: QEffects es => Maybe SearchPB.Order -> Word32 -> Eff es [EChange]
 changes orderM limit =
   withDocTypes [EChangeDoc] (QueryFlavor Author UpdatedAt)

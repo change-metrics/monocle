@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 - [crawler] Proxy can be configured with `HTTP_PROXY` and `HTTPS_PROXY` environment. To proxy http requests between crawlers and the api, use the `API_PROXY` environment.
 - [crawler] A new `groups` sub-field in all Author fields (`on_author` and `author`) for `Change` and `Events`.
   Groups memberships are reflected from the config file to the database.
+- [crawler] Processing errors are no longer fatal and they are now stored in the index.
+- [web] A red bell is added to the UI when crawler errors exists for the given query to display the missing data.
 
 ### Changed
 

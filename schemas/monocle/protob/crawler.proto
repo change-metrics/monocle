@@ -28,6 +28,34 @@ enum EntityType {
   ENTITY_TYPE_USER = 3;
 }
 
+message CrawlerError {
+  string message = 2;
+  string body = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+message CrawlerErrorList {
+  string crawler = 1;
+  Entity entity = 2;
+  repeated CrawlerError errors = 3;
+}
+
+message ErrorsRequest {
+  string index = 1;
+  string query = 2;
+}
+
+message ErrorsList {
+  repeated CrawlerErrorList errors = 1;
+}
+
+message ErrorsResponse {
+  oneof result {
+    ErrorsList success = 1;
+    string error = 2;
+  }
+}
+
 message AddDocRequest {
   string index = 1;
   string crawler = 2;
@@ -45,6 +73,7 @@ message AddDocRequest {
   repeated monocle_issue.Issue issues = 10;
   // issue_events are added when Entity is project_issue_name
   repeated monocle_issue.IssueEvent issue_events = 11;
+  repeated CrawlerError errors = 12;
 }
 
 enum AddDocError {
