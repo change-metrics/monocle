@@ -265,3 +265,22 @@ Get crawler errors:
 ```ShellSession
 curl -X POST -d '{"index": "monocle"}' -H "Content-type: application/json" localhost:8080/api/2/crawler/errors
 ```
+
+## Debug by dumping every stacktrace
+
+When the service fails with an obscure `NonEmpty.fromList: empty list`, run the following commands to get the full stacktrace:
+
+```ShellSession
+cabal --ghc-options="-fprof-auto" --enable-executable-profiling --enable-profiling --enable-library-profiling -O0 run exe:monocle -- api +RTS -xc -RTS
+```
+
+Note that this also shows legitimate exceptions that are correctly caught, but hopefully you should see something like:
+
+```
+*** Exception (reporting due to +RTS -xc): (THUNK_1_0), stack trace:
+  GHC.IsList.CAF
+  --> evaluated by: Monocle.Backend.Index.getChangesByURL,
+  called from Monocle.Backend.Index.taskDataAdd,
+  called ...
+NonEmpty.fromList: empty list
+```
