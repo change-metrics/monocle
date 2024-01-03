@@ -822,6 +822,7 @@ orphanTaskDataDocToBHDoc TaskDataDoc {..} =
       )
 
 taskDataAdd :: MonoQuery :> es => IndexEffects es => Text -> [SearchPB.TaskData] -> Eff es ()
+taskDataAdd _ [] = pure ()
 taskDataAdd crawlerName tds = do
   -- extract change URLs from input TDs
   let urls = from . SearchPB.taskDataChangeUrl <$> tds
