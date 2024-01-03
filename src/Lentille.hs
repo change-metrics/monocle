@@ -113,7 +113,7 @@ data LentilleError = LentilleError UTCTime LentilleErrorKind
 data LentilleErrorKind
   = DecodeError [Text]
   | RequestError GraphQLError
-  | PageInfoError GraphQLError
+  | RateLimitInfoError GraphQLError
   | PartialErrors Value
   deriving (Show, Generic, ToJSON)
 

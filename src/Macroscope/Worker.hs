@@ -130,7 +130,7 @@ processStream logFunc postFunc = go (0 :: Word) [] []
     (crawlerErrorMessage, crawlerErrorBody) = case err of
       DecodeError xs -> ("decode", encodeJSON xs)
       RequestError e -> ("graph", encodeJSON e)
-      PageInfoError e -> ("page-info", encodeJSON e)
+      RateLimitInfoError e -> ("rate-limit-info", encodeJSON e)
       PartialErrors es -> ("partial", encodeJSON es)
 
   processBatch :: [DocumentType] -> Eff es (Maybe ProcessError)
