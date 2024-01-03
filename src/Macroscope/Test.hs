@@ -55,7 +55,7 @@ testCrawlingPoint = do
       Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.Changes badStream)
 
       (currentOldestAge, _) <- getOldest
-      liftIO $ assertBool "Commit date is updated on failure" (currentOldestAge > oldestAge)
+      liftIO $ assertEqual "Commit date is not updated on failure" oldestAge currentOldestAge
 
       -- Check that the error got indexed
       errorResponse <- crawlerErrors client (CrawlerPB.ErrorsRequest (from indexName) "from:2020")
