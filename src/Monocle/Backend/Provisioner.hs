@@ -31,7 +31,7 @@ import Google.Protobuf.Timestamp qualified (fromUTCTime)
 import Monocle.Backend.Documents
 import Monocle.Backend.Test qualified as T
 import Monocle.Config (csConfig, getWorkspaces, lookupTenant, mkIndexName)
-import Monocle.Effects (getReloadConfig, runElasticEffect, runEmptyQueryM, runMonoConfig)
+import Monocle.Effects (dieOnEsError, getReloadConfig, runElasticEffect, runEmptyQueryM, runMonoConfig)
 import Monocle.Env (mkEnv)
 import Monocle.Prelude
 import Monocle.Protob.Search (TaskData (..))
@@ -50,7 +50,7 @@ runProvisioner configPath elasticUrl tenantName docCount = do
     case tenantM of
       Just tenant -> do
         bhEnv <- mkEnv elasticUrl
-        r <- runRetry $ runFail $ runElasticEffect bhEnv $ do
+        r <- runRetry $ runFail $ runElasticEffect bhEnv $ dieOnEsError do
           events <- liftIO $ createFakeEvents docCount
           runEmptyQueryM tenant $ T.indexScenario events
           logInfo "Provisionned" ["index" .= indexName, "doc count" .= length events]

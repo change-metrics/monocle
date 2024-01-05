@@ -10,7 +10,7 @@ import Monocle.Api.Server (searchAuthor)
 import Monocle.Backend.Documents (EDocType (ECachedAuthor))
 import Monocle.Backend.Queries (documentType)
 import Monocle.Config qualified as Config
-import Monocle.Effects (ApiEffects, esCountByIndex)
+import Monocle.Effects (ApiEffects, dieOnEsError, esCountByIndex)
 import Monocle.Env (tenantIndexName)
 import Monocle.Prelude
 import Monocle.Protob.Search (AuthorRequest (..))
@@ -59,7 +59,8 @@ searchAuthorsHandler auth (Just index) queryM = do
   indexVal :: Text
   indexVal = from index
   countCachedAuthors = do
-    resp <- esCountByIndex (tenantIndexName index) $ BH.CountQuery $ documentType ECachedAuthor
+    resp <- dieOnEsError do
+      esCountByIndex (tenantIndexName index) $ BH.CountQuery $ documentType ECachedAuthor
     case resp of
       Right (BH.CountResponse nat _) -> pure nat
       Left _ -> pure 0

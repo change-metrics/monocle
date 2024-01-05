@@ -37,7 +37,7 @@ runLentilleM client action = do
 testCrawlingPoint :: Assertion
 testCrawlingPoint = do
   appEnv <- mkAppEnv fakeConfig
-  runAppEnv appEnv $ runEmptyQueryM fakeConfig do
+  runAppEnv appEnv $ runEmptyQueryM fakeConfig $ dieOnEsError do
     I.ensureIndexSetup
     let fakeChange1 =
           BT.fakeChange
@@ -124,7 +124,7 @@ testTaskDataMacroscope = withTestApi appEnv $ \client -> testAction client
           | otherwise = error $ "Unexpected product entity: " <> show project
     void $ runLentilleM client $ Macroscope.runStream apiKey indexName (CrawlerName crawlerName) (Macroscope.TaskDatas stream)
     -- Check task data got indexed
-    withTenantConfig fakeConfig do
+    withTenantConfig fakeConfig $ dieOnEsError do
       count <- withQuery taskDataQuery $ Streaming.length_ Q.scanSearchId
       liftIO (assertEqual "Task data got indexed by macroscope" count 1)
 
