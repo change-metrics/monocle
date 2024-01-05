@@ -244,8 +244,6 @@ reloadConfig fp = do
     configTS <- getModificationTime fp
     if configTS > prevConfigTS
       then do
-        -- TODO: use log reload event
-        putTextLn $ from fp <> ": reloading config"
         config <- loadConfig fp
         modifyMVar_ wsRef (const . pure $ mkWorkspaceStatus config)
         pure ((configTS, config), ConfigStatus True config wsRef)
