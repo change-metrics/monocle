@@ -249,7 +249,7 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
       Nothing -> pure Nothing
 
     case mErr of
-      Just err -> yieldStreamError $ PageInfoError $ mkGraphQLError err
+      Just err -> yieldStreamError $ RateLimitInfoError $ mkGraphQLError err
       Nothing -> go Nothing 0
 
   go pageInfoM totalFetched = do
