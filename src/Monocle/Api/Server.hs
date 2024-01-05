@@ -77,7 +77,7 @@ import Servant.Auth.Server.Internal.JWT (makeJWT)
 import Web.Cookie (SetCookie (..), defaultSetCookie, sameSiteStrict)
 
 -- | 'getWorkspaces' returns the list of workspace, reloading the config when the file changed.
-getWorkspaces :: MonoConfigEffect :> es => Eff es [Config.Index]
+getWorkspaces :: (LoggerEffect :> es, MonoConfigEffect :> es) => Eff es [Config.Index]
 getWorkspaces = Config.workspaces . Config.csConfig <$> getReloadConfig
 
 -- | 'updateIndex' if needed - ensures index exists and refresh crawler Metadata

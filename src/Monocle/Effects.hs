@@ -136,11 +136,11 @@ testTree =
         hClose fd
         writeFile path "workspaces: []"
         setEnv "CRAWLERS_API_KEY" "42"
-        runEff (runMonoConfig path $ testMonoConfig path) `finally` removeFile path
+        runEff (runLoggerEffect $ runMonoConfig path $ testMonoConfig path) `finally` removeFile path
     ]
  where
   testEff a b = liftIO (a @?= b)
-  testMonoConfig :: (MonoConfigEffect :> es, IOE :> es) => FilePath -> Eff es ()
+  testMonoConfig :: (LoggerEffect :> es, MonoConfigEffect :> es, IOE :> es) => FilePath -> Eff es ()
   testMonoConfig fp = do
     -- Setup the test config
     let getNames c = Monocle.Config.getWorkspaceName <$> Monocle.Config.getWorkspaces (Monocle.Config.csConfig c)
@@ -189,10 +189,13 @@ runMonoConfigFromEnv :: IOE :> es => IO ConfigStatus -> Eff (MonoConfigEffect : 
 runMonoConfigFromEnv reload = evalStaticRep (MonoConfigEffect reload)
 
 -- | The lifted version of Monocle.Config.reloadConfig
-getReloadConfig :: MonoConfigEffect :> es => Eff es ConfigStatus
+getReloadConfig :: (LoggerEffect :> es, MonoConfigEffect :> es) => Eff es ConfigStatus
 getReloadConfig = do
   MonoConfigEffect reload <- getStaticRep
-  unsafeEff_ reload
+  cs <- unsafeEff_ reload
+  when cs.csReloaded do
+    logInfo "Config reloaded" ["workspaces" .= length cs.csConfig.workspaces]
+  pure cs
 
 ------------------------------------------------------------------
 --
