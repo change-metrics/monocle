@@ -181,9 +181,7 @@ run' ApiConfig {..} aplogger = E.runConcurrent $ runLoggerEffect do
         cfg
         (rootServer cookieCfg)
         middleware
-  case r of
-    Left e -> error (show e)
-    Right e -> error (show e)
+  error $ "The impossible has happened, the server stopped: " <> show r
  where
   corsPolicy =
     simpleCorsResourcePolicy {corsRequestHeaders = ["content-type"]}
