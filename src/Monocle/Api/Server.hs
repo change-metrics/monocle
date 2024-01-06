@@ -77,7 +77,7 @@ import Servant.Auth.Server.Internal.JWT (makeJWT)
 import Web.Cookie (SetCookie (..), defaultSetCookie, sameSiteStrict)
 
 -- | 'getWorkspaces' returns the list of workspace, reloading the config when the file changed.
-getWorkspaces :: MonoConfigEffect :> es => Eff es [Config.Index]
+getWorkspaces :: (LoggerEffect :> es, MonoConfigEffect :> es) => Eff es [Config.Index]
 getWorkspaces = Config.workspaces . Config.csConfig <$> getReloadConfig
 
 -- | 'updateIndex' if needed - ensures index exists and refresh crawler Metadata
@@ -94,7 +94,7 @@ updateIndex index wsRef = E.modifyMVar_ wsRef doUpdateIfNeeded
     Nothing -> error $ "Unknown workspace: " <> show (Config.getWorkspaceName index)
 
   refreshIndex :: Eff es ()
-  refreshIndex = do
+  refreshIndex = dieOnEsError do
     logInfo "RefreshIndex" ["index" .= Config.getWorkspaceName index]
     runRetry I.ensureIndexSetup
     traverse_ I.initCrawlerMetadata index.crawlers
@@ -171,7 +171,7 @@ loginLoginValidation _auth request = do
   validateOnIndex :: Text -> Config.Index -> MaybeT (Eff es) ()
   validateOnIndex username index = do
     let userQuery = Q.toUserTerm username
-    count <- lift $ runEmptyQueryM index $ withFilter [userQuery] Q.countDocs
+    count <- lift $ dieOnEsError $ runEmptyQueryM index $ withFilter [userQuery] Q.countDocs
     when (count > 0) mzero
 
 -- | /api/2/about endpoint
@@ -314,7 +314,7 @@ crawlerAddDoc _auth request = do
         pure (index, crawler)
 
   case requestE of
-    Right (index, crawler) -> runEmptyQueryM index do
+    Right (index, crawler) -> runEmptyQueryM index $ dieOnEsError do
       unless (V.null errors) do
         addErrors crawlerName (toEntity entity) errors
       case toEntity entity of
@@ -405,7 +405,7 @@ crawlerCommit _auth request = do
         pure (index, ts, toEntity entityPB)
 
   case requestE of
-    Right (index, ts, entity) -> runEmptyQueryM index $ do
+    Right (index, ts, entity) -> runEmptyQueryM index $ dieOnEsError $ do
       let date = Timestamp.toUTCTime ts
       logInfo "UpdatingEntity" ["crawler" .= crawlerName, "entity" .= entity, "date" .= date]
       -- TODO: check for CommitDateInferiorThanPrevious
@@ -445,7 +445,7 @@ crawlerCommitInfo _auth request = do
 
   case requestE of
     Right (index, worker, entityType) -> do
-      runEmptyQueryM index $ do
+      runEmptyQueryM index $ dieOnEsError do
         updateIndex index wsStatus
         toUpdateEntityM <- I.getLastUpdated worker (fromPBEnum entityType) offset
         case toUpdateEntityM of
@@ -487,7 +487,7 @@ searchSuggestions auth request = checkAuth auth . const $ do
   case tenantM of
     Just tenant -> do
       now <- getCurrentTime
-      runQueryM tenant (emptyQ now) $ Q.getSuggestions tenant
+      runQueryM tenant (emptyQ now) $ dieOnEsError $ Q.getSuggestions tenant
     Nothing ->
       -- Simply return empty suggestions in case of unknown tenant
       pure
@@ -531,7 +531,7 @@ searchAuthor auth request = checkAuth auth . const $ do
                   authorAliases = V.fromList $ from <$> aliases
                   authorGroups = V.fromList $ from <$> fromMaybe mempty groups
                in SearchPB.Author {..}
-      found <- runEmptyQueryM index $ I.searchAuthorCache . from $ authorRequestQuery
+      found <- runEmptyQueryM index $ dieOnEsError $ I.searchAuthorCache . from $ authorRequestQuery
       pure $ toSearchAuthor <$> found
     Nothing -> pure []
 
@@ -570,7 +570,7 @@ crawlerErrors auth request = checkAuth auth response
     requestE <- validateSearchRequest request.errorsRequestIndex request.errorsRequestQuery "nobody"
 
     case requestE of
-      Right (tenant, query) -> runQueryM tenant (Q.ensureMinBound query) $ do
+      Right (tenant, query) -> runQueryM tenant (Q.ensureMinBound query) $ dieOnEsError do
         logInfo "ListingErrors" ["index" .= request.errorsRequestIndex]
         errors <- toErrorsList <$> Q.crawlerErrors
         pure $ CrawlerPB.ErrorsResponse $ Just $ CrawlerPB.ErrorsResponseResultSuccess $ CrawlerPB.ErrorsList $ fromList errors
@@ -611,7 +611,7 @@ searchQuery auth request = checkAuth auth response
     requestE <- validateSearchRequest queryRequestIndex queryRequestQuery username
 
     case requestE of
-      Right (tenant, query) -> runQueryM tenant (Q.ensureMinBound query) $ do
+      Right (tenant, query) -> runQueryM tenant (Q.ensureMinBound query) $ dieOnEsError do
         let queryType = fromPBEnum queryRequestQueryType
         logInfo
           "Searching"
@@ -946,9 +946,10 @@ metricGet auth request = checkAuth auth response
       -- Unknown query
       _ -> handleError $ "Unknown metric: " <> from getRequestMetric
    where
-    runM :: Eff (MonoQuery : es) a -> Eff es a
-    runM = runQueryM tenant (Q.ensureMinBound query)
-    runMetric :: (TrendPB a, TopPB a, NumPB a) => Q.Metric (MonoQuery : es) a -> Eff es MetricPB.GetResponse
+    runM :: Eff (MonoQuery : Error ElasticError : es) a -> Eff es a
+    runM = dieOnEsError . runQueryM tenant (Q.ensureMinBound query)
+
+    runMetric :: (TrendPB a, TopPB a, NumPB a) => Q.Metric (MonoQuery : Error ElasticError : es) a -> Eff es MetricPB.GetResponse
     runMetric m = case getRequestOptions of
       Just (MetricPB.GetRequestOptionsTrend (MetricPB.Trend interval)) ->
         toTrendResult <$> runM (Q.runMetricTrend m $ fromPBTrendInterval $ from interval)

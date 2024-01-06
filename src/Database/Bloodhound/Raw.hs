@@ -15,7 +15,7 @@ module Database.Bloodhound.Raw (
   mkTermsCompositeAgg,
 ) where
 
-import Control.Monad.Catch (MonadThrow)
+import Control.Monad.Catch (MonadThrow, throwM)
 import Data.Aeson
 import Data.Aeson qualified as Aeson
 import Data.Aeson.Casing.Internal qualified as AesonCasing
@@ -62,11 +62,11 @@ advance :: (MonadBH m, MonadThrow m, FromJSON resp) => BH.ScrollId -> m (BH.Sear
 advance scroll = do
   resp <- BH.advanceScroll scroll 60
   case resp of
-    Left e -> handleError e
+    Left err -> throwEsError "advance" err
     Right x -> pure x
- where
-  handleError resp = do
-    error $ "Elastic scroll response failed" <> show resp
+
+throwEsError :: MonadThrow m => LByteString -> BH.EsError -> m a
+throwEsError resp err = throwM $ BH.EsProtocolException err.errorMessage resp
 
 settings :: (MonadBH m, ToJSON body) => BH.IndexName -> body -> m ()
 settings (BH.IndexName index) body = do
@@ -104,7 +104,7 @@ search index body scrollRequest = do
   rawResp <- search' index newBody qs
   resp <- BH.parseEsResponse rawResp
   case resp of
-    Left e -> handleError e rawResp
+    Left err -> throwEsError "search" err
     Right x -> pure x
  where
   newBody = case (fields, toJSON body) of
@@ -125,9 +125,6 @@ search index body scrollRequest = do
   qs = case scrollRequest of
     NoScroll -> []
     GetScroll x -> [("scroll", Just x)]
-  handleError _resp rawResp = do
-    -- logWarn "Elastic response failed" ["status" .= BH.errorStatus resp, "message" .= BH.errorMessage resp]
-    error $ "Elastic response failed: " <> show rawResp
 
 -- | A special purpose search implementation that uses the faster json-syntax
 searchHit ::

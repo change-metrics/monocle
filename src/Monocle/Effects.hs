@@ -59,12 +59,15 @@ module Monocle.Effects where
 import Monocle.Prelude hiding (Reader, ask, local)
 
 import Control.Exception (finally)
+import Control.Exception.Base (ErrorCall (ErrorCall))
+import Control.Monad.Catch (catches)
+import Data.Text qualified as T
 import Monocle.Client qualified
 import Monocle.Config qualified
 import Network.HTTP.Client (HttpException (..))
 import Network.HTTP.Client qualified as HTTP
 
-import Effectful
+import Effectful as E
 import Effectful.Dispatch.Static (SideEffects (..), StaticRep, evalStaticRep, getStaticRep, localStaticRep)
 import Effectful.Dispatch.Static.Primitive qualified as EffStatic
 import Monocle.Effects.Compat ()
@@ -114,10 +117,10 @@ type ApiEffects es =
   )
 
 -- the effect necessary to run elastic request
-type IndexEffects es = (ElasticEffect :> es, LoggerEffect :> es)
+type IndexEffects es = (Error ElasticError :> es, ElasticEffect :> es, LoggerEffect :> es)
 
 -- the query handler :> es, previously known as QueryM
-type QEffects es = (ElasticEffect :> es, LoggerEffect :> es, MonoQuery :> es)
+type QEffects es = (ElasticEffect :> es, Error ElasticError :> es, LoggerEffect :> es, MonoQuery :> es)
 
 -- the macro handler :> es, previously known as LentilleM
 type CrawlerEffects es = (LoggerEffect :> es, MonoClientEffect :> es)
@@ -136,11 +139,11 @@ testTree =
         hClose fd
         writeFile path "workspaces: []"
         setEnv "CRAWLERS_API_KEY" "42"
-        runEff (runMonoConfig path $ testMonoConfig path) `finally` removeFile path
+        runEff (runLoggerEffect $ runMonoConfig path $ testMonoConfig path) `finally` removeFile path
     ]
  where
   testEff a b = liftIO (a @?= b)
-  testMonoConfig :: (MonoConfigEffect :> es, IOE :> es) => FilePath -> Eff es ()
+  testMonoConfig :: (LoggerEffect :> es, MonoConfigEffect :> es, IOE :> es) => FilePath -> Eff es ()
   testMonoConfig fp = do
     -- Setup the test config
     let getNames c = Monocle.Config.getWorkspaceName <$> Monocle.Config.getWorkspaces (Monocle.Config.csConfig c)
@@ -189,10 +192,13 @@ runMonoConfigFromEnv :: IOE :> es => IO ConfigStatus -> Eff (MonoConfigEffect : 
 runMonoConfigFromEnv reload = evalStaticRep (MonoConfigEffect reload)
 
 -- | The lifted version of Monocle.Config.reloadConfig
-getReloadConfig :: MonoConfigEffect :> es => Eff es ConfigStatus
+getReloadConfig :: (LoggerEffect :> es, MonoConfigEffect :> es) => Eff es ConfigStatus
 getReloadConfig = do
   MonoConfigEffect reload <- getStaticRep
-  unsafeEff_ reload
+  cs <- unsafeEff_ reload
+  when cs.csReloaded do
+    logInfo "Config reloaded" ["workspaces" .= length cs.csConfig.workspaces]
+  pure cs
 
 ------------------------------------------------------------------
 --
@@ -363,98 +369,143 @@ runElasticEffect bhEnv action = do
   -- bhEnv <- liftIO (BH.mkBHEnv <$> pure server <*> Monocle.Client.mkManager)
   evalStaticRep (ElasticEffect bhEnv) action
 
-esSearch :: (ElasticEffect :> es, ToJSON body, FromJSONField resp) => BH.IndexName -> body -> BHR.ScrollRequest -> Eff es (BH.SearchResult resp)
+-- | ElasticError are produced by the es client
+data ElasticError = ElasticError
+  { call :: Text
+  -- ^ The name of the action, e.g. 'search'.
+  , msg :: Text
+  -- ^ The error message from the client.
+  , req :: Text
+  -- ^ The request body JSON encoded.
+  , resp :: LByteString
+  -- ^ The api responde body.
+  }
+  deriving (Show)
+
+-- | This function runs a BH IO safely by catching EsProtocolExceptions (which contains json decoding errors).
+-- After using this function, a new Error effect is added to the 'es' constraint.
+-- Use 'runEsError' to discharge the new effect and access the final result 'a'.
+runBHIOSafe ::
+  HasCallStack =>
+  (ToJSON body, Error ElasticError :> es, ElasticEffect :> es) =>
+  -- | The action name to be recorded in the error
+  Text ->
+  -- | A copy of the body to be recorded in the error
+  body ->
+  -- | The bloodhound action
+  BH.BH IO a ->
+  Eff es a
+runBHIOSafe call bodyJSON act = do
+  ElasticEffect env <- getStaticRep
+  eRes <- unsafeEff_ ((Right <$> BH.runBH env act) `catches` [errorHandler, esHandler])
+  case eRes of
+    Right x -> pure x
+    Left e -> E.throwError e
+ where
+  toErr msg err = pure $ Left $ ElasticError call msg body err
+  errorHandler = Handler $ \(ErrorCall err) -> toErr (from err) "error called"
+  esHandler = Handler $ \(BH.EsProtocolException msg resp) -> toErr msg resp
+  body = decodeUtf8 $ encode bodyJSON
+
+-- | Safely remove (Error ElasticError) from the list of effect.
+runEsError :: Eff (Error ElasticError : es) a -> Eff es (Either (CallStack, ElasticError) a)
+runEsError = E.runError
+
+-- | Hard remove (Error ElasticError) from the list of effect by using 'error'
+-- This used to be the default behavior.
+dieOnEsError :: Eff (Error ElasticError : es) a -> Eff es a
+dieOnEsError act =
+  runEsError act >>= \case
+    Left (tb, err) ->
+      error
+        $ mconcat
+          [ err.call
+          , ": "
+          , err.msg
+          , ", req: "
+          , T.take 120 err.req
+          , ", resp: "
+          , -- cut the message to avoid filling the term. this needs to be indexed for proper debug
+            T.take 120 (decodeUtf8 err.resp)
+          , ", tb: "
+          , show tb
+          ]
+    Right x -> pure x
+
+esSearch :: (Error ElasticError :> es, ElasticEffect :> es, ToJSON body, FromJSONField resp) => BH.IndexName -> body -> BHR.ScrollRequest -> Eff es (BH.SearchResult resp)
 esSearch iname body scrollReq = do
-  ElasticEffect env <- getStaticRep
-  -- unsafeEff_ $ BH.runBH env $ BHR.search iname (trace (show $ encode body) body) scrollReq
-  unsafeEff_ $ BH.runBH env $ BHR.search iname body scrollReq
+  runBHIOSafe "esSearch" body $ BHR.search iname body scrollReq
 
-esAdvance :: (ElasticEffect :> es, FromJSON resp) => BH.ScrollId -> Eff es (BH.SearchResult resp)
+esAdvance :: (Error ElasticError :> es, ElasticEffect :> es, FromJSON resp) => BH.ScrollId -> Eff es (BH.SearchResult resp)
 esAdvance scroll = do
-  ElasticEffect env <- getStaticRep
-  unsafeEff_ $ BH.runBH env $ BHR.advance scroll
+  runBHIOSafe "esAdvance" scroll $ BHR.advance scroll
 
-esGetDocument :: ElasticEffect :> es => BH.IndexName -> BH.DocId -> Eff es (HTTP.Response LByteString)
+esGetDocument :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> BH.DocId -> Eff es (HTTP.Response LByteString)
 esGetDocument iname doc = do
-  ElasticEffect env <- getStaticRep
-  unsafeEff_ $ BH.runBH env $ BH.getDocument iname doc
+  runBHIOSafe "esGetDocument" doc $ BH.getDocument iname doc
 
-esCountByIndex :: ElasticEffect :> es => BH.IndexName -> BH.CountQuery -> Eff es (Either BH.EsError BH.CountResponse)
+esCountByIndex :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> BH.CountQuery -> Eff es (Either BH.EsError BH.CountResponse)
 esCountByIndex iname q = do
-  ElasticEffect env <- getStaticRep
-  unsafeEff_ $ BH.runBH env $ BH.countByIndex iname q
+  runBHIOSafe "esCountByIndex" q $ BH.countByIndex iname q
 
-esSearchHit :: ElasticEffect :> es => ToJSON body => BH.IndexName -> body -> Eff es [Json.Value]
+esSearchHit :: (Error ElasticError :> es, ElasticEffect :> es) => ToJSON body => BH.IndexName -> body -> Eff es [Json.Value]
 esSearchHit iname body = do
-  ElasticEffect env <- getStaticRep
-  unsafeEff_ $ BH.runBH env $ BHR.searchHit iname body
+  runBHIOSafe "esSearchHit" body $ BHR.searchHit iname body
 
-esScanSearch :: ElasticEffect :> es => FromJSON body => BH.IndexName -> BH.Search -> Eff es [BH.Hit body]
+esScanSearch :: (Error ElasticError :> es, ElasticEffect :> es) => FromJSON body => BH.IndexName -> BH.Search -> Eff es [BH.Hit body]
 esScanSearch iname search = do
-  ElasticEffect env <- getStaticRep
-  unsafeEff_ $ BH.runBH env $ BH.scanSearch iname search
+  runBHIOSafe "esScanSearch" search $ BH.scanSearch iname search
 
-esDeleteByQuery :: ElasticEffect :> es => BH.IndexName -> BH.Query -> Eff es BH.Reply
+esDeleteByQuery :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> BH.Query -> Eff es BH.Reply
 esDeleteByQuery iname q = do
-  ElasticEffect env <- getStaticRep
-  unsafeEff_ $ BH.runBH env $ BH.deleteByQuery iname q
+  runBHIOSafe "esDeleteByQuery" q $ BH.deleteByQuery iname q
 
-esCreateIndex :: ElasticEffect :> es => BH.IndexSettings -> BH.IndexName -> Eff es ()
+esCreateIndex :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexSettings -> BH.IndexName -> Eff es ()
 esCreateIndex is iname = do
-  ElasticEffect env <- getStaticRep
   -- TODO: check for error
-  unsafeEff_ $ void $ BH.runBH env $ BH.createIndex is iname
+  void $ runBHIOSafe "esCreateIndex" iname $ BH.createIndex is iname
 
-esIndexDocument :: ToJSON body => ElasticEffect :> es => BH.IndexName -> BH.IndexDocumentSettings -> body -> BH.DocId -> Eff es (HTTP.Response LByteString)
+esIndexDocument :: (ToJSON body, Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> BH.IndexDocumentSettings -> body -> BH.DocId -> Eff es (HTTP.Response LByteString)
 esIndexDocument indexName docSettings body docId = do
-  ElasticEffect env <- getStaticRep
-  unsafeEff_ $ BH.runBH env $ BH.indexDocument indexName docSettings body docId
+  runBHIOSafe "esIndexDocument" body $ BH.indexDocument indexName docSettings body docId
 
-esPutMapping :: ElasticEffect :> es => ToJSON mapping => BH.IndexName -> mapping -> Eff es ()
+esPutMapping :: (Error ElasticError :> es, ElasticEffect :> es) => ToJSON mapping => BH.IndexName -> mapping -> Eff es ()
 esPutMapping iname mapping = do
-  ElasticEffect env <- getStaticRep
-  unsafeEff_ $ void $ BH.runBH env $ BH.putMapping iname mapping
+  -- TODO: check for error
+  void $ runBHIOSafe "esPutMapping" mapping $ BH.putMapping iname mapping
 
-esIndexExists :: ElasticEffect :> es => BH.IndexName -> Eff es Bool
+esIndexExists :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> Eff es Bool
 esIndexExists iname = do
-  ElasticEffect env <- getStaticRep
-  unsafeEff_ $ BH.runBH env $ BH.indexExists iname
+  runBHIOSafe "esIndexExists" iname $ BH.indexExists iname
 
-esDeleteIndex :: ElasticEffect :> es => BH.IndexName -> Eff es (HTTP.Response LByteString)
+esDeleteIndex :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> Eff es (HTTP.Response LByteString)
 esDeleteIndex iname = do
-  ElasticEffect env <- getStaticRep
-  unsafeEff_ $ BH.runBH env $ BH.deleteIndex iname
+  runBHIOSafe "esDeleteIndex" iname $ BH.deleteIndex iname
 
-esSettings :: ElasticEffect :> es => ToJSON body => BH.IndexName -> body -> Eff es ()
+esSettings :: (Error ElasticError :> es, ElasticEffect :> es) => ToJSON body => BH.IndexName -> body -> Eff es ()
 esSettings iname body = do
-  ElasticEffect env <- getStaticRep
-  unsafeEff_ $ BH.runBH env $ BHR.settings iname body
+  runBHIOSafe "esSettings" body $ BHR.settings iname body
 
-esRefreshIndex :: ElasticEffect :> es => BH.IndexName -> Eff es (HTTP.Response LByteString)
+esRefreshIndex :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> Eff es (HTTP.Response LByteString)
 esRefreshIndex iname = do
-  ElasticEffect env <- getStaticRep
-  unsafeEff_ $ BH.runBH env $ BH.refreshIndex iname
+  runBHIOSafe "esRefreshIndex" iname $ BH.refreshIndex iname
 
-esDocumentExists :: ElasticEffect :> es => BH.IndexName -> BH.DocId -> Eff es Bool
+esDocumentExists :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> BH.DocId -> Eff es Bool
 esDocumentExists iname doc = do
-  ElasticEffect env <- getStaticRep
-  unsafeEff_ $ BH.runBH env $ BH.documentExists iname doc
+  runBHIOSafe "esDocumentExists" doc $ BH.documentExists iname doc
 
-esBulk :: ElasticEffect :> es => V.Vector BulkOperation -> Eff es BH.Reply
+esBulk :: (Error ElasticError :> es, ElasticEffect :> es) => V.Vector BulkOperation -> Eff es BH.Reply
 esBulk ops = do
-  ElasticEffect env <- getStaticRep
-  unsafeEff_ $ BH.runBH env $ BH.bulk ops
+  runBHIOSafe "esBulk" ([] :: [Bool]) $ BH.bulk ops
 
-esUpdateDocument :: ElasticEffect :> es => ToJSON a => BH.IndexName -> BH.IndexDocumentSettings -> a -> DocId -> Eff es BH.Reply
+esUpdateDocument :: (Error ElasticError :> es, ElasticEffect :> es) => ToJSON a => BH.IndexName -> BH.IndexDocumentSettings -> a -> DocId -> Eff es BH.Reply
 esUpdateDocument iname ids body doc = do
-  ElasticEffect env <- getStaticRep
-  unsafeEff_ $ BH.runBH env $ BH.updateDocument iname ids body doc
+  runBHIOSafe "esUpdateDocument" body $ BH.updateDocument iname ids body doc
 
 -- Legacy wrappers
-esSearchLegacy :: (LoggerEffect :> es, ElasticEffect :> es, FromJSON a) => BH.IndexName -> BH.Search -> Eff es (BH.SearchResult a)
+esSearchLegacy :: (LoggerEffect :> es, Error ElasticError :> es, ElasticEffect :> es, FromJSON a) => BH.IndexName -> BH.Search -> Eff es (BH.SearchResult a)
 esSearchLegacy indexName search = do
-  ElasticEffect env <- getStaticRep
-  (rawResp, resp) <- unsafeEff_ $ BH.runBH env do
+  (rawResp, resp) <- runBHIOSafe "esSearchLegacy" search do
     -- logText . decodeUtf8 . encode $ search
     rawResp <- BH.searchByIndex indexName search
     -- logText $ show rawResp
