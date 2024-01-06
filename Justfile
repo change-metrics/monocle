@@ -3,10 +3,64 @@
 #
 # doc: https://just.systems/man/en/chapter_1.html
 
+# Load .env file
+set dotenv-load
+
 PINCLUDE := "-I /usr/include ${PROTOC_FLAGS} -I ./schemas/"
 # just doesn't support array so we create a space separated string for bash
 # see: https://github.com/casey/just/issues/1570
 PBS := `ls schemas/monocle/protob/*.proto | grep -v http.proto | sed 's/schemas.//' | tr '\n' ' '`
+
+# Start elasticsearch
+elastic:
+    nix develop --command elasticsearch-start
+
+# Start kibana
+kibana:
+    nix develop --command kibana-start
+
+# Start web devel server
+web:
+    nix develop --command monocle-web-start
+
+# Build the web interface
+build-web:
+    cd web && npm install && npm run build
+
+# Reformat and apply hlint hints
+fmt:
+    nix develop --command monocle-reformat-run
+
+# Run the full ci test suite
+ci:
+    nix develop --command monocle-ci-run
+
+# Run unit tests
+ci-fast:
+    nix develop --command monocle-fast-ci-run
+
+test pattern:
+    nix develop --command cabal -O0 test --test-options='-p "{{pattern}}"'
+
+# Start ghcid
+ghcid:
+    nix develop --command ghcid
+
+# Start hoogle to search documentation
+hoogle:
+    nix develop --command hoogle server -p 8081 --local --haskell
+
+# Start a ghci repl
+repl:
+    nix develop --command monocle-repl
+
+# Run the API
+api:
+    nix develop --command cabal run -O0 monocle -- api
+
+# Run the CRAWLER
+crawler:
+    nix develop --command cabal run -O0 monocle -- crawler
 
 # Update code after changing protobuf schema (./schemas/monocle/protob), ci.dhall or architecture.plantuml
 codegen: codegen-ci codegen-doc codegen-stubs codegen-javascript codegen-openapi codegen-haskell

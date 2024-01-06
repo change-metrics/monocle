@@ -57,7 +57,7 @@ runProvisioner configPath elasticUrl tenantName docCount = do
         case r of
           Left err -> logInfo "Unable to perform the provisionning" ["error" .= err]
           Right _ -> pure ()
-      Nothing -> pure ()
+      Nothing -> logWarn "Could not find tenant" []
 
 -- | Ensure changes have a unique ID
 setChangeID :: [EChange] -> IO [EChange]

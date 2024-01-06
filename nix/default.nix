@@ -336,12 +336,6 @@ in rec {
     cabal repl --build-depends pretty-simple monocle
   '';
 
-  monocleGhcid = pkgs.writeScriptBin "monocle-ghcid" ''
-    #!/bin/sh
-    set -x
-    ${hspkgs.ghcid}/bin/ghcid -c "cabal repl monocle" $*
-  '';
-
   monocleWebStart = pkgs.writeScriptBin "monocle-web-start" ''
     #!/bin/sh
     set -ex
@@ -366,7 +360,6 @@ in rec {
     elasticsearchStart
     monocleReplStart
     monocleWebStart
-    monocleGhcid
   ];
 
   # define the base requirements
