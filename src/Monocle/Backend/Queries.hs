@@ -29,10 +29,6 @@ import Streaming.Prelude qualified as Streaming
 import Monocle.Effects
 import Proto3.Suite (Enumerated (Enumerated))
 
--- Legacy wrappers
-simpleSearchLegacy :: (LoggerEffect :> es, Error ElasticError :> es, ElasticEffect :> es, FromJSON a) => BH.IndexName -> BH.Search -> Eff es [BH.Hit a]
-simpleSearchLegacy indexName search = BH.hits . BH.searchHits <$> esSearchLegacy indexName search
-
 -------------------------------------------------------------------------------
 -- Low level wrappers for bloodhound.
 {- TODO: migrate to proper effect

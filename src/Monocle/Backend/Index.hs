@@ -298,7 +298,7 @@ upgradeConfigV1 = do
     let entity = CrawlerPB.EntityTypeENTITY_TYPE_PROJECT
         search = BH.mkSearch (Just $ crawlerMDQuery entity crawlerName) Nothing
     index <- getIndexName
-    resp <- fmap BH.hitSource <$> Q.simpleSearchLegacy index search
+    resp <- fmap BH.hitSource <$> esSearchByIndex index search
     pure $ catMaybes resp
   isCrawlerLastCommitAtIsDefault :: Config.Index -> ECrawlerMetadata -> Bool
   isCrawlerLastCommitAtIsDefault
@@ -921,7 +921,7 @@ crawlerMDQuery entity crawlerName =
 getLastUpdated :: MonoQuery :> es => IndexEffects es => Config.Crawler -> CrawlerPB.EntityType -> Word32 -> Eff es (Maybe ECrawlerMetadataObject)
 getLastUpdated crawler entity offset = do
   index <- getIndexName
-  resp <- fmap BH.hitSource <$> Q.simpleSearchLegacy index search
+  resp <- fmap BH.hitSource <$> esSearchByIndex index search
   case nonEmpty (catMaybes resp) of
     Nothing -> pure Nothing
     Just xs ->

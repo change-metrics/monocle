@@ -436,6 +436,10 @@ esSearch :: (Error ElasticError :> es, ElasticEffect :> es, ToJSON body, FromJSO
 esSearch iname body scrollReq = do
   runBHIOSafe "esSearch" body $ BHR.search iname body scrollReq
 
+-- | This is similar to esScanSearch, but 'searchByIndex' respects search size and sort order
+esSearchByIndex :: (Error ElasticError :> es, ElasticEffect :> es, ToJSON body, FromJSONField resp) => BH.IndexName -> body -> Eff es [BH.Hit resp]
+esSearchByIndex iname body = BH.hits . BH.searchHits <$> esSearch iname body BHR.NoScroll
+
 esAdvance :: (Error ElasticError :> es, ElasticEffect :> es, FromJSON resp) => BH.ScrollId -> Eff es (BH.SearchResult resp)
 esAdvance scroll = do
   runBHIOSafe "esAdvance" scroll $ BHR.advance scroll
@@ -502,24 +506,7 @@ esUpdateDocument :: (Error ElasticError :> es, ElasticEffect :> es) => ToJSON a 
 esUpdateDocument iname ids body doc = do
   runBHIOSafe "esUpdateDocument" body $ BH.updateDocument iname ids body doc
 
--- Legacy wrappers
-esSearchLegacy :: (LoggerEffect :> es, Error ElasticError :> es, ElasticEffect :> es, FromJSON a) => BH.IndexName -> BH.Search -> Eff es (BH.SearchResult a)
-esSearchLegacy indexName search = do
-  (rawResp, resp) <- runBHIOSafe "esSearchLegacy" search do
-    -- logText . decodeUtf8 . encode $ search
-    rawResp <- BH.searchByIndex indexName search
-    -- logText $ show rawResp
-    (\resp -> (rawResp, resp)) <$> BH.parseEsResponse rawResp
-  case resp of
-    Left e -> handleError e rawResp
-    Right x -> pure x
- where
-  handleError resp rawResp = do
-    logWarn "Elastic response failed" ["status" .= BH.errorStatus resp, "message" .= BH.errorMessage resp]
-    error $ "Elastic response failed: " <> show rawResp
-
 ------------------------------------------------------------------
---
 
 -- | HTTP Effect
 
