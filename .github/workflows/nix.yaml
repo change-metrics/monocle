@@ -20,7 +20,7 @@ jobs:
       - name: Runs Elasticsearch
         uses: "elastic/elastic-github-actions/elasticsearch@master"
         with:
-          stack-version: '7.17.5'
+          stack-version: "7.17.16"
       - name: Display indexes
         run: curl -s -I -X GET http://localhost:9200/_cat/indices
       - name: Build the env

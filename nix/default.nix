@@ -93,17 +93,16 @@ in rec {
   hExtend = haskellExtend;
 
   # DB
-  elk7Version = "7.17.5";
   info = pkgs.lib.splitString "-" pkgs.stdenv.hostPlatform.system;
   arch = pkgs.lib.elemAt info 0;
   plat = pkgs.lib.elemAt info 1;
   elasticsearch = pkgsNonFree.elasticsearch7.overrideAttrs (old: rec {
-    version = elk7Version;
+    version = "7.17.16";
     name = "elasticsearch-${version}";
     src = pkgs.fetchurl {
       url =
         "https://artifacts.elastic.co/downloads/elasticsearch/${name}-${plat}-${arch}.tar.gz";
-      sha256 = "ocz3CJFf+diThmocrgSnhWW/fjuRLLyCxwUKl3Cm7WA=";
+      sha256 = "o0ftRysyy1xp5M9bkKUZaQ2OvAnyHr6zCmoIPY0adZY=";
     };
   });
   elasticsearch-home = "~/.local/share/monocle/elasticsearch-home";
@@ -128,7 +127,7 @@ in rec {
     export ES_HOME=${elasticsearch-home}
     mkdir -p $ES_HOME/logs $ES_HOME/data $ES_HOME/modules $ES_HOME/plugins
     ${pkgs.rsync}/bin/rsync -a ${elasticsearch}/config/ $ES_HOME/config/
-    ${pkgs.rsync}/bin/rsync -a ${elasticsearch}/modules/ $ES_HOME/modules/
+    ${pkgs.rsync}/bin/rsync -a --delete ${elasticsearch}/modules/ $ES_HOME/modules/
     find $ES_HOME -type f | xargs chmod 0600
     find $ES_HOME -type d | xargs chmod 0700
     find $ES_HOME/modules -type f | xargs chmod 0700
@@ -137,7 +136,7 @@ in rec {
   '';
   # DB Companion
   kibana = pkgsNonFree.kibana7.overrideAttrs (old: rec {
-    version = elk7Version;
+    version = "7.17.5";
     name = "kibana-${version}";
     src = pkgs.fetchurl {
       url =
