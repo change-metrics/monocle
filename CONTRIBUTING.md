@@ -214,7 +214,7 @@ protobuf definitions present in the [./schemas/monocle folder](./schemas/monocle
 the api and web client by running the protoc command using the Makefile:
 
 ```ShellSession
-$ make codegen
+$ just codegen
 ```
 
 ## Create a monocle build
