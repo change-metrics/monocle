@@ -18,7 +18,7 @@ import Servant.Auth.Server (
   generateKey,
  )
 
-import Database.Bloodhound qualified as BH
+import Database.Bloodhound qualified as BH (BHEnv)
 import Effectful.Error.Static qualified as E
 import Effectful.Fail qualified as E
 import Effectful.Reader.Static qualified as E
@@ -69,7 +69,7 @@ withTestApi appEnv' testCb = bracket appEnv' cleanIndex runTest
           jwtCfg = appEnv.aOIDC.localJWTSettings
           cfg = jwtCfg :. cookieCfg :. EmptyContext
       traverse_
-        (\index -> runEmptyQueryM index I.ensureIndex)
+        (\index -> dieOnEsError $ runEmptyQueryM index I.ensureIndex)
         indexes
       unsafeEff $ \es ->
         let app = Effectful.Servant.hoistEff @RootAPI es cfg (rootServer cookieCfg)

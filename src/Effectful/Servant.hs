@@ -27,7 +27,7 @@ runWarpServerSettingsContext settings cfg serverEff middleware = do
     ( \es ->
         Warp.runSettings settings (middleware (hoistEff @api es cfg serverEff))
     )
-  error "Warp exited"
+  error "Oops, the listening server (warp) exited, that should not have happened"
 
 hoistEff ::
   forall (api :: Type) (context :: [Type]) (es :: [Effect]).

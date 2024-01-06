@@ -13,6 +13,10 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- [api] The API no longer dumps large decoding error to the stdout.
+  Exceptions from the elastic API are now intercepted and displayed in a nicer format.
+  In a future change, such errors will be indexed for proper debugging.
+
 ### Removed
 
 ### Fixed

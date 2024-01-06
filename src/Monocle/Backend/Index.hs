@@ -465,14 +465,14 @@ ensureConfigIndex = do
   traverseWorkspace action conf = do
     traverse_ (\ws -> localQueryTarget (QueryWorkspace ws) action) (Config.getWorkspaces conf)
 
-ensureIndexSetup :: (MonoQuery :> es, LoggerEffect :> es, ElasticEffect :> es, Retry :> es) => Eff es ()
+ensureIndexSetup :: (MonoQuery :> es, LoggerEffect :> es, Error ElasticError :> es, ElasticEffect :> es, Retry :> es) => Eff es ()
 ensureIndexSetup = do
   indexName <- getIndexName
   logInfo "Ensure workspace " ["index" .= indexName]
   createIndex indexName ChangesIndexMapping
   esSettings indexName (object ["index" .= object ["max_regex_length" .= (50_000 :: Int)]])
 
-ensureIndexCrawlerMetadata :: (E.Fail :> es, LoggerEffect :> es, ElasticEffect :> es, MonoQuery :> es) => Eff es ()
+ensureIndexCrawlerMetadata :: (E.Fail :> es, LoggerEffect :> es, Error ElasticError :> es, ElasticEffect :> es, MonoQuery :> es) => Eff es ()
 ensureIndexCrawlerMetadata = do
   QueryWorkspace config <- getQueryTarget
   traverse_ initCrawlerMetadata config.crawlers
@@ -485,13 +485,13 @@ withRefresh action = do
   refreshResp <- esRefreshIndex index
   unless (BH.isSuccess refreshResp) (error $ "Unable to refresh index: " <> show resp)
 
-ensureIndex :: (E.Fail :> es, LoggerEffect :> es, MonoQuery :> es, ElasticEffect :> es, Retry :> es) => Eff es ()
+ensureIndex :: (E.Fail :> es, LoggerEffect :> es, MonoQuery :> es, Error ElasticError :> es, ElasticEffect :> es, Retry :> es) => Eff es ()
 ensureIndex = do
   ensureIndexSetup
   ensureIndexCrawlerMetadata
 
 removeIndex :: (E.Fail :> es, MonoQuery :> es, ElasticEffect :> es) => Eff es ()
-removeIndex = do
+removeIndex = dieOnEsError do
   indexName <- getIndexName
   _resp <- esDeleteIndex indexName
   False <- esIndexExists indexName
@@ -746,7 +746,7 @@ data TaskDataDoc = TaskDataDoc
 
 type TaskDataOrphanDoc = TaskDataDoc
 
-getOrphanTaskDataByChangeURL :: forall es. (ElasticEffect :> es, MonoQuery :> es) => [Text] -> Eff es [EChangeOrphanTD]
+getOrphanTaskDataByChangeURL :: forall es. (Error ElasticError :> es, ElasticEffect :> es, MonoQuery :> es) => [Text] -> Eff es [EChangeOrphanTD]
 getOrphanTaskDataByChangeURL urls = do
   index <- getIndexName
   results <- scanSearch index

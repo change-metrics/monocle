@@ -30,7 +30,7 @@ import Monocle.Effects
 import Proto3.Suite (Enumerated (Enumerated))
 
 -- Legacy wrappers
-simpleSearchLegacy :: (LoggerEffect :> es, ElasticEffect :> es, FromJSON a) => BH.IndexName -> BH.Search -> Eff es [BH.Hit a]
+simpleSearchLegacy :: (LoggerEffect :> es, Error ElasticError :> es, ElasticEffect :> es, FromJSON a) => BH.IndexName -> BH.Search -> Eff es [BH.Hit a]
 simpleSearchLegacy indexName search = BH.hits . BH.searchHits <$> esSearchLegacy indexName search
 
 -------------------------------------------------------------------------------
@@ -1778,7 +1778,7 @@ allMetrics :: [MetricInfo]
 allMetrics =
   map
     metricInfo
-    [ toJSON <$> metricChangesCreated @[ElasticEffect, LoggerEffect, MonoQuery]
+    [ toJSON <$> metricChangesCreated @[ElasticEffect, Error ElasticError, LoggerEffect, MonoQuery]
     , toJSON <$> metricChangesMerged
     , toJSON <$> metricChangesAbandoned
     , toJSON <$> metricChangesSelfMerged

@@ -157,8 +157,9 @@ run' ApiConfig {..} aplogger = E.runConcurrent $ runLoggerEffect do
 
   bhEnv <- mkEnv elasticUrl
   r <- runRetry $ E.runFail $ runElasticEffect bhEnv do
-    traverse_ (`runEmptyQueryM` I.ensureIndex) workspaces
-    runMonoQuery (MonoQueryEnv (QueryConfig conf) (mkQuery [])) I.ensureConfigIndex
+    dieOnEsError do
+      traverse_ (`runEmptyQueryM` I.ensureIndex) workspaces
+      runMonoQuery (MonoQueryEnv (QueryConfig conf) (mkQuery [])) I.ensureConfigIndex
 
     let settings = Warp.setPort port $ Warp.setLogger httpLogger Warp.defaultSettings
         jwtCfg = localJWTSettings
@@ -181,9 +182,7 @@ run' ApiConfig {..} aplogger = E.runConcurrent $ runLoggerEffect do
         cfg
         (rootServer cookieCfg)
         middleware
-  case r of
-    Left e -> error (show e)
-    Right e -> error (show e)
+  error $ "The impossible has happened, the server stopped: " <> show r
  where
   corsPolicy =
     simpleCorsResourcePolicy {corsRequestHeaders = ["content-type"]}
