@@ -182,6 +182,17 @@ export CRAWLERS_API_KEY=$(uuidgen)
 ghcid --set ":set args api" --test 'CLI.main'
 ```
 
+## Run Kibana to introspect Elasticsearch indices
+
+
+Start Kibana with:
+
+```ShellSession
+nix develop --command kibana-start
+```
+
+Then access http://localhost:5601
+
 ## Fake data provisionning
 
 Provisonning fake data (only fake changes are supported) can be done using the repl:
