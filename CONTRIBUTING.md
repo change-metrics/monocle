@@ -94,6 +94,14 @@ For instance running a crawler:
 nix run . -- lentille github-projects --url https://api.github.com/graphql --token <a-valid-token> --organization change-metrics
 ```
 
+### Build the documentation
+
+Build and read the code documentation:
+
+```
+just docs
+```
+
 ## nix-develop
 
 The nix develop shell provides development tooling such as:

@@ -46,6 +46,10 @@ test pattern:
 ghcid:
     nix develop --command ghcid
 
+# Build and open the documentation
+docs:
+    nix develop --command cabal haddock --open
+
 # Start hoogle with local monocle documentation
 hoogle-monocle:
     nix develop .#hoogle-monocle --command hoogle server -p 8081 --local --haskell
