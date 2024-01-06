@@ -93,11 +93,12 @@ in rec {
   hExtend = haskellExtend;
 
   # DB
+  elk7Version = "7.17.5";
   info = pkgs.lib.splitString "-" pkgs.stdenv.hostPlatform.system;
   arch = pkgs.lib.elemAt info 0;
   plat = pkgs.lib.elemAt info 1;
   elasticsearch = pkgsNonFree.elasticsearch7.overrideAttrs (old: rec {
-    version = "7.17.5";
+    version = elk7Version;
     name = "elasticsearch-${version}";
     src = pkgs.fetchurl {
       url =
@@ -133,6 +134,38 @@ in rec {
     find $ES_HOME/modules -type f | xargs chmod 0700
     cat ${elasticsearchConf} > $ES_HOME/config/elasticsearch.yml
     exec ${elasticsearch}/bin/elasticsearch
+  '';
+  # DB Companion
+  kibana = pkgsNonFree.kibana7.overrideAttrs (old: rec {
+    version = elk7Version;
+    name = "kibana-${version}";
+    src = pkgs.fetchurl {
+      url =
+        "https://artifacts.elastic.co/downloads/kibana/${name}-${plat}-${arch}.tar.gz";
+      sha256 = "Oobbs3es1AegTFmzG2ln+iuJaRZrONamzDQOXKRF2Tk=";
+    };
+  });
+  kibana-home = "~/.local/share/monocle/kibana-home";
+  kibanaConf = pkgs.writeTextFile {
+    name = "kibana.yml";
+    text = ''
+      path.data: ${kibana-home}/data
+      elasticsearch.hosts: [ "http://localhost:${toString elasticsearch-port}" ]
+    '';
+  };
+  kibanaStart = pkgs.writeScriptBin "kibana-start" ''
+    ${headers}
+
+    ${mkHome kibana-home}
+
+    mkdir -p ${kibana-home}/config
+    mkdir -p ${kibana-home}/data
+
+    cat ${kibanaConf} > ${kibana-home}/config/kibana.yml
+
+    export KBN_PATH_CONF=${kibana-home}/config
+    export DATA_PATH=${kibana-home}/data
+    exec ${kibana}/bin/kibana
   '';
 
   # Prometheus
@@ -321,8 +354,13 @@ in rec {
     exec ${pkgs.nodejs}/bin/npm start
   '';
 
-  services-req =
-    [ elasticsearchStart monocleReplStart monocleWebStart monocleGhcid ];
+  services-req = [
+    kibanaStart
+    elasticsearchStart
+    monocleReplStart
+    monocleWebStart
+    monocleGhcid
+  ];
 
   # define the base requirements
   base-req = [ pkgs.bashInteractive hspkgs.coreutils pkgs.gnumake ];
