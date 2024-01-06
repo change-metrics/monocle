@@ -128,8 +128,10 @@ just ghcid
 Hoogle generates the documentation from the Monocle source code.
 
 ```ShellSession
-just hoogle
+just hoogle-monocle
 ```
+
+> To avoid building monocle, you can start hoogle with only the dependencies using `just hoogle`
 
 You can access the generated documentation on port 8081.
 

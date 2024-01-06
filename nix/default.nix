@@ -546,6 +546,18 @@ in rec {
     name = "monocle-services";
     buildInputs = base-req ++ services-req;
   };
+
+  # load hoogle with the current version of monocle
+  hoogle-monocle = pkgs.mkShell {
+    buildInputs = [ (hsPkgs.ghcWithHoogle (p: [ p.monocle ])) ];
+  };
+
+  # load hoogle with monocle dependencies only
+  hoogle = hsPkgs.shellFor {
+    packages = p: [ p.monocle ];
+    withHoogle = true;
+  };
+
   shell = hsPkgs.shellFor {
     packages = p: [ (addExtraDeps p.monocle) p.pretty-simple ];
 

@@ -46,9 +46,13 @@ test pattern:
 ghcid:
     nix develop --command ghcid
 
+# Start hoogle with local monocle documentation
+hoogle-monocle:
+    nix develop .#hoogle-monocle --command hoogle server -p 8081 --local --haskell
+
 # Start hoogle to search documentation
 hoogle:
-    nix develop --command hoogle server -p 8081 --local --haskell
+    nix develop .#hoogle --command hoogle server -p 8081 --local --haskell
 
 # Start a ghci repl
 repl:
