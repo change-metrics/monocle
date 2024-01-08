@@ -161,5 +161,5 @@ We would like to avoid doing the above manually, thus Monocle provide a codegen 
 to automate this process in three steps:
 
 - 1. Write protobuf definitions in the `schemas/` folder, (and add newly created files to the Makefile `MESSAGES` list)
-- 2. Generate the code by running `make codegen-with-container`
+- 2. Generate the code by running `just codegen`
 - 3. Implement the API, e.g. open the `web/src/components/WebApi.res` module to use it.

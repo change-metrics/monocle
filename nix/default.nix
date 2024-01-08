@@ -48,6 +48,14 @@ let
     ];
   };
 
+  # pull latest nixpkgs for just [private] support
+  latestPkgs = import (pkgs.fetchFromGitHub {
+    owner = "NixOS";
+    repo = "nixpkgs";
+    rev = "32ea06b23546a0172ac4e2aa733392e02f57503e";
+    sha256 = "sha256-NuRRuBO3ijXIu8sD9WaW5m6PHb3COI57UtHDMY+aGTI=";
+  }) { system = "x86_64-linux"; };
+
   # create the main package set without options
   pkgs = nixpkgsSrc { system = "x86_64-linux"; };
   pkgsNonFree = nixpkgsSrc {
@@ -328,12 +336,6 @@ in rec {
     cabal repl --build-depends pretty-simple monocle
   '';
 
-  monocleGhcid = pkgs.writeScriptBin "monocle-ghcid" ''
-    #!/bin/sh
-    set -x
-    ${hspkgs.ghcid}/bin/ghcid -c "cabal repl monocle" $*
-  '';
-
   monocleWebStart = pkgs.writeScriptBin "monocle-web-start" ''
     #!/bin/sh
     set -ex
@@ -358,7 +360,6 @@ in rec {
     elasticsearchStart
     monocleReplStart
     monocleWebStart
-    monocleGhcid
   ];
 
   # define the base requirements
@@ -545,10 +546,23 @@ in rec {
     name = "monocle-services";
     buildInputs = base-req ++ services-req;
   };
+
+  # load hoogle with the current version of monocle
+  hoogle-monocle = pkgs.mkShell {
+    buildInputs = [ (hsPkgs.ghcWithHoogle (p: [ p.monocle ])) ];
+  };
+
+  # load hoogle with monocle dependencies only
+  hoogle = hsPkgs.shellFor {
+    packages = p: [ p.monocle ];
+    withHoogle = true;
+  };
+
   shell = hsPkgs.shellFor {
     packages = p: [ (addExtraDeps p.monocle) p.pretty-simple ];
 
     buildInputs = [
+      latestPkgs.just
       hspkgs.hlint
       hspkgs.apply-refact
       hspkgs.ghcid

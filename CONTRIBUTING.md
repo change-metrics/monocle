@@ -33,7 +33,7 @@ This section describes how to start the Monocle services directly on your host.
 #### Start ElasticSearch
 
 ```ShellSession
-nix develop --command elasticsearch-start
+just elastic
 ```
 
 #### Start the Monocle API
@@ -41,13 +41,13 @@ nix develop --command elasticsearch-start
 The API serves the web UI and the Monocle API. The web App must be built first by running:
 
 ```ShellSession
-cd web && npm install && npm run build && cd -
+just build-web
 ```
 
 Then, ensure you have set the Monocle config file `config.yaml` (see [README.md](README.md#configuration)) and run:
 
 ```ShellSession
-nix develop --command monocle-repl
+just repl
 λ> import Monocle.Main
 λ> run $ defaultApiConfig 8080 "http://localhost:19200" "etc/config.yaml"
 ```
@@ -55,8 +55,11 @@ nix develop --command monocle-repl
 … or by running the executable:
 
 ```ShellSession
-CRAWLERS_API_KEY=secret MONOCLE_CONFIG=./etc/config.yaml nix develop --command cabal run -O0 monocle -- api
+just api
 ```
+
+> Make sure to setup your .env file, e.g. with:
+> (echo CRAWLERS_API_KEY=secret; echo MONOCLE_CONFIG=./etc/config.yaml) > .env
 
 The Monocle UI should be accessible:
 
@@ -67,11 +70,14 @@ firefox http://localhost:8080
 #### Start the Monocle crawler process
 
 ```ShellSession
-nix develop --command monocle-repl
-λ> import Macroscope.Worker
-λ> import Macroscope.Main
-λ> import Monocle.Client (withClient)
-λ> withClient "http://localhost:8080" Nothing $ \client -> runMacroscope 19001 "etc/config.yaml" client
+just repl
+λ> Monocle.Client.withClient "http://localhost:8080" Nothing $ \client -> Macroscope.Main.runMacroscope 19001 "etc/config.yaml" client
+```
+
+… or by running the executable:
+
+```ShellSession
+just crawler
 ```
 
 ### Start the CLI
@@ -86,6 +92,14 @@ For instance running a crawler:
 
 ```
 nix run . -- lentille github-projects --url https://api.github.com/graphql --token <a-valid-token> --organization change-metrics
+```
+
+### Build the documentation
+
+Build and read the code documentation:
+
+```
+just docs
 ```
 
 ## nix-develop
@@ -113,9 +127,8 @@ You might need to install the right Haskell plugin for your editor.
 ghcid automatically re-compiles the code when a haskell file change and display compilation
 errors and warnings.
 
-
 ```ShellSession
-nix develop --command monocle-ghcid
+just ghcid
 ```
 
 ### Run hoogle
@@ -123,8 +136,10 @@ nix develop --command monocle-ghcid
 Hoogle generates the documentation from the Monocle source code.
 
 ```ShellSession
-nix develop --command hoogle server -p 8081 --local --haskell
+just hoogle-monocle
 ```
+
+> To avoid building monocle, you can start hoogle with only the dependencies using `just hoogle`
 
 You can access the generated documentation on port 8081.
 
@@ -136,25 +151,25 @@ Ensure the service is started by running: `nix develop --command elasticsearch-s
 Run linters (fourmolu and hlint) with:
 
 ```ShellSession
-nix develop --command monocle-fast-ci-run
+just ci-fast
 ```
 
 When the linters fail, you can fix the issue automatically with:
 
 ```ShellSession
-nix develop --command monocle-reformat-run
+just fmt
 ```
 
 Run the full test suite with:
 
 ```ShellSession
-nix develop --command monocle-ci-run
+just ci
 ```
 
-Run a single test:
+Run a single test (on failure, tasty provides a pattern to re-run a single test):
 
 ```ShellSession
-cabal test --test-options='-p "Change stream"'
+just test "PATTERN"
 ```
 
 ## Start the web development server
@@ -162,7 +177,7 @@ cabal test --test-options='-p "Change stream"'
 Start the web dev server (hot-reload):
 
 ```ShellSession
-nix develop --command monocle-web-start
+just web
 firefox http://localhost:13000
 ```
 
@@ -188,7 +203,7 @@ ghcid --set ":set args api" --test 'CLI.main'
 Start Kibana with:
 
 ```ShellSession
-nix develop --command kibana-start
+just kibana
 ```
 
 Then access http://localhost:5601
@@ -198,9 +213,8 @@ Then access http://localhost:5601
 Provisonning fake data (only fake changes are supported) can be done using the repl:
 
 ```
-nix develop --command monocle-repl
-λ> import Monocle.Backend.Provisioner
-λ> runProvisioner "etc/config.yaml" "http://localhost:19200" "demo-fake-data" 300
+just repl
+λ> Monocle.Backend.Provisioner.runProvisioner "etc/config.yaml" "http://localhost:19200" "demo-fake-data" 300
 ```
 
 Prior to run the provisonner, add the *demo-fake-data* workspace in the config file with an
@@ -214,7 +228,7 @@ protobuf definitions present in the [./schemas/monocle folder](./schemas/monocle
 the api and web client by running the protoc command using the Makefile:
 
 ```ShellSession
-$ make codegen
+just codegen
 ```
 
 ## Create a monocle build

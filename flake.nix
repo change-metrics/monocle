@@ -38,6 +38,8 @@
     in {
       haskellExtend = legacy.hExtend;
       devShell."x86_64-linux" = legacy.shell;
+      devShells."x86_64-linux".hoogle-monocle = legacy.hoogle-monocle;
+      devShells."x86_64-linux".hoogle = legacy.hoogle;
       devShells."x86_64-linux".ci = legacy.ci-shell;
       devShells."x86_64-linux".monitoring = legacy.monitoring-shell;
       packages."x86_64-linux".default = legacy.monocle-exe;
