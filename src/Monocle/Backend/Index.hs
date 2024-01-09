@@ -502,7 +502,7 @@ toAuthor (Just ChangePB.Ident {..}) =
   Monocle.Backend.Documents.Author
     { authorMuid = identMuid
     , authorUid = identUid
-    , authorGroups = toList identGroups
+    , authorGroups = Just $ toList identGroups
     }
 toAuthor Nothing =
   Monocle.Backend.Documents.Author

@@ -36,7 +36,7 @@ import Monocle.Protob.Search qualified as SearchPB
 data Author = Author
   { authorMuid :: LText
   , authorUid :: LText
-  , authorGroups :: [LText]
+  , authorGroups :: Maybe [LText]
   }
   deriving (Show, Eq, Generic)
 
@@ -51,7 +51,7 @@ instance From ChangePB.Ident Author where
     Author
       { authorMuid = identMuid
       , authorUid = identUid
-      , authorGroups = toList identGroups
+      , authorGroups = Just $ toList identGroups
       }
 
 fromMaybeIdent :: Maybe ChangePB.Ident -> Author
