@@ -237,7 +237,7 @@ testIndexChanges = withTenant doTest
         , echangeTitle = title
         , echangeRepositoryFullname = "fakerepo"
         , echangeUrl = "https://fakehost/change/" <> show number
-        , echangeAuthor = Author "John" "John" ["dev", "core"]
+        , echangeAuthor = Author "John" "John" (Just ["dev", "core"])
         }
 
 testIndexEvents :: Assertion
@@ -609,7 +609,7 @@ testJanitorUpdateIdents = do
       , idents = Just [Config.Ident ["github.com/john"] (Just ["dev", "core"]) "John Doe"]
       , search_aliases = Nothing
       }
-  expectedAuthor = Author "John Doe" "github.com/john" ["dev", "core"]
+  expectedAuthor = Author "John Doe" "github.com/john" (Just ["dev", "core"])
 
   doUpdateIndentOnEventsTest :: Eff [MonoQuery, ElasticEffect, LoggerEffect, IOE] ()
   doUpdateIndentOnEventsTest = E.runFailIO $ dieOnEsError do
@@ -623,7 +623,7 @@ testJanitorUpdateIdents = do
     evt2' <- I.getChangeEventById $ I.getEventDocId evt2
     assertEqual' "Ensure event not changed" evt2' $ Just evt2
    where
-    evt1 = mkEventWithAuthor "e1" (Author "john" "github.com/john" ["not-core"])
+    evt1 = mkEventWithAuthor "e1" (Author "john" "github.com/john" (Just ["not-core"]))
     evt2 = mkEventWithAuthor "e2" (Author "paul" "github.com/paul" mempty)
     mkEventWithAuthor ::
       -- eventId
