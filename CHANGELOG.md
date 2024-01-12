@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 ## [master]
 
 ### Added
+### Changed
+### Removed
+### Fixed
+
+## [1.11.0] - 2024-01-12
+
+### Added
 
 - [crawler] Proxy can be configured with `HTTP_PROXY` and `HTTPS_PROXY` environment. To proxy http requests between crawlers and the api, use the `API_PROXY` environment.
 - [crawler] A new `groups` sub-field in all Author fields (`on_author` and `author`) for `Change` and `Events`.
@@ -17,8 +24,6 @@ All notable changes to this project will be documented in this file.
   Exceptions from the elastic API are now intercepted and displayed in a nicer format.
   In a future change, such errors will be indexed for proper debugging.
 - [compose] Bumped Elasticsearch to 7.17.16.
-
-### Removed
 
 ### Fixed
 

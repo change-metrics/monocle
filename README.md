@@ -86,7 +86,7 @@ the configuration.
 ### Start docker-compose
 
 The docker-compose file is set to use the container image of the latest stable
-release of Monocle (1.10.0). It is adviced to use the latest stable Monocle version.
+release of Monocle (1.11.0). It is adviced to use the latest stable Monocle version.
 However, as our CI publishes the latest (devel) container image then it is possible
 to run the very last version. To do so set `COMPOSE_MONOCLE_VERSION` to `latest` in
 the `.env` file.
