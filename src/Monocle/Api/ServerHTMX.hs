@@ -78,8 +78,8 @@ searchAuthorsHandler auth (Just index) queryM = do
           unless (V.null aliases) aliasesH
           unless (V.null groups) groupH
    where
-    clickAuthorF = [iii|pushToRouter("#{index}","author","#{muid}")|]
-    clickGroupF groupName = [iii|pushToRouter("#{index}","group","#{groupName}")|]
+    clickAuthorF = [iii|pushToRouter("#{indexVal}","author","#{muid}")|]
+    clickGroupF groupName = [iii|pushToRouter("#{indexVal}","group","#{groupName}")|]
     aliasesH = do
       hr_ [class_ "pf-c-divider pf-m-vertical"]
       ul_ [class_ "pf-c-list pf-m-inline"] $ do
