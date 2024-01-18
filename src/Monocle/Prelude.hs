@@ -205,6 +205,8 @@ module Monocle.Prelude (
   incrementCounter,
   httpRequestCounter,
   httpFailureCounter,
+  monocleHTTPRequestCounter,
+  monocleHTTPRequestErrorCounter,
   monocleQueryCheckCounter,
   monocleQueryCounter,
   monocleMetricCounter,
@@ -282,6 +284,16 @@ incrementCounter x l = withLabel x l incCounter
 
 -------------------------------------------------------------------------------
 -- Global metrics
+{-# NOINLINE monocleHTTPRequestCounter #-}
+monocleHTTPRequestCounter :: Prometheus.Counter
+monocleHTTPRequestCounter =
+  unsafePerformIO $ promRegister $ Prometheus.counter (Info "http_request" "")
+
+{-# NOINLINE monocleHTTPRequestErrorCounter #-}
+monocleHTTPRequestErrorCounter :: Prometheus.Counter
+monocleHTTPRequestErrorCounter =
+  unsafePerformIO $ promRegister $ Prometheus.counter (Info "http_request_error" "")
+
 {-# NOINLINE monocleQueryCheckCounter #-}
 monocleQueryCheckCounter :: Prometheus.Counter
 monocleQueryCheckCounter =

@@ -1,6 +1,8 @@
 -- | The Monocle entry point.
 module Monocle.Main (run, rootServer, ApiConfig (..), defaultApiConfig, RootAPI) where
 
+import Control.Exception (catch, throwIO)
+import Data.ByteString qualified as BS
 import Data.List qualified
 import Data.Text qualified as Text
 import Data.Text.IO qualified as Text
@@ -87,6 +89,25 @@ healthMiddleware app' req resp
   | Wai.rawPathInfo req == "/health" = resp $ Wai.responseLBS HTTP.status200 mempty "api is running\n"
   | otherwise = app' req resp
 
+-- | This middleware keeps track of user request
+metricMiddleware :: Wai.Application -> Wai.Application
+metricMiddleware app' req resp = handleExceptions $ app' req handleResp
+ where
+  basePath = Wai.rawPathInfo req
+  handleResp appResp
+    | -- crawler or static file request
+      "/api/2/crawler/" `BS.isPrefixOf` basePath || not ("/api/2/" `BS.isPrefixOf` basePath) =
+        resp appResp
+    | otherwise = do
+        incCounter $ case HTTP.statusCode (Wai.responseStatus appResp) of
+          code | code >= 200 && code < 300 -> monocleHTTPRequestCounter
+          _ -> monocleHTTPRequestErrorCounter
+        resp appResp
+  handleExceptions act =
+    act `catch` \(e :: SomeException) -> do
+      incCounter monocleHTTPRequestErrorCounter
+      throwIO e
+
 data ApiConfig = ApiConfig
   { port :: Int
   , elasticUrl :: Text
@@ -170,6 +191,7 @@ run' ApiConfig {..} aplogger = E.runConcurrent $ runLoggerEffect do
             . monitoringMiddleware
             . healthMiddleware
             . staticMiddleware
+            . metricMiddleware
     logInfo "SystemReady" ["workspace" .= length workspaces, "port" .= port, "elastic" .= elasticUrl]
 
     appEnv <- E.withEffToIO $ \effToIO -> do

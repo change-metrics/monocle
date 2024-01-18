@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 ## [master]
 
 ### Added
+
+- [api] add http_request and http_request_error metrics counter.
+
 ### Changed
 ### Removed
 ### Fixed
