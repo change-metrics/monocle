@@ -11,6 +11,8 @@ All notable changes to this project will be documented in this file.
 ### Removed
 ### Fixed
 
+- [janitor] `update-idents` unables to process when some Error docs are in the index.
+
 ## [1.11.0] - 2024-01-12
 
 ### Added

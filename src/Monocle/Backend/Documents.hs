@@ -319,6 +319,7 @@ instance FromJSON EChangeState where
       )
 
 -- | When adding new document type, update the `instance FromJSON EDocType` too.
+-- | and please make sure to update `allEventTypes` accordingly
 data EDocType
   = EChangeCreatedEvent
   | EChangeMergedEvent
@@ -339,7 +340,7 @@ data EDocType
 
 allEventTypes :: [EDocType]
 allEventTypes =
-  filter (`notElem` [EChangeDoc, EOrphanTaskData, ECachedAuthor]) [minBound .. maxBound]
+  filter (`notElem` [EChangeDoc, EOrphanTaskData, ECachedAuthor, EErrorDoc]) [minBound .. maxBound]
 
 instance From EDocType Text where
   from = \case
