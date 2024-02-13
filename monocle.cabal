@@ -1,6 +1,6 @@
 cabal-version:       3.0
 name:                monocle
-version:             1.11.0
+version:             1.11.1
 homepage:            https://github.com/change-metrics/monocle#readme
 bug-reports:         https://github.com/change-metrics/monocle/issues
 license:             AGPL-3.0-only
