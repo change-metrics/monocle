@@ -115,6 +115,7 @@ data LentilleErrorKind
   | RequestError GraphQLError
   | RateLimitInfoError GraphQLError
   | PartialErrors Value
+  | EntityRemoved
   deriving (Show, Generic, ToJSON)
 
 yieldStreamError :: TimeEffect :> es => LentilleErrorKind -> LentilleStream es a

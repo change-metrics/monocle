@@ -113,9 +113,10 @@ processStream logFunc postFunc = go (0 :: Word) [] []
         let addStreamError :: [Maybe ProcessError] -> [Maybe ProcessError]
             addStreamError = case edoc of
               Right _ -> id
-              -- This is likely an error we can't recover, so don't add stream error
+              -- This is likely an error we can recover, so don't add stream error
               Left (LentilleError _ (PartialErrors _)) -> id
-              -- Every other 'LentilleError' are fatal$
+              Left (LentilleError _ EntityRemoved) -> id
+              -- Every other 'LentilleError' are fatal
               Left err -> (Just (StreamError err) :)
         let newAcc = doc : acc
         if count == 499
@@ -132,6 +133,7 @@ processStream logFunc postFunc = go (0 :: Word) [] []
       RequestError e -> ("graph", encodeJSON e)
       RateLimitInfoError e -> ("rate-limit-info", encodeJSON e)
       PartialErrors es -> ("partial", encodeJSON es)
+      EntityRemoved -> ("entity-removed", encodeJSON ("" :: Text))
 
   processBatch :: [DocumentType] -> Eff es (Maybe ProcessError)
   processBatch [] = pure Nothing

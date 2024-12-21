@@ -36,7 +36,7 @@ transformRateLimit (GetProjectsRateLimit used remaining (DateTime resetAtText)) 
     Just resetAt -> RateLimit {..}
     Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAtText
 
-transformResponse :: GetProjects -> (PageInfo, Maybe RateLimit, [Text], [Project])
+transformResponse :: GetProjects -> (PageInfo, Maybe RateLimit, DynErr, [Project])
 transformResponse result =
   case result of
     GetProjects
@@ -52,13 +52,13 @@ transformResponse result =
         ) ->
         ( PageInfo hasNextPage endCursor (Just totalCount)
         , transformRateLimit <$> rateLimitM
-        , []
+        , NoErr
         , getRepos orgRepositories
         )
     _anyOtherResponse ->
       ( PageInfo False Nothing Nothing
       , Nothing
-      , ["Unknown GetProjects response: " <> show result]
+      , UnknownErr ["Unknown GetProjects response: " <> show result]
       , []
       )
  where
