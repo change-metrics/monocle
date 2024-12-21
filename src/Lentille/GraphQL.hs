@@ -281,7 +281,7 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
 
         _ <- case dynErrors of
           UnknownErr decodingErrors -> yieldStreamError $ DecodeError decodingErrors
-          NoRepo -> yieldStreamError $ EntityRemoved
+          NoRepo -> yieldStreamError EntityRemoved
           NoErr -> pure ()
 
         -- Yield the results
