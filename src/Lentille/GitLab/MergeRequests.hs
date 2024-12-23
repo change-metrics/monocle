@@ -125,7 +125,7 @@ transformResponse ::
   -- A callback to get Ident ID from an alias
   (Text -> Maybe Config.IdentUG) ->
   GetProjectMergeRequests ->
-  (PageInfo, Maybe RateLimit, DynErr, [(Change, [ChangeEvent])])
+  (PageInfo, Maybe RateLimit, GraphResponseResult, [(Change, [ChangeEvent])])
 transformResponse host getIdentIdCB result =
   case result of
     GetProjectMergeRequests

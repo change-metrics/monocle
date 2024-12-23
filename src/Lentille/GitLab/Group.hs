@@ -43,7 +43,7 @@ streamGroupProjects client fullPath =
  where
   mkArgs _ = GetGroupProjectsArgs (ID fullPath)
 
-transformResponse :: GetGroupProjects -> (PageInfo, Maybe RateLimit, DynErr, [Project])
+transformResponse :: GetGroupProjects -> (PageInfo, Maybe RateLimit, GraphResponseResult, [Project])
 transformResponse result =
   case result of
     GetGroupProjects

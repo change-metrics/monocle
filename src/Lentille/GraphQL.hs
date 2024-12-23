@@ -24,7 +24,7 @@ module Lentille.GraphQL (
   GraphResponse,
   GraphResp,
   GraphError,
-  DynErr (..),
+  GraphResponseResult (..),
   RateLimit (..),
   PageInfo (..),
   StreamFetchOptParams (..),
@@ -45,9 +45,9 @@ import Monocle.Effects
 
 type GraphEffects es = (LoggerEffect :> es, HttpEffect :> es, PrometheusEffect :> es, TimeEffect :> es, Retry :> es, Concurrent :> es, Fail :> es)
 
-data DynErr = NoRepo | UnknownErr [Text] | NoErr
+data GraphResponseResult = NoRepo | UnknownErr [Text] | NoErr
 
-type GraphResponse a = (PageInfo, Maybe RateLimit, DynErr, a)
+type GraphResponse a = (PageInfo, Maybe RateLimit, GraphResponseResult, a)
 
 -------------------------------------------------------------------------------
 -- Constants
@@ -204,7 +204,7 @@ streamFetch ::
   (Maybe Int -> Maybe Text -> Args a) ->
   StreamFetchOptParams es a ->
   -- | query result adapter
-  (a -> (PageInfo, Maybe RateLimit, DynErr, [b])) ->
+  (a -> (PageInfo, Maybe RateLimit, GraphResponseResult, [b])) ->
   LentilleStream es b
 streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformResponse = startFetch
  where

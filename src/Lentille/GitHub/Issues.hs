@@ -97,7 +97,7 @@ transformRateLimit (GetLinkedIssuesRateLimit used remaining (DateTime resetAtTex
     Just resetAt -> RateLimit {..}
     Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAtText
 
-transformResponse :: GetLinkedIssues -> (PageInfo, Maybe RateLimit, DynErr, [TaskData])
+transformResponse :: GetLinkedIssues -> (PageInfo, Maybe RateLimit, GraphResponseResult, [TaskData])
 transformResponse searchResult =
   case searchResult of
     GetLinkedIssues

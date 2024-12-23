@@ -63,7 +63,7 @@ transformResponse ::
   (Text -> Maybe Config.IdentUG) ->
   -- The response payload
   GetUserPullRequests ->
-  (PageInfo, Maybe RateLimit, DynErr, [Changes])
+  (PageInfo, Maybe RateLimit, GraphResponseResult, [Changes])
 transformResponse host identCB result = do
   let process resp rateLimit = case resp of
         ( Just

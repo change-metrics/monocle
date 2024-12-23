@@ -133,7 +133,7 @@ processStream logFunc postFunc = go (0 :: Word) [] []
       RequestError e -> ("graph", encodeJSON e)
       RateLimitInfoError e -> ("rate-limit-info", encodeJSON e)
       PartialErrors es -> ("partial", encodeJSON es)
-      EntityRemoved -> ("entity-removed", encodeJSON ("" :: Text))
+      EntityRemoved -> ("entity-removed", encodeJSON ("null" :: Text))
 
   processBatch :: [DocumentType] -> Eff es (Maybe ProcessError)
   processBatch [] = pure Nothing

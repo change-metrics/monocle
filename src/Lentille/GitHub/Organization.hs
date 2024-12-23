@@ -36,7 +36,7 @@ transformRateLimit (GetProjectsRateLimit used remaining (DateTime resetAtText)) 
     Just resetAt -> RateLimit {..}
     Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAtText
 
-transformResponse :: GetProjects -> (PageInfo, Maybe RateLimit, DynErr, [Project])
+transformResponse :: GetProjects -> (PageInfo, Maybe RateLimit, GraphResponseResult, [Project])
 transformResponse result =
   case result of
     GetProjects
