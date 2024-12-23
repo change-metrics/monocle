@@ -97,7 +97,7 @@ transformRateLimit (GetLinkedIssuesRateLimit used remaining (DateTime resetAtTex
     Just resetAt -> RateLimit {..}
     Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAtText
 
-transformResponse :: GetLinkedIssues -> (PageInfo, Maybe RateLimit, [Text], [TaskData])
+transformResponse :: GetLinkedIssues -> (PageInfo, Maybe RateLimit, GraphResponseResult, [TaskData])
 transformResponse searchResult =
   case searchResult of
     GetLinkedIssues
@@ -110,7 +110,7 @@ transformResponse searchResult =
         let newTaskDataE = concatMap mkTaskData issues
          in ( PageInfo hasNextPage' endCursor' (Just issueCount')
             , transformRateLimit <$> rateLimitM
-            , lefts newTaskDataE
+            , UnknownErr $ lefts newTaskDataE
             , rights newTaskDataE
             )
     respOther -> error ("Invalid response: " <> show respOther)

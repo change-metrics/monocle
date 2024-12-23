@@ -24,6 +24,7 @@ module Lentille.GraphQL (
   GraphResponse,
   GraphResp,
   GraphError,
+  GraphResponseResult (..),
   RateLimit (..),
   PageInfo (..),
   StreamFetchOptParams (..),
@@ -44,7 +45,9 @@ import Monocle.Effects
 
 type GraphEffects es = (LoggerEffect :> es, HttpEffect :> es, PrometheusEffect :> es, TimeEffect :> es, Retry :> es, Concurrent :> es, Fail :> es)
 
-type GraphResponse a = (PageInfo, Maybe RateLimit, [Text], a)
+data GraphResponseResult = NoRepo | UnknownErr [Text] | NoErr
+
+type GraphResponse a = (PageInfo, Maybe RateLimit, GraphResponseResult, a)
 
 -------------------------------------------------------------------------------
 -- Constants
@@ -201,7 +204,7 @@ streamFetch ::
   (Maybe Int -> Maybe Text -> Args a) ->
   StreamFetchOptParams es a ->
   -- | query result adapter
-  (a -> (PageInfo, Maybe RateLimit, [Text], [b])) ->
+  (a -> (PageInfo, Maybe RateLimit, GraphResponseResult, [b])) ->
   LentilleStream es b
 streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformResponse = startFetch
  where
@@ -268,7 +271,7 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
       Left err ->
         -- Yield the error and stop the stream
         yieldStreamError $ RequestError (mkGraphQLError err)
-      Right (RequestResult mPartial (pageInfo, rateLimitM, decodingErrors, xs)) -> do
+      Right (RequestResult mPartial (pageInfo, rateLimitM, dynErrors, xs)) -> do
         -- Log crawling status
         logStep pageInfo rateLimitM xs totalFetched
 
@@ -276,8 +279,10 @@ streamFetch client@GraphClient {..} mkArgs StreamFetchOptParams {..} transformRe
           lift $ logWarn "Fetched partial result" ["err" .= partial]
           yieldStreamError $ PartialErrors partial
 
-        unless (null decodingErrors) do
-          yieldStreamError $ DecodeError decodingErrors
+        _ <- case dynErrors of
+          UnknownErr decodingErrors -> yieldStreamError $ DecodeError decodingErrors
+          NoRepo -> yieldStreamError EntityRemoved
+          NoErr -> pure ()
 
         -- Yield the results
         S.each (Right <$> xs)

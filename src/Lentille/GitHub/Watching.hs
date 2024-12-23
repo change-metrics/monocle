@@ -54,13 +54,13 @@ transformResponse result = do
               Nothing -> error $ "Unable to parse the resetAt date string: " <> resetAtText
          in ( Lentille.GraphQL.PageInfo hasNextPage endCursor (Just totalCount)
             , Just rateLimit
-            , []
+            , Lentille.GraphQL.NoErr
             , getRepos watchedRepositories
             )
     _anyOtherResponse ->
       ( Lentille.GraphQL.PageInfo False Nothing Nothing
       , Nothing
-      , ["Unknown GetWatched response: " <> show result]
+      , Lentille.GraphQL.UnknownErr ["Unknown GetWatched response: " <> show result]
       , []
       )
  where

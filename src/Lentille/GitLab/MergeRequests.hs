@@ -125,7 +125,7 @@ transformResponse ::
   -- A callback to get Ident ID from an alias
   (Text -> Maybe Config.IdentUG) ->
   GetProjectMergeRequests ->
-  (PageInfo, Maybe RateLimit, [Text], [(Change, [ChangeEvent])])
+  (PageInfo, Maybe RateLimit, GraphResponseResult, [(Change, [ChangeEvent])])
 transformResponse host getIdentIdCB result =
   case result of
     GetProjectMergeRequests
@@ -144,13 +144,13 @@ transformResponse host getIdentIdCB result =
         ) ->
         ( PageInfo hasNextPage endCursor (Just count)
         , Nothing
-        , []
+        , NoErr
         , extract shortName fullName <$> catMaybes nodes
         )
     _anyOtherResponse ->
       ( PageInfo False Nothing Nothing
       , Nothing
-      , ["Unknown GetProjectMergeRequests response: " <> show result]
+      , UnknownErr ["Unknown GetProjectMergeRequests response: " <> show result]
       , []
       )
  where

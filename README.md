@@ -214,7 +214,7 @@ A GitHub provider settings
 `github_organization` is the only mandatory key. If `github_repositories` is not specified then
 the crawler will crawl the whole organization repositories. If specified then it will crawl only
 the listed repositories. To crawl repositories from a personnal GitHub account, you need to set
-`github_organization` to you account name and list repositories under the `github_repositories` key.
+`github_organization` to the account name and list repositories under the `github_repositories` key.
 
 `github_url` might be specified in case of an alternate url. Default is "https://github.com/api/graphql".
 

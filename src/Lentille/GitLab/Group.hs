@@ -43,7 +43,7 @@ streamGroupProjects client fullPath =
  where
   mkArgs _ = GetGroupProjectsArgs (ID fullPath)
 
-transformResponse :: GetGroupProjects -> (PageInfo, Maybe RateLimit, [Text], [Project])
+transformResponse :: GetGroupProjects -> (PageInfo, Maybe RateLimit, GraphResponseResult, [Project])
 transformResponse result =
   case result of
     GetGroupProjects
@@ -57,13 +57,13 @@ transformResponse result =
         ) ->
         ( PageInfo hasNextPage endCursor Nothing
         , Nothing
-        , []
+        , NoErr
         , getFullPath <$> cleanMaybeMNodes nodes
         )
     _anyOtherResponse ->
       ( PageInfo False Nothing Nothing
       , Nothing
-      , ["Unknown GetGroupProjects response: " <> show result]
+      , UnknownErr ["Unknown GetGroupProjects response: " <> show result]
       , []
       )
  where

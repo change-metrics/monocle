@@ -66,7 +66,7 @@ transformResponse ::
   (Text -> Maybe Config.IdentUG) ->
   -- The response payload
   GetProjectPullRequests ->
-  (PageInfo, Maybe RateLimit, [Text], [Changes])
+  (PageInfo, Maybe RateLimit, GraphResponseResult, [Changes])
 transformResponse host identCB result = do
   let process resp rateLimit = case resp of
         ( Just
@@ -79,11 +79,17 @@ transformResponse host identCB result = do
               )
           ) ->
             let totalCount = Just totalCount'
-             in (PageInfo {..}, rateLimit, [], mapMaybe transPR (catMaybes projectPRs))
-        _anyOtherResponse ->
+             in (PageInfo {..}, rateLimit, NoErr, mapMaybe transPR (catMaybes projectPRs))
+        Just _ ->
           ( PageInfo False Nothing Nothing
           , Nothing
-          , ["Unknown GetProjectPullRequests response: " <> show result]
+          , UnknownErr ["Unknown GetProjectPullRequests response: " <> show result]
+          , []
+          )
+        Nothing ->
+          ( PageInfo False Nothing Nothing
+          , Nothing
+          , NoRepo
           , []
           )
   case result of

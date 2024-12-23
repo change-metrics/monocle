@@ -91,7 +91,7 @@ in  { GithubActions
         }
       , GithubActions.Step::{
         , name = Some "Start Monocle compose"
-        , run = Some "docker-compose up -d"
+        , run = Some "docker compose up -d"
         }
       , GithubActions.Step::{
         , name = Some "Wait for services to start"
@@ -99,15 +99,15 @@ in  { GithubActions
         }
       , GithubActions.Step::{
         , name = Some "Display docker-compose ps"
-        , run = Some "docker-compose ps"
+        , run = Some "docker compose ps"
         }
       , GithubActions.Step::{
         , name = Some "Display docker-compose logs"
-        , run = Some "docker-compose logs"
+        , run = Some "docker compose logs"
         }
       , GithubActions.Step::{
         , name = Some "Check services are running"
-        , run = Some "test -z \"\$(sudo docker-compose ps -a | grep Exit)\""
+        , run = Some "test -z \"\$(sudo docker compose ps -a | grep Exit)\""
         }
       , GithubActions.Step::{
         , name = Some "Check api service through nginx"
