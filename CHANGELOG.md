@@ -9,7 +9,12 @@ All notable changes to this project will be documented in this file.
 ### Removed
 ### Fixed
 
-- [crawler] github PR crawler raise a fatal StreamError when a repository is not found (#1112)
+
+## [1.11.2] - 2024-12-24
+
+### Fixed
+
+- [crawler] github PR crawler raises a fatal StreamError when a repository is not found (#1112)
 
 ## [1.11.1] - 2024-02-13
 
