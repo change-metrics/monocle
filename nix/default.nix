@@ -1,26 +1,33 @@
-{ elasticsearch-port ? 19200, nixpkgsPath, hspkgs, self }:
+{ elasticsearch-port ? 19200, nixpkgsPath, latestnixpkgsPath, self }:
 let
   nixpkgsSrc = import nixpkgsPath;
+  latestnixpkgsSrc = import latestnixpkgsPath;
 
   rev = if self ? rev then
-    self.rev
+  self.rev
   else
-    throw "Refusing to build from a dirty Git tree!";
+  throw "Refusing to build from a dirty Git tree!";
 
   src = pkgs.lib.cleanSourceWith {
     src = self; # The original, unfiltered source
     filter = path: type:
-      type == "directory" || (pkgs.lib.hasSuffix ".cabal" path)
-      || (pkgs.lib.hasSuffix ".hs" path) || (pkgs.lib.hasSuffix ".dhall" path)
-      || (pkgs.lib.hasSuffix ".json" path) || (pkgs.lib.hasSuffix ".yaml" path)
-      || (pkgs.lib.hasSuffix "LICENSE" path)
-      || (pkgs.lib.hasSuffix ".graphql" path);
+    type == "directory" || (pkgs.lib.hasSuffix ".cabal" path)
+    || (pkgs.lib.hasSuffix ".hs" path) || (pkgs.lib.hasSuffix ".dhall" path)
+    || (pkgs.lib.hasSuffix ".json" path) || (pkgs.lib.hasSuffix ".yaml" path)
+    || (pkgs.lib.hasSuffix "LICENSE" path)
+    || (pkgs.lib.hasSuffix ".graphql" path);
 
   };
 
   # Add monocle and patch broken dependency to the haskell package set
   haskellExtend = hpFinal: hpPrev: {
     monocle = hpPrev.callCabal2nix "monocle" src { };
+
+    # there is a test failure: resolveGroupController should resolve a direct mount root
+    cgroup-rts-threads = pkgs.haskell.lib.dontCheck
+    (pkgs.haskell.lib.overrideCabal hpPrev.cgroup-rts-threads {
+      broken = false;
+    });
 
     # upgrade to bloodhound 0.20 needs some work
     bloodhound = pkgs.haskell.lib.overrideCabal hpPrev.bloodhound {
@@ -49,7 +56,7 @@ let
   };
 
   # pull latest nixpkgs for just [private] support
-  latestPkgs = import (pkgs.fetchFromGitHub {
+  latestPkgsForJust = import (pkgs.fetchFromGitHub {
     owner = "NixOS";
     repo = "nixpkgs";
     rev = "32ea06b23546a0172ac4e2aa733392e02f57503e";
@@ -58,20 +65,21 @@ let
 
   # create the main package set without options
   pkgs = nixpkgsSrc { system = "x86_64-linux"; };
+  latestPkgs = latestnixpkgsSrc { system = "x86_64-linux"; };
   pkgsNonFree = nixpkgsSrc {
     system = "x86_64-linux";
     config.allowUnfree = true;
   };
   # final haskell set, see: https://github.com/NixOS/nixpkgs/issues/25887
-  hsPkgs = hspkgs.hspkgs.extend haskellExtend;
+  hsPkgs = latestPkgs.haskellPackages.extend haskellExtend;
 
   # manually adds build dependencies for benchmark and codegen that are not managed by cabal2nix
   addExtraDeps = drv:
-    pkgs.haskell.lib.addBuildDepends drv ([
-      hsPkgs.criterion
-      hsPkgs.casing
-      hsPkgs.language-protobuf
-    ]);
+  pkgs.haskell.lib.addBuildDepends drv ([
+    hsPkgs.criterion
+    hsPkgs.casing
+    hsPkgs.language-protobuf
+  ]);
 
   # local devel env
   monocle-port = 8080;
@@ -89,9 +97,9 @@ let
   # script helpers to create application home on the hosts
   mkHome = name: ''
     mkdir -p ${name} 2> /dev/null || {
-      echo "${name}: creating"
-      mkdir -m 0700 ${name}
-      chown $(id -u) ${name}
+    echo "${name}: creating"
+    mkdir -m 0700 ${name}
+    chown $(id -u) ${name}
     }
     cd ${name}
   '';
@@ -110,7 +118,7 @@ in rec {
     src = pkgs.fetchurl {
       url =
         "https://artifacts.elastic.co/downloads/elasticsearch/${name}-${plat}-${arch}.tar.gz";
-      sha256 = "lUI+cWZMQ5Rm20Pj+bXH+62pQdf2+li3wrOgmpncYWE=";
+        sha256 = "lUI+cWZMQ5Rm20Pj+bXH+62pQdf2+li3wrOgmpncYWE=";
     };
   });
   elasticsearch-home = "~/.local/share/monocle/elasticsearch-home";
@@ -149,7 +157,7 @@ in rec {
     src = pkgs.fetchurl {
       url =
         "https://artifacts.elastic.co/downloads/kibana/${name}-${plat}-${arch}.tar.gz";
-      sha256 = "Oobbs3es1AegTFmzG2ln+iuJaRZrONamzDQOXKRF2Tk=";
+        sha256 = "Oobbs3es1AegTFmzG2ln+iuJaRZrONamzDQOXKRF2Tk=";
     };
   });
   kibana-home = "~/.local/share/monocle/kibana-home";
@@ -180,18 +188,18 @@ in rec {
     name = "prometheus.yml";
     text = ''
       global:
-        evaluation_interval: "1m"
-        scrape_interval: "1m"
-        scrape_timeout: "10s"
+      evaluation_interval: "1m"
+      scrape_interval: "1m"
+      scrape_timeout: "10s"
       scrape_configs:
-        - job_name: api
-          static_configs:
-            - targets:
-                - API_TARGET
-        - job_name: crawler
-          static_configs:
-            - targets:
-                - CRAWLER_TARGET
+      - job_name: api
+      static_configs:
+      - targets:
+      - API_TARGET
+      - job_name: crawler
+      static_configs:
+      - targets:
+      - CRAWLER_TARGET
     '';
   };
   prom-home = "~/.local/share/monocle/prometheus-home";
@@ -208,7 +216,7 @@ in rec {
     # boot
     ${mkHome prom-home}
     cat ${promConf} | \
-      sed -e "s/API_TARGET/$API_TARGET/" -e "s/CRAWLER_TARGET/$CRAWLER_TARGET/" > config.yml
+    sed -e "s/API_TARGET/$API_TARGET/" -e "s/CRAWLER_TARGET/$CRAWLER_TARGET/" > config.yml
     cd ${prom-home}
     exec ${pkgs.prometheus}/bin/prometheus --config.file=config.yml --web.listen-address="$LISTEN"
   '';
@@ -231,8 +239,8 @@ in rec {
       apiVersion: 1
       datasources:
       - name: Prometheus
-        type: prometheus
-        url: PROMETHEUS_URL
+      type: prometheus
+      url: PROMETHEUS_URL
     '';
   };
   grafanaDashboards = pkgs.writeTextFile {
@@ -241,11 +249,11 @@ in rec {
       apiVersion: 1
       providers:
       - name: dashboards
-        type: file
-        updateIntervalSeconds: 30
-        options:
-          path: ${grafana-home}/dashboards
-          foldersFromFilesStructure: true
+      type: file
+      updateIntervalSeconds: 30
+      options:
+      path: ${grafana-home}/dashboards
+      foldersFromFilesStructure: true
     '';
   };
   grafanaConf = pkgs.writeTextFile {
@@ -281,15 +289,15 @@ in rec {
     export DHALL_PRELUDE=${pkgs.dhallPackages.Prelude}/binary.dhall
     export DHALL_GRAFANA=${dhall-grafana}/binary.dhall
     for pkg in ${pkgs.dhallPackages.Prelude} ${dhall-grafana}; do
-        for cache in $pkg/.cache/dhall/*; do
-            ln -sf $cache $XDG_CACHE_HOME/dhall/
-        done
+    for cache in $pkg/.cache/dhall/*; do
+    ln -sf $cache $XDG_CACHE_HOME/dhall/
+    done
     done
 
     mkdir $out
     ${pkgs.dhall-json}/bin/dhall-to-json  \
-      --file ${../conf/grafana-dashboard.dhall} \
-      --output $out/monocle.json
+    --file ${../conf/grafana-dashboard.dhall} \
+    --output $out/monocle.json
   '';
 
   grafanaStart = pkgs.writeScriptBin "grafana-start" ''
@@ -342,14 +350,14 @@ in rec {
     cd web
 
     if ! test -d node_modules; then
-        ${pkgs.nodejs}/bin/npm install
+    ${pkgs.nodejs}/bin/npm install
     fi
 
     export WEB_PORT=${toString web-port}
     if [ -z "$MONOCLE_PUBLIC_URL" ]; then
-      export REACT_APP_API_URL="http://localhost:${toString monocle-port}"
+    export REACT_APP_API_URL="http://localhost:${toString monocle-port}"
     else
-      export REACT_APP_API_URL=$MONOCLE_PUBLIC_URL
+    export REACT_APP_API_URL=$MONOCLE_PUBLIC_URL
     fi
     export REACT_APP_TITLE="Monocle Dev"
     exec ${pkgs.nodejs}/bin/npm start
@@ -358,222 +366,221 @@ in rec {
   services-req =
     [ kibanaStart elasticsearchStart monocleReplStart monocleWebStart ];
 
-  # define the base requirements
-  base-req = [ pkgs.bashInteractive hspkgs.coreutils pkgs.gnumake ];
-  codegen-req = [ pkgs.protobuf pkgs.ocamlPackages.ocaml-protoc ] ++ base-req;
+    # define the base requirements
+    base-req = [ pkgs.bashInteractive hsPkgs.coreutils pkgs.gnumake ];
+    codegen-req = [ pkgs.protobuf pkgs.ocamlPackages.ocaml-protoc ] ++ base-req;
 
-  hs-req = [
-    # Here we pull the executable from the global pkgs, not the haskell packages
-    hspkgs.cabal-install
-    hspkgs.fourmolu
-    # Here we pull the proto3-suite executable from the haskell packages, not the global pkgs
-    hsPkgs.proto3-suite
-    hspkgs.zlib
-    hspkgs.weeder
-  ];
-
-  # define javascript requirements
-  javascript-req = [ pkgs.nodejs ];
-
-  # define openapi requirements
-  gnostic = pkgs.buildGoModule rec {
-    pname = "gnostic";
-    version = "0.5.5";
-    patches = [
-      (pkgs.fetchpatch {
-        url =
-          "https://github.com/TristanCacqueray/gnostic/commit/d0c924cdb08c0c0667cca033841807cfc84776f2.patch";
-        sha256 = "15wb2fr5iqy2zygl3svzyq72w9gpqsb7whmwqy43l3hph28bmvwb";
-      })
+    hs-req = [
+      # Here we pull the executable from the global pkgs, not the haskell packages
+      hsPkgs.cabal-install
+      hsPkgs.fourmolu
+      hsPkgs.proto3-suite
+      hsPkgs.zlib
+      hsPkgs.weeder
     ];
-    src = pkgs.fetchFromGitHub {
-      owner = "google";
-      repo = "gnostic";
-      rev = "v${version}";
-      sha256 = "065yqwlk9swgd13d4rvdaixq2dfsdbyha8k7k5j52982c2xz5c07";
+
+    # define javascript requirements
+    javascript-req = [ pkgs.nodejs ];
+
+    # define openapi requirements
+    gnostic = pkgs.buildGoModule rec {
+      pname = "gnostic";
+      version = "0.5.5";
+      patches = [
+        (pkgs.fetchpatch {
+          url =
+            "https://github.com/TristanCacqueray/gnostic/commit/d0c924cdb08c0c0667cca033841807cfc84776f2.patch";
+            sha256 = "15wb2fr5iqy2zygl3svzyq72w9gpqsb7whmwqy43l3hph28bmvwb";
+        })
+      ];
+      src = pkgs.fetchFromGitHub {
+        owner = "google";
+        repo = "gnostic";
+        rev = "v${version}";
+        sha256 = "065yqwlk9swgd13d4rvdaixq2dfsdbyha8k7k5j52982c2xz5c07";
+      };
+      doCheck = false;
+      # nativeBuildInputs = [ pkgs.protobuf ];
+      vendorSha256 = "1r0gjhv513174pbqf399vsrpx6zsmdlj48pzc5qh15k62ihy0h68";
+      subPackages = [ "./apps/protoc-gen-openapi" ];
     };
-    doCheck = false;
-    # nativeBuildInputs = [ pkgs.protobuf ];
-    vendorSha256 = "1r0gjhv513174pbqf399vsrpx6zsmdlj48pzc5qh15k62ihy0h68";
-    subPackages = [ "./apps/protoc-gen-openapi" ];
-  };
-  protobuf-src = pkgs.protobuf.src;
-  googleapis-src = pkgs.fetchFromGitHub {
-    owner = "googleapis";
-    repo = "googleapis";
-    rev = "94a788e91f0f10db7d3ca38d3503d6eecefffab8";
-    sha256 = "03ky469sk0gkndxs4v8civ6x70mnnihgzaaqj51rr1xc14h40qss";
-  };
-  go-req = [ gnostic ];
-  doc-req = [ pkgs.plantuml ];
+    protobuf-src = pkgs.protobuf.src;
+    googleapis-src = pkgs.fetchFromGitHub {
+      owner = "googleapis";
+      repo = "googleapis";
+      rev = "94a788e91f0f10db7d3ca38d3503d6eecefffab8";
+      sha256 = "03ky469sk0gkndxs4v8civ6x70mnnihgzaaqj51rr1xc14h40qss";
+    };
+    go-req = [ gnostic ];
+    doc-req = [ pkgs.plantuml ];
 
-  # all requirement
-  all-req = codegen-req ++ hs-req ++ javascript-req ++ go-req ++ doc-req;
+    # all requirement
+    all-req = codegen-req ++ hs-req ++ javascript-req ++ go-req ++ doc-req;
 
-  # containers
-  containerPrometheus = promContainer;
-  containerGrafana = grafanaContainer;
+    # containers
+    containerPrometheus = promContainer;
+    containerGrafana = grafanaContainer;
 
-  monocle-light =
-    # Disable profiling, haddock and test to speedup the build
-    (pkgs.haskell.lib.disableLibraryProfiling
+    monocle-light =
+      # Disable profiling, haddock and test to speedup the build
+      (pkgs.haskell.lib.disableLibraryProfiling
       (pkgs.haskell.lib.dontHaddock (pkgs.haskell.lib.dontCheck hsPkgs.monocle))
       # Enable the ci flag to fail on warning
-    ).overrideAttrs (_:
+      ).overrideAttrs (_:
       # Set dhall env variable to avoid warning
       {
         XDG_CACHE_HOME = "/tmp";
       });
 
-  # Helper function to create helper script.
-  mkRun = name: commands:
-    pkgs.writeScriptBin "monocle-${name}-run" ''
-      #!/bin/sh -e
-      # Start from the project root
-      cd $(${pkgs.git}/bin/git rev-parse --show-toplevel)
+      # Helper function to create helper script.
+      mkRun = name: commands:
+      pkgs.writeScriptBin "monocle-${name}-run" ''
+        #!/bin/sh -e
+        # Start from the project root
+        cd $(${pkgs.git}/bin/git rev-parse --show-toplevel)
 
-      ${commands}
-    '';
+        ${commands}
+      '';
 
-  ci-commands = ''
-    echo "[+] Building the project"
-    cabal build --enable-tests --flags=ci -O0
+      ci-commands = ''
+        echo "[+] Building the project"
+        cabal build --enable-tests --flags=ci -O0
 
-    echo "[+] Running the tests"
-    cabal test --enable-tests --flags=ci -O0 --test-show-details=direct
+        echo "[+] Running the tests"
+        cabal test --enable-tests --flags=ci -O0 --test-show-details=direct
 
-    echo "[+] Running doctests"
-    export PATH=${hsPkgs.doctest}/bin:$PATH
-    cabal repl --with-ghc=doctest --ghc-options=-Wno-unused-packages
+        echo "[+] Running doctests"
+        export PATH=${hsPkgs.doctest}/bin:$PATH
+        cabal repl --with-ghc=doctest --ghc-options=-Wno-unused-packages
 
-    # cabal haddock
-    # cabal sdist
-    # cabal check
-    # cabal install --installdir=/tmp --overwrite-policy=always'}}
+        # cabal haddock
+        # cabal sdist
+        # cabal check
+        # cabal install --installdir=/tmp --overwrite-policy=always'}}
 
-    ${fast-ci-commands}
-  '';
+        ${fast-ci-commands}
+      '';
 
-  # The monocle-ci-run script for ci validation.
-  ci-run = mkRun "ci" ci-commands;
+      # The monocle-ci-run script for ci validation.
+      ci-run = mkRun "ci" ci-commands;
 
-  ci-shell = hsPkgs.shellFor {
-    packages = p: [ p.monocle ];
-    buildInputs = [ hspkgs.cabal-install ci-run ];
-  };
+      ci-shell = hsPkgs.shellFor {
+        packages = p: [ p.monocle ];
+        buildInputs = [ hsPkgs.cabal-install ci-run ];
+      };
 
-  hlint = args: "${hspkgs.hlint}/bin/hlint -XQuasiQuotes ${args} src/";
-  fourmolu = mode: "${hspkgs.fourmolu}/bin/fourmolu --mode ${mode} src/";
+      hlint = args: "${hsPkgs.hlint}/bin/hlint -XQuasiQuotes ${args} src/";
+      fourmolu = mode: "${hsPkgs.fourmolu}/bin/fourmolu --mode ${mode} src/";
 
-  nixfmt = mode: "${pkgs.nixfmt}/bin/nixfmt ./nix/default.nix";
+      nixfmt = mode: "${pkgs.nixfmt}/bin/nixfmt ./nix/default.nix";
 
-  fast-ci-commands = ''
-    echo "[+] Running hlint"
-    ${hlint ""}
+      fast-ci-commands = ''
+        echo "[+] Running hlint"
+        ${hlint ""}
 
-    echo "[+] Checking fourmolu syntax"
-    ${fourmolu "check"}
+        echo "[+] Checking fourmolu syntax"
+        ${fourmolu "check"}
 
-    echo "[+] Checking nixfmt syntax"
-    ${nixfmt "--check"}
-  '';
+        echo "[+] Checking nixfmt syntax"
+        ${nixfmt "--check"}
+      '';
 
-  fast-ci-run = mkRun "fast-ci" fast-ci-commands;
+      fast-ci-run = mkRun "fast-ci" fast-ci-commands;
 
-  reformat-run = mkRun "reformat" ''
-    echo "[+] Apply hlint suggestions"
-    find src/ -name "*hs" -exec ${hspkgs.hlint}/bin/hlint -XQuasiQuotes --refactor --refactor-options="-i" {} \;
+      reformat-run = mkRun "reformat" ''
+        echo "[+] Apply hlint suggestions"
+        find src/ -name "*hs" -exec ${hsPkgs.hlint}/bin/hlint -XQuasiQuotes --refactor --refactor-options="-i" {} \;
 
-    echo "[+] Reformat with fourmolu"
-    ${fourmolu "inplace"}
+        echo "[+] Reformat with fourmolu"
+        ${fourmolu "inplace"}
 
-    echo "[+] Reformat with nixfmt"
-    ${nixfmt ""}
-  '';
+        echo "[+] Reformat with nixfmt"
+        ${nixfmt ""}
+      '';
 
-  monocle = hsPkgs.monocle;
+      monocle = hsPkgs.monocle;
 
-  monocle-exe = pkgs.haskell.lib.justStaticExecutables
-    (hsPkgs.monocle.overrideAttrs (_: { MONOCLE_COMMIT = rev; }));
+      monocle-exe = pkgs.haskell.lib.justStaticExecutables
+      (hsPkgs.monocle.overrideAttrs (_: { MONOCLE_COMMIT = rev; }));
 
-  monocle-wrapper = pkgs.writeScriptBin "monocle" ''
-    #!/usr/bin/sh -e
-    # Use fakeroot to avoid `No user exists for uid` error
-    env LD_PRELOAD=${pkgs.fakeroot}/lib/libfakeroot.so ${monocle-exe}/bin/monocle $*
-  '';
+      monocle-wrapper = pkgs.writeScriptBin "monocle" ''
+        #!/usr/bin/sh -e
+        # Use fakeroot to avoid `No user exists for uid` error
+        env LD_PRELOAD=${pkgs.fakeroot}/lib/libfakeroot.so ${monocle-exe}/bin/monocle $*
+      '';
 
-  containerMonocle = let
-    # Container user info
-    user = "monocle";
-    home = "var/lib/${user}";
+      containerMonocle = let
+        # Container user info
+        user = "monocle";
+        home = "var/lib/${user}";
 
-    # Create a passwd entry so that openssh can find the .ssh config
-    createPasswd =
-      "mkdir etc; echo ${user}:x:0:0:monocle:/${home}:/bin/bash >> etc/passwd";
+        # Create a passwd entry so that openssh can find the .ssh config
+        createPasswd =
+          "mkdir etc; echo ${user}:x:0:0:monocle:/${home}:/bin/bash >> etc/passwd";
 
-    # Ensure the home directory is r/w for any uid
-    rwHome = "mkdir -p -m 1777 ${home}";
+          # Ensure the home directory is r/w for any uid
+          rwHome = "mkdir -p -m 1777 ${home}";
 
-    # Ensure /bin/sh (docker healthcheck assumes /bin/sh)
-    binSh = "ln -s /usr/bin/sh bin/sh";
+          # Ensure /bin/sh (docker healthcheck assumes /bin/sh)
+          binSh = "ln -s /usr/bin/sh bin/sh";
 
-  in pkgs.dockerTools.buildLayeredImage {
-    name = "quay.io/change-metrics/monocle-exe";
-    contents = [ monocle-wrapper ];
-    extraCommands = "${createPasswd} && ${rwHome} && ${binSh}";
-    tag = "latest";
-    created = "now";
-    config = {
-      USER = "1000";
-      Env = [ "HOME=/${home}" ];
-    };
-    # To update, run: nix run github:TristanCacqueray/nixpkgs/skopeo-fix#nix-prefetch-docker -- -c nix-prefetch-docker --image-name registry.access.redhat.com/ubi8/ubi --image-tag 8.8-1067
-    fromImage = pkgs.dockerTools.pullImage {
-      imageName = "registry.access.redhat.com/ubi8/ubi";
-      imageDigest =
-        "sha256:269e9753043a4066af12649e921c6ad3201702fda5b2652f7a4aa010c2ed4c1a";
-      sha256 = "0wc566pph59mwn1dyw9h06lmfzc4x2p665lxffplpgqc10cr3w2c";
-      finalImageName = "registry.access.redhat.com/ubi8/ubi";
-      finalImageTag = "8.8-1067";
-    };
-  };
+      in pkgs.dockerTools.buildLayeredImage {
+        name = "quay.io/change-metrics/monocle-exe";
+        contents = [ monocle-wrapper ];
+        extraCommands = "${createPasswd} && ${rwHome} && ${binSh}";
+        tag = "latest";
+        created = "now";
+        config = {
+          USER = "1000";
+          Env = [ "HOME=/${home}" ];
+        };
+        # To update, run: nix run github:TristanCacqueray/nixpkgs/skopeo-fix#nix-prefetch-docker -- -c nix-prefetch-docker --image-name registry.access.redhat.com/ubi8/ubi --image-tag 8.8-1067
+        fromImage = pkgs.dockerTools.pullImage {
+          imageName = "registry.access.redhat.com/ubi8/ubi";
+          imageDigest =
+            "sha256:269e9753043a4066af12649e921c6ad3201702fda5b2652f7a4aa010c2ed4c1a";
+            sha256 = "0wc566pph59mwn1dyw9h06lmfzc4x2p665lxffplpgqc10cr3w2c";
+            finalImageName = "registry.access.redhat.com/ubi8/ubi";
+            finalImageTag = "8.8-1067";
+        };
+      };
 
-  services = pkgs.stdenv.mkDerivation {
-    name = "monocle-services";
-    buildInputs = base-req ++ services-req;
-  };
+      services = pkgs.stdenv.mkDerivation {
+        name = "monocle-services";
+        buildInputs = base-req ++ services-req;
+      };
 
-  # load hoogle with the current version of monocle
-  hoogle-monocle = pkgs.mkShell {
-    buildInputs = [ (hsPkgs.ghcWithHoogle (p: [ p.monocle ])) ];
-  };
+      # load hoogle with the current version of monocle
+      hoogle-monocle = pkgs.mkShell {
+        buildInputs = [ (hsPkgs.ghcWithHoogle (p: [ p.monocle ])) ];
+      };
 
-  # load hoogle with monocle dependencies only
-  hoogle = hsPkgs.shellFor {
-    packages = p: [ p.monocle ];
-    withHoogle = true;
-  };
+      # load hoogle with monocle dependencies only
+      hoogle = hsPkgs.shellFor {
+        packages = p: [ p.monocle ];
+        withHoogle = true;
+      };
 
-  shell = hsPkgs.shellFor {
-    packages = p: [ (addExtraDeps p.monocle) p.pretty-simple ];
+      shell = hsPkgs.shellFor {
+        packages = p: [ (addExtraDeps p.monocle) p.pretty-simple ];
 
-    buildInputs = [
-      latestPkgs.just
-      hspkgs.hlint
-      hspkgs.apply-refact
-      hspkgs.ghcid
-      hspkgs.haskell-language-server
-      hsPkgs.doctest
-    ] ++ all-req ++ services-req ++ [ ci-run fast-ci-run reformat-run ];
+        buildInputs = [
+          latestPkgsForJust.just
+          hsPkgs.hlint
+          hsPkgs.apply-refact
+          hsPkgs.ghcid
+          hsPkgs.haskell-language-server
+          hsPkgs.doctest
+        ] ++ all-req ++ services-req ++ [ ci-run fast-ci-run reformat-run ];
 
-    withHoogle = false;
+        withHoogle = false;
 
-    shellHook = ''
-      export PROTOC_FLAGS="-I ${googleapis-src}/ -I ${protobuf-src}/src"
-      export PROTOBUF_SRC=${protobuf-src}/src
-      export NIX_PATH=nixpkgs=${nixpkgsPath}
-      export MONOCLE_ELASTIC_URL=http://localhost:19200
-    '';
-  };
-  inherit pkgs;
+        shellHook = ''
+          export PROTOC_FLAGS="-I ${googleapis-src}/ -I ${protobuf-src}/src"
+          export PROTOBUF_SRC=${protobuf-src}/src
+          export NIX_PATH=nixpkgs=${nixpkgsPath}
+          export MONOCLE_ELASTIC_URL=http://localhost:19200
+        '';
+      };
+      inherit pkgs;
 }

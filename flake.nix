@@ -24,15 +24,16 @@
   inputs = {
     nixpkgs.url =
       "github:NixOS/nixpkgs/ed014c27f4d0ca772fb57d3b8985b772b0503bbd";
-    hspkgs.url =
-      "github:podenv/hspkgs/e25ca08431a6bab2b9eccda1764269824fe786ea";
+    # Latest from https://github.com/NixOS/nixpkgs/tree/haskell-updates
+    latestnixpkgs.url =
+      "github:NixOS/nixpkgs/d3780c92e64472e8f9aa54f7bbb0dd4483b98303";
   };
 
-  outputs = { self, nixpkgs, hspkgs }:
+  outputs = { self, nixpkgs, latestnixpkgs }:
     let
       legacy = import ./nix/default.nix {
         nixpkgsPath = nixpkgs;
-        hspkgs = hspkgs.pkgs;
+        latestnixpkgsPath = latestnixpkgs;
         self = self;
       };
     in {
