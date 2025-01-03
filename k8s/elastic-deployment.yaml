@@ -28,7 +28,7 @@ spec:
               value: -Xms512m -Xmx512m
             - name: discovery.type
               value: single-node
-          image: docker.elastic.co/elasticsearch/elasticsearch:7.17.16
+          image: docker.elastic.co/elasticsearch/elasticsearch:7.17.26
           livenessProbe:
             httpGet:
               path: /_cluster/health

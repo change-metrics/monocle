@@ -105,12 +105,12 @@ in rec {
   arch = pkgs.lib.elemAt info 0;
   plat = pkgs.lib.elemAt info 1;
   elasticsearch = pkgsNonFree.elasticsearch7.overrideAttrs (old: rec {
-    version = "7.17.16";
+    version = "7.17.26";
     name = "elasticsearch-${version}";
     src = pkgs.fetchurl {
       url =
         "https://artifacts.elastic.co/downloads/elasticsearch/${name}-${plat}-${arch}.tar.gz";
-      sha256 = "o0ftRysyy1xp5M9bkKUZaQ2OvAnyHr6zCmoIPY0adZY=";
+      sha256 = "lUI+cWZMQ5Rm20Pj+bXH+62pQdf2+li3wrOgmpncYWE=";
     };
   });
   elasticsearch-home = "~/.local/share/monocle/elasticsearch-home";
@@ -355,12 +355,8 @@ in rec {
     exec ${pkgs.nodejs}/bin/npm start
   '';
 
-  services-req = [
-    kibanaStart
-    elasticsearchStart
-    monocleReplStart
-    monocleWebStart
-  ];
+  services-req =
+    [ kibanaStart elasticsearchStart monocleReplStart monocleWebStart ];
 
   # define the base requirements
   base-req = [ pkgs.bashInteractive hspkgs.coreutils pkgs.gnumake ];
