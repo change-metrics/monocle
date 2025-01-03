@@ -6,6 +6,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 ### Changed
+
+- [compose] Bumped Elasticsearch to 7.17.26.
+
 ### Removed
 ### Fixed
 

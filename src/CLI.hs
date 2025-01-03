@@ -307,7 +307,7 @@ usageLentille =
   humanOption = Options.Applicative.flag False True (long "human" <> O.help "Human readable display")
 
   formatChange :: (Change, [ChangeEvent]) -> String
-  formatChange (c, _) = let (EChange {..}) = from c in [i|U:#{echangeUpdatedAt}\tC:#{echangeCreatedAt}\tT:#{echangeTitle}|]
+  formatChange (c, _) = let (EChange {..}) = from c in [i|#{echangeUrl}\t#{echangeTitle}\t#{echangeUpdatedAt}|]
 
   runStandaloneStream = runEff . runErrorIO @LentilleError . runConcurrent . runFailIO . runLoggerEffect . runTime . runRetry . runHttpEffect . G.runGerrit . runPrometheus
 

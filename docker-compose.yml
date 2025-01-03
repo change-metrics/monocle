@@ -47,7 +47,7 @@ services:
       retries: 6
       test: "curl --silent --fail localhost:9200/_cluster/health || exit 1"
       timeout: "60s"
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.16
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.26
     restart: unless-stopped
     ulimits:
       nofile:
