@@ -39,7 +39,9 @@ The peers strength view:
 The process below describes how to index changes from GitHub repositories
 and then how to start the web UI to browse metrics.
 
-The deployment is based on Docker via a docker-compose definition.
+The deployment is based on Docker via a [Docker compose](https://docs.docker.com/compose/) [definition](./docker-compose.yml).
+This compose definition can also be used by [Podman compose](https://github.com/containers/podman-compose), then all
+`docker-compose` commands from this documentation could be replaced by `podman-compose`.
 
 Alternatively, the following deployment method are supported:
 
@@ -587,7 +589,7 @@ $ sudo sysctl -w vm.max_map_count=262144
 or make the data directory writable for other:
 
 ```ShellSession
-$ chmod o+w data
+$ chmod og+w data
 ```
 
 To delete a workspace (a workspace is an elasticsearch index):
