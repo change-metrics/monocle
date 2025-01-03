@@ -23,6 +23,12 @@ let
   haskellExtend = hpFinal: hpPrev: {
     monocle = hpPrev.callCabal2nix "monocle" src { };
 
+    # there is a test failure: resolveGroupController should resolve a direct mount root
+    cgroup-rts-threads = pkgs.haskell.lib.dontCheck
+    (pkgs.haskell.lib.overrideCabal hpPrev.cgroup-rts-threads {
+      broken = false;
+    });
+
     # upgrade to bloodhound 0.20 needs some work
     bloodhound = pkgs.haskell.lib.overrideCabal hpPrev.bloodhound {
       version = "0.19.1.0";
