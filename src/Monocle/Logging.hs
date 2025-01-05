@@ -32,7 +32,7 @@ import Data.Aeson (Series, pairs)
 import Data.Aeson.Encoding (encodingToLazyByteString)
 import System.Log.FastLogger qualified as FastLogger
 
-import Effectful (Dispatch (Static), DispatchOf, Eff, Effect, IOE, withEffToIO, (:>))
+import Effectful (Dispatch (Static), DispatchOf, Eff, Effect, IOE, UnliftStrategy( SeqUnlift ), withEffToIO, (:>))
 import Effectful.Dispatch.Static (SideEffects (..), StaticRep, evalStaticRep, getStaticRep, localStaticRep, unsafeEff_)
 
 import Data.ByteString (ByteString)
@@ -122,7 +122,7 @@ newtype instance StaticRep LoggerEffect = LoggerEffect LoggerEnv
 runLoggerEffect :: IOE :> es => Eff (LoggerEffect : es) a -> Eff es a
 runLoggerEffect action =
   -- `withEffToIO` and `unInIO` enables calling IO function like: `(Logger -> IO a) -> IO a`.
-  withEffToIO $ \runInIO ->
+  withEffToIO SeqUnlift $ \runInIO ->
     withLogger \logger ->
       runInIO $ evalStaticRep (LoggerEffect logger) action
 
