@@ -32,7 +32,7 @@ import Relude.Unsafe ((!!))
 import Streaming.Prelude qualified as Streaming
 import Test.Tasty.HUnit ((@?=))
 
-import Effectful (UnliftStrategy(SeqUnlift))
+import Effectful (UnliftStrategy (SeqUnlift))
 import Effectful.Fail qualified as E
 import Monocle.Backend.Queries (PeersStrengthMode (PSModeFilterOnAuthor, PSModeFilterOnPeer))
 import Monocle.Effects
