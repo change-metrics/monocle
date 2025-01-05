@@ -384,7 +384,7 @@ in rec {
     [ kibanaStart elasticsearchStart monocleReplStart monocleWebStart ];
 
   # define the base requirements
-  base-req = [ pkgs.bashInteractive hsPkgs.coreutils pkgs.gnumake ];
+  base-req = [ pkgs.bashInteractive pkgs.coreutils pkgs.gnumake ];
   codegen-req = [ pkgs.protobuf pkgs.ocamlPackages.ocaml-protoc ] ++ base-req;
 
   hs-req = [
