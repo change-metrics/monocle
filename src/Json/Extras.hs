@@ -5,7 +5,6 @@ module Json.Extras (
   -- * Data types
   module Json,
   ShortText,
-  TextShort.toText,
 
   -- * Extras
   decodeThrow,
