@@ -29,7 +29,7 @@ import Monocle.Search.Query (parseDateValue)
 import Monocle.Version qualified
 import Options.Applicative hiding (header, help, str)
 import Options.Applicative qualified as O
-import Options.Applicative.Help.Pretty (string)
+import Options.Applicative.Help.Pretty (pretty)
 import Streaming.Prelude qualified as S
 
 import Data.String.Interpolate (i)
@@ -91,7 +91,7 @@ usage =
   usageCrawlerEnv = (,,) <$> envConf <*> envPublicUrl <*> envMonitoring
 
   -- Helper to create sub command
-  mkEnvDoc envParser = string (Env.helpDoc envParser)
+  mkEnvDoc envParser = pretty (Env.helpDoc envParser)
   mkCommand doc name parser envParser = command name $ info (parser <**> helper) (progDesc doc <> extraHelp)
    where
     -- We only add `--help` to sub command which uses environment

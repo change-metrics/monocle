@@ -10,6 +10,7 @@ import Data.List qualified
 import Data.Map qualified as Map
 import Data.Ord qualified
 import Data.String.Interpolate (i, iii)
+import Data.Text.Short qualified as TextShort
 import Data.Time (UTCTime (UTCTime), addDays, addGregorianMonthsClip, addGregorianYearsClip, secondsToNominalDiffTime)
 import Data.Time.Clock (secondsToDiffTime)
 import Data.Vector qualified as V
@@ -499,7 +500,7 @@ firstEventOnChanges = do
     let (createdAt, author) =
           -- If the event is older update the info
           if jceCreatedAt < feCreatedAt acc
-            then (jceCreatedAt, from $ Json.toText jceAuthor)
+            then (jceCreatedAt, from $ TextShort.toText jceAuthor)
             else (feCreatedAt acc, feAuthor acc)
      in FirstEvent
           { feChangeCreatedAt = jceOnCreatedAt

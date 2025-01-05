@@ -194,7 +194,7 @@ run' ApiConfig {..} aplogger = E.runConcurrent $ runLoggerEffect do
             . metricMiddleware
     logInfo "SystemReady" ["workspace" .= length workspaces, "port" .= port, "elastic" .= elasticUrl]
 
-    appEnv <- E.withEffToIO $ \effToIO -> do
+    appEnv <- E.withEffToIO E.SeqUnlift $ \effToIO -> do
       let configIO = effToIO getReloadConfig
       pure AppEnv {bhEnv, aOIDC, config = configIO}
 

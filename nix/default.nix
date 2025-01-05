@@ -1,6 +1,7 @@
-{ elasticsearch-port ? 19200, nixpkgsPath, hspkgs, self }:
+{ elasticsearch-port ? 19200, nixpkgsPath, latestnixpkgsPath, self }:
 let
   nixpkgsSrc = import nixpkgsPath;
+  latestnixpkgsSrc = import latestnixpkgsPath;
 
   rev = if self ? rev then
     self.rev
@@ -21,6 +22,26 @@ let
   # Add monocle and patch broken dependency to the haskell package set
   haskellExtend = hpFinal: hpPrev: {
     monocle = hpPrev.callCabal2nix "monocle" src { };
+
+    # there is a test failure: resolveGroupController should resolve a direct mount root
+    cgroup-rts-threads = pkgs.haskell.lib.dontCheck
+      (pkgs.haskell.lib.overrideCabal hpPrev.cgroup-rts-threads {
+        broken = false;
+      });
+
+    # Gerrit needs HEAD
+    gerrit = let
+      src = pkgs.fetchFromGitHub {
+        owner = "softwarefactory-project";
+        repo = "gerrit-haskell";
+        rev = "daa44c450f819f3af2879099ec065c1efb973ef8";
+        sha256 = "sha256-g+nMToAq1J8756Yres6xKraQq3QU3FcMjyLvaqVnrKc=";
+      };
+    in hpPrev.callCabal2nix "gerrit" src { };
+
+    # json-syntax test needs old tasty
+    json-syntax = pkgs.haskell.lib.doJailbreak (pkgs.haskell.lib.dontCheck
+      (pkgs.haskell.lib.overrideCabal hpPrev.json-syntax { broken = false; }));
 
     # upgrade to bloodhound 0.20 needs some work
     bloodhound = pkgs.haskell.lib.overrideCabal hpPrev.bloodhound {
@@ -48,22 +69,15 @@ let
     ];
   };
 
-  # pull latest nixpkgs for just [private] support
-  latestPkgs = import (pkgs.fetchFromGitHub {
-    owner = "NixOS";
-    repo = "nixpkgs";
-    rev = "32ea06b23546a0172ac4e2aa733392e02f57503e";
-    sha256 = "sha256-NuRRuBO3ijXIu8sD9WaW5m6PHb3COI57UtHDMY+aGTI=";
-  }) { system = "x86_64-linux"; };
-
   # create the main package set without options
   pkgs = nixpkgsSrc { system = "x86_64-linux"; };
+  latestPkgs = latestnixpkgsSrc { system = "x86_64-linux"; };
   pkgsNonFree = nixpkgsSrc {
     system = "x86_64-linux";
     config.allowUnfree = true;
   };
   # final haskell set, see: https://github.com/NixOS/nixpkgs/issues/25887
-  hsPkgs = hspkgs.hspkgs.extend haskellExtend;
+  hsPkgs = latestPkgs.haskellPackages.extend haskellExtend;
 
   # manually adds build dependencies for benchmark and codegen that are not managed by cabal2nix
   addExtraDeps = drv:
@@ -359,17 +373,16 @@ in rec {
     [ kibanaStart elasticsearchStart monocleReplStart monocleWebStart ];
 
   # define the base requirements
-  base-req = [ pkgs.bashInteractive hspkgs.coreutils pkgs.gnumake ];
+  base-req = [ pkgs.bashInteractive pkgs.coreutils pkgs.gnumake ];
   codegen-req = [ pkgs.protobuf pkgs.ocamlPackages.ocaml-protoc ] ++ base-req;
 
   hs-req = [
     # Here we pull the executable from the global pkgs, not the haskell packages
-    hspkgs.cabal-install
-    hspkgs.fourmolu
-    # Here we pull the proto3-suite executable from the haskell packages, not the global pkgs
+    hsPkgs.cabal-install
+    hsPkgs.fourmolu
     hsPkgs.proto3-suite
-    hspkgs.zlib
-    hspkgs.weeder
+    hsPkgs.zlib
+    hsPkgs.weeder
   ];
 
   # define javascript requirements
@@ -459,11 +472,11 @@ in rec {
 
   ci-shell = hsPkgs.shellFor {
     packages = p: [ p.monocle ];
-    buildInputs = [ hspkgs.cabal-install ci-run ];
+    buildInputs = [ hsPkgs.cabal-install ci-run ];
   };
 
-  hlint = args: "${hspkgs.hlint}/bin/hlint -XQuasiQuotes ${args} src/";
-  fourmolu = mode: "${hspkgs.fourmolu}/bin/fourmolu --mode ${mode} src/";
+  hlint = args: "${hsPkgs.hlint}/bin/hlint -XQuasiQuotes ${args} src/";
+  fourmolu = mode: "${hsPkgs.fourmolu}/bin/fourmolu --mode ${mode} src/";
 
   nixfmt = mode: "${pkgs.nixfmt}/bin/nixfmt ./nix/default.nix";
 
@@ -482,7 +495,7 @@ in rec {
 
   reformat-run = mkRun "reformat" ''
     echo "[+] Apply hlint suggestions"
-    find src/ -name "*hs" -exec ${hspkgs.hlint}/bin/hlint -XQuasiQuotes --refactor --refactor-options="-i" {} \;
+    find src/ -name "*hs" -exec ${hsPkgs.hlint}/bin/hlint -XQuasiQuotes --refactor --refactor-options="-i" {} \;
 
     echo "[+] Reformat with fourmolu"
     ${fourmolu "inplace"}
@@ -559,10 +572,10 @@ in rec {
 
     buildInputs = [
       latestPkgs.just
-      hspkgs.hlint
-      hspkgs.apply-refact
-      hspkgs.ghcid
-      hspkgs.haskell-language-server
+      hsPkgs.hlint
+      hsPkgs.apply-refact
+      hsPkgs.ghcid
+      hsPkgs.haskell-language-server
       hsPkgs.doctest
     ] ++ all-req ++ services-req ++ [ ci-run fast-ci-run reformat-run ];
 
