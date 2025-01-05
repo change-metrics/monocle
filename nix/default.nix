@@ -25,9 +25,9 @@ let
 
     # there is a test failure: resolveGroupController should resolve a direct mount root
     cgroup-rts-threads = pkgs.haskell.lib.dontCheck
-    (pkgs.haskell.lib.overrideCabal hpPrev.cgroup-rts-threads {
-      broken = false;
-    });
+      (pkgs.haskell.lib.overrideCabal hpPrev.cgroup-rts-threads {
+        broken = false;
+      });
 
     # Gerrit needs HEAD
     gerrit = let
@@ -40,11 +40,8 @@ let
     in hpPrev.callCabal2nix "gerrit" src { };
 
     # json-syntax test needs old tasty
-    json-syntax = pkgs.haskell.lib.doJailbreak
-    (pkgs.haskell.lib.dontCheck
-    (pkgs.haskell.lib.overrideCabal hpPrev.json-syntax {
-      broken = false;
-    }));
+    json-syntax = pkgs.haskell.lib.doJailbreak (pkgs.haskell.lib.dontCheck
+      (pkgs.haskell.lib.overrideCabal hpPrev.json-syntax { broken = false; }));
 
     # upgrade to bloodhound 0.20 needs some work
     bloodhound = pkgs.haskell.lib.overrideCabal hpPrev.bloodhound {
