@@ -29,6 +29,23 @@ let
       broken = false;
     });
 
+    # Gerrit needs HEAD
+    gerrit = let
+      src = pkgs.fetchFromGitHub {
+        owner = "softwarefactory-project";
+        repo = "gerrit-haskell";
+        rev = "daa44c450f819f3af2879099ec065c1efb973ef8";
+        sha256 = "sha256-g+nMToAq1J8756Yres6xKraQq3QU3FcMjyLvaqVnrKc=";
+      };
+    in hpPrev.callCabal2nix "gerrit" src { };
+
+    # json-syntax test needs old tasty
+    json-syntax = pkgs.haskell.lib.doJailbreak
+    (pkgs.haskell.lib.dontCheck
+    (pkgs.haskell.lib.overrideCabal hpPrev.json-syntax {
+      broken = false;
+    }));
+
     # upgrade to bloodhound 0.20 needs some work
     bloodhound = pkgs.haskell.lib.overrideCabal hpPrev.bloodhound {
       version = "0.19.1.0";
