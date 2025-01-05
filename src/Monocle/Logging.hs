@@ -32,7 +32,7 @@ import Data.Aeson (Series, pairs)
 import Data.Aeson.Encoding (encodingToLazyByteString)
 import System.Log.FastLogger qualified as FastLogger
 
-import Effectful (Dispatch (Static), DispatchOf, Eff, Effect, IOE, UnliftStrategy( SeqUnlift ), withEffToIO, (:>))
+import Effectful (Dispatch (Static), DispatchOf, Eff, Effect, IOE, UnliftStrategy (SeqUnlift), withEffToIO, (:>))
 import Effectful.Dispatch.Static (SideEffects (..), StaticRep, evalStaticRep, getStaticRep, localStaticRep, unsafeEff_)
 
 import Data.ByteString (ByteString)
