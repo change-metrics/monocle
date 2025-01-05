@@ -33,6 +33,7 @@ import Streaming.Prelude qualified as Streaming
 import Test.Tasty.HUnit ((@?=))
 
 import Effectful.Fail qualified as E
+import Effectful (UnliftStrategy( SeqUnlift ))
 import Monocle.Backend.Queries (PeersStrengthMode (PSModeFilterOnAuthor, PSModeFilterOnPeer))
 import Monocle.Effects
 
@@ -145,7 +146,7 @@ withTenantConfig :: Config.Index -> Eff [MonoQuery, ElasticEffect, LoggerEffect,
 withTenantConfig ws action = do
   bhEnv <- mkEnv'
   runEff $ runLoggerEffect $ runElasticEffect bhEnv $ runEmptyQueryM ws do
-    withEffToIO $ \runInIO ->
+    withEffToIO SeqUnlift $ \runInIO ->
       bracket_ (runInIO create) (runInIO delete) (runInIO action)
  where
   create = runRetry $ E.runFailIO $ dieOnEsError I.ensureIndex
