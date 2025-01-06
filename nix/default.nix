@@ -1,7 +1,6 @@
-{ elasticsearch-port ? 19200, nixpkgsPath, latestnixpkgsPath, self }:
+{ elasticsearch-port ? 19200, nixpkgsPath, self }:
 let
   nixpkgsSrc = import nixpkgsPath;
-  latestnixpkgsSrc = import latestnixpkgsPath;
 
   rev = if self ? rev then
     self.rev
@@ -17,6 +16,17 @@ let
       || (pkgs.lib.hasSuffix "LICENSE" path)
       || (pkgs.lib.hasSuffix ".graphql" path);
 
+  };
+
+  # pull specific nixpkgs for Kibana 7.x support
+  pkgsForKibana7 = import (pkgs.fetchFromGitHub {
+    owner = "NixOS";
+    repo = "nixpkgs";
+    rev = "ed014c27f4d0ca772fb57d3b8985b772b0503bbd";
+    sha256 = "sha256-Jxyn3uXFr5LdZNNiippI/obtLXAVBM18uVfiKVP4j9Q=";
+  }) {
+    system = "x86_64-linux";
+    config.allowUnfree = true;
   };
 
   # Add monocle and patch broken dependency to the haskell package set
@@ -71,13 +81,12 @@ let
 
   # create the main package set without options
   pkgs = nixpkgsSrc { system = "x86_64-linux"; };
-  latestPkgs = latestnixpkgsSrc { system = "x86_64-linux"; };
   pkgsNonFree = nixpkgsSrc {
     system = "x86_64-linux";
     config.allowUnfree = true;
   };
   # final haskell set, see: https://github.com/NixOS/nixpkgs/issues/25887
-  hsPkgs = latestPkgs.haskellPackages.extend haskellExtend;
+  hsPkgs = pkgs.haskellPackages.extend haskellExtend;
 
   # manually adds build dependencies for benchmark and codegen that are not managed by cabal2nix
   addExtraDeps = drv:
@@ -157,7 +166,7 @@ in rec {
     exec ${elasticsearch}/bin/elasticsearch
   '';
   # DB Companion
-  kibana = pkgsNonFree.kibana7.overrideAttrs (old: rec {
+  kibana = pkgsForKibana7.kibana7.overrideAttrs (old: rec {
     version = "7.17.5";
     name = "kibana-${version}";
     src = pkgs.fetchurl {
@@ -407,7 +416,7 @@ in rec {
     };
     doCheck = false;
     # nativeBuildInputs = [ pkgs.protobuf ];
-    vendorSha256 = "1r0gjhv513174pbqf399vsrpx6zsmdlj48pzc5qh15k62ihy0h68";
+    vendorHash = "sha256:1r0gjhv513174pbqf399vsrpx6zsmdlj48pzc5qh15k62ihy0h68";
     subPackages = [ "./apps/protoc-gen-openapi" ];
   };
   protobuf-src = pkgs.protobuf.src;
@@ -571,7 +580,7 @@ in rec {
     packages = p: [ (addExtraDeps p.monocle) p.pretty-simple ];
 
     buildInputs = [
-      latestPkgs.just
+      pkgs.just
       hsPkgs.hlint
       hsPkgs.apply-refact
       hsPkgs.ghcid
