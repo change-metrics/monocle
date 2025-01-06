@@ -742,8 +742,12 @@ let rec encode_ident (v:ChangeTypes.ident) =
   let json = Js.Dict.empty () in
   Js.Dict.set json "uid" (Js.Json.string v.ChangeTypes.uid);
   Js.Dict.set json "muid" (Js.Json.string v.ChangeTypes.muid);
-  let a = v.ChangeTypes.groups |> Array.of_list |> Array.map Js.Json.string in
-  Js.Dict.set json "groups" (Js.Json.array a);
+  begin match v.ChangeTypes.groups with
+  | [] -> ()
+  | __x__ -> (* groups *)
+    let a = __x__ |> Array.of_list |> Array.map Js.Json.string in
+    Js.Dict.set json "groups" (Js.Json.array a);
+  end;
   json
 
 let rec encode_changed_file (v:ChangeTypes.changed_file) = 
@@ -873,27 +877,31 @@ and encode_change (v:ChangeTypes.change) =
   Js.Dict.set json "additions" (Js.Json.number (Int32.to_float v.ChangeTypes.additions));
   Js.Dict.set json "deletions" (Js.Json.number (Int32.to_float v.ChangeTypes.deletions));
   Js.Dict.set json "changed_files_count" (Js.Json.number (Int32.to_float v.ChangeTypes.changed_files_count));
-  begin (* changedFiles field *)
+  begin match v.ChangeTypes.changed_files with
+  | [] -> ()
+  | __x__ -> (* changedFiles *)
     let (changed_files':Js.Json.t) =
-      v.ChangeTypes.changed_files
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_changed_file |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "changed_files" changed_files';
+    Js.Dict.set json "changed_files" changed_files'
   end;
-  begin (* commits field *)
+  begin match v.ChangeTypes.commits with
+  | [] -> ()
+  | __x__ -> (* commits *)
     let (commits':Js.Json.t) =
-      v.ChangeTypes.commits
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_commit |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "commits" commits';
+    Js.Dict.set json "commits" commits'
   end;
   Js.Dict.set json "repository_prefix" (Js.Json.string v.ChangeTypes.repository_prefix);
   Js.Dict.set json "repository_fullname" (Js.Json.string v.ChangeTypes.repository_fullname);
@@ -951,21 +959,31 @@ and encode_change (v:ChangeTypes.change) =
       Js.Dict.set json "duration" (Js.Json.number (Int32.to_float v));
   end; (* match v.optional_duration *)
   Js.Dict.set json "mergeable" (Js.Json.string v.ChangeTypes.mergeable);
-  let a = v.ChangeTypes.labels |> Array.of_list |> Array.map Js.Json.string in
-  Js.Dict.set json "labels" (Js.Json.array a);
-  begin (* assignees field *)
+  begin match v.ChangeTypes.labels with
+  | [] -> ()
+  | __x__ -> (* labels *)
+    let a = __x__ |> Array.of_list |> Array.map Js.Json.string in
+    Js.Dict.set json "labels" (Js.Json.array a);
+  end;
+  begin match v.ChangeTypes.assignees with
+  | [] -> ()
+  | __x__ -> (* assignees *)
     let (assignees':Js.Json.t) =
-      v.ChangeTypes.assignees
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_ident |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "assignees" assignees';
+    Js.Dict.set json "assignees" assignees'
   end;
-  let a = v.ChangeTypes.approvals |> Array.of_list |> Array.map Js.Json.string in
-  Js.Dict.set json "approvals" (Js.Json.array a);
+  begin match v.ChangeTypes.approvals with
+  | [] -> ()
+  | __x__ -> (* approvals *)
+    let a = __x__ |> Array.of_list |> Array.map Js.Json.string in
+    Js.Dict.set json "approvals" (Js.Json.array a);
+  end;
   Js.Dict.set json "draft" (Js.Json.boolean v.ChangeTypes.draft);
   begin match v.ChangeTypes.optional_self_merged with
     | Self_merged v ->
@@ -979,8 +997,12 @@ and encode_change (v:ChangeTypes.change) =
 
 let rec encode_change_reviewed_event (v:ChangeTypes.change_reviewed_event) = 
   let json = Js.Dict.empty () in
-  let a = v.ChangeTypes.approvals |> Array.of_list |> Array.map Js.Json.string in
-  Js.Dict.set json "approvals" (Js.Json.array a);
+  begin match v.ChangeTypes.approvals with
+  | [] -> ()
+  | __x__ -> (* approvals *)
+    let a = __x__ |> Array.of_list |> Array.map Js.Json.string in
+    Js.Dict.set json "approvals" (Js.Json.array a);
+  end;
   json
 
 let rec encode_change_event_type (v:ChangeTypes.change_event_type) = 
@@ -1065,16 +1087,18 @@ and encode_change_event (v:ChangeTypes.change_event) =
       Js.Dict.set json "on_created_at" (Js.Json.string json');
     end;
   end;
-  begin (* changedFiles field *)
+  begin match v.ChangeTypes.changed_files with
+  | [] -> ()
+  | __x__ -> (* changedFiles *)
     let (changed_files':Js.Json.t) =
-      v.ChangeTypes.changed_files
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_changed_file_path |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "changed_files" changed_files';
+    Js.Dict.set json "changed_files" changed_files'
   end;
   begin match v.ChangeTypes.type_ with
     | Change_created ->
@@ -1095,8 +1119,12 @@ and encode_change_event (v:ChangeTypes.change_event) =
     | Change_merged ->
       Js.Dict.set json "change_merged" Js.Json.null
   end; (* match v.type_ *)
-  let a = v.ChangeTypes.labels |> Array.of_list |> Array.map Js.Json.string in
-  Js.Dict.set json "labels" (Js.Json.array a);
+  begin match v.ChangeTypes.labels with
+  | [] -> ()
+  | __x__ -> (* labels *)
+    let a = __x__ |> Array.of_list |> Array.map Js.Json.string in
+    Js.Dict.set json "labels" (Js.Json.array a);
+  end;
   begin match v.ChangeTypes.optional_duration with
     | Duration v ->
       Js.Dict.set json "duration" (Js.Json.number (Int32.to_float v));
