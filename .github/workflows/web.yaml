@@ -4,11 +4,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: "actions/checkout@v2.4.0"
-      - uses: "actions/setup-node@v2"
+      - uses: "actions/setup-node@v4"
         with:
-          node-version: '16.15'
+          node-version: '22'
       - name: Install npm packages
-        run: "sudo apt-get install git; cd web; npm install --legacy-peer-deps"
+        run: "sudo apt-get install git; cd web; npm ci --legacy-peer-deps"
       - name: Run NPM tests
         run: "cd web ; npm run test"
       - name: Run NPM format

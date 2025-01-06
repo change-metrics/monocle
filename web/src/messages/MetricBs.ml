@@ -745,16 +745,18 @@ let rec encode_list_request (v:MetricTypes.list_request) =
 
 let rec encode_list_response (v:MetricTypes.list_response) = 
   let json = Js.Dict.empty () in
-  begin (* metrics field *)
+  begin match v.MetricTypes.metrics with
+  | [] -> ()
+  | __x__ -> (* metrics *)
     let (metrics':Js.Json.t) =
-      v.MetricTypes.metrics
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_metric_info |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "metrics" metrics';
+    Js.Dict.set json "metrics" metrics'
   end;
   json
 
@@ -838,31 +840,35 @@ let rec encode_histo_float (v:MetricTypes.histo_float) =
 
 let rec encode_histo_int_stat (v:MetricTypes.histo_int_stat) = 
   let json = Js.Dict.empty () in
-  begin (* histo field *)
+  begin match v.MetricTypes.histo with
+  | [] -> ()
+  | __x__ -> (* histo *)
     let (histo':Js.Json.t) =
-      v.MetricTypes.histo
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_histo_int |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "histo" histo';
+    Js.Dict.set json "histo" histo'
   end;
   json
 
 let rec encode_histo_float_stat (v:MetricTypes.histo_float_stat) = 
   let json = Js.Dict.empty () in
-  begin (* histo field *)
+  begin match v.MetricTypes.histo with
+  | [] -> ()
+  | __x__ -> (* histo *)
     let (histo':Js.Json.t) =
-      v.MetricTypes.histo
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_histo_float |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "histo" histo';
+    Js.Dict.set json "histo" histo'
   end;
   json
 
@@ -874,16 +880,18 @@ let rec encode_term_count_int (v:MetricTypes.term_count_int) =
 
 let rec encode_terms_count_int (v:MetricTypes.terms_count_int) = 
   let json = Js.Dict.empty () in
-  begin (* termcount field *)
+  begin match v.MetricTypes.termcount with
+  | [] -> ()
+  | __x__ -> (* termcount *)
     let (termcount':Js.Json.t) =
-      v.MetricTypes.termcount
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_term_count_int |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "termcount" termcount';
+    Js.Dict.set json "termcount" termcount'
   end;
   Js.Dict.set json "total_hits" (Js.Json.number (Int32.to_float v.MetricTypes.total_hits));
   json
@@ -896,16 +904,18 @@ let rec encode_term_count_float (v:MetricTypes.term_count_float) =
 
 let rec encode_terms_count_float (v:MetricTypes.terms_count_float) = 
   let json = Js.Dict.empty () in
-  begin (* termcount field *)
+  begin match v.MetricTypes.termcount with
+  | [] -> ()
+  | __x__ -> (* termcount *)
     let (termcount':Js.Json.t) =
-      v.MetricTypes.termcount
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_term_count_float |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "termcount" termcount';
+    Js.Dict.set json "termcount" termcount'
   end;
   Js.Dict.set json "total_hits" (Js.Json.number (Int32.to_float v.MetricTypes.total_hits));
   json
@@ -923,16 +933,18 @@ let rec encode_histo_duration (v:MetricTypes.histo_duration) =
 
 let rec encode_histo_duration_stat (v:MetricTypes.histo_duration_stat) = 
   let json = Js.Dict.empty () in
-  begin (* histo field *)
+  begin match v.MetricTypes.histo with
+  | [] -> ()
+  | __x__ -> (* histo *)
     let (histo':Js.Json.t) =
-      v.MetricTypes.histo
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_histo_duration |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "histo" histo';
+    Js.Dict.set json "histo" histo'
   end;
   json
 
@@ -944,16 +956,18 @@ let rec encode_term_count_duration (v:MetricTypes.term_count_duration) =
 
 let rec encode_terms_count_duration (v:MetricTypes.terms_count_duration) = 
   let json = Js.Dict.empty () in
-  begin (* termcount field *)
+  begin match v.MetricTypes.termcount with
+  | [] -> ()
+  | __x__ -> (* termcount *)
     let (termcount':Js.Json.t) =
-      v.MetricTypes.termcount
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_term_count_duration |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "termcount" termcount';
+    Js.Dict.set json "termcount" termcount'
   end;
   Js.Dict.set json "total_hits" (Js.Json.number (Int32.to_float v.MetricTypes.total_hits));
   json

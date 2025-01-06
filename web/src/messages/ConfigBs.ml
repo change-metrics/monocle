@@ -511,16 +511,18 @@ let rec encode_get_projects_request (v:ConfigTypes.get_projects_request) =
 
 let rec encode_get_projects_response (v:ConfigTypes.get_projects_response) = 
   let json = Js.Dict.empty () in
-  begin (* projects field *)
+  begin match v.ConfigTypes.projects with
+  | [] -> ()
+  | __x__ -> (* projects *)
     let (projects':Js.Json.t) =
-      v.ConfigTypes.projects
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_project_definition |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "projects" projects';
+    Js.Dict.set json "projects" projects'
   end;
   json
 
@@ -536,16 +538,18 @@ let rec encode_get_workspaces_request (v:ConfigTypes.get_workspaces_request) =
 
 let rec encode_get_workspaces_response (v:ConfigTypes.get_workspaces_response) = 
   let json = Js.Dict.empty () in
-  begin (* workspaces field *)
+  begin match v.ConfigTypes.workspaces with
+  | [] -> ()
+  | __x__ -> (* workspaces *)
     let (workspaces':Js.Json.t) =
-      v.ConfigTypes.workspaces
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_workspace |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "workspaces" workspaces';
+    Js.Dict.set json "workspaces" workspaces'
   end;
   json
 
@@ -577,16 +581,18 @@ let rec encode_about_auth (v:ConfigTypes.about_auth) =
 and encode_about (v:ConfigTypes.about) = 
   let json = Js.Dict.empty () in
   Js.Dict.set json "version" (Js.Json.string v.ConfigTypes.version);
-  begin (* links field *)
+  begin match v.ConfigTypes.links with
+  | [] -> ()
+  | __x__ -> (* links *)
     let (links':Js.Json.t) =
-      v.ConfigTypes.links
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_about_about_link |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "links" links';
+    Js.Dict.set json "links" links'
   end;
   begin match v.ConfigTypes.auth with
     | Auth_config v ->
@@ -627,16 +633,18 @@ let rec encode_get_groups_request (v:ConfigTypes.get_groups_request) =
 
 let rec encode_get_groups_response (v:ConfigTypes.get_groups_response) = 
   let json = Js.Dict.empty () in
-  begin (* items field *)
+  begin match v.ConfigTypes.items with
+  | [] -> ()
+  | __x__ -> (* items *)
     let (items':Js.Json.t) =
-      v.ConfigTypes.items
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_group_definition |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "items" items';
+    Js.Dict.set json "items" items'
   end;
   json
 
@@ -648,6 +656,10 @@ let rec encode_get_group_members_request (v:ConfigTypes.get_group_members_reques
 
 let rec encode_get_group_members_response (v:ConfigTypes.get_group_members_response) = 
   let json = Js.Dict.empty () in
-  let a = v.ConfigTypes.members |> Array.of_list |> Array.map Js.Json.string in
-  Js.Dict.set json "members" (Js.Json.array a);
+  begin match v.ConfigTypes.members with
+  | [] -> ()
+  | __x__ -> (* members *)
+    let a = __x__ |> Array.of_list |> Array.map Js.Json.string in
+    Js.Dict.set json "members" (Js.Json.array a);
+  end;
   json

@@ -589,16 +589,18 @@ let rec encode_crawler_error_list (v:CrawlerTypes.crawler_error_list) =
       Js.Dict.set json "entity" (Js.Json.object_ json');
     end;
   end;
-  begin (* errors field *)
+  begin match v.CrawlerTypes.errors with
+  | [] -> ()
+  | __x__ -> (* errors *)
     let (errors':Js.Json.t) =
-      v.CrawlerTypes.errors
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_crawler_error |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "errors" errors';
+    Js.Dict.set json "errors" errors'
   end;
   json
 
@@ -610,16 +612,18 @@ let rec encode_errors_request (v:CrawlerTypes.errors_request) =
 
 let rec encode_errors_list (v:CrawlerTypes.errors_list) = 
   let json = Js.Dict.empty () in
-  begin (* errors field *)
+  begin match v.CrawlerTypes.errors with
+  | [] -> ()
+  | __x__ -> (* errors *)
     let (errors':Js.Json.t) =
-      v.CrawlerTypes.errors
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_crawler_error_list |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "errors" errors';
+    Js.Dict.set json "errors" errors'
   end;
   json
 
@@ -654,82 +658,96 @@ let rec encode_add_doc_request (v:CrawlerTypes.add_doc_request) =
       Js.Dict.set json "entity" (Js.Json.object_ json');
     end;
   end;
-  begin (* changes field *)
+  begin match v.CrawlerTypes.changes with
+  | [] -> ()
+  | __x__ -> (* changes *)
     let (changes':Js.Json.t) =
-      v.CrawlerTypes.changes
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> ChangeBs.encode_change |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "changes" changes';
+    Js.Dict.set json "changes" changes'
   end;
-  begin (* events field *)
+  begin match v.CrawlerTypes.events with
+  | [] -> ()
+  | __x__ -> (* events *)
     let (events':Js.Json.t) =
-      v.CrawlerTypes.events
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> ChangeBs.encode_change_event |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "events" events';
+    Js.Dict.set json "events" events'
   end;
-  begin (* projects field *)
+  begin match v.CrawlerTypes.projects with
+  | [] -> ()
+  | __x__ -> (* projects *)
     let (projects':Js.Json.t) =
-      v.CrawlerTypes.projects
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_project |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "projects" projects';
+    Js.Dict.set json "projects" projects'
   end;
-  begin (* taskDatas field *)
+  begin match v.CrawlerTypes.task_datas with
+  | [] -> ()
+  | __x__ -> (* taskDatas *)
     let (task_datas':Js.Json.t) =
-      v.CrawlerTypes.task_datas
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> SearchBs.encode_task_data |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "task_datas" task_datas';
+    Js.Dict.set json "task_datas" task_datas'
   end;
-  begin (* issues field *)
+  begin match v.CrawlerTypes.issues with
+  | [] -> ()
+  | __x__ -> (* issues *)
     let (issues':Js.Json.t) =
-      v.CrawlerTypes.issues
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> IssueBs.encode_issue |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "issues" issues';
+    Js.Dict.set json "issues" issues'
   end;
-  begin (* issueEvents field *)
+  begin match v.CrawlerTypes.issue_events with
+  | [] -> ()
+  | __x__ -> (* issueEvents *)
     let (issue_events':Js.Json.t) =
-      v.CrawlerTypes.issue_events
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> IssueBs.encode_issue_event |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "issue_events" issue_events';
+    Js.Dict.set json "issue_events" issue_events'
   end;
-  begin (* errors field *)
+  begin match v.CrawlerTypes.errors with
+  | [] -> ()
+  | __x__ -> (* errors *)
     let (errors':Js.Json.t) =
-      v.CrawlerTypes.errors
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_crawler_error |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "errors" errors';
+    Js.Dict.set json "errors" errors'
   end;
   json
 

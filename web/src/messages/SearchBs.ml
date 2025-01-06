@@ -1681,8 +1681,12 @@ let rec encode_task_data (v:SearchTypes.task_data) =
     end;
   end;
   Js.Dict.set json "change_url" (Js.Json.string v.SearchTypes.change_url);
-  let a = v.SearchTypes.ttype |> Array.of_list |> Array.map Js.Json.string in
-  Js.Dict.set json "ttype" (Js.Json.array a);
+  begin match v.SearchTypes.ttype with
+  | [] -> ()
+  | __x__ -> (* ttype *)
+    let a = __x__ |> Array.of_list |> Array.map Js.Json.string in
+    Js.Dict.set json "ttype" (Js.Json.array a);
+  end;
   Js.Dict.set json "tid" (Js.Json.string v.SearchTypes.tid);
   Js.Dict.set json "url" (Js.Json.string v.SearchTypes.url);
   Js.Dict.set json "title" (Js.Json.string v.SearchTypes.title);
@@ -1699,22 +1703,54 @@ let rec encode_suggestions_request (v:SearchTypes.suggestions_request) =
 
 let rec encode_suggestions_response (v:SearchTypes.suggestions_response) = 
   let json = Js.Dict.empty () in
-  let a = v.SearchTypes.task_types |> Array.of_list |> Array.map Js.Json.string in
-  Js.Dict.set json "task_types" (Js.Json.array a);
-  let a = v.SearchTypes.authors |> Array.of_list |> Array.map Js.Json.string in
-  Js.Dict.set json "authors" (Js.Json.array a);
-  let a = v.SearchTypes.approvals |> Array.of_list |> Array.map Js.Json.string in
-  Js.Dict.set json "approvals" (Js.Json.array a);
-  let a = v.SearchTypes.priorities |> Array.of_list |> Array.map Js.Json.string in
-  Js.Dict.set json "priorities" (Js.Json.array a);
-  let a = v.SearchTypes.severities |> Array.of_list |> Array.map Js.Json.string in
-  Js.Dict.set json "severities" (Js.Json.array a);
-  let a = v.SearchTypes.projects |> Array.of_list |> Array.map Js.Json.string in
-  Js.Dict.set json "projects" (Js.Json.array a);
-  let a = v.SearchTypes.groups |> Array.of_list |> Array.map Js.Json.string in
-  Js.Dict.set json "groups" (Js.Json.array a);
-  let a = v.SearchTypes.labels |> Array.of_list |> Array.map Js.Json.string in
-  Js.Dict.set json "labels" (Js.Json.array a);
+  begin match v.SearchTypes.task_types with
+  | [] -> ()
+  | __x__ -> (* taskTypes *)
+    let a = __x__ |> Array.of_list |> Array.map Js.Json.string in
+    Js.Dict.set json "task_types" (Js.Json.array a);
+  end;
+  begin match v.SearchTypes.authors with
+  | [] -> ()
+  | __x__ -> (* authors *)
+    let a = __x__ |> Array.of_list |> Array.map Js.Json.string in
+    Js.Dict.set json "authors" (Js.Json.array a);
+  end;
+  begin match v.SearchTypes.approvals with
+  | [] -> ()
+  | __x__ -> (* approvals *)
+    let a = __x__ |> Array.of_list |> Array.map Js.Json.string in
+    Js.Dict.set json "approvals" (Js.Json.array a);
+  end;
+  begin match v.SearchTypes.priorities with
+  | [] -> ()
+  | __x__ -> (* priorities *)
+    let a = __x__ |> Array.of_list |> Array.map Js.Json.string in
+    Js.Dict.set json "priorities" (Js.Json.array a);
+  end;
+  begin match v.SearchTypes.severities with
+  | [] -> ()
+  | __x__ -> (* severities *)
+    let a = __x__ |> Array.of_list |> Array.map Js.Json.string in
+    Js.Dict.set json "severities" (Js.Json.array a);
+  end;
+  begin match v.SearchTypes.projects with
+  | [] -> ()
+  | __x__ -> (* projects *)
+    let a = __x__ |> Array.of_list |> Array.map Js.Json.string in
+    Js.Dict.set json "projects" (Js.Json.array a);
+  end;
+  begin match v.SearchTypes.groups with
+  | [] -> ()
+  | __x__ -> (* groups *)
+    let a = __x__ |> Array.of_list |> Array.map Js.Json.string in
+    Js.Dict.set json "groups" (Js.Json.array a);
+  end;
+  begin match v.SearchTypes.labels with
+  | [] -> ()
+  | __x__ -> (* labels *)
+    let a = __x__ |> Array.of_list |> Array.map Js.Json.string in
+    Js.Dict.set json "labels" (Js.Json.array a);
+  end;
   json
 
 let rec encode_fields_request (v:SearchTypes.fields_request) = 
@@ -1739,16 +1775,18 @@ let rec encode_field (v:SearchTypes.field) =
 
 let rec encode_fields_response (v:SearchTypes.fields_response) = 
   let json = Js.Dict.empty () in
-  begin (* fields field *)
+  begin match v.SearchTypes.fields with
+  | [] -> ()
+  | __x__ -> (* fields *)
     let (fields':Js.Json.t) =
-      v.SearchTypes.fields
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_field |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "fields" fields';
+    Js.Dict.set json "fields" fields'
   end;
   json
 
@@ -1781,10 +1819,18 @@ let rec encode_check_response (v:SearchTypes.check_response) =
 let rec encode_author (v:SearchTypes.author) = 
   let json = Js.Dict.empty () in
   Js.Dict.set json "muid" (Js.Json.string v.SearchTypes.muid);
-  let a = v.SearchTypes.aliases |> Array.of_list |> Array.map Js.Json.string in
-  Js.Dict.set json "aliases" (Js.Json.array a);
-  let a = v.SearchTypes.groups |> Array.of_list |> Array.map Js.Json.string in
-  Js.Dict.set json "groups" (Js.Json.array a);
+  begin match v.SearchTypes.aliases with
+  | [] -> ()
+  | __x__ -> (* aliases *)
+    let a = __x__ |> Array.of_list |> Array.map Js.Json.string in
+    Js.Dict.set json "aliases" (Js.Json.array a);
+  end;
+  begin match v.SearchTypes.groups with
+  | [] -> ()
+  | __x__ -> (* groups *)
+    let a = __x__ |> Array.of_list |> Array.map Js.Json.string in
+    Js.Dict.set json "groups" (Js.Json.array a);
+  end;
   json
 
 let rec encode_author_request (v:SearchTypes.author_request) = 
@@ -1795,16 +1841,18 @@ let rec encode_author_request (v:SearchTypes.author_request) =
 
 let rec encode_author_response (v:SearchTypes.author_response) = 
   let json = Js.Dict.empty () in
-  begin (* authors field *)
+  begin match v.SearchTypes.authors with
+  | [] -> ()
+  | __x__ -> (* authors *)
     let (authors':Js.Json.t) =
-      v.SearchTypes.authors
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_author |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "authors" authors';
+    Js.Dict.set json "authors" authors'
   end;
   json
 
@@ -1948,48 +1996,66 @@ and encode_change (v:SearchTypes.change) =
   Js.Dict.set json "text" (Js.Json.string v.SearchTypes.text);
   Js.Dict.set json "additions" (Js.Json.number (Int32.to_float v.SearchTypes.additions));
   Js.Dict.set json "deletions" (Js.Json.number (Int32.to_float v.SearchTypes.deletions));
-  let a = v.SearchTypes.approval |> Array.of_list |> Array.map Js.Json.string in
-  Js.Dict.set json "approval" (Js.Json.array a);
-  let a = v.SearchTypes.assignees |> Array.of_list |> Array.map Js.Json.string in
-  Js.Dict.set json "assignees" (Js.Json.array a);
-  let a = v.SearchTypes.labels |> Array.of_list |> Array.map Js.Json.string in
-  Js.Dict.set json "labels" (Js.Json.array a);
+  begin match v.SearchTypes.approval with
+  | [] -> ()
+  | __x__ -> (* approval *)
+    let a = __x__ |> Array.of_list |> Array.map Js.Json.string in
+    Js.Dict.set json "approval" (Js.Json.array a);
+  end;
+  begin match v.SearchTypes.assignees with
+  | [] -> ()
+  | __x__ -> (* assignees *)
+    let a = __x__ |> Array.of_list |> Array.map Js.Json.string in
+    Js.Dict.set json "assignees" (Js.Json.array a);
+  end;
+  begin match v.SearchTypes.labels with
+  | [] -> ()
+  | __x__ -> (* labels *)
+    let a = __x__ |> Array.of_list |> Array.map Js.Json.string in
+    Js.Dict.set json "labels" (Js.Json.array a);
+  end;
   Js.Dict.set json "draft" (Js.Json.boolean v.SearchTypes.draft);
   Js.Dict.set json "mergeable" (Js.Json.boolean v.SearchTypes.mergeable);
-  begin (* changedFiles field *)
+  begin match v.SearchTypes.changed_files with
+  | [] -> ()
+  | __x__ -> (* changedFiles *)
     let (changed_files':Js.Json.t) =
-      v.SearchTypes.changed_files
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_file |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "changed_files" changed_files';
+    Js.Dict.set json "changed_files" changed_files'
   end;
   Js.Dict.set json "changed_files_count" (Js.Json.number (Int32.to_float v.SearchTypes.changed_files_count));
-  begin (* commits field *)
+  begin match v.SearchTypes.commits with
+  | [] -> ()
+  | __x__ -> (* commits *)
     let (commits':Js.Json.t) =
-      v.SearchTypes.commits
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_commit |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "commits" commits';
+    Js.Dict.set json "commits" commits'
   end;
   Js.Dict.set json "commits_count" (Js.Json.number (Int32.to_float v.SearchTypes.commits_count));
-  begin (* taskData field *)
+  begin match v.SearchTypes.task_data with
+  | [] -> ()
+  | __x__ -> (* taskData *)
     let (task_data':Js.Json.t) =
-      v.SearchTypes.task_data
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_task_data |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "task_data" task_data';
+    Js.Dict.set json "task_data" task_data'
   end;
   begin match v.SearchTypes.ttm with
     | Duration v ->
@@ -1999,16 +2065,18 @@ and encode_change (v:SearchTypes.change) =
 
 let rec encode_changes (v:SearchTypes.changes) = 
   let json = Js.Dict.empty () in
-  begin (* changes field *)
+  begin match v.SearchTypes.changes with
+  | [] -> ()
+  | __x__ -> (* changes *)
     let (changes':Js.Json.t) =
-      v.SearchTypes.changes
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_change |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "changes" changes';
+    Js.Dict.set json "changes" changes'
   end;
   json
 
@@ -2053,16 +2121,18 @@ let rec encode_change_and_events (v:SearchTypes.change_and_events) =
       Js.Dict.set json "change" (Js.Json.object_ json');
     end;
   end;
-  begin (* events field *)
+  begin match v.SearchTypes.events with
+  | [] -> ()
+  | __x__ -> (* events *)
     let (events':Js.Json.t) =
-      v.SearchTypes.events
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_change_event |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "events" events';
+    Js.Dict.set json "events" events'
   end;
   json
 
@@ -2092,27 +2162,31 @@ let rec encode_review_stats (v:SearchTypes.review_stats) =
   end;
   Js.Dict.set json "comment_delay" (Js.Json.number (Int32.to_float v.SearchTypes.comment_delay));
   Js.Dict.set json "review_delay" (Js.Json.number (Int32.to_float v.SearchTypes.review_delay));
-  begin (* commentHisto field *)
+  begin match v.SearchTypes.comment_histo with
+  | [] -> ()
+  | __x__ -> (* commentHisto *)
     let (comment_histo':Js.Json.t) =
-      v.SearchTypes.comment_histo
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> MetricBs.encode_histo_int |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "comment_histo" comment_histo';
+    Js.Dict.set json "comment_histo" comment_histo'
   end;
-  begin (* reviewHisto field *)
+  begin match v.SearchTypes.review_histo with
+  | [] -> ()
+  | __x__ -> (* reviewHisto *)
     let (review_histo':Js.Json.t) =
-      v.SearchTypes.review_histo
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> MetricBs.encode_histo_int |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "review_histo" review_histo';
+    Js.Dict.set json "review_histo" review_histo'
   end;
   json
 
@@ -2121,38 +2195,44 @@ let rec encode_activity_stats (v:SearchTypes.activity_stats) =
   Js.Dict.set json "change_authors" (Js.Json.number (Int32.to_float v.SearchTypes.change_authors));
   Js.Dict.set json "comment_authors" (Js.Json.number (Int32.to_float v.SearchTypes.comment_authors));
   Js.Dict.set json "review_authors" (Js.Json.number (Int32.to_float v.SearchTypes.review_authors));
-  begin (* commentsHisto field *)
+  begin match v.SearchTypes.comments_histo with
+  | [] -> ()
+  | __x__ -> (* commentsHisto *)
     let (comments_histo':Js.Json.t) =
-      v.SearchTypes.comments_histo
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> MetricBs.encode_histo_int |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "comments_histo" comments_histo';
+    Js.Dict.set json "comments_histo" comments_histo'
   end;
-  begin (* reviewsHisto field *)
+  begin match v.SearchTypes.reviews_histo with
+  | [] -> ()
+  | __x__ -> (* reviewsHisto *)
     let (reviews_histo':Js.Json.t) =
-      v.SearchTypes.reviews_histo
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> MetricBs.encode_histo_int |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "reviews_histo" reviews_histo';
+    Js.Dict.set json "reviews_histo" reviews_histo'
   end;
-  begin (* changesHisto field *)
+  begin match v.SearchTypes.changes_histo with
+  | [] -> ()
+  | __x__ -> (* changesHisto *)
     let (changes_histo':Js.Json.t) =
-      v.SearchTypes.changes_histo
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> MetricBs.encode_histo_int |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "changes_histo" changes_histo';
+    Js.Dict.set json "changes_histo" changes_histo'
   end;
   json
 
@@ -2168,16 +2248,18 @@ let rec encode_repo_summary (v:SearchTypes.repo_summary) =
 
 let rec encode_repos_summary (v:SearchTypes.repos_summary) = 
   let json = Js.Dict.empty () in
-  begin (* reposum field *)
+  begin match v.SearchTypes.reposum with
+  | [] -> ()
+  | __x__ -> (* reposum *)
     let (reposum':Js.Json.t) =
-      v.SearchTypes.reposum
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_repo_summary |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "reposum" reposum';
+    Js.Dict.set json "reposum" reposum'
   end;
   json
 
@@ -2190,64 +2272,74 @@ let rec encode_author_peer (v:SearchTypes.author_peer) =
 
 let rec encode_authors_peers (v:SearchTypes.authors_peers) = 
   let json = Js.Dict.empty () in
-  begin (* authorPeer field *)
+  begin match v.SearchTypes.author_peer with
+  | [] -> ()
+  | __x__ -> (* authorPeer *)
     let (author_peer':Js.Json.t) =
-      v.SearchTypes.author_peer
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> encode_author_peer |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "author_peer" author_peer';
+    Js.Dict.set json "author_peer" author_peer'
   end;
   json
 
 let rec encode_lifecycle_stats (v:SearchTypes.lifecycle_stats) = 
   let json = Js.Dict.empty () in
-  begin (* createdHisto field *)
+  begin match v.SearchTypes.created_histo with
+  | [] -> ()
+  | __x__ -> (* createdHisto *)
     let (created_histo':Js.Json.t) =
-      v.SearchTypes.created_histo
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> MetricBs.encode_histo_int |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "created_histo" created_histo';
+    Js.Dict.set json "created_histo" created_histo'
   end;
-  begin (* updatedHisto field *)
+  begin match v.SearchTypes.updated_histo with
+  | [] -> ()
+  | __x__ -> (* updatedHisto *)
     let (updated_histo':Js.Json.t) =
-      v.SearchTypes.updated_histo
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> MetricBs.encode_histo_int |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "updated_histo" updated_histo';
+    Js.Dict.set json "updated_histo" updated_histo'
   end;
-  begin (* mergedHisto field *)
+  begin match v.SearchTypes.merged_histo with
+  | [] -> ()
+  | __x__ -> (* mergedHisto *)
     let (merged_histo':Js.Json.t) =
-      v.SearchTypes.merged_histo
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> MetricBs.encode_histo_int |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "merged_histo" merged_histo';
+    Js.Dict.set json "merged_histo" merged_histo'
   end;
-  begin (* abandonedHisto field *)
+  begin match v.SearchTypes.abandoned_histo with
+  | [] -> ()
+  | __x__ -> (* abandonedHisto *)
     let (abandoned_histo':Js.Json.t) =
-      v.SearchTypes.abandoned_histo
+      __x__
       |> Array.of_list
       |> Array.map (fun v ->
         v |> MetricBs.encode_histo_int |> Js.Json.object_
       )
       |> Js.Json.array
     in
-    Js.Dict.set json "abandoned_histo" abandoned_histo';
+    Js.Dict.set json "abandoned_histo" abandoned_histo'
   end;
   begin match v.SearchTypes.created with
   | None -> ()
