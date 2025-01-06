@@ -159,8 +159,8 @@ in  { GithubActions
           let init =
                 [ checkout-step
                 , GithubActions.Step::{
-                  , uses = Some "actions/setup-node@v2"
-                  , `with` = Some (toMap { node-version = "16.15" })
+                  , uses = Some "actions/setup-node@v4"
+                  , `with` = Some (toMap { node-version = "22" })
                   }
                 ]
 
