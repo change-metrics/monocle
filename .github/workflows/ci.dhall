@@ -36,7 +36,7 @@ in  { Nix =
           [ mk.GithubActions.Step::{
             , name = Some "Install npm packages"
             , run = Some
-                "sudo apt-get install git; cd web; npm install --legacy-peer-deps"
+                "sudo apt-get install git; cd web; npm ci --legacy-peer-deps"
             }
           , mk.GithubActions.Step::{
             , name = Some "Run NPM tests"
