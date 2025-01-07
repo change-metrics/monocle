@@ -81,6 +81,7 @@ codegen-ci:
     echo "(./.github/workflows/ci.dhall).NixBuild" | dhall-to-yaml > .github/workflows/nix-build.yaml
     echo "(./.github/workflows/ci.dhall).Web" | dhall-to-yaml > .github/workflows/web.yaml
     echo "(./.github/workflows/ci.dhall).Docker" | dhall-to-yaml > .github/workflows/docker.yaml
+    echo "(./.github/workflows/ci.dhall).DockerUBI" | dhall-to-yaml > .github/workflows/docker-ubi.yaml
     echo "(./.github/workflows/ci.dhall).Publish-Master-Image" | dhall-to-yaml > .github/workflows/publish-master.yaml
     echo "(./.github/workflows/ci.dhall).Publish-Tag-Image" | dhall-to-yaml > .github/workflows/publish-tag.yaml
 

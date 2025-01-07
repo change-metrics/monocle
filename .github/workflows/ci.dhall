@@ -48,6 +48,7 @@ in  { Nix =
             }
           ]
     , Docker = mk.makeCompose mk.validate-compose-steps
+    , DockerUBI = mk.dockerUBI
     , Publish-Master-Image =
         mk.makePublishMaster
           (   mk.validate-compose-steps
