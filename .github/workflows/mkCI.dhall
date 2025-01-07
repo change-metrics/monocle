@@ -224,4 +224,32 @@ in  { GithubActions
                 }
               }
           }
+    , dockerUBI = GithubActions.Workflow::{
+      , name = "DockerUBI"
+      , on = GithubActions.On::{
+        , pull_request = Some GithubActions.PullRequest::{=}
+        }
+      , jobs = toMap
+          { compose = GithubActions.Job::{
+            , name = Some "ubi-container-build-test"
+            , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
+            , steps =
+                  boot "change-metrics"
+                # [ GithubActions.Step::{
+                    , name = Some "Ensure cabal project override"
+                    , run = Some
+                        "nix develop --command just codegen-cabal-override"
+                    }
+                  , GithubActions.Step::{
+                    , name = Some "Ensure cabal override file up to date"
+                    , run = Some "git diff --exit-code"
+                    }
+                  , GithubActions.Step::{
+                    , name = Some "Build the container image"
+                    , run = Some "docker build -f DockerfileUBI"
+                    }
+                  ]
+            }
+          }
+      }
     }
