@@ -120,7 +120,7 @@ library
                      , aeson-casing
                      , aeson-pretty
                      , attoparsec                 >= 0.13
-                     , base64                     >= 0.4
+                     , base64                     < 1.0
                      , cgroup-rts-threads
                      , blaze-markup               >= 0.8.2.8
                      , blaze-html                 >= 0.9.1.2
@@ -139,7 +139,7 @@ library
                      , effectful                  < 2.4.0.0
                      , effectful-core
                      -- , effectful-plugin
-                     , envparse                   >= 0.4
+                     , envparse                   < 0.6
                      , exceptions                 >= 0.10
                      , fakedata                   >= 1.0
                      , fast-logger

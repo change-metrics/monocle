@@ -59,13 +59,12 @@ RUN dnf install -y \
     ncurses-devel \
     zlib-devel
 
-RUN cabal update
-
 # Copy source tree
 COPY . /build
 
 # Build Monocle
 RUN cd /build && \
+    cabal update && \
     cabal build --project-file=cabal-override.project && \
     cp $(find dist-newstyle/build/*/*/*/*/monocle/build/ -name monocle -type f) /
 

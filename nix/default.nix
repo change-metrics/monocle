@@ -44,8 +44,8 @@ let
       src = pkgs.fetchFromGitHub {
         owner = "softwarefactory-project";
         repo = "gerrit-haskell";
-        rev = "daa44c450f819f3af2879099ec065c1efb973ef8";
-        sha256 = "sha256-g+nMToAq1J8756Yres6xKraQq3QU3FcMjyLvaqVnrKc=";
+        rev = "f369a2468cf2c7814ac1e57d8a70e5b51403b072";
+        sha256 = "sha256-A5JBZAfGzURlcq0MpormUh43AEAjh8XUPGnX4kaDuRk=";
       };
     in hpPrev.callCabal2nix "gerrit" src { };
 
@@ -66,9 +66,8 @@ let
       src = pkgs.fetchFromGitHub {
         owner = "awakesecurity";
         repo = "proto3-suite";
-        # https://github.com/awakesecurity/proto3-suite/pull/239
-        rev = "6b6245fe8526a1f9fd64472bf1218bd7fdea9960";
-        sha256 = "sha256-XYGeQJ2EXDnezI8NfhI+R3t1k31PKyfg9doOKp5FsCk=";
+        rev = "53ae1df5eb757fedbfe1ec5f99fc7ed5068928e5";
+        sha256 = "sha256-VmoM4H/E72WT/MG77cRXo7qCljpZL9SIrxilYo6aptg=";
       };
       pkg = hpPrev.callCabal2nix "proto3-suite" src { };
     in pkgs.lib.pipe pkg [
