@@ -110,6 +110,8 @@ codegen-haskell:
       compile-proto-file --includeDir /usr/include --includeDir schemas/ --includeDir ${PROTOBUF_SRC} --proto ${pb} --out codegen/; \
     done
     find codegen/Monocle -type f -name "*.hs" -exec sed -i {} -e '1i{-# LANGUAGE NoGeneralisedNewtypeDeriving #-}' \;
+    # Fix for: https://github.com/awakesecurity/proto3-suite/pull/262#issuecomment-2576179003
+    find codegen/Monocle -type f -name "*.hs" -exec sed -i {} -e 's/HsProtobuf.String Hs.Text/(HsProtobuf.String Hs.Text)/' \;
     fourmolu -i codegen/Monocle
 
 # Generate javascript data type from protobuf

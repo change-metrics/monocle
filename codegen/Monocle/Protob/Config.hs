@@ -2,8 +2,11 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NegativeLiterals #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoGeneralisedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-missing-export-lists #-}
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
@@ -46,1661 +49,1355 @@ import Unsafe.Coerce qualified as Hs
 import Prelude qualified as Hs
 
 data ProjectDefinition = ProjectDefinition
-  { projectDefinitionName ::
-      Hs.Text
+  { projectDefinitionName :: Hs.Text
   , projectDefinitionRepositoryRegex :: Hs.Text
   , projectDefinitionBranchRegex :: Hs.Text
   , projectDefinitionFileRegex :: Hs.Text
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
-
-instance Hs.NFData ProjectDefinition
-
-instance HsProtobuf.Named ProjectDefinition where
-  nameOf _ = (Hs.fromString "ProjectDefinition")
-
-instance HsProtobuf.HasDefault ProjectDefinition
-
-instance HsProtobuf.Message ProjectDefinition where
+instance (Hs.NFData ProjectDefinition)
+instance (HsProtobuf.Named ProjectDefinition) where
+  nameOf _ = Hs.fromString "ProjectDefinition"
+instance (HsProtobuf.HasDefault ProjectDefinition)
+instance (HsProtobuf.Message ProjectDefinition) where
   encodeMessage
     _
     ProjectDefinition
-      { projectDefinitionName = projectDefinitionName
-      , projectDefinitionRepositoryRegex =
-        projectDefinitionRepositoryRegex
-      , projectDefinitionBranchRegex = projectDefinitionBranchRegex
-      , projectDefinitionFileRegex = projectDefinitionFileRegex
+      { projectDefinitionName
+      , projectDefinitionRepositoryRegex
+      , projectDefinitionBranchRegex
+      , projectDefinitionFileRegex
       } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
-                    (projectDefinitionName)
+      Hs.mappend
+        ( Hs.mappend
+            ( Hs.mappend
+                ( HsProtobuf.encodeMessageField
+                    (HsProtobuf.FieldNumber 1)
+                    ( (Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text)))
+                        projectDefinitionName
+                    )
+                )
+                ( HsProtobuf.encodeMessageField
+                    (HsProtobuf.FieldNumber 2)
+                    ( (Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text)))
+                        projectDefinitionRepositoryRegex
+                    )
                 )
             )
-          , ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 2)
-                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
-                    (projectDefinitionRepositoryRegex)
-                )
-            )
-          , ( HsProtobuf.encodeMessageField
+            ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 3)
-                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
-                    (projectDefinitionBranchRegex)
+                ( (Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text)))
+                    projectDefinitionBranchRegex
                 )
             )
-          , ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 4)
-                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
-                    (projectDefinitionFileRegex)
-                )
+        )
+        ( HsProtobuf.encodeMessageField
+            (HsProtobuf.FieldNumber 4)
+            ( (Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text)))
+                projectDefinitionFileRegex
             )
-          ]
-      )
+        )
   decodeMessage _ =
-    (Hs.pure ProjectDefinition)
-      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+    Hs.pure ProjectDefinition
+      <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 1)
               )
           )
-      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+      <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 2)
               )
           )
-      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+      <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 3)
               )
           )
-      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+      <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 4)
               )
           )
   dotProto _ =
-    [ ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          (HsProtobufAST.Prim HsProtobufAST.String)
-          (HsProtobufAST.Single "name")
-          []
-          ""
-      )
-    , ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 2)
-          (HsProtobufAST.Prim HsProtobufAST.String)
-          (HsProtobufAST.Single "repository_regex")
-          []
-          ""
-      )
-    , ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 3)
-          (HsProtobufAST.Prim HsProtobufAST.String)
-          (HsProtobufAST.Single "branch_regex")
-          []
-          ""
-      )
-    , ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 4)
-          (HsProtobufAST.Prim HsProtobufAST.String)
-          (HsProtobufAST.Single "file_regex")
-          []
-          ""
-      )
+    [ HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 1)
+        (HsProtobufAST.Prim HsProtobufAST.String)
+        (HsProtobufAST.Single "name")
+        []
+        ""
+    , HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 2)
+        (HsProtobufAST.Prim HsProtobufAST.String)
+        (HsProtobufAST.Single "repository_regex")
+        []
+        ""
+    , HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 3)
+        (HsProtobufAST.Prim HsProtobufAST.String)
+        (HsProtobufAST.Single "branch_regex")
+        []
+        ""
+    , HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 4)
+        (HsProtobufAST.Prim HsProtobufAST.String)
+        (HsProtobufAST.Single "file_regex")
+        []
+        ""
     ]
-
-instance HsJSONPB.ToJSONPB ProjectDefinition where
+instance (HsJSONPB.ToJSONPB ProjectDefinition) where
   toJSONPB (ProjectDefinition f1 f2 f3 f4) =
-    ( HsJSONPB.object
-        [ "name"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
-        , "repository_regex"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
-        , "branch_regex"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f3))
-        , "file_regex"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f4))
-        ]
-    )
+    HsJSONPB.object
+      [ "name" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f1)
+      , "repository_regex"
+          .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f2)
+      , "branch_regex"
+          .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f3)
+      , "file_regex"
+          .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f4)
+      ]
   toEncodingPB (ProjectDefinition f1 f2 f3 f4) =
-    ( HsJSONPB.pairs
-        [ "name"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
-        , "repository_regex"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
-        , "branch_regex"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f3))
-        , "file_regex"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f4))
-        ]
-    )
-
-instance HsJSONPB.FromJSONPB ProjectDefinition where
+    HsJSONPB.pairs
+      [ "name" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f1)
+      , "repository_regex"
+          .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f2)
+      , "branch_regex"
+          .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f3)
+      , "file_regex"
+          .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f4)
+      ]
+instance (HsJSONPB.FromJSONPB ProjectDefinition) where
   parseJSONPB =
-    ( HsJSONPB.withObject
-        "ProjectDefinition"
-        ( \obj ->
-            (Hs.pure ProjectDefinition)
-              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
-                      (obj .: "name")
-                  )
-              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
-                      (obj .: "repository_regex")
-                  )
-              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
-                      (obj .: "branch_regex")
-                  )
-              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
-                      (obj .: "file_regex")
-                  )
-        )
-    )
-
-instance HsJSONPB.ToJSON ProjectDefinition where
+    HsJSONPB.withObject
+      "ProjectDefinition"
+      ( \obj ->
+          Hs.pure ProjectDefinition
+            <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
+                    (obj .: "name")
+                )
+            <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
+                    (obj .: "repository_regex")
+                )
+            <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
+                    (obj .: "branch_regex")
+                )
+            <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
+                    (obj .: "file_regex")
+                )
+      )
+instance (HsJSONPB.ToJSON ProjectDefinition) where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON ProjectDefinition where
+instance (HsJSONPB.FromJSON ProjectDefinition) where
   parseJSON = HsJSONPB.parseJSONPB
-
-newtype GetProjectsRequest = GetProjectsRequest
-  { getProjectsRequestIndex ::
-      Hs.Text
-  }
+newtype GetProjectsRequest = GetProjectsRequest {getProjectsRequestIndex :: Hs.Text}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
-
-instance Hs.NFData GetProjectsRequest
-
-instance HsProtobuf.Named GetProjectsRequest where
-  nameOf _ = (Hs.fromString "GetProjectsRequest")
-
-instance HsProtobuf.HasDefault GetProjectsRequest
-
-instance HsProtobuf.Message GetProjectsRequest where
-  encodeMessage
-    _
-    GetProjectsRequest
-      { getProjectsRequestIndex =
-        getProjectsRequestIndex
-      } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
-                    (getProjectsRequestIndex)
-                )
-            )
-          ]
-      )
+instance (Hs.NFData GetProjectsRequest)
+instance (HsProtobuf.Named GetProjectsRequest) where
+  nameOf _ = Hs.fromString "GetProjectsRequest"
+instance (HsProtobuf.HasDefault GetProjectsRequest)
+instance (HsProtobuf.Message GetProjectsRequest) where
+  encodeMessage _ GetProjectsRequest {getProjectsRequestIndex} =
+    ( HsProtobuf.encodeMessageField
+        (HsProtobuf.FieldNumber 1)
+        ( (Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text)))
+            getProjectsRequestIndex
+        )
+    )
   decodeMessage _ =
-    (Hs.pure GetProjectsRequest)
-      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+    Hs.pure GetProjectsRequest
+      <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 1)
               )
           )
   dotProto _ =
-    [ ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          (HsProtobufAST.Prim HsProtobufAST.String)
-          (HsProtobufAST.Single "index")
-          []
-          ""
-      )
+    [ HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 1)
+        (HsProtobufAST.Prim HsProtobufAST.String)
+        (HsProtobufAST.Single "index")
+        []
+        ""
     ]
-
-instance HsJSONPB.ToJSONPB GetProjectsRequest where
+instance (HsJSONPB.ToJSONPB GetProjectsRequest) where
   toJSONPB (GetProjectsRequest f1) =
-    ( HsJSONPB.object
-        [ "index"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
-        ]
-    )
+    HsJSONPB.object
+      ["index" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f1)]
   toEncodingPB (GetProjectsRequest f1) =
-    ( HsJSONPB.pairs
-        [ "index"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
-        ]
-    )
-
-instance HsJSONPB.FromJSONPB GetProjectsRequest where
+    HsJSONPB.pairs
+      ["index" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f1)]
+instance (HsJSONPB.FromJSONPB GetProjectsRequest) where
   parseJSONPB =
-    ( HsJSONPB.withObject
-        "GetProjectsRequest"
-        ( \obj ->
-            (Hs.pure GetProjectsRequest)
-              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
-                      (obj .: "index")
-                  )
-        )
-    )
-
-instance HsJSONPB.ToJSON GetProjectsRequest where
+    HsJSONPB.withObject
+      "GetProjectsRequest"
+      ( \obj ->
+          Hs.pure GetProjectsRequest
+            <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
+                    (obj .: "index")
+                )
+      )
+instance (HsJSONPB.ToJSON GetProjectsRequest) where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON GetProjectsRequest where
+instance (HsJSONPB.FromJSON GetProjectsRequest) where
   parseJSON = HsJSONPB.parseJSONPB
-
-newtype GetProjectsResponse = GetProjectsResponse
-  { getProjectsResponseProjects ::
-      Hs.Vector Monocle.Protob.Config.ProjectDefinition
-  }
+newtype GetProjectsResponse = GetProjectsResponse {getProjectsResponseProjects :: (Hs.Vector Monocle.Protob.Config.ProjectDefinition)}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
-
-instance Hs.NFData GetProjectsResponse
-
-instance HsProtobuf.Named GetProjectsResponse where
-  nameOf _ = (Hs.fromString "GetProjectsResponse")
-
-instance HsProtobuf.HasDefault GetProjectsResponse
-
-instance HsProtobuf.Message GetProjectsResponse where
-  encodeMessage
-    _
-    GetProjectsResponse
-      { getProjectsResponseProjects =
-        getProjectsResponseProjects
-      } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                ( Hs.coerce @(Hs.Vector Monocle.Protob.Config.ProjectDefinition)
-                    @(HsProtobuf.NestedVec Monocle.Protob.Config.ProjectDefinition)
-                    (getProjectsResponseProjects)
-                )
-            )
-          ]
-      )
-  decodeMessage _ =
-    (Hs.pure GetProjectsResponse)
-      <*> ( HsProtobuf.coerceOver
-              @(HsProtobuf.NestedVec Monocle.Protob.Config.ProjectDefinition)
+instance (Hs.NFData GetProjectsResponse)
+instance (HsProtobuf.Named GetProjectsResponse) where
+  nameOf _ = Hs.fromString "GetProjectsResponse"
+instance (HsProtobuf.HasDefault GetProjectsResponse)
+instance (HsProtobuf.Message GetProjectsResponse) where
+  encodeMessage _ GetProjectsResponse {getProjectsResponseProjects} =
+    ( HsProtobuf.encodeMessageField
+        (HsProtobuf.FieldNumber 1)
+        ( ( Hs.coerce
               @(Hs.Vector Monocle.Protob.Config.ProjectDefinition)
+              @(HsProtobuf.NestedVec Monocle.Protob.Config.ProjectDefinition)
+          )
+            getProjectsResponseProjects
+        )
+    )
+  decodeMessage _ =
+    Hs.pure GetProjectsResponse
+      <*> ( ( HsProtobuf.coerceOver
+                @(HsProtobuf.NestedVec Monocle.Protob.Config.ProjectDefinition)
+                @(Hs.Vector Monocle.Protob.Config.ProjectDefinition)
+            )
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 1)
               )
           )
   dotProto _ =
-    [ ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          ( HsProtobufAST.Repeated
-              (HsProtobufAST.Named (HsProtobufAST.Single "ProjectDefinition"))
-          )
-          (HsProtobufAST.Single "projects")
-          []
-          ""
-      )
+    [ HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 1)
+        ( HsProtobufAST.Repeated
+            (HsProtobufAST.Named (HsProtobufAST.Single "ProjectDefinition"))
+        )
+        (HsProtobufAST.Single "projects")
+        []
+        ""
     ]
-
-instance HsJSONPB.ToJSONPB GetProjectsResponse where
+instance (HsJSONPB.ToJSONPB GetProjectsResponse) where
   toJSONPB (GetProjectsResponse f1) =
-    ( HsJSONPB.object
-        [ "projects"
-            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Config.ProjectDefinition)
+    HsJSONPB.object
+      [ "projects"
+          .= ( ( Hs.coerce
+                  @(Hs.Vector Monocle.Protob.Config.ProjectDefinition)
                   @(HsProtobuf.NestedVec Monocle.Protob.Config.ProjectDefinition)
-                  (f1)
                )
-        ]
-    )
+                f1
+             )
+      ]
   toEncodingPB (GetProjectsResponse f1) =
-    ( HsJSONPB.pairs
-        [ "projects"
-            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Config.ProjectDefinition)
+    HsJSONPB.pairs
+      [ "projects"
+          .= ( ( Hs.coerce
+                  @(Hs.Vector Monocle.Protob.Config.ProjectDefinition)
                   @(HsProtobuf.NestedVec Monocle.Protob.Config.ProjectDefinition)
-                  (f1)
                )
-        ]
-    )
-
-instance HsJSONPB.FromJSONPB GetProjectsResponse where
+                f1
+             )
+      ]
+instance (HsJSONPB.FromJSONPB GetProjectsResponse) where
   parseJSONPB =
-    ( HsJSONPB.withObject
-        "GetProjectsResponse"
-        ( \obj ->
-            (Hs.pure GetProjectsResponse)
-              <*> ( HsProtobuf.coerceOver
+    HsJSONPB.withObject
+      "GetProjectsResponse"
+      ( \obj ->
+          Hs.pure GetProjectsResponse
+            <*> ( ( HsProtobuf.coerceOver
                       @(HsProtobuf.NestedVec Monocle.Protob.Config.ProjectDefinition)
                       @(Hs.Vector Monocle.Protob.Config.ProjectDefinition)
-                      (obj .: "projects")
                   )
-        )
-    )
-
-instance HsJSONPB.ToJSON GetProjectsResponse where
+                    (obj .: "projects")
+                )
+      )
+instance (HsJSONPB.ToJSON GetProjectsResponse) where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON GetProjectsResponse where
+instance (HsJSONPB.FromJSON GetProjectsResponse) where
   parseJSON = HsJSONPB.parseJSONPB
-
 newtype Workspace = Workspace {workspaceName :: Hs.Text}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
-
-instance Hs.NFData Workspace
-
-instance HsProtobuf.Named Workspace where
-  nameOf _ = (Hs.fromString "Workspace")
-
-instance HsProtobuf.HasDefault Workspace
-
-instance HsProtobuf.Message Workspace where
-  encodeMessage _ Workspace {workspaceName = workspaceName} =
-    ( Hs.mconcat
-        [ ( HsProtobuf.encodeMessageField
-              (HsProtobuf.FieldNumber 1)
-              ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
-                  (workspaceName)
-              )
-          )
-        ]
+instance (Hs.NFData Workspace)
+instance (HsProtobuf.Named Workspace) where
+  nameOf _ = Hs.fromString "Workspace"
+instance (HsProtobuf.HasDefault Workspace)
+instance (HsProtobuf.Message Workspace) where
+  encodeMessage _ Workspace {workspaceName} =
+    ( HsProtobuf.encodeMessageField
+        (HsProtobuf.FieldNumber 1)
+        ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) workspaceName)
     )
   decodeMessage _ =
-    (Hs.pure Workspace)
-      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+    Hs.pure Workspace
+      <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 1)
               )
           )
   dotProto _ =
-    [ ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          (HsProtobufAST.Prim HsProtobufAST.String)
-          (HsProtobufAST.Single "name")
-          []
-          ""
-      )
+    [ HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 1)
+        (HsProtobufAST.Prim HsProtobufAST.String)
+        (HsProtobufAST.Single "name")
+        []
+        ""
     ]
-
-instance HsJSONPB.ToJSONPB Workspace where
+instance (HsJSONPB.ToJSONPB Workspace) where
   toJSONPB (Workspace f1) =
-    ( HsJSONPB.object
-        [ "name"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
-        ]
-    )
+    HsJSONPB.object
+      ["name" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f1)]
   toEncodingPB (Workspace f1) =
-    ( HsJSONPB.pairs
-        [ "name"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
-        ]
-    )
-
-instance HsJSONPB.FromJSONPB Workspace where
+    HsJSONPB.pairs
+      ["name" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f1)]
+instance (HsJSONPB.FromJSONPB Workspace) where
   parseJSONPB =
-    ( HsJSONPB.withObject
-        "Workspace"
-        ( \obj ->
-            (Hs.pure Workspace)
-              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
-                      (obj .: "name")
-                  )
-        )
-    )
-
-instance HsJSONPB.ToJSON Workspace where
+    HsJSONPB.withObject
+      "Workspace"
+      ( \obj ->
+          Hs.pure Workspace
+            <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
+                    (obj .: "name")
+                )
+      )
+instance (HsJSONPB.ToJSON Workspace) where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON Workspace where
+instance (HsJSONPB.FromJSON Workspace) where
   parseJSON = HsJSONPB.parseJSONPB
-
-newtype GetWorkspacesRequest = GetWorkspacesRequest
-  { getWorkspacesRequestVoid ::
-      Hs.Text
-  }
+newtype GetWorkspacesRequest = GetWorkspacesRequest {getWorkspacesRequestVoid :: Hs.Text}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
-
-instance Hs.NFData GetWorkspacesRequest
-
-instance HsProtobuf.Named GetWorkspacesRequest where
-  nameOf _ = (Hs.fromString "GetWorkspacesRequest")
-
-instance HsProtobuf.HasDefault GetWorkspacesRequest
-
-instance HsProtobuf.Message GetWorkspacesRequest where
-  encodeMessage
-    _
-    GetWorkspacesRequest
-      { getWorkspacesRequestVoid =
-        getWorkspacesRequestVoid
-      } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
-                    (getWorkspacesRequestVoid)
-                )
-            )
-          ]
-      )
+instance (Hs.NFData GetWorkspacesRequest)
+instance (HsProtobuf.Named GetWorkspacesRequest) where
+  nameOf _ = Hs.fromString "GetWorkspacesRequest"
+instance (HsProtobuf.HasDefault GetWorkspacesRequest)
+instance (HsProtobuf.Message GetWorkspacesRequest) where
+  encodeMessage _ GetWorkspacesRequest {getWorkspacesRequestVoid} =
+    ( HsProtobuf.encodeMessageField
+        (HsProtobuf.FieldNumber 1)
+        ( (Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text)))
+            getWorkspacesRequestVoid
+        )
+    )
   decodeMessage _ =
-    (Hs.pure GetWorkspacesRequest)
-      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+    Hs.pure GetWorkspacesRequest
+      <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 1)
               )
           )
   dotProto _ =
-    [ ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          (HsProtobufAST.Prim HsProtobufAST.String)
-          (HsProtobufAST.Single "void")
-          []
-          ""
-      )
+    [ HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 1)
+        (HsProtobufAST.Prim HsProtobufAST.String)
+        (HsProtobufAST.Single "void")
+        []
+        ""
     ]
-
-instance HsJSONPB.ToJSONPB GetWorkspacesRequest where
+instance (HsJSONPB.ToJSONPB GetWorkspacesRequest) where
   toJSONPB (GetWorkspacesRequest f1) =
-    ( HsJSONPB.object
-        [ "void"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
-        ]
-    )
+    HsJSONPB.object
+      ["void" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f1)]
   toEncodingPB (GetWorkspacesRequest f1) =
-    ( HsJSONPB.pairs
-        [ "void"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
-        ]
-    )
-
-instance HsJSONPB.FromJSONPB GetWorkspacesRequest where
+    HsJSONPB.pairs
+      ["void" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f1)]
+instance (HsJSONPB.FromJSONPB GetWorkspacesRequest) where
   parseJSONPB =
-    ( HsJSONPB.withObject
-        "GetWorkspacesRequest"
-        ( \obj ->
-            (Hs.pure GetWorkspacesRequest)
-              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
-                      (obj .: "void")
-                  )
-        )
-    )
-
-instance HsJSONPB.ToJSON GetWorkspacesRequest where
+    HsJSONPB.withObject
+      "GetWorkspacesRequest"
+      ( \obj ->
+          Hs.pure GetWorkspacesRequest
+            <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
+                    (obj .: "void")
+                )
+      )
+instance (HsJSONPB.ToJSON GetWorkspacesRequest) where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON GetWorkspacesRequest where
+instance (HsJSONPB.FromJSON GetWorkspacesRequest) where
   parseJSON = HsJSONPB.parseJSONPB
-
-newtype GetWorkspacesResponse = GetWorkspacesResponse
-  { getWorkspacesResponseWorkspaces ::
-      Hs.Vector Monocle.Protob.Config.Workspace
-  }
+newtype GetWorkspacesResponse = GetWorkspacesResponse {getWorkspacesResponseWorkspaces :: (Hs.Vector Monocle.Protob.Config.Workspace)}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
-
-instance Hs.NFData GetWorkspacesResponse
-
-instance HsProtobuf.Named GetWorkspacesResponse where
-  nameOf _ = (Hs.fromString "GetWorkspacesResponse")
-
-instance HsProtobuf.HasDefault GetWorkspacesResponse
-
-instance HsProtobuf.Message GetWorkspacesResponse where
+instance (Hs.NFData GetWorkspacesResponse)
+instance (HsProtobuf.Named GetWorkspacesResponse) where
+  nameOf _ = Hs.fromString "GetWorkspacesResponse"
+instance (HsProtobuf.HasDefault GetWorkspacesResponse)
+instance (HsProtobuf.Message GetWorkspacesResponse) where
   encodeMessage
     _
-    GetWorkspacesResponse
-      { getWorkspacesResponseWorkspaces =
-        getWorkspacesResponseWorkspaces
-      } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                ( Hs.coerce @(Hs.Vector Monocle.Protob.Config.Workspace)
-                    @(HsProtobuf.NestedVec Monocle.Protob.Config.Workspace)
-                    (getWorkspacesResponseWorkspaces)
-                )
+    GetWorkspacesResponse {getWorkspacesResponseWorkspaces} =
+      ( HsProtobuf.encodeMessageField
+          (HsProtobuf.FieldNumber 1)
+          ( ( Hs.coerce
+                @(Hs.Vector Monocle.Protob.Config.Workspace)
+                @(HsProtobuf.NestedVec Monocle.Protob.Config.Workspace)
             )
-          ]
+              getWorkspacesResponseWorkspaces
+          )
       )
   decodeMessage _ =
-    (Hs.pure GetWorkspacesResponse)
-      <*> ( HsProtobuf.coerceOver
-              @(HsProtobuf.NestedVec Monocle.Protob.Config.Workspace)
-              @(Hs.Vector Monocle.Protob.Config.Workspace)
+    Hs.pure GetWorkspacesResponse
+      <*> ( ( HsProtobuf.coerceOver
+                @(HsProtobuf.NestedVec Monocle.Protob.Config.Workspace)
+                @(Hs.Vector Monocle.Protob.Config.Workspace)
+            )
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 1)
               )
           )
   dotProto _ =
-    [ ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          ( HsProtobufAST.Repeated
-              (HsProtobufAST.Named (HsProtobufAST.Single "Workspace"))
-          )
-          (HsProtobufAST.Single "workspaces")
-          []
-          ""
-      )
+    [ HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 1)
+        ( HsProtobufAST.Repeated
+            (HsProtobufAST.Named (HsProtobufAST.Single "Workspace"))
+        )
+        (HsProtobufAST.Single "workspaces")
+        []
+        ""
     ]
-
-instance HsJSONPB.ToJSONPB GetWorkspacesResponse where
+instance (HsJSONPB.ToJSONPB GetWorkspacesResponse) where
   toJSONPB (GetWorkspacesResponse f1) =
-    ( HsJSONPB.object
-        [ "workspaces"
-            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Config.Workspace)
+    HsJSONPB.object
+      [ "workspaces"
+          .= ( ( Hs.coerce
+                  @(Hs.Vector Monocle.Protob.Config.Workspace)
                   @(HsProtobuf.NestedVec Monocle.Protob.Config.Workspace)
-                  (f1)
                )
-        ]
-    )
+                f1
+             )
+      ]
   toEncodingPB (GetWorkspacesResponse f1) =
-    ( HsJSONPB.pairs
-        [ "workspaces"
-            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Config.Workspace)
+    HsJSONPB.pairs
+      [ "workspaces"
+          .= ( ( Hs.coerce
+                  @(Hs.Vector Monocle.Protob.Config.Workspace)
                   @(HsProtobuf.NestedVec Monocle.Protob.Config.Workspace)
-                  (f1)
                )
-        ]
-    )
-
-instance HsJSONPB.FromJSONPB GetWorkspacesResponse where
+                f1
+             )
+      ]
+instance (HsJSONPB.FromJSONPB GetWorkspacesResponse) where
   parseJSONPB =
-    ( HsJSONPB.withObject
-        "GetWorkspacesResponse"
-        ( \obj ->
-            (Hs.pure GetWorkspacesResponse)
-              <*> ( HsProtobuf.coerceOver
+    HsJSONPB.withObject
+      "GetWorkspacesResponse"
+      ( \obj ->
+          Hs.pure GetWorkspacesResponse
+            <*> ( ( HsProtobuf.coerceOver
                       @(HsProtobuf.NestedVec Monocle.Protob.Config.Workspace)
                       @(Hs.Vector Monocle.Protob.Config.Workspace)
-                      (obj .: "workspaces")
                   )
-        )
-    )
-
-instance HsJSONPB.ToJSON GetWorkspacesResponse where
+                    (obj .: "workspaces")
+                )
+      )
+instance (HsJSONPB.ToJSON GetWorkspacesResponse) where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON GetWorkspacesResponse where
+instance (HsJSONPB.FromJSON GetWorkspacesResponse) where
   parseJSON = HsJSONPB.parseJSONPB
-
 data About = About
   { aboutVersion :: Hs.Text
-  , aboutLinks :: Hs.Vector Monocle.Protob.Config.About_AboutLink
-  , aboutAuth :: Hs.Maybe AboutAuth
+  , aboutLinks :: (Hs.Vector Monocle.Protob.Config.About_AboutLink)
+  , aboutAuth :: (Hs.Maybe AboutAuth)
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
-
-instance Hs.NFData About
-
-instance HsProtobuf.Named About where
-  nameOf _ = (Hs.fromString "About")
-
-instance HsProtobuf.HasDefault About
-
-instance HsProtobuf.Message About where
-  encodeMessage
-    _
-    About
-      { aboutVersion = aboutVersion
-      , aboutLinks = aboutLinks
-      , aboutAuth = aboutAuth
-      } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
-                    (aboutVersion)
-                )
-            )
-          , ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 2)
-                ( Hs.coerce @(Hs.Vector Monocle.Protob.Config.About_AboutLink)
+instance (Hs.NFData About)
+instance (HsProtobuf.Named About) where
+  nameOf _ = Hs.fromString "About"
+instance (HsProtobuf.HasDefault About)
+instance (HsProtobuf.Message About) where
+  encodeMessage _ About {aboutVersion, aboutLinks, aboutAuth} =
+    Hs.mappend
+      ( Hs.mappend
+          ( HsProtobuf.encodeMessageField
+              (HsProtobuf.FieldNumber 1)
+              ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) aboutVersion)
+          )
+          ( HsProtobuf.encodeMessageField
+              (HsProtobuf.FieldNumber 2)
+              ( ( Hs.coerce
+                    @(Hs.Vector Monocle.Protob.Config.About_AboutLink)
                     @(HsProtobuf.NestedVec Monocle.Protob.Config.About_AboutLink)
-                    (aboutLinks)
                 )
-            )
-          , case aboutAuth of
-              Hs.Nothing -> Hs.mempty
-              Hs.Just x ->
-                case x of
-                  AboutAuthAuthConfig y ->
-                    ( HsProtobuf.encodeMessageField
-                        (HsProtobuf.FieldNumber 3)
-                        ( Hs.coerce @(Hs.Maybe Monocle.Protob.Config.About_AuthConfig)
-                            @(HsProtobuf.Nested Monocle.Protob.Config.About_AuthConfig)
-                            (Hs.Just y)
-                        )
+                  aboutLinks
+              )
+          )
+      )
+      ( case aboutAuth of
+          Hs.Nothing -> Hs.mempty
+          Hs.Just x ->
+            case x of
+              AboutAuthAuthConfig y ->
+                HsProtobuf.encodeMessageField
+                  (HsProtobuf.FieldNumber 3)
+                  ( ( Hs.coerce
+                        @(Hs.Maybe Monocle.Protob.Config.About_AuthConfig)
+                        @(HsProtobuf.Nested Monocle.Protob.Config.About_AuthConfig)
                     )
-          ]
+                      (Hs.Just y)
+                  )
       )
   decodeMessage _ =
-    (Hs.pure About)
-      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+    Hs.pure About
+      <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 1)
               )
           )
-      <*> ( HsProtobuf.coerceOver
-              @(HsProtobuf.NestedVec Monocle.Protob.Config.About_AboutLink)
-              @(Hs.Vector Monocle.Protob.Config.About_AboutLink)
+      <*> ( ( HsProtobuf.coerceOver
+                @(HsProtobuf.NestedVec Monocle.Protob.Config.About_AboutLink)
+                @(Hs.Vector Monocle.Protob.Config.About_AboutLink)
+            )
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 2)
               )
           )
-      <*> ( HsProtobuf.oneof
-              Hs.Nothing
-              [
-                ( (HsProtobuf.FieldNumber 3)
-                , (Hs.pure (Hs.fmap AboutAuthAuthConfig))
-                    <*> ( HsProtobuf.coerceOver
-                            @(HsProtobuf.Nested Monocle.Protob.Config.About_AuthConfig)
-                            @(Hs.Maybe Monocle.Protob.Config.About_AuthConfig)
-                            (HsProtobuf.decodeMessageField)
-                        )
-                )
-              ]
+      <*> HsProtobuf.oneof
+        Hs.Nothing
+        [
+          ( (HsProtobuf.FieldNumber 3)
+          , Hs.pure (Hs.fmap AboutAuthAuthConfig)
+              <*> ( ( HsProtobuf.coerceOver
+                        @(HsProtobuf.Nested Monocle.Protob.Config.About_AuthConfig)
+                        @(Hs.Maybe Monocle.Protob.Config.About_AuthConfig)
+                    )
+                      HsProtobuf.decodeMessageField
+                  )
           )
+        ]
   dotProto _ =
-    [ ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          (HsProtobufAST.Prim HsProtobufAST.String)
-          (HsProtobufAST.Single "version")
-          []
-          ""
-      )
-    , ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 2)
-          ( HsProtobufAST.Repeated
-              (HsProtobufAST.Named (HsProtobufAST.Single "AboutLink"))
-          )
-          (HsProtobufAST.Single "links")
-          []
-          ""
-      )
+    [ HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 1)
+        (HsProtobufAST.Prim HsProtobufAST.String)
+        (HsProtobufAST.Single "version")
+        []
+        ""
+    , HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 2)
+        ( HsProtobufAST.Repeated
+            (HsProtobufAST.Named (HsProtobufAST.Single "AboutLink"))
+        )
+        (HsProtobufAST.Single "links")
+        []
+        ""
     ]
-
-instance HsJSONPB.ToJSONPB About where
+instance (HsJSONPB.ToJSONPB About) where
   toJSONPB (About f1 f2 f3) =
-    ( HsJSONPB.object
-        [ "version"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
-        , "links"
-            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Config.About_AboutLink)
+    HsJSONPB.object
+      [ "version"
+          .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f1)
+      , "links"
+          .= ( ( Hs.coerce
+                  @(Hs.Vector Monocle.Protob.Config.About_AboutLink)
                   @(HsProtobuf.NestedVec Monocle.Protob.Config.About_AboutLink)
-                  (f2)
                )
-        , ( let encodeAuth =
-                  ( case f3 of
-                      Hs.Just (AboutAuthAuthConfig f3) ->
-                        (HsJSONPB.pair "auth_config" f3)
-                      Hs.Nothing -> Hs.mempty
-                  )
-             in \options ->
-                  if HsJSONPB.optEmitNamedOneof options
-                    then ("auth" .= (HsJSONPB.objectOrNull [encodeAuth] options)) options
-                    else encodeAuth options
-          )
-        ]
-    )
+                f2
+             )
+      , ( let
+            encodeAuth =
+              ( case f3 of
+                  Hs.Just (AboutAuthAuthConfig f3) -> HsJSONPB.pair "auth_config" f3
+                  Hs.Nothing -> Hs.mempty
+              )
+           in
+            ( \options ->
+                if HsJSONPB.optEmitNamedOneof options
+                  then ("auth" .= HsJSONPB.objectOrNull [encodeAuth] options) options
+                  else encodeAuth options
+            )
+        )
+      ]
   toEncodingPB (About f1 f2 f3) =
-    ( HsJSONPB.pairs
-        [ "version"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
-        , "links"
-            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Config.About_AboutLink)
+    HsJSONPB.pairs
+      [ "version"
+          .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f1)
+      , "links"
+          .= ( ( Hs.coerce
+                  @(Hs.Vector Monocle.Protob.Config.About_AboutLink)
                   @(HsProtobuf.NestedVec Monocle.Protob.Config.About_AboutLink)
-                  (f2)
                )
-        , ( let encodeAuth =
-                  ( case f3 of
-                      Hs.Just (AboutAuthAuthConfig f3) ->
-                        (HsJSONPB.pair "auth_config" f3)
-                      Hs.Nothing -> Hs.mempty
-                  )
-             in \options ->
-                  if HsJSONPB.optEmitNamedOneof options
-                    then ("auth" .= (HsJSONPB.pairsOrNull [encodeAuth] options)) options
-                    else encodeAuth options
-          )
-        ]
-    )
-
-instance HsJSONPB.FromJSONPB About where
+                f2
+             )
+      , ( let
+            encodeAuth =
+              ( case f3 of
+                  Hs.Just (AboutAuthAuthConfig f3) -> HsJSONPB.pair "auth_config" f3
+                  Hs.Nothing -> Hs.mempty
+              )
+           in
+            ( \options ->
+                if HsJSONPB.optEmitNamedOneof options
+                  then ("auth" .= HsJSONPB.pairsOrNull [encodeAuth] options) options
+                  else encodeAuth options
+            )
+        )
+      ]
+instance (HsJSONPB.FromJSONPB About) where
   parseJSONPB =
-    ( HsJSONPB.withObject
-        "About"
-        ( \obj ->
-            (Hs.pure About)
-              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
-                      (obj .: "version")
-                  )
-              <*> ( HsProtobuf.coerceOver
+    HsJSONPB.withObject
+      "About"
+      ( \obj ->
+          Hs.pure About
+            <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
+                    (obj .: "version")
+                )
+            <*> ( ( HsProtobuf.coerceOver
                       @(HsProtobuf.NestedVec Monocle.Protob.Config.About_AboutLink)
                       @(Hs.Vector Monocle.Protob.Config.About_AboutLink)
-                      (obj .: "links")
                   )
-              <*> ( let parseAuth parseObj =
-                          Hs.msum
-                            [ Hs.Just Hs.. AboutAuthAuthConfig
-                                <$> (HsJSONPB.parseField parseObj "auth_config")
-                            , Hs.pure Hs.Nothing
-                            ]
-                     in ((obj .: "auth") Hs.>>= (HsJSONPB.withObject "auth" parseAuth))
-                          <|> (parseAuth obj)
-                  )
-        )
-    )
-
-instance HsJSONPB.ToJSON About where
+                    (obj .: "links")
+                )
+            <*> ( let
+                    parseAuth parseObj =
+                      Hs.msum
+                        [ Hs.Just Hs.. AboutAuthAuthConfig
+                            <$> HsJSONPB.parseField parseObj "auth_config"
+                        , Hs.pure Hs.Nothing
+                        ]
+                   in
+                    (obj .: "auth" Hs.>>= HsJSONPB.withObject "auth" parseAuth)
+                      <|> (parseAuth obj)
+                )
+      )
+instance (HsJSONPB.ToJSON About) where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON About where
+instance (HsJSONPB.FromJSON About) where
   parseJSON = HsJSONPB.parseJSONPB
-
 data About_AboutLink = About_AboutLink
-  { about_AboutLinkName ::
-      Hs.Text
+  { about_AboutLinkName :: Hs.Text
   , about_AboutLinkUrl :: Hs.Text
   , about_AboutLinkCategory :: Hs.Text
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
-
-instance Hs.NFData About_AboutLink
-
-instance HsProtobuf.Named About_AboutLink where
-  nameOf _ = (Hs.fromString "About_AboutLink")
-
-instance HsProtobuf.HasDefault About_AboutLink
-
-instance HsProtobuf.Message About_AboutLink where
+instance (Hs.NFData About_AboutLink)
+instance (HsProtobuf.Named About_AboutLink) where
+  nameOf _ = Hs.fromString "About_AboutLink"
+instance (HsProtobuf.HasDefault About_AboutLink)
+instance (HsProtobuf.Message About_AboutLink) where
   encodeMessage
     _
     About_AboutLink
-      { about_AboutLinkName = about_AboutLinkName
-      , about_AboutLinkUrl = about_AboutLinkUrl
-      , about_AboutLinkCategory = about_AboutLinkCategory
+      { about_AboutLinkName
+      , about_AboutLinkUrl
+      , about_AboutLinkCategory
       } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
+      Hs.mappend
+        ( Hs.mappend
+            ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
-                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
-                    (about_AboutLinkName)
+                ( (Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text)))
+                    about_AboutLinkName
                 )
             )
-          , ( HsProtobuf.encodeMessageField
+            ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
-                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
-                    (about_AboutLinkUrl)
+                ( (Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text)))
+                    about_AboutLinkUrl
                 )
             )
-          , ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 3)
-                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
-                    (about_AboutLinkCategory)
-                )
+        )
+        ( HsProtobuf.encodeMessageField
+            (HsProtobuf.FieldNumber 3)
+            ( (Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text)))
+                about_AboutLinkCategory
             )
-          ]
-      )
+        )
   decodeMessage _ =
-    (Hs.pure About_AboutLink)
-      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+    Hs.pure About_AboutLink
+      <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 1)
               )
           )
-      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+      <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 2)
               )
           )
-      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+      <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 3)
               )
           )
   dotProto _ =
-    [ ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          (HsProtobufAST.Prim HsProtobufAST.String)
-          (HsProtobufAST.Single "name")
-          []
-          ""
-      )
-    , ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 2)
-          (HsProtobufAST.Prim HsProtobufAST.String)
-          (HsProtobufAST.Single "url")
-          []
-          ""
-      )
-    , ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 3)
-          (HsProtobufAST.Prim HsProtobufAST.String)
-          (HsProtobufAST.Single "category")
-          []
-          ""
-      )
+    [ HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 1)
+        (HsProtobufAST.Prim HsProtobufAST.String)
+        (HsProtobufAST.Single "name")
+        []
+        ""
+    , HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 2)
+        (HsProtobufAST.Prim HsProtobufAST.String)
+        (HsProtobufAST.Single "url")
+        []
+        ""
+    , HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 3)
+        (HsProtobufAST.Prim HsProtobufAST.String)
+        (HsProtobufAST.Single "category")
+        []
+        ""
     ]
-
-instance HsJSONPB.ToJSONPB About_AboutLink where
+instance (HsJSONPB.ToJSONPB About_AboutLink) where
   toJSONPB (About_AboutLink f1 f2 f3) =
-    ( HsJSONPB.object
-        [ "name"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
-        , "url" .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
-        , "category"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f3))
-        ]
-    )
+    HsJSONPB.object
+      [ "name" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f1)
+      , "url" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f2)
+      , "category"
+          .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f3)
+      ]
   toEncodingPB (About_AboutLink f1 f2 f3) =
-    ( HsJSONPB.pairs
-        [ "name"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
-        , "url" .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
-        , "category"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f3))
-        ]
-    )
-
-instance HsJSONPB.FromJSONPB About_AboutLink where
+    HsJSONPB.pairs
+      [ "name" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f1)
+      , "url" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f2)
+      , "category"
+          .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f3)
+      ]
+instance (HsJSONPB.FromJSONPB About_AboutLink) where
   parseJSONPB =
-    ( HsJSONPB.withObject
-        "About_AboutLink"
-        ( \obj ->
-            (Hs.pure About_AboutLink)
-              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
-                      (obj .: "name")
-                  )
-              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
-                      (obj .: "url")
-                  )
-              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
-                      (obj .: "category")
-                  )
-        )
-    )
-
-instance HsJSONPB.ToJSON About_AboutLink where
+    HsJSONPB.withObject
+      "About_AboutLink"
+      ( \obj ->
+          Hs.pure About_AboutLink
+            <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
+                    (obj .: "name")
+                )
+            <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
+                    (obj .: "url")
+                )
+            <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
+                    (obj .: "category")
+                )
+      )
+instance (HsJSONPB.ToJSON About_AboutLink) where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON About_AboutLink where
+instance (HsJSONPB.FromJSON About_AboutLink) where
   parseJSON = HsJSONPB.parseJSONPB
-
 data About_AuthConfig = About_AuthConfig
-  { about_AuthConfigForceLogin ::
-      Hs.Bool
+  { about_AuthConfigForceLogin :: Hs.Bool
   , about_AuthConfigIssuer :: Hs.Text
   , about_AuthConfigProviderName :: Hs.Text
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
-
-instance Hs.NFData About_AuthConfig
-
-instance HsProtobuf.Named About_AuthConfig where
-  nameOf _ = (Hs.fromString "About_AuthConfig")
-
-instance HsProtobuf.HasDefault About_AuthConfig
-
-instance HsProtobuf.Message About_AuthConfig where
+instance (Hs.NFData About_AuthConfig)
+instance (HsProtobuf.Named About_AuthConfig) where
+  nameOf _ = Hs.fromString "About_AuthConfig"
+instance (HsProtobuf.HasDefault About_AuthConfig)
+instance (HsProtobuf.Message About_AuthConfig) where
   encodeMessage
     _
     About_AuthConfig
-      { about_AuthConfigForceLogin =
-        about_AuthConfigForceLogin
-      , about_AuthConfigIssuer = about_AuthConfigIssuer
-      , about_AuthConfigProviderName = about_AuthConfigProviderName
+      { about_AuthConfigForceLogin
+      , about_AuthConfigIssuer
+      , about_AuthConfigProviderName
       } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
+      Hs.mappend
+        ( Hs.mappend
+            ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 1)
                 about_AuthConfigForceLogin
             )
-          , ( HsProtobuf.encodeMessageField
+            ( HsProtobuf.encodeMessageField
                 (HsProtobuf.FieldNumber 2)
-                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
-                    (about_AuthConfigIssuer)
+                ( (Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text)))
+                    about_AuthConfigIssuer
                 )
             )
-          , ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 3)
-                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
-                    (about_AuthConfigProviderName)
-                )
+        )
+        ( HsProtobuf.encodeMessageField
+            (HsProtobuf.FieldNumber 3)
+            ( (Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text)))
+                about_AuthConfigProviderName
             )
-          ]
-      )
+        )
   decodeMessage _ =
-    (Hs.pure About_AuthConfig)
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 1)
-          )
-      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+    Hs.pure About_AuthConfig
+      <*> HsProtobuf.at
+        HsProtobuf.decodeMessageField
+        (HsProtobuf.FieldNumber 1)
+      <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 2)
               )
           )
-      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+      <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 3)
               )
           )
   dotProto _ =
-    [ ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          (HsProtobufAST.Prim HsProtobufAST.Bool)
-          (HsProtobufAST.Single "force_login")
-          []
-          ""
-      )
-    , ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 2)
-          (HsProtobufAST.Prim HsProtobufAST.String)
-          (HsProtobufAST.Single "issuer")
-          []
-          ""
-      )
-    , ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 3)
-          (HsProtobufAST.Prim HsProtobufAST.String)
-          (HsProtobufAST.Single "provider_name")
-          []
-          ""
-      )
+    [ HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 1)
+        (HsProtobufAST.Prim HsProtobufAST.Bool)
+        (HsProtobufAST.Single "force_login")
+        []
+        ""
+    , HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 2)
+        (HsProtobufAST.Prim HsProtobufAST.String)
+        (HsProtobufAST.Single "issuer")
+        []
+        ""
+    , HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 3)
+        (HsProtobufAST.Prim HsProtobufAST.String)
+        (HsProtobufAST.Single "provider_name")
+        []
+        ""
     ]
-
-instance HsJSONPB.ToJSONPB About_AuthConfig where
+instance (HsJSONPB.ToJSONPB About_AuthConfig) where
   toJSONPB (About_AuthConfig f1 f2 f3) =
-    ( HsJSONPB.object
-        [ "force_login" .= f1
-        , "issuer"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
-        , "provider_name"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f3))
-        ]
-    )
+    HsJSONPB.object
+      [ "force_login" .= f1
+      , "issuer" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f2)
+      , "provider_name"
+          .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f3)
+      ]
   toEncodingPB (About_AuthConfig f1 f2 f3) =
-    ( HsJSONPB.pairs
-        [ "force_login" .= f1
-        , "issuer"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
-        , "provider_name"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f3))
-        ]
-    )
-
-instance HsJSONPB.FromJSONPB About_AuthConfig where
+    HsJSONPB.pairs
+      [ "force_login" .= f1
+      , "issuer" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f2)
+      , "provider_name"
+          .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f3)
+      ]
+instance (HsJSONPB.FromJSONPB About_AuthConfig) where
   parseJSONPB =
-    ( HsJSONPB.withObject
-        "About_AuthConfig"
-        ( \obj ->
-            (Hs.pure About_AuthConfig)
-              <*> obj .: "force_login"
-              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
-                      (obj .: "issuer")
-                  )
-              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
-                      (obj .: "provider_name")
-                  )
-        )
-    )
-
-instance HsJSONPB.ToJSON About_AuthConfig where
+    HsJSONPB.withObject
+      "About_AuthConfig"
+      ( \obj ->
+          Hs.pure About_AuthConfig
+            <*> obj .: "force_login"
+            <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
+                    (obj .: "issuer")
+                )
+            <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
+                    (obj .: "provider_name")
+                )
+      )
+instance (HsJSONPB.ToJSON About_AuthConfig) where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON About_AuthConfig where
+instance (HsJSONPB.FromJSON About_AuthConfig) where
   parseJSON = HsJSONPB.parseJSONPB
-
-data AboutAuth = AboutAuthAuthConfig Monocle.Protob.Config.About_AuthConfig
+newtype AboutAuth
+  = AboutAuthAuthConfig Monocle.Protob.Config.About_AuthConfig
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
-
-instance Hs.NFData AboutAuth
-
-instance HsProtobuf.Named AboutAuth where
-  nameOf _ = (Hs.fromString "AboutAuth")
-
-newtype GetAboutRequest = GetAboutRequest
-  { getAboutRequestVoid ::
-      Hs.Text
-  }
+instance (Hs.NFData AboutAuth)
+instance (HsProtobuf.Named AboutAuth) where
+  nameOf _ = Hs.fromString "AboutAuth"
+newtype GetAboutRequest = GetAboutRequest {getAboutRequestVoid :: Hs.Text}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
-
-instance Hs.NFData GetAboutRequest
-
-instance HsProtobuf.Named GetAboutRequest where
-  nameOf _ = (Hs.fromString "GetAboutRequest")
-
-instance HsProtobuf.HasDefault GetAboutRequest
-
-instance HsProtobuf.Message GetAboutRequest where
-  encodeMessage
-    _
-    GetAboutRequest {getAboutRequestVoid = getAboutRequestVoid} =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
-                    (getAboutRequestVoid)
-                )
-            )
-          ]
-      )
+instance (Hs.NFData GetAboutRequest)
+instance (HsProtobuf.Named GetAboutRequest) where
+  nameOf _ = Hs.fromString "GetAboutRequest"
+instance (HsProtobuf.HasDefault GetAboutRequest)
+instance (HsProtobuf.Message GetAboutRequest) where
+  encodeMessage _ GetAboutRequest {getAboutRequestVoid} =
+    ( HsProtobuf.encodeMessageField
+        (HsProtobuf.FieldNumber 1)
+        ( (Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text)))
+            getAboutRequestVoid
+        )
+    )
   decodeMessage _ =
-    (Hs.pure GetAboutRequest)
-      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+    Hs.pure GetAboutRequest
+      <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 1)
               )
           )
   dotProto _ =
-    [ ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          (HsProtobufAST.Prim HsProtobufAST.String)
-          (HsProtobufAST.Single "void")
-          []
-          ""
-      )
+    [ HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 1)
+        (HsProtobufAST.Prim HsProtobufAST.String)
+        (HsProtobufAST.Single "void")
+        []
+        ""
     ]
-
-instance HsJSONPB.ToJSONPB GetAboutRequest where
+instance (HsJSONPB.ToJSONPB GetAboutRequest) where
   toJSONPB (GetAboutRequest f1) =
-    ( HsJSONPB.object
-        [ "void"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
-        ]
-    )
+    HsJSONPB.object
+      ["void" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f1)]
   toEncodingPB (GetAboutRequest f1) =
-    ( HsJSONPB.pairs
-        [ "void"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
-        ]
-    )
-
-instance HsJSONPB.FromJSONPB GetAboutRequest where
+    HsJSONPB.pairs
+      ["void" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f1)]
+instance (HsJSONPB.FromJSONPB GetAboutRequest) where
   parseJSONPB =
-    ( HsJSONPB.withObject
-        "GetAboutRequest"
-        ( \obj ->
-            (Hs.pure GetAboutRequest)
-              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
-                      (obj .: "void")
-                  )
-        )
-    )
-
-instance HsJSONPB.ToJSON GetAboutRequest where
+    HsJSONPB.withObject
+      "GetAboutRequest"
+      ( \obj ->
+          Hs.pure GetAboutRequest
+            <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
+                    (obj .: "void")
+                )
+      )
+instance (HsJSONPB.ToJSON GetAboutRequest) where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON GetAboutRequest where
+instance (HsJSONPB.FromJSON GetAboutRequest) where
   parseJSON = HsJSONPB.parseJSONPB
-
-newtype GetAboutResponse = GetAboutResponse
-  { getAboutResponseAbout ::
-      Hs.Maybe Monocle.Protob.Config.About
-  }
+newtype GetAboutResponse = GetAboutResponse {getAboutResponseAbout :: (Hs.Maybe Monocle.Protob.Config.About)}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
-
-instance Hs.NFData GetAboutResponse
-
-instance HsProtobuf.Named GetAboutResponse where
-  nameOf _ = (Hs.fromString "GetAboutResponse")
-
-instance HsProtobuf.HasDefault GetAboutResponse
-
-instance HsProtobuf.Message GetAboutResponse where
-  encodeMessage
-    _
-    GetAboutResponse {getAboutResponseAbout = getAboutResponseAbout} =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                ( Hs.coerce @(Hs.Maybe Monocle.Protob.Config.About)
-                    @(HsProtobuf.Nested Monocle.Protob.Config.About)
-                    (getAboutResponseAbout)
-                )
-            )
-          ]
-      )
-  decodeMessage _ =
-    (Hs.pure GetAboutResponse)
-      <*> ( HsProtobuf.coerceOver
-              @(HsProtobuf.Nested Monocle.Protob.Config.About)
+instance (Hs.NFData GetAboutResponse)
+instance (HsProtobuf.Named GetAboutResponse) where
+  nameOf _ = Hs.fromString "GetAboutResponse"
+instance (HsProtobuf.HasDefault GetAboutResponse)
+instance (HsProtobuf.Message GetAboutResponse) where
+  encodeMessage _ GetAboutResponse {getAboutResponseAbout} =
+    ( HsProtobuf.encodeMessageField
+        (HsProtobuf.FieldNumber 1)
+        ( ( Hs.coerce
               @(Hs.Maybe Monocle.Protob.Config.About)
+              @(HsProtobuf.Nested Monocle.Protob.Config.About)
+          )
+            getAboutResponseAbout
+        )
+    )
+  decodeMessage _ =
+    Hs.pure GetAboutResponse
+      <*> ( ( HsProtobuf.coerceOver
+                @(HsProtobuf.Nested Monocle.Protob.Config.About)
+                @(Hs.Maybe Monocle.Protob.Config.About)
+            )
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 1)
               )
           )
   dotProto _ =
-    [ ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          ( HsProtobufAST.Prim
-              (HsProtobufAST.Named (HsProtobufAST.Single "About"))
-          )
-          (HsProtobufAST.Single "about")
-          []
-          ""
-      )
+    [ HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 1)
+        ( HsProtobufAST.Prim
+            (HsProtobufAST.Named (HsProtobufAST.Single "About"))
+        )
+        (HsProtobufAST.Single "about")
+        []
+        ""
     ]
-
-instance HsJSONPB.ToJSONPB GetAboutResponse where
+instance (HsJSONPB.ToJSONPB GetAboutResponse) where
   toJSONPB (GetAboutResponse f1) =
-    ( HsJSONPB.object
-        [ "about"
-            .= ( Hs.coerce @(Hs.Maybe Monocle.Protob.Config.About)
+    HsJSONPB.object
+      [ "about"
+          .= ( ( Hs.coerce
+                  @(Hs.Maybe Monocle.Protob.Config.About)
                   @(HsProtobuf.Nested Monocle.Protob.Config.About)
-                  (f1)
                )
-        ]
-    )
+                f1
+             )
+      ]
   toEncodingPB (GetAboutResponse f1) =
-    ( HsJSONPB.pairs
-        [ "about"
-            .= ( Hs.coerce @(Hs.Maybe Monocle.Protob.Config.About)
+    HsJSONPB.pairs
+      [ "about"
+          .= ( ( Hs.coerce
+                  @(Hs.Maybe Monocle.Protob.Config.About)
                   @(HsProtobuf.Nested Monocle.Protob.Config.About)
-                  (f1)
                )
-        ]
-    )
-
-instance HsJSONPB.FromJSONPB GetAboutResponse where
+                f1
+             )
+      ]
+instance (HsJSONPB.FromJSONPB GetAboutResponse) where
   parseJSONPB =
-    ( HsJSONPB.withObject
-        "GetAboutResponse"
-        ( \obj ->
-            (Hs.pure GetAboutResponse)
-              <*> ( HsProtobuf.coerceOver
+    HsJSONPB.withObject
+      "GetAboutResponse"
+      ( \obj ->
+          Hs.pure GetAboutResponse
+            <*> ( ( HsProtobuf.coerceOver
                       @(HsProtobuf.Nested Monocle.Protob.Config.About)
                       @(Hs.Maybe Monocle.Protob.Config.About)
-                      (obj .: "about")
                   )
-        )
-    )
-
-instance HsJSONPB.ToJSON GetAboutResponse where
+                    (obj .: "about")
+                )
+      )
+instance (HsJSONPB.ToJSON GetAboutResponse) where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON GetAboutResponse where
+instance (HsJSONPB.FromJSON GetAboutResponse) where
   parseJSON = HsJSONPB.parseJSONPB
-
 data GroupDefinition = GroupDefinition
-  { groupDefinitionName ::
-      Hs.Text
+  { groupDefinitionName :: Hs.Text
   , groupDefinitionMembers :: Hs.Word32
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
-
-instance Hs.NFData GroupDefinition
-
-instance HsProtobuf.Named GroupDefinition where
-  nameOf _ = (Hs.fromString "GroupDefinition")
-
-instance HsProtobuf.HasDefault GroupDefinition
-
-instance HsProtobuf.Message GroupDefinition where
+instance (Hs.NFData GroupDefinition)
+instance (HsProtobuf.Named GroupDefinition) where
+  nameOf _ = Hs.fromString "GroupDefinition"
+instance (HsProtobuf.HasDefault GroupDefinition)
+instance (HsProtobuf.Message GroupDefinition) where
   encodeMessage
     _
-    GroupDefinition
-      { groupDefinitionName = groupDefinitionName
-      , groupDefinitionMembers = groupDefinitionMembers
-      } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
-                    (groupDefinitionName)
-                )
+    GroupDefinition {groupDefinitionName, groupDefinitionMembers} =
+      Hs.mappend
+        ( HsProtobuf.encodeMessageField
+            (HsProtobuf.FieldNumber 1)
+            ( (Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text)))
+                groupDefinitionName
             )
-          , ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 2)
-                groupDefinitionMembers
-            )
-          ]
-      )
+        )
+        ( HsProtobuf.encodeMessageField
+            (HsProtobuf.FieldNumber 2)
+            groupDefinitionMembers
+        )
   decodeMessage _ =
-    (Hs.pure GroupDefinition)
-      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+    Hs.pure GroupDefinition
+      <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 1)
               )
           )
-      <*> ( HsProtobuf.at
-              HsProtobuf.decodeMessageField
-              (HsProtobuf.FieldNumber 2)
-          )
+      <*> HsProtobuf.at
+        HsProtobuf.decodeMessageField
+        (HsProtobuf.FieldNumber 2)
   dotProto _ =
-    [ ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          (HsProtobufAST.Prim HsProtobufAST.String)
-          (HsProtobufAST.Single "name")
-          []
-          ""
-      )
-    , ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 2)
-          (HsProtobufAST.Prim HsProtobufAST.UInt32)
-          (HsProtobufAST.Single "members")
-          []
-          ""
-      )
+    [ HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 1)
+        (HsProtobufAST.Prim HsProtobufAST.String)
+        (HsProtobufAST.Single "name")
+        []
+        ""
+    , HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 2)
+        (HsProtobufAST.Prim HsProtobufAST.UInt32)
+        (HsProtobufAST.Single "members")
+        []
+        ""
     ]
-
-instance HsJSONPB.ToJSONPB GroupDefinition where
+instance (HsJSONPB.ToJSONPB GroupDefinition) where
   toJSONPB (GroupDefinition f1 f2) =
-    ( HsJSONPB.object
-        [ "name"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
-        , "members" .= f2
-        ]
-    )
+    HsJSONPB.object
+      [ "name" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f1)
+      , "members" .= f2
+      ]
   toEncodingPB (GroupDefinition f1 f2) =
-    ( HsJSONPB.pairs
-        [ "name"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
-        , "members" .= f2
-        ]
-    )
-
-instance HsJSONPB.FromJSONPB GroupDefinition where
+    HsJSONPB.pairs
+      [ "name" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f1)
+      , "members" .= f2
+      ]
+instance (HsJSONPB.FromJSONPB GroupDefinition) where
   parseJSONPB =
-    ( HsJSONPB.withObject
-        "GroupDefinition"
-        ( \obj ->
-            (Hs.pure GroupDefinition)
-              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
-                      (obj .: "name")
-                  )
-              <*> obj .: "members"
-        )
-    )
-
-instance HsJSONPB.ToJSON GroupDefinition where
+    HsJSONPB.withObject
+      "GroupDefinition"
+      ( \obj ->
+          Hs.pure GroupDefinition
+            <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
+                    (obj .: "name")
+                )
+            <*> obj .: "members"
+      )
+instance (HsJSONPB.ToJSON GroupDefinition) where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON GroupDefinition where
+instance (HsJSONPB.FromJSON GroupDefinition) where
   parseJSON = HsJSONPB.parseJSONPB
-
-newtype GetGroupsRequest = GetGroupsRequest
-  { getGroupsRequestIndex ::
-      Hs.Text
-  }
+newtype GetGroupsRequest = GetGroupsRequest {getGroupsRequestIndex :: Hs.Text}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
-
-instance Hs.NFData GetGroupsRequest
-
-instance HsProtobuf.Named GetGroupsRequest where
-  nameOf _ = (Hs.fromString "GetGroupsRequest")
-
-instance HsProtobuf.HasDefault GetGroupsRequest
-
-instance HsProtobuf.Message GetGroupsRequest where
-  encodeMessage
-    _
-    GetGroupsRequest {getGroupsRequestIndex = getGroupsRequestIndex} =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
-                    (getGroupsRequestIndex)
-                )
-            )
-          ]
-      )
+instance (Hs.NFData GetGroupsRequest)
+instance (HsProtobuf.Named GetGroupsRequest) where
+  nameOf _ = Hs.fromString "GetGroupsRequest"
+instance (HsProtobuf.HasDefault GetGroupsRequest)
+instance (HsProtobuf.Message GetGroupsRequest) where
+  encodeMessage _ GetGroupsRequest {getGroupsRequestIndex} =
+    ( HsProtobuf.encodeMessageField
+        (HsProtobuf.FieldNumber 1)
+        ( (Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text)))
+            getGroupsRequestIndex
+        )
+    )
   decodeMessage _ =
-    (Hs.pure GetGroupsRequest)
-      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+    Hs.pure GetGroupsRequest
+      <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 1)
               )
           )
   dotProto _ =
-    [ ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          (HsProtobufAST.Prim HsProtobufAST.String)
-          (HsProtobufAST.Single "index")
-          []
-          ""
-      )
+    [ HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 1)
+        (HsProtobufAST.Prim HsProtobufAST.String)
+        (HsProtobufAST.Single "index")
+        []
+        ""
     ]
-
-instance HsJSONPB.ToJSONPB GetGroupsRequest where
+instance (HsJSONPB.ToJSONPB GetGroupsRequest) where
   toJSONPB (GetGroupsRequest f1) =
-    ( HsJSONPB.object
-        [ "index"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
-        ]
-    )
+    HsJSONPB.object
+      ["index" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f1)]
   toEncodingPB (GetGroupsRequest f1) =
-    ( HsJSONPB.pairs
-        [ "index"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
-        ]
-    )
-
-instance HsJSONPB.FromJSONPB GetGroupsRequest where
+    HsJSONPB.pairs
+      ["index" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f1)]
+instance (HsJSONPB.FromJSONPB GetGroupsRequest) where
   parseJSONPB =
-    ( HsJSONPB.withObject
-        "GetGroupsRequest"
-        ( \obj ->
-            (Hs.pure GetGroupsRequest)
-              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
-                      (obj .: "index")
-                  )
-        )
-    )
-
-instance HsJSONPB.ToJSON GetGroupsRequest where
+    HsJSONPB.withObject
+      "GetGroupsRequest"
+      ( \obj ->
+          Hs.pure GetGroupsRequest
+            <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
+                    (obj .: "index")
+                )
+      )
+instance (HsJSONPB.ToJSON GetGroupsRequest) where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON GetGroupsRequest where
+instance (HsJSONPB.FromJSON GetGroupsRequest) where
   parseJSON = HsJSONPB.parseJSONPB
-
-newtype GetGroupsResponse = GetGroupsResponse
-  { getGroupsResponseItems ::
-      Hs.Vector Monocle.Protob.Config.GroupDefinition
-  }
+newtype GetGroupsResponse = GetGroupsResponse {getGroupsResponseItems :: (Hs.Vector Monocle.Protob.Config.GroupDefinition)}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
-
-instance Hs.NFData GetGroupsResponse
-
-instance HsProtobuf.Named GetGroupsResponse where
-  nameOf _ = (Hs.fromString "GetGroupsResponse")
-
-instance HsProtobuf.HasDefault GetGroupsResponse
-
-instance HsProtobuf.Message GetGroupsResponse where
-  encodeMessage
-    _
-    GetGroupsResponse {getGroupsResponseItems = getGroupsResponseItems} =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                ( Hs.coerce @(Hs.Vector Monocle.Protob.Config.GroupDefinition)
-                    @(HsProtobuf.NestedVec Monocle.Protob.Config.GroupDefinition)
-                    (getGroupsResponseItems)
-                )
-            )
-          ]
-      )
-  decodeMessage _ =
-    (Hs.pure GetGroupsResponse)
-      <*> ( HsProtobuf.coerceOver
-              @(HsProtobuf.NestedVec Monocle.Protob.Config.GroupDefinition)
+instance (Hs.NFData GetGroupsResponse)
+instance (HsProtobuf.Named GetGroupsResponse) where
+  nameOf _ = Hs.fromString "GetGroupsResponse"
+instance (HsProtobuf.HasDefault GetGroupsResponse)
+instance (HsProtobuf.Message GetGroupsResponse) where
+  encodeMessage _ GetGroupsResponse {getGroupsResponseItems} =
+    ( HsProtobuf.encodeMessageField
+        (HsProtobuf.FieldNumber 1)
+        ( ( Hs.coerce
               @(Hs.Vector Monocle.Protob.Config.GroupDefinition)
+              @(HsProtobuf.NestedVec Monocle.Protob.Config.GroupDefinition)
+          )
+            getGroupsResponseItems
+        )
+    )
+  decodeMessage _ =
+    Hs.pure GetGroupsResponse
+      <*> ( ( HsProtobuf.coerceOver
+                @(HsProtobuf.NestedVec Monocle.Protob.Config.GroupDefinition)
+                @(Hs.Vector Monocle.Protob.Config.GroupDefinition)
+            )
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 1)
               )
           )
   dotProto _ =
-    [ ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          ( HsProtobufAST.Repeated
-              (HsProtobufAST.Named (HsProtobufAST.Single "GroupDefinition"))
-          )
-          (HsProtobufAST.Single "items")
-          []
-          ""
-      )
+    [ HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 1)
+        ( HsProtobufAST.Repeated
+            (HsProtobufAST.Named (HsProtobufAST.Single "GroupDefinition"))
+        )
+        (HsProtobufAST.Single "items")
+        []
+        ""
     ]
-
-instance HsJSONPB.ToJSONPB GetGroupsResponse where
+instance (HsJSONPB.ToJSONPB GetGroupsResponse) where
   toJSONPB (GetGroupsResponse f1) =
-    ( HsJSONPB.object
-        [ "items"
-            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Config.GroupDefinition)
+    HsJSONPB.object
+      [ "items"
+          .= ( ( Hs.coerce
+                  @(Hs.Vector Monocle.Protob.Config.GroupDefinition)
                   @(HsProtobuf.NestedVec Monocle.Protob.Config.GroupDefinition)
-                  (f1)
                )
-        ]
-    )
+                f1
+             )
+      ]
   toEncodingPB (GetGroupsResponse f1) =
-    ( HsJSONPB.pairs
-        [ "items"
-            .= ( Hs.coerce @(Hs.Vector Monocle.Protob.Config.GroupDefinition)
+    HsJSONPB.pairs
+      [ "items"
+          .= ( ( Hs.coerce
+                  @(Hs.Vector Monocle.Protob.Config.GroupDefinition)
                   @(HsProtobuf.NestedVec Monocle.Protob.Config.GroupDefinition)
-                  (f1)
                )
-        ]
-    )
-
-instance HsJSONPB.FromJSONPB GetGroupsResponse where
+                f1
+             )
+      ]
+instance (HsJSONPB.FromJSONPB GetGroupsResponse) where
   parseJSONPB =
-    ( HsJSONPB.withObject
-        "GetGroupsResponse"
-        ( \obj ->
-            (Hs.pure GetGroupsResponse)
-              <*> ( HsProtobuf.coerceOver
+    HsJSONPB.withObject
+      "GetGroupsResponse"
+      ( \obj ->
+          Hs.pure GetGroupsResponse
+            <*> ( ( HsProtobuf.coerceOver
                       @(HsProtobuf.NestedVec Monocle.Protob.Config.GroupDefinition)
                       @(Hs.Vector Monocle.Protob.Config.GroupDefinition)
-                      (obj .: "items")
                   )
-        )
-    )
-
-instance HsJSONPB.ToJSON GetGroupsResponse where
+                    (obj .: "items")
+                )
+      )
+instance (HsJSONPB.ToJSON GetGroupsResponse) where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON GetGroupsResponse where
+instance (HsJSONPB.FromJSON GetGroupsResponse) where
   parseJSON = HsJSONPB.parseJSONPB
-
 data GetGroupMembersRequest = GetGroupMembersRequest
-  { getGroupMembersRequestIndex ::
-      Hs.Text
+  { getGroupMembersRequestIndex :: Hs.Text
   , getGroupMembersRequestGroup :: Hs.Text
   }
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
-
-instance Hs.NFData GetGroupMembersRequest
-
-instance HsProtobuf.Named GetGroupMembersRequest where
-  nameOf _ = (Hs.fromString "GetGroupMembersRequest")
-
-instance HsProtobuf.HasDefault GetGroupMembersRequest
-
-instance HsProtobuf.Message GetGroupMembersRequest where
+instance (Hs.NFData GetGroupMembersRequest)
+instance (HsProtobuf.Named GetGroupMembersRequest) where
+  nameOf _ = Hs.fromString "GetGroupMembersRequest"
+instance (HsProtobuf.HasDefault GetGroupMembersRequest)
+instance (HsProtobuf.Message GetGroupMembersRequest) where
   encodeMessage
     _
     GetGroupMembersRequest
-      { getGroupMembersRequestIndex =
-        getGroupMembersRequestIndex
-      , getGroupMembersRequestGroup = getGroupMembersRequestGroup
+      { getGroupMembersRequestIndex
+      , getGroupMembersRequestGroup
       } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
-                    (getGroupMembersRequestIndex)
-                )
+      Hs.mappend
+        ( HsProtobuf.encodeMessageField
+            (HsProtobuf.FieldNumber 1)
+            ( (Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text)))
+                getGroupMembersRequestIndex
             )
-          , ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 2)
-                ( Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text)
-                    (getGroupMembersRequestGroup)
-                )
+        )
+        ( HsProtobuf.encodeMessageField
+            (HsProtobuf.FieldNumber 2)
+            ( (Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text)))
+                getGroupMembersRequestGroup
             )
-          ]
-      )
+        )
   decodeMessage _ =
-    (Hs.pure GetGroupMembersRequest)
-      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+    Hs.pure GetGroupMembersRequest
+      <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 1)
               )
           )
-      <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
+      <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 2)
               )
           )
   dotProto _ =
-    [ ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          (HsProtobufAST.Prim HsProtobufAST.String)
-          (HsProtobufAST.Single "index")
-          []
-          ""
-      )
-    , ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 2)
-          (HsProtobufAST.Prim HsProtobufAST.String)
-          (HsProtobufAST.Single "group")
-          []
-          ""
-      )
+    [ HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 1)
+        (HsProtobufAST.Prim HsProtobufAST.String)
+        (HsProtobufAST.Single "index")
+        []
+        ""
+    , HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 2)
+        (HsProtobufAST.Prim HsProtobufAST.String)
+        (HsProtobufAST.Single "group")
+        []
+        ""
     ]
-
-instance HsJSONPB.ToJSONPB GetGroupMembersRequest where
+instance (HsJSONPB.ToJSONPB GetGroupMembersRequest) where
   toJSONPB (GetGroupMembersRequest f1 f2) =
-    ( HsJSONPB.object
-        [ "index"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
-        , "group"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
-        ]
-    )
+    HsJSONPB.object
+      [ "index" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f1)
+      , "group" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f2)
+      ]
   toEncodingPB (GetGroupMembersRequest f1 f2) =
-    ( HsJSONPB.pairs
-        [ "index"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f1))
-        , "group"
-            .= (Hs.coerce @(Hs.Text) @(HsProtobuf.String Hs.Text) (f2))
-        ]
-    )
-
-instance HsJSONPB.FromJSONPB GetGroupMembersRequest where
+    HsJSONPB.pairs
+      [ "index" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f1)
+      , "group" .= ((Hs.coerce @Hs.Text @((HsProtobuf.String Hs.Text))) f2)
+      ]
+instance (HsJSONPB.FromJSONPB GetGroupMembersRequest) where
   parseJSONPB =
-    ( HsJSONPB.withObject
-        "GetGroupMembersRequest"
-        ( \obj ->
-            (Hs.pure GetGroupMembersRequest)
-              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
-                      (obj .: "index")
-                  )
-              <*> ( HsProtobuf.coerceOver @(HsProtobuf.String Hs.Text) @(Hs.Text)
-                      (obj .: "group")
-                  )
-        )
-    )
-
-instance HsJSONPB.ToJSON GetGroupMembersRequest where
+    HsJSONPB.withObject
+      "GetGroupMembersRequest"
+      ( \obj ->
+          Hs.pure GetGroupMembersRequest
+            <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
+                    (obj .: "index")
+                )
+            <*> ( (HsProtobuf.coerceOver @((HsProtobuf.String Hs.Text)) @Hs.Text)
+                    (obj .: "group")
+                )
+      )
+instance (HsJSONPB.ToJSON GetGroupMembersRequest) where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON GetGroupMembersRequest where
+instance (HsJSONPB.FromJSON GetGroupMembersRequest) where
   parseJSON = HsJSONPB.parseJSONPB
-
-newtype GetGroupMembersResponse = GetGroupMembersResponse
-  { getGroupMembersResponseMembers ::
-      Hs.Vector Hs.Text
-  }
+newtype GetGroupMembersResponse = GetGroupMembersResponse {getGroupMembersResponseMembers :: (Hs.Vector Hs.Text)}
   deriving (Hs.Show, Hs.Eq, Hs.Ord, Hs.Generic)
-
-instance Hs.NFData GetGroupMembersResponse
-
-instance HsProtobuf.Named GetGroupMembersResponse where
-  nameOf _ = (Hs.fromString "GetGroupMembersResponse")
-
-instance HsProtobuf.HasDefault GetGroupMembersResponse
-
-instance HsProtobuf.Message GetGroupMembersResponse where
+instance (Hs.NFData GetGroupMembersResponse)
+instance (HsProtobuf.Named GetGroupMembersResponse) where
+  nameOf _ = Hs.fromString "GetGroupMembersResponse"
+instance (HsProtobuf.HasDefault GetGroupMembersResponse)
+instance (HsProtobuf.Message GetGroupMembersResponse) where
   encodeMessage
     _
-    GetGroupMembersResponse
-      { getGroupMembersResponseMembers =
-        getGroupMembersResponseMembers
-      } =
-      ( Hs.mconcat
-          [ ( HsProtobuf.encodeMessageField
-                (HsProtobuf.FieldNumber 1)
-                ( Hs.coerce @(Hs.Vector Hs.Text)
-                    @(HsProtobuf.UnpackedVec (HsProtobuf.String Hs.Text))
-                    (getGroupMembersResponseMembers)
-                )
+    GetGroupMembersResponse {getGroupMembersResponseMembers} =
+      ( HsProtobuf.encodeMessageField
+          (HsProtobuf.FieldNumber 1)
+          ( ( Hs.coerce
+                @(Hs.Vector Hs.Text)
+                @(HsProtobuf.UnpackedVec (HsProtobuf.String Hs.Text))
             )
-          ]
+              getGroupMembersResponseMembers
+          )
       )
   decodeMessage _ =
-    (Hs.pure GetGroupMembersResponse)
-      <*> ( HsProtobuf.coerceOver
-              @(HsProtobuf.UnpackedVec (HsProtobuf.String Hs.Text))
-              @(Hs.Vector Hs.Text)
+    Hs.pure GetGroupMembersResponse
+      <*> ( ( HsProtobuf.coerceOver
+                @(HsProtobuf.UnpackedVec (HsProtobuf.String Hs.Text))
+                @(Hs.Vector Hs.Text)
+            )
               ( HsProtobuf.at
                   HsProtobuf.decodeMessageField
                   (HsProtobuf.FieldNumber 1)
               )
           )
   dotProto _ =
-    [ ( HsProtobufAST.DotProtoField
-          (HsProtobuf.FieldNumber 1)
-          (HsProtobufAST.Repeated HsProtobufAST.String)
-          (HsProtobufAST.Single "members")
-          []
-          ""
-      )
+    [ HsProtobufAST.DotProtoField
+        (HsProtobuf.FieldNumber 1)
+        (HsProtobufAST.Repeated HsProtobufAST.String)
+        (HsProtobufAST.Single "members")
+        []
+        ""
     ]
-
-instance HsJSONPB.ToJSONPB GetGroupMembersResponse where
+instance (HsJSONPB.ToJSONPB GetGroupMembersResponse) where
   toJSONPB (GetGroupMembersResponse f1) =
-    ( HsJSONPB.object
-        [ "members"
-            .= ( Hs.coerce @(Hs.Vector Hs.Text)
+    HsJSONPB.object
+      [ "members"
+          .= ( ( Hs.coerce
+                  @(Hs.Vector Hs.Text)
                   @(HsProtobuf.UnpackedVec (HsProtobuf.String Hs.Text))
-                  (f1)
                )
-        ]
-    )
+                f1
+             )
+      ]
   toEncodingPB (GetGroupMembersResponse f1) =
-    ( HsJSONPB.pairs
-        [ "members"
-            .= ( Hs.coerce @(Hs.Vector Hs.Text)
+    HsJSONPB.pairs
+      [ "members"
+          .= ( ( Hs.coerce
+                  @(Hs.Vector Hs.Text)
                   @(HsProtobuf.UnpackedVec (HsProtobuf.String Hs.Text))
-                  (f1)
                )
-        ]
-    )
-
-instance HsJSONPB.FromJSONPB GetGroupMembersResponse where
+                f1
+             )
+      ]
+instance (HsJSONPB.FromJSONPB GetGroupMembersResponse) where
   parseJSONPB =
-    ( HsJSONPB.withObject
-        "GetGroupMembersResponse"
-        ( \obj ->
-            (Hs.pure GetGroupMembersResponse)
-              <*> ( HsProtobuf.coerceOver
+    HsJSONPB.withObject
+      "GetGroupMembersResponse"
+      ( \obj ->
+          Hs.pure GetGroupMembersResponse
+            <*> ( ( HsProtobuf.coerceOver
                       @(HsProtobuf.UnpackedVec (HsProtobuf.String Hs.Text))
                       @(Hs.Vector Hs.Text)
-                      (obj .: "members")
                   )
-        )
-    )
-
-instance HsJSONPB.ToJSON GetGroupMembersResponse where
+                    (obj .: "members")
+                )
+      )
+instance (HsJSONPB.ToJSON GetGroupMembersResponse) where
   toJSON = HsJSONPB.toAesonValue
   toEncoding = HsJSONPB.toAesonEncoding
-
-instance HsJSONPB.FromJSON GetGroupMembersResponse where
+instance (HsJSONPB.FromJSON GetGroupMembersResponse) where
   parseJSON = HsJSONPB.parseJSONPB
