@@ -22,7 +22,7 @@
 
 ##### Monocle binary build #####
 
-FROM registry.access.redhat.com/ubi8/ubi as ubi-builder
+FROM registry.access.redhat.com/ubi9/ubi as ubi-builder
 
 # Install gpg keys
 RUN gpg --batch --keyserver keyserver.ubuntu.com --recv-keys 7D1E8AFD1D4A16D71FADA2F2CCC85C0E40C06A8C
@@ -43,7 +43,7 @@ RUN dnf install -y \
     gcc-c++
 
 
-ARG GHC=9.4.6
+ARG GHC=9.6.6
 ARG CABAL=latest
 
 # Install GHC and cabal
@@ -57,7 +57,6 @@ RUN dnf install -y \
     openssl-devel \
     gmp-devel \
     ncurses-devel \
-    ncurses-compat-libs \
     zlib-devel
 
 # Copy source tree
@@ -71,7 +70,7 @@ RUN cd /build && \
 
 ##### Monocle Web UI build #####
 
-FROM registry.fedoraproject.org/fedora:35 as web-builder
+FROM registry.fedoraproject.org/fedora:41 as web-builder
 
 RUN dnf update -y && dnf install -y nodejs git
 
@@ -97,12 +96,7 @@ RUN sed -e 's|-bs-no-version-header|-bs-no-version-header", "-warn-error -a+5+6+
 
 ##### Setup final image #####
 
-FROM registry.access.redhat.com/ubi8/ubi
+FROM registry.access.redhat.com/ubi9/ubi-minimal
 
 COPY --from=ubi-builder /monocle /bin/
 COPY --from=web-builder /monocle-webapp/build /usr/share/monocle/webapp/
-
-# Ensure runtime commands
-RUN dnf install -y curl && \
-    dnf clean all && \
-    rm -rf /var/cache/yum

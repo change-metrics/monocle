@@ -149,7 +149,7 @@ usageJanitor =
   elasticOption = strOption (long "elastic" <> O.help "The Elastic endpoint url" <> metavar "MONOCLE_ELASTIC_URL")
   workspaceOption =
     option
-      (eitherReader $ (first T.unpack . Config.mkIndexName) . T.pack)
+      (O.eitherReader $ (first T.unpack . Config.mkIndexName) . T.pack)
       (long "workspace" <> O.help "Workspace name" <> metavar "WORKSPACE")
   crawlerNameOption = strOption (long "crawler-name" <> O.help "The crawler name" <> metavar "CRAWLER_NAME")
   runOnWorkspace env action' workspace = runEff $ runLoggerEffect $ runElasticEffect env $ runEmptyQueryM workspace $ dieOnEsError action'

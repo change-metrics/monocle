@@ -128,3 +128,10 @@ codegen-openapi:
     set -euxo pipefail
     protoc {{PINCLUDE}} --openapi_out=./doc/ monocle/protob/http.proto
     echo Created doc/openapi.yaml
+
+# Generate the cabal-override.project
+[private]
+codegen-cabal-override:
+    nix develop --command cabal freeze
+    mv cabal.project.freeze cabal-override.project
+    cat cabal-override.project.tmpl >> cabal-override.project
