@@ -80,7 +80,7 @@ setChangeID xs = do
 createFakeEvents :: Int -> IO [T.ScenarioEvent]
 createFakeEvents docCount = do
   now <- getCurrentTime
-  let from' = addUTCTime (-3600 * 24 * 7 * 3) now
+  let from' = addUTCTime (-(3600 * 24 * 7 * 3)) now
   baseChanges <- Faker.generateNonDeterministic $ Faker.Combinators.listOf docCount $ fakeChange from' now
   changes <- setChangeID baseChanges
   pure $ T.SChange <$> changes

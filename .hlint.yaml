@@ -1,4 +1,5 @@
 - arguments: [-XQuasiQuotes, -XOverloadedRecordDot]
 - ignore: {name: "Use if"}
+- ignore: {name: "Functor law"}
 - ignore: {name: "Use tuple-section"}
 - ignore: {name: "Avoid lambda using `infix`"}
