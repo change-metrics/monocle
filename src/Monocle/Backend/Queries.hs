@@ -152,8 +152,7 @@ doSearch orderM limit = do
             $ Q.queryFieldToDocument (from orderField)
         order = sortOrder orderDirection
      in [ BH.DefaultSortSpec
-            ( BH.DefaultSort field' order Nothing Nothing Nothing Nothing
-            )
+            (BH.DefaultSort field' order Nothing Nothing Nothing Nothing)
         ]
   sortOrder order = case fromPBEnum order of
     SearchPB.Order_DirectionASC -> BH.Ascending
@@ -1332,8 +1331,7 @@ topNotSupported = const $ pure Nothing
 toTermsCountWord32 :: TermsResultWTH -> TermsCount Word32
 toTermsCountWord32 TermsResultWTH {..} =
   TermsCount
-    ( fromList $ fmap toTermCountWord32 tsrTR
-    )
+    (fromList $ fmap toTermCountWord32 tsrTR)
     (fromInteger . toInteger $ tsrTH)
  where
   toTermCountWord32 TermResult {..} = TermCount trTerm (fromInteger . toInteger $ trCount)
@@ -1405,8 +1403,7 @@ metricChangeUpdates = Metric mi compute computeTrend topNotSupported
       . countToWord
       <$> withFilter
         [documentTypes $ fromList docs]
-        ( withFlavor qf countDocs
-        )
+        (withFlavor qf countDocs)
   computeTrend interval = withDocTypes docs qf $ countHisto CreatedAt interval
   qf = QueryFlavor Author OnCreatedAt
   docs = [EChangeCommitPushedEvent, EChangeCommitForcePushedEvent]
@@ -1473,8 +1470,7 @@ metricReviews = Metric mi compute computeTrend topNotSupported
       . countToWord
       <$> withFilter
         [documentType EChangeReviewedEvent]
-        ( withFlavor qf countDocs
-        )
+        (withFlavor qf countDocs)
   computeTrend interval = withDocType EChangeReviewedEvent qf $ countHisto CreatedAt interval
   qf = QueryFlavor Author CreatedAt
 

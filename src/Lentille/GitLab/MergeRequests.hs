@@ -307,11 +307,11 @@ transformResponse host getIdentIdCB result =
     getChangeMergedEvent :: Change -> [ChangeEvent]
     getChangeMergedEvent change =
       [ (getBaseEvent change)
-        { changeEventId = "ChangeMergedEvent-" <> changeId change
-        , changeEventType = Just $ ChangeEventTypeChangeMerged ChangeMergedEvent
-        , changeEventAuthor = getMergedByIdent <$> changeOptionalMergedBy change
-        , changeEventCreatedAt = getMergedAt <$> changeOptionalMergedAt change
-        }
+          { changeEventId = "ChangeMergedEvent-" <> changeId change
+          , changeEventType = Just $ ChangeEventTypeChangeMerged ChangeMergedEvent
+          , changeEventAuthor = getMergedByIdent <$> changeOptionalMergedBy change
+          , changeEventCreatedAt = getMergedAt <$> changeOptionalMergedAt change
+          }
       | isMerged $ changeState change
       ]
      where
@@ -321,12 +321,12 @@ transformResponse host getIdentIdCB result =
     getChangeAbandonedEvent :: Change -> [ChangeEvent]
     getChangeAbandonedEvent change =
       [ (getBaseEvent change)
-        { changeEventId = "ChangeAbandonedEvent-" <> changeId change
-        , changeEventType = Just $ ChangeEventTypeChangeAbandoned ChangeAbandonedEvent
-        , -- GitLab Graph API does not report who closed a MR
-          changeEventAuthor = changeAuthor change
-        , changeEventCreatedAt = changeUpdatedAt change
-        }
+          { changeEventId = "ChangeAbandonedEvent-" <> changeId change
+          , changeEventType = Just $ ChangeEventTypeChangeAbandoned ChangeAbandonedEvent
+          , -- GitLab Graph API does not report who closed a MR
+            changeEventAuthor = changeAuthor change
+          , changeEventCreatedAt = changeUpdatedAt change
+          }
       | isClosed $ changeState change
       ]
 

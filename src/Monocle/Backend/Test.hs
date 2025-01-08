@@ -171,8 +171,7 @@ checkChangesCount expectedCount = do
   resp <-
     esCountByIndex
       index
-      ( BH.CountQuery (BH.TermQuery (BH.Term "type" "Change") Nothing)
-      )
+      (BH.CountQuery (BH.TermQuery (BH.Term "type" "Change") Nothing))
   case resp of
     Left _ -> error "Couldn't count changes"
     Right countD -> assertEqual' "check change count" expectedCount (fromEnum $ BH.crCount countD)

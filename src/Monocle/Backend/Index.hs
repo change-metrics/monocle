@@ -282,7 +282,7 @@ upgradeConfigV1 = do
   -- Get all the GH crawler project metadata.
   ghCrawlerMD <- traverse getProjectCrawlerMDByName ghCrawlerNames
   -- Keep the one that have the default starting date
-  let ghCrawlerMDToReset = filter (isCrawlerLastCommitAtIsDefault ws) $ concat ghCrawlerMD
+  let ghCrawlerMDToReset = concatMap (filter (isCrawlerLastCommitAtIsDefault ws)) ghCrawlerMD
   -- Update the last_commit_at from the age of the most recent update
   traverse_ setLastUpdatedDate ghCrawlerMDToReset
  where

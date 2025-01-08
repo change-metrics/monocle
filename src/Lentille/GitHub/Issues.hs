@@ -82,8 +82,7 @@ streamLinkedIssue client time repo =
  where
   mkArgs _ =
     GetLinkedIssuesArgs
-      ( from $ "repo:" <> from repo <> " updated:>=" <> toSimpleDate time <> " linked:pr"
-      )
+      (from $ "repo:" <> from repo <> " updated:>=" <> toSimpleDate time <> " linked:pr")
   optParams = defaultStreamFetchOptParams {fpGetRatelimit = Just getRateLimit}
   toSimpleDate :: UTCTime -> String
   toSimpleDate = formatTime defaultTimeLocale "%F"

@@ -38,6 +38,9 @@
       devShells."x86_64-linux".hoogle-monocle = legacy.hoogle-monocle;
       devShells."x86_64-linux".hoogle = legacy.hoogle;
       devShells."x86_64-linux".ci = legacy.ci-shell;
+      # A debug ghc to fix external deps. Adjust the packages below.
+      devShells."x86_64-linux".debug =
+        legacy.hsPkgs.shellFor { packages = p: [ p.morpheus-graphql-app ]; };
       devShells."x86_64-linux".monitoring = legacy.monitoring-shell;
       packages."x86_64-linux".default = legacy.monocle-exe;
       packages."x86_64-linux".env = legacy.monocle-light.env;
