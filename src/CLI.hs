@@ -189,8 +189,7 @@ usageJanitor =
         Just workspace ->
           runOnWorkspace
             env
-            ( J.updateCrawlerMDLastUpdatedDate workspace crawlerName newDate
-            )
+            (J.updateCrawlerMDLastUpdatedDate workspace crawlerName newDate)
             workspace
 
 ---------------------------------------------------------------

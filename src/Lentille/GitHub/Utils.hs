@@ -25,8 +25,7 @@ dateTimeToUTCTime :: DateTime -> UTCTime
 dateTimeToUTCTime dt =
   let dtText = unDatetime dt
    in fromMaybe
-        ( error $ "Unable to parse date string: " <> from dtText
-        )
+        (error $ "Unable to parse date string: " <> from dtText)
         (parseDateValue dtText)
  where
   unDatetime :: DateTime -> String

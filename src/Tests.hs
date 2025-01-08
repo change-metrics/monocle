@@ -290,8 +290,7 @@ monocleSearchLanguage =
     "Monocle.Search"
     [ testCase
         "Lexer basic"
-        ( lexMatch "state:open" [L.Literal "state", L.Equal, L.Literal "open"]
-        )
+        (lexMatch "state:open" [L.Literal "state", L.Equal, L.Literal "open"])
     , testCase
         "Parser basic"
         (parseMatch "state:open" (S.EqExpr "state" "open"))
@@ -360,23 +359,20 @@ monocleSearchLanguage =
         "Parser paren"
         ( parseMatch
             "(a>42 or a:0) and b:d"
-            ( S.AndExpr (S.OrExpr (S.GtExpr "a" "42") (S.EqExpr "a" "0")) (S.EqExpr "b" "d")
-            )
+            (S.AndExpr (S.OrExpr (S.GtExpr "a" "42") (S.EqExpr "a" "0")) (S.EqExpr "b" "d"))
         )
     , testCase
         "Parser aliases"
         ( parseMatch'
             [("sprint42", S.GtExpr "date" "2021-07-01")]
             "status:open sprint42"
-            ( S.AndExpr (S.EqExpr "status" "open") (S.GtExpr "date" "2021-07-01")
-            )
+            (S.AndExpr (S.EqExpr "status" "open") (S.GtExpr "date" "2021-07-01"))
         )
     , testCase
         "Parser implicit and"
         ( parseMatch
             "state:open author:foo"
-            ( S.AndExpr (S.EqExpr "state" "open") (S.EqExpr "author" "foo")
-            )
+            (S.AndExpr (S.EqExpr "state" "open") (S.EqExpr "author" "foo"))
         )
     , testCase
         "Query date"

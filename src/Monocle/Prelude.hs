@@ -365,8 +365,7 @@ assertEqual' n a b = liftIO $ assertEqual n a b
 encodePrettyWithSpace :: ToJSON a => Int -> a -> LByteString
 encodePrettyWithSpace space =
   Aeson.encodePretty'
-    ( Aeson.defConfig {Aeson.confIndent = Aeson.Spaces space, Aeson.confCompare = compare @Text}
-    )
+    (Aeson.defConfig {Aeson.confIndent = Aeson.Spaces space, Aeson.confCompare = compare @Text})
 
 -- | An helper to mutate a map using a monadic value
 mapMutate :: (Ord k, Monad m) => Map k v -> k -> m v -> m (v, Map k v)
