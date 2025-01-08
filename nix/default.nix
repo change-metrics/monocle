@@ -149,6 +149,16 @@ let
         sha256 = "sha256-62OfAhdHLve7seZgQ6NIoq7K57r2NqJESM3VTOZlY9Q=";
       };
     in pkgs.haskell.lib.dontCheck (hpPrev.callCabal2nix "weeder" src { });
+
+    # hlint needs HEAD
+    hlint = let
+      src = pkgs.fetchFromGitHub {
+        owner = "ndmitchell";
+        repo = "hlint";
+        rev = "7dfba720eaf6fa9bd0b23ae269334559aa722847";
+        sha256 = "sha256-niGBdSrkatr+TZCcLYXo4MDg5FyXTYiKQ5K+ZIWSWBs=";
+      };
+    in (hpPrev.callCabal2nix "hlint" src { });
   };
 
   # create the main package set without options
@@ -157,10 +167,8 @@ let
     system = "x86_64-linux";
     config.allowUnfree = true;
   };
-  # final haskell set, see: https://github.com/NixOS/nixpkgs/issues/25887
+  # final haskell set, using extend see: https://github.com/NixOS/nixpkgs/issues/25887
   hsPkgs = pkgs.haskell.packages.ghc910.extend haskellExtend;
-  # the command line tools are provided using the stable compiler
-  hsTools = pkgs.haskell.packages.ghc96;
 
   # manually adds build dependencies for benchmark and codegen that are not managed by cabal2nix
   addExtraDeps = drv:
@@ -461,7 +469,7 @@ in rec {
 
   hs-req = [
     hsPkgs.cabal-install
-    hsTools.fourmolu
+    hsPkgs.fourmolu
     hsPkgs.proto3-suite
     hsPkgs.zlib
     hsPkgs.weeder
@@ -557,8 +565,8 @@ in rec {
     buildInputs = [ hsPkgs.cabal-install ci-run ];
   };
 
-  hlint = args: "${hsTools.hlint}/bin/hlint -XQuasiQuotes ${args} src/";
-  fourmolu = mode: "${hsTools.fourmolu}/bin/fourmolu --mode ${mode} src/";
+  hlint = args: "${hsPkgs.hlint}/bin/hlint -XQuasiQuotes ${args} src/";
+  fourmolu = mode: "${hsPkgs.fourmolu}/bin/fourmolu --mode ${mode} src/";
 
   nixfmt = mode: "${pkgs.nixfmt}/bin/nixfmt ./nix/default.nix";
 
@@ -576,9 +584,6 @@ in rec {
   fast-ci-run = mkRun "fast-ci" fast-ci-commands;
 
   reformat-run = mkRun "reformat" ''
-    echo "[+] Apply hlint suggestions"
-    find src/ -name "*hs" -exec ${hsTools.hlint}/bin/hlint -XQuasiQuotes --refactor --refactor-options="-i" {} \;
-
     echo "[+] Reformat with fourmolu"
     ${fourmolu "inplace"}
 
@@ -654,11 +659,10 @@ in rec {
 
     buildInputs = [
       pkgs.just
-      hsTools.hlint
-      hsTools.apply-refact
-      hsTools.ghcid
-      hsTools.haskell-language-server
-      hsTools.doctest
+      hsPkgs.hlint
+      hsPkgs.ghcid
+      hsPkgs.haskell-language-server
+      hsPkgs.doctest
     ] ++ all-req ++ services-req ++ [ ci-run fast-ci-run reformat-run ];
 
     withHoogle = false;
