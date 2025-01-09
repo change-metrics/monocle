@@ -224,4 +224,23 @@ in  { GithubActions
                 }
               }
           }
+    , dockerUBI = GithubActions.Workflow::{
+      , name = "DockerUBI"
+      , on = GithubActions.On::{
+        , pull_request = Some GithubActions.PullRequest::{=}
+        }
+      , jobs = toMap
+          { compose = GithubActions.Job::{
+            , name = Some "ubi-container-build-test"
+            , runs-on = GithubActions.RunsOn.Type.ubuntu-latest
+            , steps =
+              [ checkout-step
+              , GithubActions.Step::{
+                , name = Some "Build the container image"
+                , run = Some "docker build -f DockerfileUBI ."
+                }
+              ]
+            }
+          }
+      }
     }
