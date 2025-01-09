@@ -1,9 +1,12 @@
 package proto3-suite
-  flags: -swagger
+  flags: -swagger -large-records
 
 packages: .
 
+-- Disregard all upper bounds when dependency solving
+allow-newer: all
+
 source-repository-package
     type: git
-    location: https://github.com/awakesecurity/proto3-suite
-    tag: 53ae1df5eb757fedbfe1ec5f99fc7ed5068928e5
+    location: https://github.com/TristanCacqueray/proto3-suite
+    tag: dc8eee9d8c58d959e43038cdc2c282d50bcff565
