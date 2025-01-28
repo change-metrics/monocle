@@ -9,7 +9,7 @@ module Lentille.GitLab.Adapter where
 import Data.Morpheus.Client
 import Data.Text qualified as TE
 import Data.Time.Clock
-import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeOrError)
+import Data.Time.Format (defaultTimeLocale, formatTime)
 import Google.Protobuf.Timestamp qualified as T
 import Lentille (ghostIdent, nobody, toIdent)
 import Monocle.Config qualified as Config
@@ -55,9 +55,6 @@ data MRComment = MRComment
 
 -- Some default data
 
-commitFormatString :: Maybe String
-commitFormatString = Just "%FT%X%EZ"
-
 defaultTimestamp :: Time
 defaultTimestamp = Time "1970-01-01T00:00:00+00:00"
 
@@ -65,17 +62,14 @@ defaultTimestamp = Time "1970-01-01T00:00:00+00:00"
 fromMTtoLT :: From s LText => Maybe s -> LText
 fromMTtoLT = maybe "" from
 
-timeToTimestamp :: Maybe String -> Time -> T.Timestamp
-timeToTimestamp formatStringE = T.fromUTCTime . timeToUTCTime formatStringE
+timeToTimestamp :: Time -> T.Timestamp
+timeToTimestamp = T.fromUTCTime . timeToUTCTime
 
-timeToUTCTime :: Maybe String -> Time -> UTCTime
-timeToUTCTime formatStringE t =
-  let Time tt = t
-   in parseTimeOrError
-        False
-        defaultTimeLocale
-        (fromMaybe "%FT%XZ" formatStringE)
-        $ from tt
+timeToUTCTime :: Time -> UTCTime
+timeToUTCTime (Time t) =
+   case parseDateValue (from t) of
+        Nothing -> error $ "Unknown time format: " <> from t
+        Just utc -> utc
 
 cleanMaybeMNodes :: Maybe [Maybe a] -> [a]
 cleanMaybeMNodes nodes = catMaybes $ fromMaybe [] nodes
@@ -104,8 +98,8 @@ toCommit host cb MRCommit {..} =
     (from sha)
     (Just . toIdent' $ getAuthor cauthor)
     (Just . toIdent' $ getAuthor cauthor)
-    (Just . timeToTimestamp commitFormatString $ fromMaybe defaultTimestamp authoredDate)
-    (Just . timeToTimestamp commitFormatString $ fromMaybe defaultTimestamp authoredDate)
+    (Just . timeToTimestamp $ fromMaybe defaultTimestamp authoredDate)
+    (Just . timeToTimestamp $ fromMaybe defaultTimestamp authoredDate)
     0
     0
     (from $ fromMaybe "" ctitle)

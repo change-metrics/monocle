@@ -10,7 +10,7 @@ module Lentille.GitLab.MergeRequests where
 import Data.Morpheus.Client
 import Data.Text qualified as TE
 import Data.Time.Clock
-import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeOrError)
+import Data.Time.Format (defaultTimeLocale, formatTime)
 import Data.Vector qualified as V
 import Google.Protobuf.Timestamp qualified as T
 import Lentille
@@ -212,13 +212,13 @@ transformResponse host getIdentIdCB result =
           changeOptionalMergedCommitSha = Nothing
           changeBranch = from sourceBranch
           changeTargetBranch = from targetBranch
-          changeCreatedAt = (Just $ timeToTimestamp Nothing createdAt)
-          changeOptionalMergedAt = (ChangeOptionalMergedAtMergedAt . timeToTimestamp Nothing <$> mergedAt)
-          changeUpdatedAt = (Just $ timeToTimestamp Nothing updatedAt)
+          changeCreatedAt = (Just $ timeToTimestamp createdAt)
+          changeOptionalMergedAt = (ChangeOptionalMergedAtMergedAt . timeToTimestamp <$> mergedAt)
+          changeUpdatedAt = (Just $ timeToTimestamp updatedAt)
           -- No closedAt attribute for a MR then use updatedAt when the MR is closed state
           changeOptionalClosedAt =
             if isClosed $ toState state
-              then Just . ChangeOptionalClosedAtClosedAt $ timeToTimestamp Nothing updatedAt
+              then Just . ChangeOptionalClosedAtClosedAt $ timeToTimestamp updatedAt
               else Nothing
           changeState = toState state
           changeOptionalDuration = case mergedAt of
@@ -226,7 +226,7 @@ transformResponse host getIdentIdCB result =
               Just
                 . ChangeOptionalDurationDuration
                 . from
-                $ diffTimeSec (timeToUTCTime Nothing merged_ts) (timeToUTCTime Nothing createdAt)
+                $ diffTimeSec (timeToUTCTime merged_ts) (timeToUTCTime createdAt)
             Nothing -> Nothing
 
           -- TODO(fbo) Use the merge status : https://docs.gitlab.com/ee/api/graphql/reference/index.html#mergestatus
@@ -350,7 +350,7 @@ transformResponse host getIdentIdCB result =
           { changeEventId = "ChangeCommentedEvent-" <> changeId change <> "-" <> from coId
           , changeEventType = Just $ ChangeEventTypeChangeCommented ChangeCommentedEvent
           , changeEventAuthor = Just coAuthor
-          , changeEventCreatedAt = Just $ timeToTimestamp Nothing coAuthoredAt
+          , changeEventCreatedAt = Just $ timeToTimestamp coAuthoredAt
           }
 
     getChangeReviewedEvent :: Change -> [MRComment] -> [ChangeEvent]
@@ -369,5 +369,5 @@ transformResponse host getIdentIdCB result =
                     . ChangeReviewedEvent
                     $ fromList [from approval]
               , changeEventAuthor = Just coAuthor
-              , changeEventCreatedAt = Just $ timeToTimestamp Nothing coAuthoredAt
+              , changeEventCreatedAt = Just $ timeToTimestamp coAuthoredAt
               }
