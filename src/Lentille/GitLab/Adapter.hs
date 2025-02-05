@@ -67,9 +67,9 @@ timeToTimestamp = T.fromUTCTime . timeToUTCTime
 
 timeToUTCTime :: Time -> UTCTime
 timeToUTCTime (Time t) =
-   case parseDateValue (from t) of
-        Nothing -> error $ "Unknown time format: " <> from t
-        Just utc -> utc
+  case parseDateValue (from t) of
+    Nothing -> error $ "Unknown time format: " <> from t
+    Just utc -> utc
 
 cleanMaybeMNodes :: Maybe [Maybe a] -> [a]
 cleanMaybeMNodes nodes = catMaybes $ fromMaybe [] nodes
