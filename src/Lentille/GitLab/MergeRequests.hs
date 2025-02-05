@@ -253,12 +253,14 @@ transformResponse host getIdentIdCB result =
       toNotesNodes (GetProjectMergeRequestsProjectMergeRequestsNodesNotes nodes) = cleanMaybeMNodes nodes
       toMRComment :: GetProjectMergeRequestsProjectMergeRequestsNodesNotesNodes -> MRComment
       toMRComment (GetProjectMergeRequestsProjectMergeRequestsNodesNotesNodes nId author' commentedAt ntypeM) =
-        let GetProjectMergeRequestsProjectMergeRequestsNodesNotesNodesAuthor author'' = author'
-            commentType = getCommentType ntypeM
+        let commentType = getCommentType ntypeM
             NoteID noteIDT = nId
+            noteIdent = case author' of
+              Just (GetProjectMergeRequestsProjectMergeRequestsNodesNotesNodesAuthor author''') -> toIdent' author'''
+              Nothing -> Lentille.ghostIdent host
          in MRComment
               { coId = sanitizeID noteIDT
-              , coAuthor = toIdent' author''
+              , coAuthor = noteIdent
               , coAuthoredAt = commentedAt
               , coType = commentType
               }

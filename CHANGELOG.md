@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - [compose] Bumped Elasticsearch to 7.17.26.
+- [crawler] Gitlab make Notes author attribute as nullable
 
 ### Removed
 ### Fixed

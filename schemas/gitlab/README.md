@@ -3,8 +3,8 @@
 ## How to retreive it
 
 ```Shell
-npm install -g get-graphql-schema
-get-graphql-schema https://gitlab.com/api/graphql > schema.graphql
+npm install get-graphql-schema
+~/node_modules/.bin/get-graphql-schema https://gitlab.com/api/graphql > schema.graphql
 ```
 
 ## References

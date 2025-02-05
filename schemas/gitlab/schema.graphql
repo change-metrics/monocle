@@ -6299,7 +6299,7 @@ type Environment {
   metricsDashboard(
     """
     Path to a file which defines a metrics dashboard eg: `"config/prometheus/common_metrics.yml"`.
-    
+
     """
     path: String!
   ): MetricsDashboard
@@ -8642,14 +8642,14 @@ type Group {
     """
     Array of source branch names.
     All resolved merge requests will have one of these branches as their source.
-    
+
     """
     sourceBranches: [String!]
 
     """
     Array of target branch names.
     All resolved merge requests will have one of these branches as their target.
-    
+
     """
     targetBranches: [String!]
 
@@ -8678,7 +8678,7 @@ type Group {
     """
     List of negated arguments.
     Warning: this argument is experimental and a subject to change in future.
-    
+
     """
     not: MergeRequestsResolverNegatedParams
 
@@ -10209,7 +10209,7 @@ input IssueSetIterationInput {
 
   """
   The iteration to assign to the issue.
-  
+
   """
   iterationId: IterationID
 
@@ -11193,7 +11193,7 @@ input LabelCreateInput {
   """
   The color of the label given in 6-digit hex notation with leading '#' sign
   (for example, `#FFAABB`) or one of the CSS color names.
-  
+
   """
   color: String = "#6699cc"
 
@@ -11985,14 +11985,14 @@ type MergeRequestAssignee implements User {
     """
     Array of source branch names.
     All resolved merge requests will have one of these branches as their source.
-    
+
     """
     sourceBranches: [String!]
 
     """
     Array of target branch names.
     All resolved merge requests will have one of these branches as their target.
-    
+
     """
     targetBranches: [String!]
 
@@ -12021,21 +12021,21 @@ type MergeRequestAssignee implements User {
     """
     List of negated arguments.
     Warning: this argument is experimental and a subject to change in future.
-    
+
     """
     not: MergeRequestsResolverNegatedParams
 
     """
     The full-path of the project the authored merge requests should be in.
     Incompatible with projectId.
-    
+
     """
     projectPath: String
 
     """
     The global ID of the project the authored merge requests should be in.
     Incompatible with projectPath.
-    
+
     """
     projectId: ProjectID
 
@@ -12068,14 +12068,14 @@ type MergeRequestAssignee implements User {
     """
     Array of source branch names.
     All resolved merge requests will have one of these branches as their source.
-    
+
     """
     sourceBranches: [String!]
 
     """
     Array of target branch names.
     All resolved merge requests will have one of these branches as their target.
-    
+
     """
     targetBranches: [String!]
 
@@ -12104,21 +12104,21 @@ type MergeRequestAssignee implements User {
     """
     List of negated arguments.
     Warning: this argument is experimental and a subject to change in future.
-    
+
     """
     not: MergeRequestsResolverNegatedParams
 
     """
     The full-path of the project the authored merge requests should be in.
     Incompatible with projectId.
-    
+
     """
     projectPath: String
 
     """
     The global ID of the project the authored merge requests should be in.
     Incompatible with projectPath.
-    
+
     """
     projectId: ProjectID
 
@@ -12229,14 +12229,14 @@ type MergeRequestAssignee implements User {
     """
     Array of source branch names.
     All resolved merge requests will have one of these branches as their source.
-    
+
     """
     sourceBranches: [String!]
 
     """
     Array of target branch names.
     All resolved merge requests will have one of these branches as their target.
-    
+
     """
     targetBranches: [String!]
 
@@ -12265,21 +12265,21 @@ type MergeRequestAssignee implements User {
     """
     List of negated arguments.
     Warning: this argument is experimental and a subject to change in future.
-    
+
     """
     not: MergeRequestsResolverNegatedParams
 
     """
     The full-path of the project the authored merge requests should be in.
     Incompatible with projectId.
-    
+
     """
     projectPath: String
 
     """
     The global ID of the project the authored merge requests should be in.
     Incompatible with projectPath.
-    
+
     """
     projectId: ProjectID
 
@@ -12609,14 +12609,14 @@ type MergeRequestReviewer implements User {
     """
     Array of source branch names.
     All resolved merge requests will have one of these branches as their source.
-    
+
     """
     sourceBranches: [String!]
 
     """
     Array of target branch names.
     All resolved merge requests will have one of these branches as their target.
-    
+
     """
     targetBranches: [String!]
 
@@ -12645,21 +12645,21 @@ type MergeRequestReviewer implements User {
     """
     List of negated arguments.
     Warning: this argument is experimental and a subject to change in future.
-    
+
     """
     not: MergeRequestsResolverNegatedParams
 
     """
     The full-path of the project the authored merge requests should be in.
     Incompatible with projectId.
-    
+
     """
     projectPath: String
 
     """
     The global ID of the project the authored merge requests should be in.
     Incompatible with projectPath.
-    
+
     """
     projectId: ProjectID
 
@@ -12692,14 +12692,14 @@ type MergeRequestReviewer implements User {
     """
     Array of source branch names.
     All resolved merge requests will have one of these branches as their source.
-    
+
     """
     sourceBranches: [String!]
 
     """
     Array of target branch names.
     All resolved merge requests will have one of these branches as their target.
-    
+
     """
     targetBranches: [String!]
 
@@ -12728,21 +12728,21 @@ type MergeRequestReviewer implements User {
     """
     List of negated arguments.
     Warning: this argument is experimental and a subject to change in future.
-    
+
     """
     not: MergeRequestsResolverNegatedParams
 
     """
     The full-path of the project the authored merge requests should be in.
     Incompatible with projectId.
-    
+
     """
     projectPath: String
 
     """
     The global ID of the project the authored merge requests should be in.
     Incompatible with projectPath.
-    
+
     """
     projectId: ProjectID
 
@@ -12853,14 +12853,14 @@ type MergeRequestReviewer implements User {
     """
     Array of source branch names.
     All resolved merge requests will have one of these branches as their source.
-    
+
     """
     sourceBranches: [String!]
 
     """
     Array of target branch names.
     All resolved merge requests will have one of these branches as their target.
-    
+
     """
     targetBranches: [String!]
 
@@ -12889,21 +12889,21 @@ type MergeRequestReviewer implements User {
     """
     List of negated arguments.
     Warning: this argument is experimental and a subject to change in future.
-    
+
     """
     not: MergeRequestsResolverNegatedParams
 
     """
     The full-path of the project the authored merge requests should be in.
     Incompatible with projectId.
-    
+
     """
     projectPath: String
 
     """
     The global ID of the project the authored merge requests should be in.
     Incompatible with projectPath.
-    
+
     """
     projectId: ProjectID
 
@@ -13061,7 +13061,7 @@ input MergeRequestReviewerRereviewInput {
 
   """
   The user ID for the user that has been requested for a new review.
-  
+
   """
   userId: UserID!
 
@@ -13132,7 +13132,7 @@ input MergeRequestSetDraftInput {
 
   """
   Whether or not to set the merge request as a draft.
-  
+
   """
   draft: Boolean!
 
@@ -13162,13 +13162,13 @@ input MergeRequestSetLabelsInput {
 
   """
   The Label IDs to set. Replaces existing labels by default.
-  
+
   """
   labelIds: [LabelID!]!
 
   """
   Changes the operation mode. Defaults to REPLACE.
-  
+
   """
   operationMode: MutationOperationMode
 
@@ -13198,7 +13198,7 @@ input MergeRequestSetLockedInput {
 
   """
   Whether or not to lock the merge request.
-  
+
   """
   locked: Boolean!
 
@@ -13228,7 +13228,7 @@ input MergeRequestSetMilestoneInput {
 
   """
   The milestone to assign to the merge request.
-  
+
   """
   milestoneId: MilestoneID
 
@@ -13285,7 +13285,7 @@ input MergeRequestSetWipInput {
 
   """
   Whether or not to set the merge request as a draft.
-  
+
   """
   wip: Boolean!
 
@@ -13727,7 +13727,7 @@ type Mutation {
   Configure SAST for a project by enabling SAST in a new or modified
   `.gitlab-ci.yml` file in a new branch. The new branch and a URL to
   create a Merge Request are a part of the response.
-  
+
   """
   configureSast(
     """Parameters for ConfigureSast"""
@@ -13739,7 +13739,7 @@ type Mutation {
   in a new or modified `.gitlab-ci.yml` file in a new branch. The new
   branch and a URL to create a Merge Request are a part of the
   response.
-  
+
   """
   configureSecretDetection(
     """Parameters for ConfigureSecretDetection"""
@@ -14090,7 +14090,7 @@ type Mutation {
   Accepts a merge request.
   When accepted, the source branch will be merged into the target branch, either
   immediately if possible, or using one of the automatic merge strategies.
-  
+
   """
   mergeRequestAccept(
     """Parameters for MergeRequestAccept"""
@@ -14316,8 +14316,8 @@ type Mutation {
   If the body of the Note contains only quick actions,
   the Note will be destroyed during the update, and no Note will be
   returned.
-  
-  
+
+
   """
   updateImageDiffNote(
     """Parameters for UpdateImageDiffNote"""
@@ -14341,7 +14341,7 @@ type Mutation {
   If the body of the Note contains only quick actions,
   the Note will be destroyed during the update, and no Note will be
   returned.
-  
+
   """
   updateNote(
     """Parameters for UpdateNote"""
@@ -14683,7 +14683,7 @@ enum NegatedIterationWildcardId {
 
 type Note implements ResolvableInterface {
   """User who wrote this note."""
-  author: UserCore!
+  author: UserCore
 
   """Content of the note."""
   body: String!
@@ -17129,14 +17129,14 @@ type Project {
     """
     Array of source branch names.
     All resolved merge requests will have one of these branches as their source.
-    
+
     """
     sourceBranches: [String!]
 
     """
     Array of target branch names.
     All resolved merge requests will have one of these branches as their target.
-    
+
     """
     targetBranches: [String!]
 
@@ -17165,7 +17165,7 @@ type Project {
     """
     List of negated arguments.
     Warning: this argument is experimental and a subject to change in future.
-    
+
     """
     not: MergeRequestsResolverNegatedParams
 
@@ -18180,7 +18180,7 @@ type Query {
   """
   Linted and processed contents of a CI config.
   Should not be requested more than once per request.
-  
+
   """
   ciConfig(
     """The project of the CI config."""
@@ -18560,7 +18560,7 @@ type Query {
 
   """
   Number of vulnerabilities per day for the projects on the current user's instance security dashboard.
-  
+
   """
   vulnerabilitiesCountByDay(
     """First day for which to fetch vulnerability history."""
@@ -22585,14 +22585,14 @@ interface User {
     """
     Array of source branch names.
     All resolved merge requests will have one of these branches as their source.
-    
+
     """
     sourceBranches: [String!]
 
     """
     Array of target branch names.
     All resolved merge requests will have one of these branches as their target.
-    
+
     """
     targetBranches: [String!]
 
@@ -22621,21 +22621,21 @@ interface User {
     """
     List of negated arguments.
     Warning: this argument is experimental and a subject to change in future.
-    
+
     """
     not: MergeRequestsResolverNegatedParams
 
     """
     The full-path of the project the authored merge requests should be in.
     Incompatible with projectId.
-    
+
     """
     projectPath: String
 
     """
     The global ID of the project the authored merge requests should be in.
     Incompatible with projectPath.
-    
+
     """
     projectId: ProjectID
 
@@ -22668,14 +22668,14 @@ interface User {
     """
     Array of source branch names.
     All resolved merge requests will have one of these branches as their source.
-    
+
     """
     sourceBranches: [String!]
 
     """
     Array of target branch names.
     All resolved merge requests will have one of these branches as their target.
-    
+
     """
     targetBranches: [String!]
 
@@ -22704,21 +22704,21 @@ interface User {
     """
     List of negated arguments.
     Warning: this argument is experimental and a subject to change in future.
-    
+
     """
     not: MergeRequestsResolverNegatedParams
 
     """
     The full-path of the project the authored merge requests should be in.
     Incompatible with projectId.
-    
+
     """
     projectPath: String
 
     """
     The global ID of the project the authored merge requests should be in.
     Incompatible with projectPath.
-    
+
     """
     projectId: ProjectID
 
@@ -22826,14 +22826,14 @@ interface User {
     """
     Array of source branch names.
     All resolved merge requests will have one of these branches as their source.
-    
+
     """
     sourceBranches: [String!]
 
     """
     Array of target branch names.
     All resolved merge requests will have one of these branches as their target.
-    
+
     """
     targetBranches: [String!]
 
@@ -22862,21 +22862,21 @@ interface User {
     """
     List of negated arguments.
     Warning: this argument is experimental and a subject to change in future.
-    
+
     """
     not: MergeRequestsResolverNegatedParams
 
     """
     The full-path of the project the authored merge requests should be in.
     Incompatible with projectId.
-    
+
     """
     projectPath: String
 
     """
     The global ID of the project the authored merge requests should be in.
     Incompatible with projectPath.
-    
+
     """
     projectId: ProjectID
 
@@ -23147,14 +23147,14 @@ type UserCore implements User {
     """
     Array of source branch names.
     All resolved merge requests will have one of these branches as their source.
-    
+
     """
     sourceBranches: [String!]
 
     """
     Array of target branch names.
     All resolved merge requests will have one of these branches as their target.
-    
+
     """
     targetBranches: [String!]
 
@@ -23183,21 +23183,21 @@ type UserCore implements User {
     """
     List of negated arguments.
     Warning: this argument is experimental and a subject to change in future.
-    
+
     """
     not: MergeRequestsResolverNegatedParams
 
     """
     The full-path of the project the authored merge requests should be in.
     Incompatible with projectId.
-    
+
     """
     projectPath: String
 
     """
     The global ID of the project the authored merge requests should be in.
     Incompatible with projectPath.
-    
+
     """
     projectId: ProjectID
 
@@ -23230,14 +23230,14 @@ type UserCore implements User {
     """
     Array of source branch names.
     All resolved merge requests will have one of these branches as their source.
-    
+
     """
     sourceBranches: [String!]
 
     """
     Array of target branch names.
     All resolved merge requests will have one of these branches as their target.
-    
+
     """
     targetBranches: [String!]
 
@@ -23266,21 +23266,21 @@ type UserCore implements User {
     """
     List of negated arguments.
     Warning: this argument is experimental and a subject to change in future.
-    
+
     """
     not: MergeRequestsResolverNegatedParams
 
     """
     The full-path of the project the authored merge requests should be in.
     Incompatible with projectId.
-    
+
     """
     projectPath: String
 
     """
     The global ID of the project the authored merge requests should be in.
     Incompatible with projectPath.
-    
+
     """
     projectId: ProjectID
 
@@ -23388,14 +23388,14 @@ type UserCore implements User {
     """
     Array of source branch names.
     All resolved merge requests will have one of these branches as their source.
-    
+
     """
     sourceBranches: [String!]
 
     """
     Array of target branch names.
     All resolved merge requests will have one of these branches as their target.
-    
+
     """
     targetBranches: [String!]
 
@@ -23424,21 +23424,21 @@ type UserCore implements User {
     """
     List of negated arguments.
     Warning: this argument is experimental and a subject to change in future.
-    
+
     """
     not: MergeRequestsResolverNegatedParams
 
     """
     The full-path of the project the authored merge requests should be in.
     Incompatible with projectId.
-    
+
     """
     projectPath: String
 
     """
     The global ID of the project the authored merge requests should be in.
     Incompatible with projectPath.
-    
+
     """
     projectId: ProjectID
 
@@ -24802,4 +24802,3 @@ enum WeightWildcardId {
   """Weight is assigned."""
   ANY
 }
-
