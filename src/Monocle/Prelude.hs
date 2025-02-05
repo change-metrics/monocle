@@ -445,6 +445,7 @@ parseDateValue str =
   tryParse "%F"
     <|> tryParse "%F %T %Z"
     <|> tryParse "%FT%XZ"
+    <|> tryParse "%FT%X%EZ"
  where
   tryParse fmt = parseTimeM False defaultTimeLocale fmt str
 
