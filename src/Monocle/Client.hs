@@ -17,16 +17,16 @@ import Data.Text qualified as T
 import Monocle.Prelude
 import Network.HTTP.Client (
   Manager,
+  ManagerSettings (managerResponseTimeout),
   RequestBody (..),
   httpLbs,
   method,
   newManager,
-  ManagerSettings (managerResponseTimeout),
   parseRequest_,
   requestBody,
   requestHeaders,
   responseBody,
-  responseTimeoutMicro
+  responseTimeoutMicro,
  )
 import Network.HTTP.Client qualified
 import Network.HTTP.Client.OpenSSL qualified as OpenSSL
