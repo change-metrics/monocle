@@ -21,10 +21,12 @@ import Network.HTTP.Client (
   httpLbs,
   method,
   newManager,
+  ManagerSettings (managerResponseTimeout),
   parseRequest_,
   requestBody,
   requestHeaders,
   responseBody,
+  responseTimeoutMicro
  )
 import Network.HTTP.Client qualified
 import Network.HTTP.Client.OpenSSL qualified as OpenSSL
@@ -60,7 +62,9 @@ mkManager' proxyEnv verify = do
         Verify -> OpenSSL.defaultOpenSSLSettings
   tlsCiphers <- fromMaybe "DEFAULT" <$> lookupEnv "TLS_CIPHERS"
   ctx <- OpenSSL.defaultMakeContext (opensslSettings {OpenSSL.osslSettingsCiphers = tlsCiphers})
-  let settings = OpenSSL.opensslManagerSettings (pure ctx)
+  -- Default timeout is 30 seconds however complexes graphQL queries can require
+  -- a longer processing delay. We double the default timeout value.
+  let settings = (OpenSSL.opensslManagerSettings (pure ctx)) {managerResponseTimeout = responseTimeoutMicro 60000000}
 
   -- setup proxy
   let proxy = case proxyEnv of
