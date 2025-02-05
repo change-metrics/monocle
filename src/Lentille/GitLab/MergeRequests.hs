@@ -32,7 +32,7 @@ declareLocalTypesInline
       project(fullPath: $project) {
         name
         nameWithNamespace
-        mergeRequests (first: 100, after: $cursor, sort: UPDATED_DESC, iids: $iids) {
+        mergeRequests (first: 25, after: $cursor, sort: UPDATED_DESC, iids: $iids) {
           pageInfo {hasNextPage endCursor}
           count
           nodes {

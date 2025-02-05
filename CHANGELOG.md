@@ -8,7 +8,8 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - [compose] Bumped Elasticsearch to 7.17.26.
-- [crawler] Gitlab make Notes author attribute as nullable
+- [crawler] Gitlab - make Notes author attribute as nullable
+- [crawler] Gitlab - lower the bulk amount of MR objects to fetch from 100 to 25
 
 ### Removed
 ### Fixed
