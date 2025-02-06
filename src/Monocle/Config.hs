@@ -103,7 +103,7 @@ import Effectful.Env
 import Monocle.Config.Generated
 import Monocle.Prelude
 import Servant.API (FromHttpApiData (..))
-import System.Posix.Files (getFileStatus, modificationTime)
+import System.Posix.Files (getFileStatus, modificationTime, statusChangeTime)
 import Witch qualified
 
 data Config = Config
@@ -228,26 +228,28 @@ setWorkspaceStatus :: Status -> MVar WorkspaceStatus -> IO ()
 setWorkspaceStatus status wsRef = modifyMVar_ wsRef $ pure . fmap (const status)
 
 -- | An IO action that reload the config if needed. It does by checking last
--- modification time from disk then provides the config wrapped in a 'ConfigStatus'.
+-- modification or change time from disk then provides the config wrapped in a 'ConfigStatus'.
 reloadConfig :: FilePath -> IO (IO ConfigStatus)
 reloadConfig fp = do
   -- Get the current config
-  configTS <- modificationTime <$> getFileStatus fp
+  (configMTS, configCTS) <- getFileChangeTS
   config <- loadConfig fp
-
   -- Create the reload action
-  tsRef <- newMVar (configTS, config)
+  tsRef <- newMVar ((configMTS, configCTS), config)
   wsRef <- newMVar $ mkWorkspaceStatus config
   pure (modifyMVar tsRef (reload wsRef))
  where
-  reload wsRef mvar@(prevConfigTS, prevConfig) = do
-    configTS <- modificationTime <$> getFileStatus fp
-    if configTS > prevConfigTS
+  reload wsRef mvar@((prevConfigMTS, prevConfigCTS), prevConfig) = do
+    (configMTS, configCTS) <- getFileChangeTS
+    if configMTS > prevConfigMTS || configCTS > prevConfigCTS
       then do
         config <- loadConfig fp
         modifyMVar_ wsRef (const . pure $ mkWorkspaceStatus config)
-        pure ((configTS, config), ConfigStatus True config wsRef)
+        pure (((configMTS, configCTS), config), ConfigStatus True config wsRef)
       else pure (mvar, ConfigStatus False prevConfig wsRef)
+  getFileChangeTS = do
+    configStatus <- getFileStatus fp
+    pure (modificationTime configStatus, statusChangeTime configStatus)
 
 -- | Return a 'Secret' based on environment variable
 getSecret ::
