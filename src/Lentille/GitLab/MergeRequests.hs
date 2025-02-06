@@ -41,6 +41,7 @@ declareLocalTypesInline
             title
             description
             state
+            approved
             webUrl
             commitCount
             diffStatsSummary {
@@ -233,9 +234,7 @@ transformResponse host getIdentIdCB result =
           changeMergeable = (if mergeable then "MERGEABLE" else "CONFLICT")
           changeLabels = (fromList $ getLabelTitle <$> maybe [] toLabelsNodes labels)
           changeAssignees = (fromList $ toIdent' . getAssigneesUsername <$> maybe [] toAssigneesNodes assignees)
-          -- GitLab 13.12.X does not expose an approval attribute for mergeRequest
-          -- changeApprovals = (if approved then fromList ["APPROVED"] else fromList [])
-          changeApprovals = fromList []
+          changeApprovals = (if approved then fromList ["APPROVED"] else fromList [])
           changeDraft = draft
           changeOptionalSelfMerged =
             ( ChangeOptionalSelfMergedSelfMerged
