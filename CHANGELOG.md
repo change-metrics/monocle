@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - [crawler] Gitlab - make Notes author attribute as nullable
 - [crawler] Gitlab - lower the bulk amount of MR objects to fetch from 100 to 25
 - [crawler] Gitlab - fetch the approval status
+- config - reload - consolidate the mechanism to detect the config file change
 
 ### Removed
 ### Fixed
