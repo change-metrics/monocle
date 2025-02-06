@@ -103,7 +103,7 @@ import Effectful.Env
 import Monocle.Config.Generated
 import Monocle.Prelude
 import Servant.API (FromHttpApiData (..))
-import System.Directory (getModificationTime)
+import System.Posix.Files (getFileStatus, modificationTime)
 import Witch qualified
 
 data Config = Config
@@ -232,7 +232,7 @@ setWorkspaceStatus status wsRef = modifyMVar_ wsRef $ pure . fmap (const status)
 reloadConfig :: FilePath -> IO (IO ConfigStatus)
 reloadConfig fp = do
   -- Get the current config
-  configTS <- getModificationTime fp
+  configTS <- modificationTime <$> getFileStatus fp
   config <- loadConfig fp
 
   -- Create the reload action
@@ -241,7 +241,7 @@ reloadConfig fp = do
   pure (modifyMVar tsRef (reload wsRef))
  where
   reload wsRef mvar@(prevConfigTS, prevConfig) = do
-    configTS <- getModificationTime fp
+    configTS <- modificationTime <$> getFileStatus fp
     if configTS > prevConfigTS
       then do
         config <- loadConfig fp
