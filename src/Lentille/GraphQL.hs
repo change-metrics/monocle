@@ -42,7 +42,6 @@ import Streaming.Prelude qualified as S
 import Effectful.Concurrent.MVar qualified as E
 import Effectful.Retry
 import Effectful.Timeout (Timeout)
-import Effectful.Timeout qualified
 import Monocle.Effects
 
 type GraphEffects es = (LoggerEffect :> es, HttpEffect :> es, PrometheusEffect :> es, TimeEffect :> es, Retry :> es, Concurrent :> es, Fail :> es, Timeout :> es)
@@ -92,7 +91,7 @@ type DoFetch es = LBS.ByteString -> WriterT [RequestLog] (Eff es) LBS.ByteString
 
 -- | The morpheus-graphql-client fetch callback,
 -- doc: https://hackage.haskell.org/package/morpheus-graphql-client-0.17.0/docs/Data-Morpheus-Client.html
-doGraphRequest :: (HttpEffect :> es, PrometheusEffect :> es, LoggerEffect :> es, Retry :> es) => GraphClient -> DoFetch es
+doGraphRequest :: (HttpEffect :> es, PrometheusEffect :> es, LoggerEffect :> es, Retry :> es, Timeout :> es) => GraphClient -> DoFetch es
 doGraphRequest GraphClient {..} jsonBody = do
   -- Prepare the request
   let initRequest = HTTP.parseRequest_ (from url)
@@ -108,7 +107,7 @@ doGraphRequest GraphClient {..} jsonBody = do
           }
 
   -- Do the request (and retry on HttpException raised by the http-client)
-  response <- lift (httpRetry url $ httpRequest req)
+  response <- lift (httpRetry url $ httpRequestWithTimeout req)
 
   -- Record the event
   let responseBody = HTTP.responseBody response
@@ -152,11 +151,7 @@ doRequest client mkArgs retryCheck depthM pageInfoM =
   retryingDynamic policy (const retryCheck) $ \rs -> do
     when (rs.rsIterNumber > 0)
       $ logWarn "Retrying request" ["num" .= rs.rsIterNumber]
-    Effectful.Timeout.timeout 75_000_000 (runFetch rs.rsIterNumber) >>= \case
-      Nothing -> do
-        logWarn "Request timeout after 75sec" []
-        error "request timeout"
-      Just x -> pure x
+    runFetch rs.rsIterNumber
  where
   delay = 1_100_000 -- 1.1 seconds
   policy = constantDelay delay <> limitRetries 7

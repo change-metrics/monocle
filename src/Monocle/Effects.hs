@@ -70,6 +70,7 @@ import Network.HTTP.Client qualified as HTTP
 import Effectful as E
 import Effectful.Dispatch.Static (SideEffects (..), StaticRep, evalStaticRep, getStaticRep, localStaticRep)
 import Effectful.Dispatch.Static.Primitive qualified as EffStatic
+import Effectful.Timeout qualified
 import Monocle.Effects.Compat ()
 
 import GHC.IO.Handle (hClose)
@@ -534,6 +535,17 @@ httpRequest ::
 httpRequest request = do
   HttpEffect manager <- getStaticRep
   unsafeEff_ $ HTTP.httpLbs request manager
+
+httpRequestWithTimeout ::
+  HttpEffect :> es =>
+  Effectful.Timeout.Timeout :> es =>
+  HTTP.Request ->
+  Eff es (HTTP.Response LByteString)
+httpRequestWithTimeout request = do
+  resp <- Effectful.Timeout.timeout 75_000_000 $ httpRequest request
+  case resp of
+    Just x -> pure x
+    Nothing -> error "The HTTP request hung for more than 75 seconds"
 
 -------------------------------------------------------------------------------
 -- A network retry system
