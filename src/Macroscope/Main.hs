@@ -48,6 +48,7 @@ import Effectful.Concurrent.MVar qualified as E
 import Effectful.Env
 import Effectful.Prometheus
 import Effectful.Reader.Static qualified as E
+import Effectful.Timeout (Timeout, runTimeout)
 import Lentille.GitHub.UserPullRequests (streamUserPullRequests)
 import Monocle.Effects
 
@@ -299,10 +300,11 @@ type MacroEffects es =
   , Retry :> es
   , Concurrent :> es
   , Fail :> es
+  , Timeout :> es
   )
 
-runMacroEffects :: IOE :> es => Eff (GerritEffect : BZEffect : TimeEffect : HttpEffect : PrometheusEffect : EnvEffect : Fail : Retry : Concurrent : es) a -> Eff es a
-runMacroEffects = runConcurrent . runRetry . runFailIO . runEnv . runPrometheus . runHttpEffect . runTime . runBZ . runGerrit
+runMacroEffects :: IOE :> es => Eff (GerritEffect : BZEffect : TimeEffect : HttpEffect : PrometheusEffect : EnvEffect : Fail : Retry : Concurrent : Timeout : es) a -> Eff es a
+runMacroEffects = runTimeout . runConcurrent . runRetry . runFailIO . runEnv . runPrometheus . runHttpEffect . runTime . runBZ . runGerrit
 
 -- | 'runCrawler' evaluate a single crawler
 runCrawler :: forall es. MacroEffects es => Crawler es -> Eff es ()

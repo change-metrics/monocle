@@ -34,6 +34,7 @@ import Streaming.Prelude qualified as S
 
 import Data.String.Interpolate (i)
 import Effectful.Prometheus
+import Effectful.Timeout (runTimeout)
 import ListT qualified
 import Monocle.Backend.Documents (EChange (..))
 import Monocle.Effects
@@ -308,7 +309,7 @@ usageLentille =
   formatChange :: (Change, [ChangeEvent]) -> String
   formatChange (c, _) = let (EChange {..}) = from c in [i|#{echangeUrl}\t#{echangeTitle}\t#{echangeUpdatedAt}|]
 
-  runStandaloneStream = runEff . runErrorIO @LentilleError . runConcurrent . runFailIO . runLoggerEffect . runTime . runRetry . runHttpEffect . G.runGerrit . runPrometheus
+  runStandaloneStream = runEff . runErrorIO @LentilleError . runTimeout . runConcurrent . runFailIO . runLoggerEffect . runTime . runRetry . runHttpEffect . G.runGerrit . runPrometheus
 
 dumpJSON :: (IOE :> es, ToJSON a) => Maybe Int -> Stream (Of a) (Eff es) () -> Eff es ()
 dumpJSON limitM stream = do

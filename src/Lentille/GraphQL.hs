@@ -41,9 +41,11 @@ import Streaming.Prelude qualified as S
 
 import Effectful.Concurrent.MVar qualified as E
 import Effectful.Retry
+import Effectful.Timeout (Timeout)
+import Effectful.Timeout qualified
 import Monocle.Effects
 
-type GraphEffects es = (LoggerEffect :> es, HttpEffect :> es, PrometheusEffect :> es, TimeEffect :> es, Retry :> es, Concurrent :> es, Fail :> es)
+type GraphEffects es = (LoggerEffect :> es, HttpEffect :> es, PrometheusEffect :> es, TimeEffect :> es, Retry :> es, Concurrent :> es, Fail :> es, Timeout :> es)
 
 data GraphResponseResult = NoRepo | UnknownErr [Text] | NoErr
 
@@ -150,7 +152,11 @@ doRequest client mkArgs retryCheck depthM pageInfoM =
   retryingDynamic policy (const retryCheck) $ \rs -> do
     when (rs.rsIterNumber > 0)
       $ logWarn "Retrying request" ["num" .= rs.rsIterNumber]
-    runFetch rs.rsIterNumber
+    Effectful.Timeout.timeout 75_000_000 (runFetch rs.rsIterNumber) >>= \case
+      Nothing -> do
+        logWarn "Request timeout after 75sec" []
+        error "request timeout"
+      Just x -> pure x
  where
   delay = 1_100_000 -- 1.1 seconds
   policy = constantDelay delay <> limitRetries 7
