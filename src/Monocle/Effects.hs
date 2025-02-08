@@ -58,7 +58,7 @@ module Monocle.Effects where
 
 import Monocle.Prelude hiding (Reader, ask, local)
 
-import Control.Exception (finally)
+import Control.Exception (finally, throwIO)
 import Control.Exception.Base (ErrorCall (ErrorCall))
 import Control.Monad.Catch (catches)
 import Data.Text qualified as T
@@ -545,7 +545,7 @@ httpRequestWithTimeout request = do
   resp <- Effectful.Timeout.timeout 75_000_000 $ httpRequest request
   case resp of
     Just x -> pure x
-    Nothing -> error "The HTTP request hung for more than 75 seconds"
+    Nothing -> unsafeEff_ $ throwIO (HttpClientTimeout request)
 
 -------------------------------------------------------------------------------
 -- A network retry system
@@ -553,9 +553,13 @@ httpRequestWithTimeout request = do
 retryLimit :: Int
 retryLimit = 7
 
+newtype HttpClientTimeout = HttpClientTimeout HTTP.Request
+  deriving (Show)
+instance Exception HttpClientTimeout
+
 -- | Retry HTTP network action, doubling backoff each time
 httpRetry :: (HasCallStack, PrometheusEffect :> es, Retry :> es, LoggerEffect :> es) => Text -> Eff es a -> Eff es a
-httpRetry urlLabel baseAction = Retry.recovering policy [httpHandler] (const action)
+httpRetry urlLabel baseAction = Retry.recovering policy [httpHandler, httpHandlerCustom] (const action)
  where
   modName = case getCallStack callStack of
     ((_, srcLoc) : _) -> from (srcLocModule srcLoc)
@@ -570,13 +574,19 @@ httpRetry urlLabel baseAction = Retry.recovering policy [httpHandler] (const act
     pure res
   httpHandler (RetryStatus num _ _) = Handler $ \case
     HttpExceptionRequest req ctx -> do
-      let url = decodeUtf8 @Text $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
-          arg = decodeUtf8 $ HTTP.queryString req
-          loc = if num == 0 then url <> arg else url
-      logWarn "network error" ["count" .= num, "limit" .= retryLimit, "loc" .= loc, "failed" .= show @Text ctx]
-      promIncrCounter httpFailureCounter label
+      logError num req (show @Text ctx)
       pure True
     InvalidUrlException _ _ -> pure False
+  httpHandlerCustom (RetryStatus num _ _) = Handler $ \case
+    HttpClientTimeout req -> do
+      logError num req "The request timeout"
+      pure True
+  logError num req failed = do
+    let url = decodeUtf8 @Text $ HTTP.host req <> ":" <> show (HTTP.port req) <> HTTP.path req
+        arg = decodeUtf8 $ HTTP.queryString req
+        loc = if num == 0 then url <> arg else url
+    logWarn "network error" ["count" .= num, "limit" .= retryLimit, "loc" .= loc, "failed" .= failed]
+    promIncrCounter httpFailureCounter label
 
 ------------------------------------------------------------------
 --
