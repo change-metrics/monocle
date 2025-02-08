@@ -147,7 +147,12 @@ doRequest ::
   Maybe PageInfo ->
   Eff es (GraphResp a)
 doRequest client mkArgs retryCheck depthM pageInfoM =
+  -- retryingDynamic use the result of the action to check if it should be retried.
+  -- The logic is provided by the retryCheck argument, e.g. to look into GraphError value.
+  -- Note that http exception handling is performed in 'doGraphRequest' with httpRetry,
+  -- This doesn't catch any exception.
   retryingDynamic policy (const retryCheck) $ \rs -> do
+    -- The rsIterNumber indicates how many time the action is retried
     when (rs.rsIterNumber > 0)
       $ logWarn "Retrying request" ["num" .= rs.rsIterNumber]
     runFetch rs.rsIterNumber
@@ -157,16 +162,23 @@ doRequest client mkArgs retryCheck depthM pageInfoM =
 
   runFetch :: Int -> Eff es (GraphResp a)
   runFetch retried = do
-    resp <-
-      fetchWithLog
-        (doGraphRequest client)
-        (mkArgs aDepthM $ (Just . fromMaybe (error "Missing endCursor from page info") . endCursor) =<< pageInfoM)
+    resp <- fetchWithLog (doGraphRequest client) args
     pure $ case resp of
+      -- Discard the log in case of successfull request
       (Right x, _) -> Right x
-      -- Throw an exception for the retryCheckM
+      -- Make a GraphError with the log in case of an error
       (Left e, [req]) -> Left (req, e)
       _ -> error $ "Unknown response: " <> show resp
    where
+    -- The http request graphql arguments
+    args = mkArgs aDepthM cursor
+    -- The cursor from the last page info
+    cursor = do
+      pageInfo <- pageInfoM
+      case pageInfo.endCursor of
+        Nothing -> error "The impossible have happened, page info doesn't have a endCursor"
+        Just endCursor -> Just endCursor
+    -- Adaptative depth based on the number of retry
     aDepthM = decreaseValue retried <$> depthM
 
 -- | Slowly decrease a value to workaround api timeout when a graph depth is too deep.
