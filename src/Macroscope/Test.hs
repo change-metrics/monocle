@@ -5,6 +5,7 @@ import Data.Vector qualified as V
 import Effectful.Env
 import Effectful.Prometheus
 import Effectful.Reader.Static qualified as E
+import Effectful.Timeout (Timeout)
 import Lentille
 import Lentille.Bugzilla (BZEffect)
 import Lentille.Gerrit (GerritEffect)
@@ -26,10 +27,10 @@ import Monocle.Env
 import Monocle.Prelude
 import Monocle.Protob.Crawler qualified as CrawlerPB
 import Streaming.Prelude qualified as Streaming
-import Test.Tasty
+import Test.Tasty hiding (Timeout)
 import Test.Tasty.HUnit
 
-runLentilleM :: MonocleClient -> Eff [E.Reader CrawlerEnv, MonoClientEffect, LoggerEffect, GerritEffect, BZEffect, TimeEffect, HttpEffect, PrometheusEffect, EnvEffect, Fail, Retry, Concurrent, IOE] a -> IO a
+runLentilleM :: MonocleClient -> Eff [E.Reader CrawlerEnv, MonoClientEffect, LoggerEffect, GerritEffect, BZEffect, TimeEffect, HttpEffect, PrometheusEffect, EnvEffect, Fail, Retry, Concurrent, Timeout, IOE] a -> IO a
 runLentilleM client action = do
   env <- CrawlerEnv client <$> newIORef False
   runEff . Macroscope.runMacroEffects . runLoggerEffect . runMonoClient client . E.runReader env $ action

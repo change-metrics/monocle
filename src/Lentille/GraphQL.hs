@@ -41,9 +41,10 @@ import Streaming.Prelude qualified as S
 
 import Effectful.Concurrent.MVar qualified as E
 import Effectful.Retry
+import Effectful.Timeout (Timeout)
 import Monocle.Effects
 
-type GraphEffects es = (LoggerEffect :> es, HttpEffect :> es, PrometheusEffect :> es, TimeEffect :> es, Retry :> es, Concurrent :> es, Fail :> es)
+type GraphEffects es = (LoggerEffect :> es, HttpEffect :> es, PrometheusEffect :> es, TimeEffect :> es, Retry :> es, Concurrent :> es, Fail :> es, Timeout :> es)
 
 data GraphResponseResult = NoRepo | UnknownErr [Text] | NoErr
 
@@ -90,7 +91,7 @@ type DoFetch es = LBS.ByteString -> WriterT [RequestLog] (Eff es) LBS.ByteString
 
 -- | The morpheus-graphql-client fetch callback,
 -- doc: https://hackage.haskell.org/package/morpheus-graphql-client-0.17.0/docs/Data-Morpheus-Client.html
-doGraphRequest :: (HttpEffect :> es, PrometheusEffect :> es, LoggerEffect :> es, Retry :> es) => GraphClient -> DoFetch es
+doGraphRequest :: (HttpEffect :> es, PrometheusEffect :> es, LoggerEffect :> es, Retry :> es, Timeout :> es) => GraphClient -> DoFetch es
 doGraphRequest GraphClient {..} jsonBody = do
   -- Prepare the request
   let initRequest = HTTP.parseRequest_ (from url)
@@ -106,7 +107,7 @@ doGraphRequest GraphClient {..} jsonBody = do
           }
 
   -- Do the request (and retry on HttpException raised by the http-client)
-  response <- lift (httpRetry url $ httpRequest req)
+  response <- lift (httpRetry url $ httpRequestWithTimeout req)
 
   -- Record the event
   let responseBody = HTTP.responseBody response
