@@ -145,7 +145,7 @@ module Login = {
       let loginSubtitle =
         "Click on the button below to be redirected to identity provider." ++ " Once authenticated you'll be redirected to Monocle."
       let currentLocation = readWindowLocationFull()->Js.Global.encodeURIComponent
-      let location = WebApi.serverUrl ++ "/" ++ "api/2/auth/login?redirectUri=" ++ currentLocation
+      let location = WebApi.serverUrl ++ "/api/2/auth/login?redirectUri=" ++ currentLocation
       let onClick = e => {
         e->ReactEvent.Mouse.preventDefault
         replaceWindowLocation(location)

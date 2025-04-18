@@ -132,7 +132,7 @@ protoToReScript = fromProto headers mkService
     methodInput = "request: " <> msgName moduleName input
     methodOutput = "axios<" <> msgName moduleName output <> ">"
     requestEncode = "request->" <> moduleName <> "Bs.encode_" <> snake (attrName input)
-    requestCall = camel name <> "Raw(serverUrl ++ \"" <> path <> "\")"
+    requestCall = camel name <> "Raw(\"" <> path <> "\")"
     promiseDecode = "Js.Promise.then_(resp => { data: " <> decodeResponse <> "}->Js.Promise.resolve)"
     decodeResponse = "resp.data-> " <> moduleName <> "Bs.decode_" <> snake (attrName output)
 
