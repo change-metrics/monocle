@@ -18,6 +18,9 @@
 # maintained by Red Hat. This Monocle build might be slightly different than
 # the build from the official Monocle base image based on Nix (ghc version and some
 # dependencies version might differ).
+#
+# This Dockerfile supports multiple architectures (amd64/x86_64 and arm64/aarch64)
+# and can be built using the GitHub workflow with docker buildx.
 
 
 ##### Monocle binary build #####
@@ -30,9 +33,16 @@ RUN gpg --batch --keyserver keyserver.ubuntu.com --recv-keys FE5AB6C91FEA597C3B3
 RUN gpg --batch --keyserver keyserver.ubuntu.com --recv-keys 88B57FCF7DB53B4DB3BFA4B1588764FBE22D19C4
 RUN gpg --batch --keyserver keyserver.ubuntu.com --recv-keys EAF2A9A722C0C96F2B431CA511AAD8CEDEE0CAEF
 
-# Install ghcup
+# Install ghcup with architecture detection
 RUN \
-    curl https://downloads.haskell.org/~ghcup/x86_64-linux-ghcup > /usr/bin/ghcup && \
+    ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+    curl https://downloads.haskell.org/~ghcup/x86_64-linux-ghcup > /usr/bin/ghcup; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+    curl https://downloads.haskell.org/~ghcup/aarch64-linux-ghcup > /usr/bin/ghcup; \
+    else \
+    echo "Unsupported architecture: $ARCH" && exit 1; \
+    fi && \
     chmod +x /usr/bin/ghcup && \
     ghcup config set gpg-setting GPGStrict
 
@@ -65,8 +75,7 @@ COPY . /build
 # Build Monocle
 RUN cd /build && \
     cabal update && \
-    cabal build --project-file=cabal-override.project && \
-    cp $(find dist-newstyle/build/*/*/*/*/monocle/build/ -name monocle -type f) /
+    cabal install --project-file=cabal-override.project --installdir /
 
 ##### Monocle Web UI build #####
 
