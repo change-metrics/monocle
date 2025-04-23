@@ -72,16 +72,10 @@ RUN dnf install -y \
 # Copy source tree
 COPY . /build
 
-# Build Monocle with architecture-specific settings
+# Build Monocle
 RUN cd /build && \
     cabal update && \
-    cabal build --project-file=cabal-override.project && \
-    ARCH=$(uname -m) && \
-    if [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "aarch64" ]; then \
-    cp $(find dist-newstyle/build/$ARCH*/*/*/monocle/build/ -name monocle -type f) /; \
-    else \
-    echo "Unsupported architecture: $ARCH" && exit 1; \
-    fi
+    cabal install --project-file=cabal-override.project --installdir /
 
 ##### Monocle Web UI build #####
 
