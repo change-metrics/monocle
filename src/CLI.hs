@@ -15,6 +15,7 @@ import Lentille.GitHub.Organization qualified as GH_ORG
 import Lentille.GitHub.PullRequests qualified as GH_PR
 import Lentille.GitHub.UserPullRequests qualified as GH_UPR
 import Lentille.GitHub.Watching qualified
+import Lentille.GitLab.Group qualified as GL_GROUP
 import Lentille.GraphQL (newGraphClient)
 import Lentille.Jira qualified as Jira
 import Macroscope.Main (runMacroscope)
@@ -206,6 +207,7 @@ usageLentille =
         <> mkSubCommand "github-changes" "Get changes list" githubChangesUsage
         <> mkSubCommand "github-user-changes" "Get changes list" githubUserChangesUsage
         <> mkSubCommand "github-watching" "Get watched list" githubWatchingUsage
+        <> mkSubCommand "gitlab-projects" "Get projects list" gitlabProjectsUsage
         <> mkSubCommand "jira-issues" "Get recent issues" jiraIssuesUsage
     )
  where
@@ -277,6 +279,13 @@ usageLentille =
       if humanF
         then dumpChanges formatChange limitM stream
         else dumpJSON limitM stream
+
+  gitlabProjectsUsage = io <$> parser
+   where
+    parser = (,,) <$> urlOption <*> secretOption <*> orgOption
+    io (url, secret, org) = runStandaloneStream do
+      client <- getGraphClient url secret
+      dumpJSON Nothing $ GL_GROUP.streamGroupProjects client org
 
   jiraIssuesUsage = io <$> parser
    where
