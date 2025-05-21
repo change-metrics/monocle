@@ -16,6 +16,7 @@ import Lentille.GitHub.PullRequests qualified as GH_PR
 import Lentille.GitHub.UserPullRequests qualified as GH_UPR
 import Lentille.GitHub.Watching qualified
 import Lentille.GitLab.Group qualified as GL_GROUP
+import Lentille.GitLab.MergeRequests qualified as GL_MR
 import Lentille.GraphQL (newGraphClient)
 import Lentille.Jira qualified as Jira
 import Macroscope.Main (runMacroscope)
@@ -208,6 +209,7 @@ usageLentille =
         <> mkSubCommand "github-user-changes" "Get changes list" githubUserChangesUsage
         <> mkSubCommand "github-watching" "Get watched list" githubWatchingUsage
         <> mkSubCommand "gitlab-projects" "Get projects list" gitlabProjectsUsage
+        <> mkSubCommand "gitlab-changes" "Get changes list" gitlabChangesUsage
         <> mkSubCommand "jira-issues" "Get recent issues" jiraIssuesUsage
     )
  where
@@ -286,6 +288,23 @@ usageLentille =
     io (url, secret, org) = runStandaloneStream do
       client <- getGraphClient url secret
       dumpJSON Nothing $ GL_GROUP.streamGroupProjects client org
+
+  gitlabChangesUsage = io <$> parser
+   where
+    parser =
+      (,,,,,)
+        <$> urlOption
+        <*> secretOption
+        <*> projectOption
+        <*> sinceOption
+        <*> limitOption
+        <*> humanOption
+    io (url, secret, repo, since, limitM, humanF) = runStandaloneStream do
+      client <- getGraphClient url secret
+      let stream = GL_MR.streamMergeRequests client (const Nothing) (toSince since) repo
+      if humanF
+        then dumpChanges formatChange limitM stream
+        else dumpJSON limitM stream
 
   jiraIssuesUsage = io <$> parser
    where
