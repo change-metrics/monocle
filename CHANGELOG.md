@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 ## [master]
 
 ### Added
+
+- [cli] Add command to list projects and changes (MRs)
+
 ### Changed
 
 - [compose] Bumped Elasticsearch to 7.17.26.
