@@ -13,6 +13,7 @@ module Macroscope.Worker (
   getStreamOldestEntity,
 ) where
 
+import Data.Text.Lazy qualified as T
 import Data.Vector qualified as V
 import Google.Protobuf.Timestamp as Timestamp
 import Lentille
@@ -128,7 +129,8 @@ processStream logFunc postFunc = go (0 :: Word) [] []
   toCrawlerError (LentilleError ts err) = CrawlerError {..}
    where
     crawlerErrorCreatedAt = Just $ from ts
-    (crawlerErrorMessage, crawlerErrorBody) = case err of
+    crawlerErrorBody = T.take 4096 crawlerErrorBody'
+    (crawlerErrorMessage, crawlerErrorBody') = case err of
       DecodeError xs -> ("decode", encodeJSON xs)
       RequestError e -> ("graph", encodeJSON e)
       RateLimitInfoError e -> ("rate-limit-info", encodeJSON e)
