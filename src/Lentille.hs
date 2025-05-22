@@ -26,6 +26,7 @@ module Lentille (
   swapDuration,
 
   -- * Stream helper
+  lentilleStreamNext,
   streamDropBefore,
   Changes,
 
@@ -124,6 +125,12 @@ yieldStreamError e = do
   S.yield (Left $ LentilleError now e)
 
 type LentilleStream es a = Stream (Of (Either LentilleError a)) (Eff es) ()
+
+-- | Consumes one element of the stream, returns:
+-- - Left for the end of stream,
+-- - Right for the next element, and the rest of the stream.
+lentilleStreamNext :: LentilleStream es a -> Eff es (Either () (Either LentilleError a, LentilleStream es a))
+lentilleStreamNext = S.next
 
 -------------------------------------------------------------------------------
 -- Utility functions for crawlers
