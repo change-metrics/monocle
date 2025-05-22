@@ -148,6 +148,12 @@ transformResponse host getIdentIdCB result =
         , NoErr
         , extract shortName fullName <$> catMaybes nodes
         )
+    GetProjectMergeRequests Nothing ->
+      ( PageInfo False Nothing Nothing
+      , Nothing
+      , NoRepo
+      , []
+      )
     _anyOtherResponse ->
       ( PageInfo False Nothing Nothing
       , Nothing
