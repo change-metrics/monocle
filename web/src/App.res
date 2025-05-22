@@ -293,9 +293,12 @@ module About = {
 module Errors = {
   module CrawlerError = {
     @react.component
-    let make = (~err: CrawlerTypes.crawler_error) => {
+    let make = (~crawler: CrawlerTypes.crawler_error_list, ~err: CrawlerTypes.crawler_error) => {
+      let entity: option<string> = crawler.entity->Belt.Option.flatMap(Js.Json.stringifyAny)
       <div>
         <Change.RelativeDate title="Created " date={err.created_at->getDate} />
+        <div> {("entity: " ++ entity->Belt.Option.getWithDefault(""))->str} </div>
+        <div> {("crawler: " ++ crawler.crawler)->str} </div>
         <div> {("message: " ++ err.message)->str} </div>
         <div> {("body: " ++ err.body)->str} </div>
         <br />
@@ -303,18 +306,8 @@ module Errors = {
     }
   }
 
-  module CrawlerErrors = {
-    @react.component
-    let make = (~err: CrawlerTypes.crawler_error_list) => {
-      let entity: option<string> = err.entity->Belt.Option.flatMap(Js.Json.stringifyAny)
-      <div>
-        <div> {("entity: " ++ entity->Belt.Option.getWithDefault(""))->str} </div>
-        <div> {("crawler: " ++ err.crawler)->str} </div>
-        {err.errors->Belt.List.map(e => <CrawlerError err=e />)->Belt.List.toArray->React.array}
-        <br />
-      </div>
-    }
-  }
+  let getDateInt = mDate =>
+    mDate->Belt.Option.getExn->Belt.Option.getExn->Js.Date.valueOf->Belt.Float.toInt
 
   @react.component
   let make = (~store: Store.t) => {
@@ -324,7 +317,15 @@ module Errors = {
       <p>
         {"The following errors happened when updating the index. This is likely causing some data to be missing."->str}
       </p>
-      {state.errors->Belt.List.map(e => <CrawlerErrors err=e />)->Belt.List.toArray->React.array}
+      {state.errors
+      ->Belt.List.map(crawler => crawler.errors->Belt.List.map(err => (crawler, err)))
+      ->Belt.List.flatten
+      ->Belt.List.sort(((_, err_a), (_, err_b)) =>
+        err_b.created_at->getDateInt - err_a.created_at->getDateInt
+      )
+      ->Belt.List.map(((crawler, err)) => <CrawlerError crawler err />)
+      ->Belt.List.toArray
+      ->React.array}
     </TextContent>
   }
 }
