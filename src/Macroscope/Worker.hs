@@ -197,7 +197,8 @@ runStreamError startTime apiKey indexName (CrawlerName crawlerName) documentStre
           addUTCTime 1 oldestAge >= startTime -> do
             logInfo "Crawling entities completed" ["entity" .= entity, "age" .= oldestAge]
             pure []
-        | otherwise -> goStream oldestAge entity
+        | otherwise -> withContext ("entity" .= entity) do
+            goStream oldestAge entity
 
   goStream oldestAge entity = do
     logInfo "Processing" ["entity" .= entity, "age" .= oldestAge]
