@@ -41,6 +41,19 @@ let
     in (hpPrev.callCabal2nix "morpheus-graphql-${name}"
       "${src}/morpheus-graphql-${name}" { });
 
+  # Try latest servant
+  mk-servant-lib = hpPrev: name:
+    let
+      # Use direct source because nixpkgs somehow can't fetch
+      servant-src = pkgs.fetchFromGitHub {
+        owner = "haskell-servant";
+        repo = "servant";
+        rev = "e07e92abd62641fc0f199a33e5131de273140cb0";
+        sha256 = "sha256-zWlU6/7MU0J/amOSZHEgVltMN9K4luNK1JV6irM9ozM=";
+      };
+    in (hpPrev.callCabal2nix "sevant${name}" "${servant-src}/servant${name}"
+      { });
+
   # Add monocle and patch broken dependency to the haskell package set
   haskellExtend = hpFinal: hpPrev: {
     monocle = hpPrev.callCabal2nix "monocle" src { };
@@ -52,6 +65,22 @@ let
     morpheus-graphql-app = mk-morpheus-lib hpPrev "app";
     morpheus-graphql-code-gen-utils = mk-morpheus-lib hpPrev "code-gen-utils";
     morpheus-graphql-subscriptions = mk-morpheus-lib hpPrev "subscriptions";
+
+    servant = mk-servant-lib hpPrev "";
+    servant-auth = mk-servant-lib hpPrev "-auth/servant-auth";
+    servant-auth-server = mk-servant-lib hpPrev "-auth/servant-auth-server";
+    servant-foreign = mk-servant-lib hpPrev "-foreign";
+    servant-server = mk-servant-lib hpPrev "-server";
+    # generics-sop need latest head
+    generics-sop = let
+      src = pkgs.fetchFromGitHub {
+        owner = "well-typed";
+        repo = "generics-sop";
+        rev = "00e8d04b1ce08471f3516c50e0823d46e4156f20";
+        sha256 = "sha256-PR2MUPcGQI08jzcv0zKZPvVmWq35Xgn/k4D6I7o858M=";
+      };
+    in pkgs.haskell.lib.dontCheck
+    (hpPrev.callCabal2nix "generics-sop" "${src}/generics-sop" { });
 
     # there is a test failure: resolveGroupController should resolve a direct mount root
     cgroup-rts-threads = pkgs.haskell.lib.dontCheck
