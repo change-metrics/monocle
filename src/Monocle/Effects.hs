@@ -87,7 +87,6 @@ import Servant qualified
 import Data.Vector qualified as V
 import Database.Bloodhound qualified as BH
 import Database.Bloodhound.Raw qualified as BHR
-import Json.Extras qualified as Json
 
 -- for MonoQuery
 
@@ -397,15 +396,37 @@ runBHIOSafe ::
   BH.BH IO a ->
   Eff es a
 runBHIOSafe call bodyJSON act = do
+  res <- runBHIOUnsafe call bodyJSON act
+  case res of
+    Right x -> pure x
+    Left (BH.EsError s e) -> E.throwError $ toErr "not handled invalid status" (encode (s, e))
+ where
+  toErr msg = ElasticError call msg body
+  body = decodeUtf8 $ encode bodyJSON
+
+-- | This function runs a BH IO safely by catching EsProtocolExceptions (which contains json decoding errors).
+-- After using this function, a new Error effect is added to the 'es' constraint.
+-- Use 'runEsError' to discharge the new effect and access the final result 'a'.
+runBHIOUnsafe ::
+  HasCallStack =>
+  (ToJSON body, Error ElasticError :> es, ElasticEffect :> es) =>
+  -- | The action name to be recorded in the error
+  Text ->
+  -- | A copy of the body to be recorded in the error
+  body ->
+  -- | The bloodhound action
+  BH.BH IO a ->
+  Eff es (Either BH.EsError a)
+runBHIOUnsafe call bodyJSON act = do
   ElasticEffect env <- getStaticRep
   eRes <- unsafeEff_ ((Right <$> BH.runBH env act) `catches` [errorHandler, esHandler])
   case eRes of
     Right x -> pure x
     Left e -> E.throwError e
  where
-  toErr msg err = pure $ Left $ ElasticError call msg body err
-  errorHandler = Handler $ \(ErrorCall err) -> toErr (from err) "error called"
-  esHandler = Handler $ \(BH.EsProtocolException msg resp) -> toErr msg resp
+  toErr msg = ElasticError call msg body
+  errorHandler = Handler $ \(ErrorCall err) -> pure $ Left $ toErr (from err) "error called"
+  esHandler = Handler $ \(BH.EsProtocolException msg resp) -> pure $ Left $ toErr msg resp
   body = decodeUtf8 $ encode bodyJSON
 
 -- | Safely remove (Error ElasticError) from the list of effect.
@@ -433,35 +454,35 @@ dieOnEsError act =
           ]
     Right x -> pure x
 
-esSearch :: (Error ElasticError :> es, ElasticEffect :> es, ToJSON body, FromJSONField resp) => BH.IndexName -> body -> BHR.ScrollRequest -> Eff es (BH.SearchResult resp)
-esSearch iname body scrollReq = do
-  runBHIOSafe "esSearch" body $ BHR.search iname body scrollReq
+esSearch :: (Error ElasticError :> es, ElasticEffect :> es, FromJSONField resp) => BH.IndexName -> BH.Search -> BHR.ScrollRequest -> Eff es (BH.SearchResult resp)
+esSearch iname payload scrollReq = do
+  runBHIOSafe "esSearch" payload $ BHR.search iname payload scrollReq
 
 -- | This is similar to esScanSearch, but 'searchByIndex' respects search size and sort order
-esSearchByIndex :: (Error ElasticError :> es, ElasticEffect :> es, ToJSON body, FromJSONField resp) => BH.IndexName -> body -> Eff es [BH.Hit resp]
-esSearchByIndex iname body = BH.hits . BH.searchHits <$> esSearch iname body BHR.NoScroll
+esSearchByIndex :: (Error ElasticError :> es, ElasticEffect :> es, FromJSONField resp) => BH.IndexName -> BH.Search -> Eff es [BH.Hit resp]
+esSearchByIndex iname payload = BH.hits . BH.searchHits <$> esSearch iname payload BHR.NoScroll
 
 esAdvance :: (Error ElasticError :> es, ElasticEffect :> es, FromJSON resp) => BH.ScrollId -> Eff es (BH.SearchResult resp)
 esAdvance scroll = do
   runBHIOSafe "esAdvance" scroll $ BHR.advance scroll
 
-esGetDocument :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> BH.DocId -> Eff es (HTTP.Response LByteString)
+esGetDocument :: (Error ElasticError :> es, ElasticEffect :> es) =>  FromJSON a => BH.IndexName -> BH.DocId -> Eff es (Either BH.EsError (BH.EsResult a))
 esGetDocument iname doc = do
-  runBHIOSafe "esGetDocument" doc $ BH.getDocument iname doc
+  runBHIOUnsafe "esGetDocument" doc $ BH.getDocument iname doc
 
 esCountByIndex :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> BH.CountQuery -> Eff es (Either BH.EsError BH.CountResponse)
 esCountByIndex iname q = do
-  runBHIOSafe "esCountByIndex" q $ BH.countByIndex iname q
+  runBHIOUnsafe "esCountByIndex" q $ BH.countByIndex iname q
 
-esSearchHit :: (Error ElasticError :> es, ElasticEffect :> es) => ToJSON body => BH.IndexName -> body -> Eff es [Json.Value]
-esSearchHit iname body = do
-  runBHIOSafe "esSearchHit" body $ BHR.searchHit iname body
+esSearchHit :: (Error ElasticError :> es, ElasticEffect :> es) => FromJSON a =>  BH.IndexName -> BH.Search -> Eff es (BH.SearchResult a)
+esSearchHit iname payload = do
+  runBHIOSafe "esSearchHit" payload $ BHR.searchHit iname payload
 
 esScanSearch :: (Error ElasticError :> es, ElasticEffect :> es) => FromJSON body => BH.IndexName -> BH.Search -> Eff es [BH.Hit body]
 esScanSearch iname search = do
   runBHIOSafe "esScanSearch" search $ BH.scanSearch iname search
 
-esDeleteByQuery :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> BH.Query -> Eff es BH.Reply
+esDeleteByQuery :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> BH.Query -> Eff es BH.DeletedDocuments
 esDeleteByQuery iname q = do
   runBHIOSafe "esDeleteByQuery" q $ BH.deleteByQuery iname q
 
@@ -470,20 +491,20 @@ esCreateIndex is iname = do
   -- TODO: check for error
   void $ runBHIOSafe "esCreateIndex" iname $ BH.createIndex is iname
 
-esIndexDocument :: (ToJSON body, Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> BH.IndexDocumentSettings -> body -> BH.DocId -> Eff es (HTTP.Response LByteString)
+esIndexDocument :: (ToJSON body, Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> BH.IndexDocumentSettings -> body -> BH.DocId -> Eff es (Either BH.EsError BH.IndexedDocument)
 esIndexDocument indexName docSettings body docId = do
-  runBHIOSafe "esIndexDocument" body $ BH.indexDocument indexName docSettings body docId
+  runBHIOUnsafe "esIndexDocument" body $ BH.indexDocument indexName docSettings body docId
 
 esPutMapping :: (Error ElasticError :> es, ElasticEffect :> es) => ToJSON mapping => BH.IndexName -> mapping -> Eff es ()
 esPutMapping iname mapping = do
   -- TODO: check for error
-  void $ runBHIOSafe "esPutMapping" mapping $ BH.putMapping iname mapping
+  void $ runBHIOSafe "esPutMapping" mapping $ BH.putMapping @Value iname mapping
 
 esIndexExists :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> Eff es Bool
 esIndexExists iname = do
   runBHIOSafe "esIndexExists" iname $ BH.indexExists iname
 
-esDeleteIndex :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> Eff es (HTTP.Response LByteString)
+esDeleteIndex :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> Eff es BH.Acknowledged
 esDeleteIndex iname = do
   runBHIOSafe "esDeleteIndex" iname $ BH.deleteIndex iname
 
@@ -491,21 +512,21 @@ esSettings :: (Error ElasticError :> es, ElasticEffect :> es) => ToJSON body => 
 esSettings iname body = do
   runBHIOSafe "esSettings" body $ BHR.settings iname body
 
-esRefreshIndex :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> Eff es (HTTP.Response LByteString)
+esRefreshIndex :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> Eff es (Either BH.EsError BH.ShardResult)
 esRefreshIndex iname = do
-  runBHIOSafe "esRefreshIndex" iname $ BH.refreshIndex iname
+  runBHIOUnsafe "esRefreshIndex" iname $ BH.refreshIndex iname
 
 esDocumentExists :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> BH.DocId -> Eff es Bool
 esDocumentExists iname doc = do
   runBHIOSafe "esDocumentExists" doc $ BH.documentExists iname doc
 
-esBulk :: (Error ElasticError :> es, ElasticEffect :> es) => V.Vector BulkOperation -> Eff es BH.Reply
+esBulk :: (Error ElasticError :> es, ElasticEffect :> es) => V.Vector BulkOperation -> Eff es BH.BulkResponse
 esBulk ops = do
   runBHIOSafe "esBulk" ([] :: [Bool]) $ BH.bulk ops
 
-esUpdateDocument :: (Error ElasticError :> es, ElasticEffect :> es) => ToJSON a => BH.IndexName -> BH.IndexDocumentSettings -> a -> DocId -> Eff es BH.Reply
+esUpdateDocument :: (Error ElasticError :> es, ElasticEffect :> es) => ToJSON a => BH.IndexName -> BH.IndexDocumentSettings -> a -> DocId -> Eff es (Either BH.EsError BH.IndexedDocument)
 esUpdateDocument iname ids body doc = do
-  runBHIOSafe "esUpdateDocument" body $ BH.updateDocument iname ids body doc
+  runBHIOUnsafe "esUpdateDocument" body $ BH.updateDocument iname ids body doc
 
 ------------------------------------------------------------------
 
