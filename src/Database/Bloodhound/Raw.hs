@@ -24,8 +24,11 @@ import Data.Text qualified as T
 import Data.Vector qualified as V
 import Database.Bloodhound qualified as BH
 import Database.Bloodhound.Common.Requests qualified as Query
+import Json.Extras qualified as Json
 import Monocle.Prelude
+import Network.HTTP.Client qualified as HTTP
 import Network.HTTP.Types.Method qualified as HTTP
+import Network.HTTP.Types.Status qualified as HTTP
 
 data ScrollRequest = NoScroll | GetScroll ByteString
 
@@ -76,13 +79,28 @@ search index payload scrollRequest = do
 -- | A special purpose search implementation that uses the faster json-syntax
 searchHit ::
   MonadBH m =>
-  Aeson.FromJSON a =>
+  (Json.Value -> Either Text a) ->
   BH.IndexName ->
   BH.Search ->
-  m (BH.SearchResult a)
-searchHit index payload = do
-  let query = Query.searchByIndex index payload
-  resp <- BH.tryEsError $ BH.performBHRequest query
+  m [a]
+searchHit parseHit index payload = do
+  let query = Query.searchByIndex @Value index payload
+  resp <-
+    BH.tryEsError $
+    BH.performBHRequest @_ @BH.StatusIndependant query {
+      BH.bhRequestParser = \(BH.BHResponse rawResp) ->
+        let
+          decodeHits :: Json.Value -> Maybe [Json.Value]
+          decodeHits value = do
+            hits <- Json.getAttr "hits" =<< Json.getAttr "hits" value
+            fmap getSource <$> Json.getArray hits
+          getSource value = case Json.getAttr "_source" value of
+            Nothing -> error $ "No source found in: " <> show value
+            Just v -> v
+        in case decodeHits (Json.decodeThrow $ HTTP.responseBody rawResp) of
+            Just xs -> pure $ first (BH.EsError $ Just $ HTTP.statusCode $ HTTP.responseStatus rawResp) $ traverse parseHit xs
+            Nothing -> error $ "Could not find hits in " <> show rawResp
+    }
   case resp of
     Right xs -> pure xs
     Left e -> throwEsError "Could not find hits" e

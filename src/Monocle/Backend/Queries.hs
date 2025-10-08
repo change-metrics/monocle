@@ -64,11 +64,11 @@ doAdvanceScrollBH scroll = do
   measureQueryM (Aeson.object ["scrolling" .= ("advancing..." :: Text)]) do
     esAdvance scroll
 
-doSearchHitBH :: QEffects es => FromJSON a => BH.Search -> Eff es (BH.SearchResult a)
-doSearchHitBH payload = do
+doSearchHitBH :: QEffects es => (Json.Value -> Either Text a) -> BH.Search -> Eff es [a]
+doSearchHitBH parseHit payload = do
   measureQueryM payload do
     index <- getIndexName
-    esSearchHit index payload
+    esSearchHit parseHit index payload
 
 -- | Call the count endpoint
 doCountBH :: QEffects es => BH.Query -> Eff es Count
@@ -156,10 +156,11 @@ doSearch orderM limit = do
     SearchPB.Order_DirectionDESC -> BH.Descending
 
 -- | Get search results hits, as fast as possible
-doFastSearch :: QEffects es => FromJSON a => Word32 -> Eff es (BH.SearchResult a)
-doFastSearch limit = do
+doFastSearch :: QEffects es => (Json.Value -> Either Text a) -> Word32 -> Eff es [a]
+doFastSearch parseHit limit = do
   query <- getQueryBH
   doSearchHitBH
+    parseHit
     (BH.mkSearch query Nothing)
       { BH.size = BH.Size $ fromInteger $ toInteger $ max 50 limit
       }
@@ -448,14 +449,13 @@ data JsonChangeEvent = JsonChangeEvent
   , jceAuthor :: Json.ShortText
   }
 
-instance FromJSON JsonChangeEvent where
-  parseJSON =
-    Aeson.withObject "JsonChangeEvent" $ \o ->
-      JsonChangeEvent
-        <$> (o .: "created_at")
-        <*> (o .: "on_created_at")
-        <*> (o .: "change_id")
-        <*> ((.: "muid") =<< o .: "author")
+decodeJsonChangeEvent :: Json.Value -> Maybe JsonChangeEvent
+decodeJsonChangeEvent v = do
+  jceCreatedAt <- Json.getDate =<< Json.getAttr "created_at" v
+  jceOnCreatedAt <- Json.getDate =<< Json.getAttr "on_created_at" v
+  jceChangeId <- Json.getString =<< Json.getAttr "change_id" v
+  jceAuthor <- Json.getString =<< Json.getAttr "muid" =<< Json.getAttr "author" v
+  pure $ JsonChangeEvent {..}
 
 firstEventDuration :: FirstEvent -> Pico
 firstEventDuration FirstEvent {..} = elapsedSeconds feChangeCreatedAt feCreatedAt
@@ -468,7 +468,7 @@ firstEventOnChanges = do
   (minDate, _) <- getQueryBound
 
   -- Collect all the events
-  result <- mapMaybe BH.hitSource . BH.hits . BH.searchHits <$> doFastSearch 10000
+  result <- catMaybes <$> doFastSearch (Right . decodeJsonChangeEvent) 10000
 
   -- Group by change_id
   let changeMap :: [NonEmpty JsonChangeEvent]

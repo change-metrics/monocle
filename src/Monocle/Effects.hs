@@ -62,6 +62,7 @@ import Control.Exception (finally, throwIO)
 import Control.Exception.Base (ErrorCall (ErrorCall))
 import Control.Monad.Catch (catches)
 import Data.Text qualified as T
+import Json.Extras qualified as Json
 import Monocle.Client qualified
 import Monocle.Config qualified
 import Network.HTTP.Client (HttpException (..))
@@ -466,7 +467,7 @@ esAdvance :: (Error ElasticError :> es, ElasticEffect :> es, FromJSON resp) => B
 esAdvance scroll = do
   runBHIOSafe "esAdvance" scroll $ BHR.advance scroll
 
-esGetDocument :: (Error ElasticError :> es, ElasticEffect :> es) =>  FromJSON a => BH.IndexName -> BH.DocId -> Eff es (Either BH.EsError (BH.EsResult a))
+esGetDocument :: (Error ElasticError :> es, ElasticEffect :> es) => FromJSON a => BH.IndexName -> BH.DocId -> Eff es (Either BH.EsError (BH.EsResult a))
 esGetDocument iname doc = do
   runBHIOUnsafe "esGetDocument" doc $ BH.getDocument iname doc
 
@@ -474,9 +475,9 @@ esCountByIndex :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexNam
 esCountByIndex iname q = do
   runBHIOUnsafe "esCountByIndex" q $ BH.countByIndex iname q
 
-esSearchHit :: (Error ElasticError :> es, ElasticEffect :> es) => FromJSON a =>  BH.IndexName -> BH.Search -> Eff es (BH.SearchResult a)
-esSearchHit iname payload = do
-  runBHIOSafe "esSearchHit" payload $ BHR.searchHit iname payload
+esSearchHit :: (Error ElasticError :> es, ElasticEffect :> es) => (Json.Value -> Either Text a) -> BH.IndexName -> BH.Search -> Eff es [a]
+esSearchHit parseHit iname payload = do
+  runBHIOSafe "esSearchHit" payload $ BHR.searchHit parseHit iname payload
 
 esScanSearch :: (Error ElasticError :> es, ElasticEffect :> es) => FromJSON body => BH.IndexName -> BH.Search -> Eff es [BH.Hit body]
 esScanSearch iname search = do
