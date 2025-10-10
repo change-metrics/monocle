@@ -24,6 +24,7 @@ import Data.Text qualified as T
 import Data.Vector qualified as V
 import Database.Bloodhound qualified as BH
 import Database.Bloodhound.Common.Requests qualified as Query
+import Debug.Trace qualified as Debug
 import Json.Extras qualified as Json
 import Monocle.Prelude
 import Network.HTTP.Client qualified as HTTP
@@ -63,7 +64,7 @@ search ::
   m (BH.SearchResult resp)
 search index payload scrollRequest = do
   let query = (Query.searchByIndex index payload {BH.source = Just fields}) {BH.bhRequestQueryStrings = qs}
-  resp <- BH.tryEsError $ BH.performBHRequest query
+  resp <- BH.tryEsError $ BH.performBHRequest query {BH.bhRequestParser = \resp -> first (Debug.trace $ "#### Failed search: " <> show resp) $ BH.bhRequestParser query resp}
   case resp of
     Left err -> throwEsError "search" err
     Right x -> pure x
