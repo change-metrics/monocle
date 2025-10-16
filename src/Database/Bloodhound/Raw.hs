@@ -19,12 +19,12 @@ where
 import Control.Monad.Catch (MonadThrow, throwM)
 import Data.Aeson
 import Data.Aeson qualified as Aeson
+import Data.Aeson.Casing.Internal qualified as AesonCasing
 import Data.Map qualified as Map
 import Data.Text qualified as T
 import Data.Vector qualified as V
 import Database.Bloodhound qualified as BH
 import Database.Bloodhound.Common.Requests qualified as Query
-import Debug.Trace qualified as Debug
 import Json.Extras qualified as Json
 import Monocle.Prelude
 import Network.HTTP.Client qualified as HTTP
@@ -54,6 +54,13 @@ settings index body = do
     BH.Acknowledged True -> pure ()
     _ -> error $ "Settings apply failed: " <> show resp
 
+-- | Manual aeson casing implementation to create the search _source attribute
+--
+-- >>> aesonCasing "echangeCommitCount"
+-- "commit_count"
+aesonCasing :: String -> String
+aesonCasing = AesonCasing.snakeCase . AesonCasing.dropFPrefix
+
 search ::
   forall resp m.
   MonadBH m =>
@@ -64,14 +71,17 @@ search ::
   m (BH.SearchResult resp)
 search index payload scrollRequest = do
   let query = (Query.searchByIndex index payload {BH.source = Just fields}) {BH.bhRequestQueryStrings = qs}
-  resp <- BH.tryEsError $ BH.performBHRequest query {BH.bhRequestParser = \resp -> first (Debug.trace $ "#### Failed search: " <> show resp) $ BH.bhRequestParser query resp}
+  resp <- BH.tryEsError $ BH.performBHRequest query
   case resp of
     Left err -> throwEsError "search" err
     Right x -> pure x
  where
+  toSourceElem :: String -> String
+  toSourceElem = from . aesonCasing
+
   -- The fields of the result data types.
   fields :: BH.Source
-  fields = BH.SourcePatterns $ BH.PopPatterns $ BH.Pattern . T.pack <$> selectors (Proxy :: Proxy (Rep resp))
+  fields = BH.SourcePatterns $ BH.PopPatterns $ BH.Pattern . T.pack . toSourceElem <$> selectors (Proxy :: Proxy (Rep resp))
 
   qs = case scrollRequest of
     NoScroll -> []
