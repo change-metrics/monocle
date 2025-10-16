@@ -152,7 +152,7 @@ mkTermsCompositeAgg term afterM =
               "agg"
               $ BH.CompositeTermsAgg
                 BH.TermsAggregation
-                  { term = Right term
+                  { term = Left term
                   , termInclude = Nothing
                   , termExclude = Nothing
                   , termOrder = Nothing
