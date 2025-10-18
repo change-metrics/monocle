@@ -521,9 +521,9 @@ esDocumentExists :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexN
 esDocumentExists iname doc = do
   runBHIOSafe "esDocumentExists" doc $ BH.documentExists iname doc
 
-esBulk :: (Error ElasticError :> es, ElasticEffect :> es) => V.Vector BulkOperation -> Eff es BH.BulkResponse
+esBulk :: (Error ElasticError :> es, ElasticEffect :> es) => V.Vector BulkOperation -> Eff es (Either BH.EsError BH.BulkResponse)
 esBulk ops = do
-  runBHIOSafe "esBulk" ([] :: [Bool]) $ BH.bulk ops
+  runBHIOUnsafe "esBulk" ([] :: [Bool]) $ BH.bulk ops
 
 esUpdateDocument :: (Error ElasticError :> es, ElasticEffect :> es) => ToJSON a => BH.IndexName -> BH.IndexDocumentSettings -> a -> DocId -> Eff es (Either BH.EsError BH.IndexedDocument)
 esUpdateDocument iname ids body doc = do
