@@ -420,9 +420,9 @@ runBHIOUnsafe ::
   Eff es (Either BH.EsError a)
 runBHIOUnsafe call bodyJSON act = do
   ElasticEffect env <- getStaticRep
-  eRes <- unsafeEff_ ((Right <$> BH.runBH env act) `catches` [errorHandler, esHandler])
+  eRes <- unsafeEff_ ((Right <$> BH.runBH env (BH.tryEsError act)) `catches` [errorHandler, esHandler])
   case eRes of
-    Right x -> pure x
+    Right x -> pure $ join x
     Left e -> E.throwError e
  where
   toErr msg = ElasticError call msg body
@@ -505,9 +505,9 @@ esIndexExists :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName
 esIndexExists iname = do
   runBHIOSafe "esIndexExists" iname $ BH.indexExists iname
 
-esDeleteIndex :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> Eff es BH.Acknowledged
+esDeleteIndex :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> Eff es (Either BH.EsError BH.Acknowledged)
 esDeleteIndex iname = do
-  runBHIOSafe "esDeleteIndex" iname $ BH.deleteIndex iname
+  runBHIOUnsafe "esDeleteIndex" iname $ BH.deleteIndex iname
 
 esSettings :: (Error ElasticError :> es, ElasticEffect :> es) => ToJSON body => BH.IndexName -> body -> Eff es ()
 esSettings iname body = do

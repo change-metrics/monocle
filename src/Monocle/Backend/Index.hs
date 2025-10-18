@@ -249,14 +249,15 @@ instance ToJSON ChangesIndexMapping where
 
 createIndex :: (IndexEffects es, Retry :> es, ToJSON mapping) => BH.IndexName -> mapping -> Eff es ()
 createIndex indexName mapping = do
-  recoverAll retryPolicy $ const $ esCreateIndex indexSettings indexName
-  -- print respCI
-  esPutMapping indexName mapping
-  -- print respPM
-  res <- esIndexExists indexName
-  case res of
-    True -> pure ()
-    False -> logWarn "Fail to create index" ["name" .= indexName]
+  alreadyExists <- esIndexExists indexName
+  unless alreadyExists $ do
+    recoverAll retryPolicy $ const $ esCreateIndex indexSettings indexName
+    -- print respCI
+    esPutMapping indexName mapping
+    -- print respPM
+    res <- esIndexExists indexName
+    unless res $
+      logWarn "Fail to create index" ["name" .= indexName]
  where
   indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0) BH.defaultIndexMappingsLimits
   retryPolicy = exponentialBackoff 500_000 <> limitRetries 7
@@ -605,13 +606,14 @@ runAddDocsBulkOPs ::
   -- | The docs payload
   [(Value, BH.DocId)] ->
   Eff es ()
-runAddDocsBulkOPs bulkOp docs = do
-  index <- getIndexName
-  let stream = V.fromList $ fmap (bulkOp index) docs
-  _ <- esBulk stream
-  -- Bulk loads require an index refresh before new data is loaded.
-  _ <- esRefreshIndex index
-  pure ()
+runAddDocsBulkOPs bulkOp docs =
+  unless (null docs) $ do
+    index <- getIndexName
+    let stream = V.fromList $ fmap (bulkOp index) docs
+    _ <- esBulk stream
+    -- Bulk loads require an index refresh before new data is loaded.
+    _ <- esRefreshIndex index
+    pure ()
 
 indexDocs :: MonoQuery :> es => IndexEffects es => [(Value, BH.DocId)] -> Eff es ()
 indexDocs = runAddDocsBulkOPs toBulkIndex
