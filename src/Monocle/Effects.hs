@@ -499,7 +499,7 @@ esIndexDocument indexName docSettings body docId = do
 esPutMapping :: (Error ElasticError :> es, ElasticEffect :> es) => ToJSON mapping => BH.IndexName -> mapping -> Eff es ()
 esPutMapping iname mapping = do
   -- TODO: check for error
-  void $ runBHIOSafe "esPutMapping" mapping $ BH.putMapping @Value iname mapping
+  void $ runBHIOUnsafe "esPutMapping" mapping $ BH.putMapping @Value iname mapping
 
 esIndexExists :: (Error ElasticError :> es, ElasticEffect :> es) => BH.IndexName -> Eff es Bool
 esIndexExists iname = do
