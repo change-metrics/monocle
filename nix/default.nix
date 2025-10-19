@@ -122,8 +122,8 @@ let
       src = pkgs.fetchFromGitHub {
         owner = "bitemyapp";
         repo = "bloodhound";
-        rev = "f5216c7329ddae15ceeb5563939bfea0bc129603"; # v0.25.0.0
-        sha256 = "sha256-Y8u4yjk4Nexa7gyK9mOF7crXJuWHSw1qU1Vo/ljs+0o=";
+        rev = "601301754bc0c8d8002b1d3d7016530b357ee0c8"; # v0.26.0.0
+        sha256 = "sha256-Q5oVzHMp9OBCd2S+HlSDsSFGcqX7dFNVF/dpHKEspIc=";
       };
       pkg = hpPrev.callCabal2nix "bloodhound" src { };
     in pkgs.lib.pipe pkg [

@@ -151,18 +151,8 @@ mkTermsCompositeAgg term afterM =
           [ BH.CompositeAggregationSource
               "agg"
               $ BH.CompositeTermsAgg
-                BH.TermsAggregation
-                  { term = Left term
-                  , termInclude = Nothing
-                  , termExclude = Nothing
-                  , termOrder = Nothing
-                  , termMinDocCount = Nothing
-                  , termSize = Nothing
-                  , termShardSize = Nothing
-                  , termCollectMode = Nothing
-                  , termExecutionHint = Nothing
-                  , termAggs = Nothing
-                  }
+              $ BH.mkTermsAggregation
+              $ BH.FieldName term
           ]
       , compositeAggregationAfter = (\v -> Aeson.object ["agg" .= v]) <$> afterM
       }

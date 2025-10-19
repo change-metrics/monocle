@@ -549,32 +549,13 @@ getProjectAgg query = do
     Map.singleton
       "agg"
       $ BH.TermsAgg
-        BH.TermsAggregation
-          { termSize = Nothing
-          , termShardSize = Nothing
-          , termOrder = Nothing
-          , termMinDocCount = Nothing
-          , termInclude = Nothing
-          , termExecutionHint = Nothing
-          , termExclude = Nothing
-          , termCollectMode = Nothing
-          , termAggs =
+        (BH.mkTermsAggregation $ BH.FieldName "type")
+          { BH.termAggs =
               Just
                 $ Map.singleton "project"
                 $ BH.TermsAgg
-                  BH.TermsAggregation
-                    { termSize = Nothing
-                    , termShardSize = Nothing
-                    , termOrder = Nothing
-                    , termMinDocCount = Nothing
-                    , termInclude = Nothing
-                    , termExecutionHint = Nothing
-                    , termExclude = Nothing
-                    , termCollectMode = Nothing
-                    , termAggs = Nothing
-                    , term = Left "repository_fullname"
-                    }
-          , term = Left "type"
+                $ BH.mkTermsAggregation
+                $ BH.FieldName "repository_fullname"
           }
 
 -- | TopTerm agg query utils
@@ -611,7 +592,7 @@ getTermsAgg query onTerm maxBuckets = do
   aggs =
     BH.mkAggregations "singleTermAgg"
       $ BH.TermsAgg
-      $ (BH.mkTermsAggregation onTerm)
+      $ (BH.mkTermsAggregation $ BH.FieldName onTerm)
         { BH.termSize = maxBuckets
         }
   unfilteredR search' = maybe [] BH.buckets (BH.toTerms "singleTermAgg" search')
@@ -1364,17 +1345,8 @@ authorCntHisto aField changeEvent intervalM = withDocType changeEvent qf getAuth
           Map.singleton
             "authors"
             $ BH.TermsAgg
-              BH.TermsAggregation
-                { termSize = Just 10000
-                , termShardSize = Nothing
-                , termOrder = Nothing
-                , termMinDocCount = Nothing
-                , termInclude = Nothing
-                , termExecutionHint = Nothing
-                , termExclude = Nothing
-                , termCollectMode = Nothing
-                , termAggs = Nothing
-                , term = Left aField
+              (BH.mkTermsAggregation $ BH.FieldName aField)
+                { BH.termSize = Just 10000
                 }
         agg =
           Map.singleton
