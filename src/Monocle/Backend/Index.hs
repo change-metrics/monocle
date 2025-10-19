@@ -256,8 +256,8 @@ createIndex indexName mapping = do
     esPutMapping indexName mapping
     -- print respPM
     res <- esIndexExists indexName
-    unless res $
-      logWarn "Fail to create index" ["name" .= indexName]
+    unless res
+      $ logWarn "Fail to create index" ["name" .= indexName]
  where
   indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0) BH.defaultIndexMappingsLimits
   retryPolicy = exponentialBackoff 500_000 <> limitRetries 7

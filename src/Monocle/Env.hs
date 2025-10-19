@@ -65,10 +65,10 @@ envToIndexName target = do
 
 tenantIndexName :: Config.IndexName -> BH.IndexName
 tenantIndexName indexName =
-  let rawIndex = indexNamePrefix <> Config.getIndexName indexName 
-  in case BH.mkIndexName rawIndex of
-      Left e -> error $ "Cannot build tenantIndexName (" <> show rawIndex <> "): " <> show e
-      Right x -> x
+  let rawIndex = indexNamePrefix <> Config.getIndexName indexName
+   in case BH.mkIndexName rawIndex of
+        Left e -> error $ "Cannot build tenantIndexName (" <> show rawIndex <> "): " <> show e
+        Right x -> x
 
 -- | 'mkQuery' creates a Q.Query from a BH.Query
 mkQuery :: [BH.Query] -> Q.Query

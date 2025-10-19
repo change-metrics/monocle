@@ -1274,8 +1274,8 @@ countHisto rf intervalM = fmap toHisto <$> getCountHisto
                 , dateField = maybe (error "need date field") BH.FieldName $ rangeField rf
                 , dateAggs = Nothing
                 , dateCalendarInterval =
-                    Just $
-                      case interval of
+                    Just
+                      $ case interval of
                         Q.Hour -> BH.Hour
                         Q.Day -> BH.Day
                         Q.Week -> BH.Week
@@ -1288,10 +1288,11 @@ countHisto rf intervalM = fmap toHisto <$> getCountHisto
                 , dateMissing = Nothing
                 , dateMinDocCount = Just 0
                 , dateExtendedBounds =
-                  Just BH.ExtendedBounds {
-                    extendedBoundsMin = toJSON $ dateInterval interval minDate,
-                    extendedBoundsMax = toJSON $ dateInterval interval maxDate
-                  }
+                    Just
+                      BH.ExtendedBounds
+                        { extendedBoundsMin = toJSON $ dateInterval interval minDate
+                        , extendedBoundsMax = toJSON $ dateInterval interval maxDate
+                        }
                 }
         search =
           BH.Search
@@ -1362,8 +1363,8 @@ authorCntHisto aField changeEvent intervalM = withDocType changeEvent qf getAuth
                 , dateField = maybe (error "need date field") BH.FieldName $ rangeField (qfRange qf)
                 , dateAggs = Just author_agg
                 , dateCalendarInterval =
-                    Just $
-                      case interval of
+                    Just
+                      $ case interval of
                         Q.Hour -> BH.Hour
                         Q.Day -> BH.Day
                         Q.Week -> BH.Week
@@ -1376,10 +1377,11 @@ authorCntHisto aField changeEvent intervalM = withDocType changeEvent qf getAuth
                 , dateMissing = Nothing
                 , dateMinDocCount = Just 0
                 , dateExtendedBounds =
-                  Just BH.ExtendedBounds {
-                    extendedBoundsMin = toJSON $ dateInterval interval minDate,
-                    extendedBoundsMax = toJSON $ dateInterval interval maxDate
-                  }
+                    Just
+                      BH.ExtendedBounds
+                        { extendedBoundsMin = toJSON $ dateInterval interval minDate
+                        , extendedBoundsMax = toJSON $ dateInterval interval maxDate
+                        }
                 }
         search =
           BH.Search
