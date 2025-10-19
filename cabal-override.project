@@ -360,7 +360,7 @@ constraints: any.Diff ==0.4.1,
              any.yaml ==0.11.11.2,
              any.zigzag ==0.0.1.0,
              any.zlib ==0.6.3.0
-index-state: hackage.haskell.org 2025-01-06T16:40:37Z
+index-state: hackage.haskell.org 2025-10-20T01:00:00Z
 package proto3-suite
   flags: -swagger -large-records
 
