@@ -118,11 +118,18 @@ let
     serialise = pkgs.haskell.lib.doJailbreak
       (pkgs.haskell.lib.dontCheck hpPrev.serialise);
 
-    # upgrade to bloodhound 0.20 needs some work
-    bloodhound = pkgs.haskell.lib.overrideCabal hpPrev.bloodhound {
-      version = "0.19.1.0";
-      sha256 = "sha256-QEN1wOLLUEsDKAbgz8ex0wfK/duNytvRYclwkBj/1G0=";
-    };
+    bloodhound = let
+      src = pkgs.fetchFromGitHub {
+        owner = "bitemyapp";
+        repo = "bloodhound";
+        rev = "601301754bc0c8d8002b1d3d7016530b357ee0c8"; # v0.26.0.0
+        sha256 = "sha256-Q5oVzHMp9OBCd2S+HlSDsSFGcqX7dFNVF/dpHKEspIc=";
+      };
+      pkg = hpPrev.callCabal2nix "bloodhound" src { };
+    in pkgs.lib.pipe pkg [
+      pkgs.haskell.lib.compose.doJailbreak
+      pkgs.haskell.lib.compose.dontCheck
+    ];
 
     # relax bound for doctest, ghc-prim, primitive, template-haskell, text and transformers
     proto3-wire = pkgs.haskell.lib.doJailbreak hpPrev.proto3-wire;

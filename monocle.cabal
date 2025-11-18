@@ -125,7 +125,7 @@ library
                      , blaze-markup               >= 0.8.2.8
                      , blaze-html                 >= 0.9.1.2
                      , binary                     >= 0.8
-                     , bloodhound                 ^>= 0.19
+                     , bloodhound                 ^>= 0.26
                      , bugzilla-redhat            ^>= 1.0
                      , byteslice                  >= 0.2
                      , bytestring                 >= 0.10

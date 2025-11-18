@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 -- | The library environment and logging functions
 module Monocle.Env where
 
@@ -57,13 +59,17 @@ envToIndexName :: QueryTarget -> BH.IndexName
 envToIndexName target = do
   case target of
     QueryWorkspace ws -> indexName ws
-    QueryConfig _ -> BH.IndexName "monocle.config"
+    QueryConfig _ -> [BH.qqIndexName|monocle.config|]
  where
   indexName :: Config.Index -> BH.IndexName
   indexName Config.Index {..} = tenantIndexName name
 
 tenantIndexName :: Config.IndexName -> BH.IndexName
-tenantIndexName indexName = BH.IndexName $ indexNamePrefix <> Config.getIndexName indexName
+tenantIndexName indexName =
+  let rawIndex = indexNamePrefix <> Config.getIndexName indexName
+   in case BH.mkIndexName rawIndex of
+        Left e -> error $ "Cannot build tenantIndexName (" <> show rawIndex <> "): " <> show e
+        Right x -> x
 
 -- | 'mkQuery' creates a Q.Query from a BH.Query
 mkQuery :: [BH.Query] -> Q.Query

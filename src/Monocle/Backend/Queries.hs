@@ -49,14 +49,14 @@ measureQueryM :: a -> b -> b
 measureQueryM _ = id
 
 -- | Call the search endpoint
-doScrollSearchBH :: (QEffects es, ToJSON body, FromJSONField resp) => BHR.ScrollRequest -> body -> Eff es (BH.SearchResult resp)
-doScrollSearchBH scrollRequest body = do
-  measureQueryM body do
+doScrollSearchBH :: (QEffects es, FromJSONField resp) => BHR.ScrollRequest -> BH.Search -> Eff es (BH.SearchResult resp)
+doScrollSearchBH scrollRequest payload = do
+  measureQueryM payload do
     index <- getIndexName
-    esSearch index body scrollRequest
+    esSearch index payload scrollRequest
 
 -- | A search without scroll
-doSearchBH :: (QEffects es, ToJSON body, FromJSONField resp) => body -> Eff es (BH.SearchResult resp)
+doSearchBH :: (QEffects es, FromJSONField resp) => BH.Search -> Eff es (BH.SearchResult resp)
 doSearchBH = doScrollSearchBH BHR.NoScroll
 
 doAdvanceScrollBH :: (QEffects es, FromJSON resp) => BH.ScrollId -> Eff es (BH.SearchResult resp)
@@ -64,29 +64,26 @@ doAdvanceScrollBH scroll = do
   measureQueryM (Aeson.object ["scrolling" .= ("advancing..." :: Text)]) do
     esAdvance scroll
 
-doSearchHitBH :: (QEffects es, ToJSON body) => body -> Eff es [Json.Value]
-doSearchHitBH body = do
-  measureQueryM body do
+doSearchHitBH :: QEffects es => (Json.Value -> Either Text a) -> BH.Search -> Eff es [a]
+doSearchHitBH parseHit payload = do
+  measureQueryM payload do
     index <- getIndexName
-    esSearchHit index body
+    esSearchHit parseHit index payload
 
 -- | Call the count endpoint
 doCountBH :: QEffects es => BH.Query -> Eff es Count
-doCountBH body = do
-  measureQueryM body do
+doCountBH payload = do
+  measureQueryM payload do
     index <- getIndexName
-    resp <- esCountByIndex index (BH.CountQuery body)
-    case resp of
-      Left e -> error $ show e
-      Right x -> pure $ naturalToCount (BH.crCount x)
+    either (const 0) (naturalToCount . BH.crCount) <$> esCountByIndex index (BH.CountQuery payload)
 
 -- | Call _delete_by_query endpoint
 doDeleteByQueryBH :: QEffects es => BH.Query -> Eff es ()
-doDeleteByQueryBH body = do
-  measureQueryM body do
+doDeleteByQueryBH payload = do
+  measureQueryM payload do
     index <- getIndexName
     -- TODO: BH does not return parsed response - keep as is or if not enough move it to BHR.
-    void $ esDeleteByQuery index body
+    void $ esDeleteByQuery index payload
     void $ esRefreshIndex index
 
 -------------------------------------------------------------------------------
@@ -159,10 +156,11 @@ doSearch orderM limit = do
     SearchPB.Order_DirectionDESC -> BH.Descending
 
 -- | Get search results hits, as fast as possible
-doFastSearch :: QEffects es => Word32 -> Eff es [Json.Value]
-doFastSearch limit = do
+doFastSearch :: QEffects es => (Json.Value -> Either Text a) -> Word32 -> Eff es [a]
+doFastSearch parseHit limit = do
   query <- getQueryBH
   doSearchHitBH
+    parseHit
     (BH.mkSearch query Nothing)
       { BH.size = BH.Size $ fromInteger $ toInteger $ max 50 limit
       }
@@ -182,8 +180,8 @@ deleteDocs = do
   void $ doDeleteByQueryBH query
 
 -- | Get aggregation results
-doAggregation :: QEffects es => ToJSON body => body -> Eff es BH.AggregationResults
-doAggregation body = toAggRes <$> doSearchBH body
+doAggregation :: QEffects es => BH.Search -> Eff es BH.AggregationResults
+doAggregation payload = toAggRes <$> doSearchBH payload
 
 toAggRes :: BH.SearchResult Value -> BH.AggregationResults
 toAggRes res = fromMaybe (error "oops") (BH.aggregations res)
@@ -194,7 +192,7 @@ aggSearch query aggs = do
   let totalHits = BH.value $ BH.hitsTotal $ BH.searchHits resp
   pure $ AggregationResultsWTH (toAggRes resp) totalHits
 
-queryAggValue :: QEffects es => Value -> Eff es Double
+queryAggValue :: QEffects es => BH.Search -> Eff es Double
 queryAggValue search = getAggValue "agg1" <$> doAggregation search
  where
   getAggValue :: Text -> BH.AggregationResults -> Double
@@ -206,8 +204,8 @@ parseAggregationResults key res = getExn do
   value <- Map.lookup (from key) res `orDie` ("No value found for: " <> from key)
   Aeson.parseEither Aeson.parseJSON value
 
-queryAggResult :: QEffects es => FromJSON a => Value -> Eff es a
-queryAggResult body = parseAggregationResults "agg1" <$> doAggregation body
+queryAggResult :: QEffects es => FromJSON a => BH.Search -> Eff es a
+queryAggResult payload = parseAggregationResults "agg1" <$> doAggregation payload
 
 -- | Run a Terms composite aggregation (composite agg result is paginated)
 -- | Composite aggregations are adviced when dealing with high cardinality terms
@@ -216,7 +214,7 @@ doTermsCompositeAgg term = getPages Nothing
  where
   getPages :: Maybe Value -> Stream (Of BHR.TermsCompositeAggBucket) (Eff es) ()
   getPages afterM = do
-    ret <- lift $ queryAggResult $ BHR.mkAgg [BHR.mkTermsCompositeAgg term afterM] Nothing Nothing
+    ret <- lift $ queryAggResult $ BHR.mkAgg (BHR.mkTermsCompositeAgg term afterM) Nothing Nothing
     Streaming.each $ getBuckets ret
     case getAfterValue ret of
       Just afterValue -> getPages (Just afterValue)
@@ -470,8 +468,7 @@ firstEventOnChanges = do
   (minDate, _) <- getQueryBound
 
   -- Collect all the events
-  resultJson <- doFastSearch 10000
-  let result = mapMaybe decodeJsonChangeEvent resultJson
+  result <- catMaybes <$> doFastSearch (Right . decodeJsonChangeEvent) 10000
 
   -- Group by change_id
   let changeMap :: [NonEmpty JsonChangeEvent]
@@ -549,19 +546,17 @@ getProjectAgg query = do
   pure $ unEPBuckets (parseAggregationResults "agg" res)
  where
   agg =
-    [
-      ( "agg"
-      , Aeson.object
-          [ "terms" .= field "type"
-          , "aggs"
-              .= Aeson.object
-                [ "project"
-                    .= Aeson.object
-                      ["terms" .= field "repository_fullname"]
-                ]
-          ]
-      )
-    ]
+    Map.singleton
+      "agg"
+      $ BH.TermsAgg
+        (BH.mkTermsAggregation $ BH.FieldName "type")
+          { BH.termAggs =
+              Just
+                $ Map.singleton "project"
+                $ BH.TermsAgg
+                $ BH.mkTermsAggregation
+                $ BH.FieldName "repository_fullname"
+          }
 
 -- | TopTerm agg query utils
 getSimpleTR :: BH.TermsResult -> TermResult
@@ -597,7 +592,7 @@ getTermsAgg query onTerm maxBuckets = do
   aggs =
     BH.mkAggregations "singleTermAgg"
       $ BH.TermsAgg
-      $ (BH.mkTermsAggregation onTerm)
+      $ (BH.mkTermsAggregation $ BH.FieldName onTerm)
         { BH.termSize = maxBuckets
         }
   unfilteredR search' = maybe [] BH.buckets (BH.toTerms "singleTermAgg" search')
@@ -612,12 +607,36 @@ instance FromJSON CountValue where
   parseJSON _ = mzero
 
 getCardinalityAgg :: QEffects es => BH.FieldName -> Maybe Int -> Eff es Count
-getCardinalityAgg (BH.FieldName fieldName) threshold = do
+getCardinalityAgg fieldName threshold = do
   bhQuery <- getQueryBH
 
-  let cardinality = Aeson.object ["field" .= fieldName, "precision_threshold" .= threshold]
-      agg = Aeson.object ["agg1" .= Aeson.object ["cardinality" .= cardinality]]
-      search = Aeson.object ["aggregations" .= agg, "size" .= (0 :: Word), "query" .= bhQuery]
+  let search =
+        BH.Search
+          { trackSortScores = False
+          , suggestBody = Nothing
+          , sortBody = Nothing
+          , searchType = BH.SearchTypeQueryThenFetch
+          , searchAfterKey = Nothing
+          , scriptFields = Nothing
+          , docvalueFields = Nothing
+          , queryBody = bhQuery
+          , pointInTime = Nothing
+          , highlight = Nothing
+          , filterBody = Nothing
+          , aggBody =
+              Just
+                $ Map.singleton "agg1"
+                $ BH.CardinalityAgg
+                  BH.CardinalityAggregation
+                    { cardinalityField = fieldName
+                    , cardinalityPrecisionThreshold = BH.PrecisionThreshold <$> threshold
+                    , cardinalityMissing = Nothing
+                    }
+          , source = Nothing
+          , size = BH.Size 0
+          , fields = Nothing
+          , from = BH.From 0
+          }
   unCountValue . parseAggregationResults "agg1" <$> doAggregation search
 
 countAuthors :: QEffects es => Eff es Count
@@ -882,40 +901,49 @@ getChangesTops limit = do
         , termsCountIntTotalHits = total
         }
 
-searchBody :: QEffects es => QueryFlavor -> Value -> Eff es Value
+searchBody :: QEffects es => QueryFlavor -> BH.Aggregation -> Eff es BH.Search
 searchBody qf agg = withFlavor qf do
   queryBH <- getQueryBH
   pure
-    $ Aeson.object
-      [ "aggregations" .= Aeson.object ["agg1" .= agg]
-      , "size" .= (0 :: Word)
-      , "docvalue_fields"
-          .= [ Aeson.object
-                [ "field" .= ("created_at" :: Text)
-                , "format" .= ("date_time" :: Text)
-                ]
-             ]
-      , "query" .= fromMaybe (error "need query") queryBH
-      ]
+    $ BH.Search
+      { trackSortScores = False
+      , suggestBody = Nothing
+      , sortBody = Nothing
+      , searchType = BH.SearchTypeQueryThenFetch
+      , searchAfterKey = Nothing
+      , scriptFields = Nothing
+      , docvalueFields = Just [BH.DocvalueFieldNameAndFormat (BH.FieldName "created_at") "date_time"]
+      , queryBody = Just $ fromMaybe (error "need query") queryBH
+      , pointInTime = Nothing
+      , highlight = Nothing
+      , filterBody = Nothing
+      , aggBody = Just $ Map.singleton "agg1" agg
+      , source = Nothing
+      , size = BH.Size 0
+      , fields = Nothing
+      , from = BH.From 0
+      }
 
 averageDuration :: QEffects es => QueryFlavor -> Eff es Double
 averageDuration qf = queryAggValue =<< searchBody qf avg
  where
-  avg = Aeson.object ["avg" .= Aeson.object ["field" .= ("duration" :: Text)]]
+  avg =
+    BH.AvgAgg
+      $ BH.AvgAggregation (BH.FieldName "duration") Nothing
 
 medianDeviationDuration :: QEffects es => QueryFlavor -> Eff es Double
 medianDeviationDuration qf = queryAggValue =<< searchBody qf deviation
  where
   deviation =
-    Aeson.object
-      [ "median_absolute_deviation"
-          .= Aeson.object ["field" .= ("duration" :: Text)]
-      ]
+    BH.MedianAbsoluteDeviationAgg
+      $ BH.MedianAbsoluteDeviationAggregation (BH.FieldName "duration") Nothing
 
 changeMergedAvgCommits :: QEffects es => QueryFlavor -> Eff es Double
 changeMergedAvgCommits qf = queryAggValue =<< searchBody qf avg
  where
-  avg = Aeson.object ["avg" .= Aeson.object ["field" .= ("commit_count" :: Text)]]
+  avg =
+    BH.AvgAgg
+      $ BH.AvgAggregation (BH.FieldName "commit_count") Nothing
 
 withDocTypes :: QEffects es => [EDocType] -> QueryFlavor -> Eff es a -> Eff es a
 withDocTypes docTypes flavor qm =
@@ -1232,29 +1260,59 @@ countHisto rf intervalM = fmap toHisto <$> getCountHisto
     queryBH <- getQueryBH
     (minDate, maxDate, interval) <- queryToHistoBounds intervalM
 
-    let bound =
-          Aeson.object
-            [ "min" .= dateInterval interval minDate
-            , "max" .= dateInterval interval maxDate
-            ]
-        date_histo =
-          Aeson.object
-            [ "field" .= rangeField rf
-            , "calendar_interval" .= into @Text interval
-            , "format" .= getFormat (from interval)
-            , "min_doc_count" .= (0 :: Word)
-            , "extended_bounds" .= bound
-            ]
-        agg =
-          Aeson.object
-            [ "agg1" .= Aeson.object ["date_histogram" .= date_histo]
-            ]
+    let agg =
+          Map.singleton
+            "agg1"
+            $ BH.DateHistogramAgg
+              BH.DateHistogramAggregation
+                { datePreZone = Nothing
+                , datePreOffset = Nothing
+                , datePostZone = Nothing
+                , datePostOffset = Nothing
+                , dateInterval = Nothing
+                , dateFormat = Just $ getFormat (from interval)
+                , dateField = maybe (error "need date field") BH.FieldName $ rangeField rf
+                , dateAggs = Nothing
+                , dateCalendarInterval =
+                    Just
+                      $ case interval of
+                        Q.Hour -> BH.Hour
+                        Q.Day -> BH.Day
+                        Q.Week -> BH.Week
+                        Q.Month -> BH.Month
+                        Q.Year -> BH.Year
+                , dateFixedInterval = Nothing
+                , dateTimeZone = Nothing
+                , dateOffset = Nothing
+                , dateKeyed = Nothing
+                , dateMissing = Nothing
+                , dateMinDocCount = Just 0
+                , dateExtendedBounds =
+                    Just
+                      BH.ExtendedBounds
+                        { extendedBoundsMin = toJSON $ dateInterval interval minDate
+                        , extendedBoundsMax = toJSON $ dateInterval interval maxDate
+                        }
+                }
         search =
-          Aeson.object
-            [ "aggregations" .= agg
-            , "size" .= (0 :: Word)
-            , "query" .= fromMaybe (error "need query") queryBH
-            ]
+          BH.Search
+            { trackSortScores = False
+            , suggestBody = Nothing
+            , sortBody = Nothing
+            , searchType = BH.SearchTypeQueryThenFetch
+            , searchAfterKey = Nothing
+            , scriptFields = Nothing
+            , docvalueFields = Nothing
+            , queryBody = Just $ fromMaybe (error "need query") queryBH
+            , pointInTime = Nothing
+            , highlight = Nothing
+            , filterBody = Nothing
+            , aggBody = Just agg
+            , source = Nothing
+            , size = BH.Size 0
+            , fields = Nothing
+            , from = BH.From 0
+            }
 
     hBuckets . parseAggregationResults "agg1" <$> doAggregation search
 
@@ -1284,44 +1342,66 @@ authorCntHisto aField changeEvent intervalM = withDocType changeEvent qf getAuth
     queryBH <- getQueryBH
     (minDate, maxDate, interval) <- queryToHistoBounds intervalM
 
-    let bound =
-          Aeson.object
-            [ "min" .= dateInterval interval minDate
-            , "max" .= dateInterval interval maxDate
-            ]
-        date_histo =
-          Aeson.object
-            [ "field" .= rangeField (qfRange qf)
-            , "calendar_interval" .= into @Text interval
-            , "format" .= getFormat (from interval)
-            , "min_doc_count" .= (0 :: Word)
-            , "extended_bounds" .= bound
-            ]
-        author_agg =
-          Aeson.object
-            [ "authors"
-                .= Aeson.object
-                  [ "terms"
-                      .= Aeson.object
-                        [ "field" .= aField
-                        , "size" .= (10000 :: Word)
-                        ]
-                  ]
-            ]
+    let author_agg =
+          Map.singleton
+            "authors"
+            $ BH.TermsAgg
+              (BH.mkTermsAggregation $ BH.FieldName aField)
+                { BH.termSize = Just 10000
+                }
         agg =
-          Aeson.object
-            [ "agg1"
-                .= Aeson.object
-                  [ "date_histogram" .= date_histo
-                  , "aggs" .= author_agg
-                  ]
-            ]
+          Map.singleton
+            "agg1"
+            $ BH.DateHistogramAgg
+              BH.DateHistogramAggregation
+                { datePreZone = Nothing
+                , datePreOffset = Nothing
+                , datePostZone = Nothing
+                , datePostOffset = Nothing
+                , dateInterval = Nothing
+                , dateFormat = Just $ getFormat (from interval)
+                , dateField = maybe (error "need date field") BH.FieldName $ rangeField (qfRange qf)
+                , dateAggs = Just author_agg
+                , dateCalendarInterval =
+                    Just
+                      $ case interval of
+                        Q.Hour -> BH.Hour
+                        Q.Day -> BH.Day
+                        Q.Week -> BH.Week
+                        Q.Month -> BH.Month
+                        Q.Year -> BH.Year
+                , dateFixedInterval = Nothing
+                , dateTimeZone = Nothing
+                , dateOffset = Nothing
+                , dateKeyed = Nothing
+                , dateMissing = Nothing
+                , dateMinDocCount = Just 0
+                , dateExtendedBounds =
+                    Just
+                      BH.ExtendedBounds
+                        { extendedBoundsMin = toJSON $ dateInterval interval minDate
+                        , extendedBoundsMax = toJSON $ dateInterval interval maxDate
+                        }
+                }
         search =
-          Aeson.object
-            [ "aggregations" .= agg
-            , "size" .= (0 :: Word)
-            , "query" .= fromMaybe (error "need query") queryBH
-            ]
+          BH.Search
+            { trackSortScores = False
+            , suggestBody = Nothing
+            , sortBody = Nothing
+            , searchType = BH.SearchTypeQueryThenFetch
+            , searchAfterKey = Nothing
+            , scriptFields = Nothing
+            , docvalueFields = Nothing
+            , queryBody = Just $ fromMaybe (error "need query") queryBH
+            , pointInTime = Nothing
+            , highlight = Nothing
+            , filterBody = Nothing
+            , aggBody = Just agg
+            , source = Nothing
+            , size = BH.Size 0
+            , fields = Nothing
+            , from = BH.From 0
+            }
 
     hBuckets . parseAggregationResults "agg1" <$> doAggregation search
 

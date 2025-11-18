@@ -1,4 +1,5 @@
 -- witch instance for CrawlerPB
+{-# LANGUAGE QuasiQuotes #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 -- | Index management functions such as document mapping and ingest
@@ -248,14 +249,15 @@ instance ToJSON ChangesIndexMapping where
 
 createIndex :: (IndexEffects es, Retry :> es, ToJSON mapping) => BH.IndexName -> mapping -> Eff es ()
 createIndex indexName mapping = do
-  recoverAll retryPolicy $ const $ esCreateIndex indexSettings indexName
-  -- print respCI
-  esPutMapping indexName mapping
-  -- print respPM
-  res <- esIndexExists indexName
-  case res of
-    True -> pure ()
-    False -> logWarn "Fail to create index" ["name" .= indexName]
+  alreadyExists <- esIndexExists indexName
+  unless alreadyExists $ do
+    recoverAll retryPolicy $ const $ esCreateIndex indexSettings indexName
+    -- print respCI
+    esPutMapping indexName mapping
+    -- print respPM
+    res <- esIndexExists indexName
+    unless res
+      $ logWarn "Fail to create index" ["name" .= indexName]
  where
   indexSettings = BH.IndexSettings (BH.ShardCount 1) (BH.ReplicaCount 0) BH.defaultIndexMappingsLimits
   retryPolicy = exponentialBackoff 500_000 <> limitRetries 7
@@ -264,7 +266,7 @@ configVersion :: ConfigVersion
 configVersion = ConfigVersion 7
 
 configIndex :: BH.IndexName
-configIndex = BH.IndexName "monocle.config"
+configIndex = [BH.qqIndexName|monocle.config|]
 
 configDoc :: BH.DocId
 configDoc = BH.DocId "config"
@@ -477,13 +479,13 @@ ensureIndexCrawlerMetadata = do
   QueryWorkspace config <- getQueryTarget
   traverse_ initCrawlerMetadata config.crawlers
 
-withRefresh :: HasCallStack => MonoQuery :> es => IndexEffects es => Eff es BH.Reply -> Eff es ()
+withRefresh :: HasCallStack => Show e => Show a => MonoQuery :> es => IndexEffects es => Eff es (Either e a) -> Eff es ()
 withRefresh action = do
   index <- getIndexName
   resp <- action
-  unless (BH.isSuccess resp) (error $ "Unable to add or update: " <> show resp)
+  unless (isRight resp) (error $ "Unable to add or update: " <> show resp)
   refreshResp <- esRefreshIndex index
-  unless (BH.isSuccess refreshResp) (error $ "Unable to refresh index: " <> show resp)
+  unless (isRight refreshResp) (error $ "Unable to refresh index: " <> show resp)
 
 ensureIndex :: (E.Fail :> es, LoggerEffect :> es, MonoQuery :> es, Error ElasticError :> es, ElasticEffect :> es, Retry :> es) => Eff es ()
 ensureIndex = do
@@ -604,13 +606,14 @@ runAddDocsBulkOPs ::
   -- | The docs payload
   [(Value, BH.DocId)] ->
   Eff es ()
-runAddDocsBulkOPs bulkOp docs = do
-  index <- getIndexName
-  let stream = V.fromList $ fmap (bulkOp index) docs
-  _ <- esBulk stream
-  -- Bulk loads require an index refresh before new data is loaded.
-  _ <- esRefreshIndex index
-  pure ()
+runAddDocsBulkOPs bulkOp docs =
+  unless (null docs) $ do
+    index <- getIndexName
+    let stream = V.fromList $ fmap (bulkOp index) docs
+    _ <- esBulk stream
+    -- Bulk loads require an index refresh before new data is loaded.
+    _ <- esRefreshIndex index
+    pure ()
 
 indexDocs :: MonoQuery :> es => IndexEffects es => [(Value, BH.DocId)] -> Eff es ()
 indexDocs = runAddDocsBulkOPs toBulkIndex
@@ -679,8 +682,8 @@ indexEvents events = indexDocs (fmap toDoc events)
 statusCheck :: (Int -> c) -> HTTP.Response body -> c
 statusCheck prd = prd . NHTS.statusCode . HTTP.responseStatus
 
-isNotFound :: BH.Reply -> Bool
-isNotFound = statusCheck (== 404)
+isNotFound :: BH.BHResponse parsingContext a -> Bool
+isNotFound (BH.BHResponse r) = statusCheck (== 404) r
 
 checkDocExists :: MonoQuery :> es => IndexEffects es => BH.DocId -> Eff es Bool
 checkDocExists docId = do
@@ -690,16 +693,9 @@ checkDocExists docId = do
 getDocumentById' :: IndexEffects es => FromJSON a => BH.IndexName -> BH.DocId -> Eff es (Maybe a)
 getDocumentById' index docId = do
   resp <- esGetDocument index docId
-  if isNotFound resp
-    then pure Nothing
-    else do
-      parsed <- BH.parseEsResponse resp
-      case parsed of
-        Right cm -> pure . getHit $ BH.foundResult cm
-        Left _ -> error "Unable to get parse result"
- where
-  getHit (Just (BH.EsResultFound _ cm)) = Just cm
-  getHit Nothing = Nothing
+  case resp of
+    Left _ -> pure Nothing
+    Right x -> pure $ BH._source <$> BH.foundResult x
 
 getDocumentById :: MonoQuery :> es => IndexEffects es => FromJSON a => BH.DocId -> Eff es (Maybe a)
 getDocumentById docId = do
