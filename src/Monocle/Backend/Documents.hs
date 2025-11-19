@@ -22,6 +22,7 @@ module Monocle.Backend.Documents where
 import Data.Aeson (Value (String), defaultOptions, genericParseJSON, genericToJSON, withObject, withText, (.:))
 import Data.Aeson.Casing (aesonPrefix, snakeCase)
 import Data.Aeson.Types qualified
+import Data.Base64.Types qualified as B64
 import Data.Text.Encoding.Base64 qualified as B64
 import Data.Time.Format (defaultTimeLocale, formatTime, parseTimeM)
 import Data.Vector qualified as V
@@ -214,10 +215,10 @@ newtype BinaryText = BinaryText Text
   deriving newtype (Show, Eq)
 
 instance ToJSON BinaryText where
-  toJSON = String . B64.encodeBase64 . from
+  toJSON = String . B64.extractBase64 . B64.encodeBase64 . from
 
 instance FromJSON BinaryText where
-  parseJSON = withText "binary" $ \v -> case B64.decodeBase64 v of
+  parseJSON = withText "binary" $ \v -> case B64.decodeBase64Untyped v of
     Right x -> pure (BinaryText x)
     Left e -> fail ("Binary text decode failed: " <> from e)
 

@@ -6,6 +6,7 @@
 module Monocle.Backend.Index where
 
 import Crypto.Hash.SHA256 (hash)
+import Data.Base64.Types qualified as B64
 import Data.ByteString.Base64 qualified as B64
 import Data.HashTable.IO qualified as H
 import Data.Map qualified as Map
@@ -635,7 +636,7 @@ upsertDocs = runAddDocsBulkOPs toBulkUpsert
 
 -- | Generate a Text suitable for ElasticSearch Document ID from Text
 getDocID :: Text -> Text
-getDocID = B64.encodeBase64 . hash . encodeUtf8
+getDocID = B64.extractBase64 . B64.encodeBase64 . hash . encodeUtf8
 
 -- | Generate an DocID from Text
 getBHDocID :: Text -> BH.DocId

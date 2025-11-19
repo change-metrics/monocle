@@ -29,95 +29,28 @@ let
     config.allowUnfree = true;
   };
 
-  # Latest morpheus is not released yet, pull the HEAD
-  mk-morpheus-lib = hpPrev: name:
-    let
-      src = pkgs.fetchFromGitHub {
-        owner = "morpheusgraphql";
-        repo = "morpheus-graphql";
-        rev = "65e854660bb95fc7f3ff592b1f97404ddc31a981";
-        sha256 = "sha256-9zHMwRhJGEBSdEEc4YCoilU5YzcJlYseqXBB5QLmA1A=";
-      };
-    in (hpPrev.callCabal2nix "morpheus-graphql-${name}"
-      "${src}/morpheus-graphql-${name}" { });
-
   # Add monocle and patch broken dependency to the haskell package set
   haskellExtend = hpFinal: hpPrev: {
     monocle = hpPrev.callCabal2nix "monocle" src { };
 
-    morpheus-graphql-tests = mk-morpheus-lib hpPrev "tests";
-    morpheus-graphql-core = mk-morpheus-lib hpPrev "core";
-    morpheus-graphql-code-gen = mk-morpheus-lib hpPrev "code-gen";
-    morpheus-graphql-client = mk-morpheus-lib hpPrev "client";
-    morpheus-graphql-app = mk-morpheus-lib hpPrev "app";
-    morpheus-graphql-code-gen-utils = mk-morpheus-lib hpPrev "code-gen-utils";
-    morpheus-graphql-subscriptions = mk-morpheus-lib hpPrev "subscriptions";
-
-    # there is a test failure: resolveGroupController should resolve a direct mount root
+    # cgroup-rts-thread test are failing in nix env because resolveGroupController should resolve a direct mount root
     cgroup-rts-threads = pkgs.haskell.lib.dontCheck
       (pkgs.haskell.lib.overrideCabal hpPrev.cgroup-rts-threads {
         broken = false;
       });
 
-    # Gerrit needs latest version
-    gerrit = pkgs.haskell.lib.overrideCabal hpPrev.gerrit {
-      version = "0.1.6.1";
-      sha256 = "sha256-krdda8Yu0+pSEeylwtN0/W0MTko5k4jT4piVz0jkh8g=";
-      broken = false;
-    };
-
     # json-syntax test needs old tasty
     json-syntax = pkgs.haskell.lib.doJailbreak (pkgs.haskell.lib.dontCheck
       (pkgs.haskell.lib.overrideCabal hpPrev.json-syntax { broken = false; }));
 
-    # pull latest to fix setup.hs error
-    HsOpenSSL = pkgs.haskell.lib.overrideCabal hpPrev.HsOpenSSL {
-      version = "0.11.7.9";
-      sha256 = "sha256-Si9megnVTlIQ0d8OtOXFmQ7p7V9GP5Ass4Tjxyj2dnw=";
-    };
+    # retry-effectful needs latest
+    retry-effectful = (pkgs.haskell.lib.overrideCabal hpPrev.retry-effectful {
+      broken = false;
+      version = "0.1.0.1";
+      sha256 = "sha256-nBrmsKYKgPUzSRw5XV17GK/6k4JXV3oJlNIdLi4evyo=";
+    });
 
-    # this version is needed for ghc-9.12
-    entropy = pkgs.haskell.lib.overrideCabal hpPrev.entropy {
-      version = "0.4.1.11";
-      sha256 = "sha256-9d1aASePgxjZeT7WBxt0LxPONsdFYyi6rkrMgY4tkuo=";
-      revision = null;
-      editedCabalFile = null;
-    };
-
-    # relax version bounds (e.g. base, text, bytestring, containers, ...)
-    zlib = pkgs.haskell.lib.doJailbreak hpPrev.zlib;
-    boring = pkgs.haskell.lib.doJailbreak hpPrev.boring;
-    commutative-semigroups =
-      pkgs.haskell.lib.doJailbreak hpPrev.commutative-semigroups;
-    monoid-subclasses = pkgs.haskell.lib.doJailbreak hpPrev.monoid-subclasses;
-    cryptohash-sha1 = pkgs.haskell.lib.doJailbreak hpPrev.cryptohash-sha1;
-    cryptohash-sha256 = pkgs.haskell.lib.doJailbreak hpPrev.cryptohash-sha256;
-    ed25519 = pkgs.haskell.lib.doJailbreak hpPrev.ed25519;
-    ghc-trace-events = pkgs.haskell.lib.doJailbreak hpPrev.ghc-trace-events;
-    hashable = pkgs.haskell.lib.doJailbreak hpPrev.hashable;
-    atomic-write = pkgs.haskell.lib.doJailbreak hpPrev.atomic-write;
-    microstache = pkgs.haskell.lib.doJailbreak hpPrev.microstache;
-    insert-ordered-containers =
-      pkgs.haskell.lib.doJailbreak hpPrev.insert-ordered-containers;
-    range-set-list = pkgs.haskell.lib.doJailbreak hpPrev.range-set-list;
-    repline = pkgs.haskell.lib.doJailbreak hpPrev.repline;
-    string-random = pkgs.haskell.lib.doJailbreak hpPrev.string-random;
-    uuid = pkgs.haskell.lib.doJailbreak hpPrev.uuid;
-    bytebuild = pkgs.haskell.lib.doJailbreak hpPrev.bytebuild;
-    array-builder = pkgs.haskell.lib.doJailbreak hpPrev.array-builder;
-    websockets = pkgs.haskell.lib.doJailbreak hpPrev.websockets;
-    oidc-client = pkgs.haskell.lib.doJailbreak hpPrev.oidc-client;
-    dhall-json = pkgs.haskell.lib.doJailbreak hpPrev.dhall-json;
-    dhall-yaml = pkgs.haskell.lib.doJailbreak hpPrev.dhall-yaml;
-
-    # test needs to be disabled because of new doctest warning:
-    # https://codeberg.org/valpackett/pcre-heavy/issues/6
-    pcre-heavy = pkgs.haskell.lib.dontCheck hpPrev.pcre-heavy;
-
-    # test needs to be disabled, see https://github.com/well-typed/cborg/pull/339
-    serialise = pkgs.haskell.lib.doJailbreak
-      (pkgs.haskell.lib.dontCheck hpPrev.serialise);
-
+    # bloodhound needs latest
     bloodhound = let
       src = pkgs.fetchFromGitHub {
         owner = "bitemyapp";
@@ -131,41 +64,31 @@ let
       pkgs.haskell.lib.compose.dontCheck
     ];
 
-    # relax bound for doctest, ghc-prim, primitive, template-haskell, text and transformers
-    proto3-wire = pkgs.haskell.lib.doJailbreak hpPrev.proto3-wire;
-    # proto3-suite needs #252 and #262
+    # proto3 need latest
+    proto3-wire = let
+      src = pkgs.fetchFromGitHub {
+        owner = "awakesecurity";
+        repo = "proto3-wire";
+        rev = "fcc53d9935b64b6d8aaf65c8cef17f4bbed56867";
+        sha256 = "sha256-9nhVtz3MhImBhqt3IZ2fesl5MHk8MPLYkvwdn8yYLdo=";
+      };
+      pkg = hpPrev.callCabal2nix "proto3-wire" src { };
+    in pkgs.lib.pipe pkg [
+      pkgs.haskell.lib.compose.doJailbreak
+      pkgs.haskell.lib.compose.dontCheck
+    ];
     proto3-suite = let
       src = pkgs.fetchFromGitHub {
         owner = "awakesecurity";
         repo = "proto3-suite";
-        rev = "dc8eee9d8c58d959e43038cdc2c282d50bcff565";
-        sha256 = "sha256-u4b6XrkS2xXnZQSM3PIy13UXyqQ2oKPEFzcpH5kU1kc=";
+        rev = "be604b64258061292e264c1ce3d87432530d18b3";
+        sha256 = "sha256-0JhsqC57wa+KNidN4C0Yf+iYwqZp8odY3geKZBk7KOs=";
       };
       pkg = hpPrev.callCabal2nix "proto3-suite" src { };
     in pkgs.lib.pipe pkg [
       pkgs.haskell.lib.compose.doJailbreak
       pkgs.haskell.lib.compose.dontCheck
     ];
-
-    # weeder needs HEAD
-    weeder = let
-      src = pkgs.fetchFromGitHub {
-        owner = "ocharles";
-        repo = "weeder";
-        rev = "6c78e137033025c6b33e35fb8f9e681d55c43427";
-        sha256 = "sha256-62OfAhdHLve7seZgQ6NIoq7K57r2NqJESM3VTOZlY9Q=";
-      };
-    in pkgs.haskell.lib.dontCheck (hpPrev.callCabal2nix "weeder" src { });
-
-    # hlint needs HEAD
-    hlint = let
-      src = pkgs.fetchFromGitHub {
-        owner = "ndmitchell";
-        repo = "hlint";
-        rev = "7dfba720eaf6fa9bd0b23ae269334559aa722847";
-        sha256 = "sha256-niGBdSrkatr+TZCcLYXo4MDg5FyXTYiKQ5K+ZIWSWBs=";
-      };
-    in (hpPrev.callCabal2nix "hlint" src { });
   };
 
   # create the main package set without options
@@ -175,7 +98,7 @@ let
     config.allowUnfree = true;
   };
   # final haskell set, using extend see: https://github.com/NixOS/nixpkgs/issues/25887
-  hsPkgs = pkgs.haskell.packages.ghc910.extend haskellExtend;
+  hsPkgs = pkgs.haskellPackages.extend haskellExtend;
 
   # manually adds build dependencies for benchmark and codegen that are not managed by cabal2nix
   addExtraDeps = drv:

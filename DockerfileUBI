@@ -53,7 +53,7 @@ RUN dnf install -y \
     gcc-c++
 
 
-ARG GHC=9.10.1
+ARG GHC=9.10.3
 ARG CABAL=latest
 
 # Install GHC and cabal
