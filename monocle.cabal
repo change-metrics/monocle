@@ -186,7 +186,6 @@ library
                      , tasty                      >= 1.4
                      , tasty-hunit                >= 0.10
                      , template-haskell
-                     , text-short                 >= 0.1
                      , text-time                  >= 0.3
                      , th-env                     >= 0.1
                      , time

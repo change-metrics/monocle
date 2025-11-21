@@ -7,7 +7,6 @@ import Criterion.Main
 import Data.Aeson qualified as Aeson
 import Data.ByteString.Lazy qualified as LBS
 import Data.Bytes qualified as B
-import Data.Text.Short qualified as TextShort
 import Data.Text.Time qualified as T
 import Database.Bloodhound qualified as BH
 import Faker qualified
@@ -38,7 +37,7 @@ jsonPerf dat = do
     _ -> Nothing
   getDate :: Json.Value -> UTCTime
   getDate v = case v of
-    Json.String t -> either (error "oops") id $ T.parseUTCTimeOrError (TextShort.toText t)
+    Json.String t -> either (error "oops") id $ T.parseUTCTimeOrError t
     _ -> error "Not a date"
   toDuration :: Json.Value -> Maybe Pico
   toDuration v' = do
