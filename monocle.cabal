@@ -120,7 +120,7 @@ library
                      , aeson-casing
                      , aeson-pretty
                      , attoparsec                 >= 0.13
-                     , base64                     < 1.0
+                     , base64                     >=1 && < 2
                      , cgroup-rts-threads
                      , blaze-markup               >= 0.8.2.8
                      , blaze-html                 >= 0.9.1.2
@@ -136,10 +136,10 @@ library
                      , dhall-yaml                 >= 1.2
                      , directory
                      , either                     >= 5
-                     , effectful                  < 2.4.0.0
+                     , effectful
                      , effectful-core
                      -- , effectful-plugin
-                     , envparse                   < 0.6
+                     , envparse                   < 1
                      , exceptions                 >= 0.10
                      , fakedata                   >= 1.0
                      , fast-logger
@@ -186,7 +186,6 @@ library
                      , tasty                      >= 1.4
                      , tasty-hunit                >= 0.10
                      , template-haskell
-                     , text-short                 >= 0.1
                      , text-time                  >= 0.3
                      , th-env                     >= 0.1
                      , time

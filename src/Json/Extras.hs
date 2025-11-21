@@ -4,7 +4,6 @@
 module Json.Extras (
   -- * Data types
   module Json,
-  ShortText,
 
   -- * Extras
   decodeThrow,
@@ -16,8 +15,6 @@ module Json.Extras (
 
 import Data.ByteString.Lazy qualified as LBS
 import Data.Bytes qualified as Bytes
-import Data.Text.Short (ShortText)
-import Data.Text.Short qualified as TextShort
 import Data.Text.Time qualified as TextTime
 import Data.Time.Clock (UTCTime)
 import Relude
@@ -30,7 +27,7 @@ decodeThrow dat = case decode (Bytes.fromByteString (from dat)) of
   Right v -> v
 
 -- | 'getAttr' return an object value
-getAttr :: ShortText -> Json.Value -> Maybe Json.Value
+getAttr :: Text -> Json.Value -> Maybe Json.Value
 getAttr k v = case v of
   Json.Object xs -> getFirst $ foldMap getValue' xs
   _ -> Nothing
@@ -39,7 +36,7 @@ getAttr k v = case v of
     | key == k = First $ Just value
     | otherwise = First Nothing
 
-getString :: Json.Value -> Maybe ShortText
+getString :: Json.Value -> Maybe Text
 getString v = case v of
   Json.String x -> pure x
   _ -> Nothing
@@ -51,5 +48,5 @@ getArray v = case v of
 
 getDate :: Json.Value -> Maybe UTCTime
 getDate v = case v of
-  Json.String t -> either (const Nothing) Just $ TextTime.parseUTCTimeOrError (TextShort.toText t)
+  Json.String t -> either (const Nothing) Just $ TextTime.parseUTCTimeOrError t
   _ -> error "Not a date"

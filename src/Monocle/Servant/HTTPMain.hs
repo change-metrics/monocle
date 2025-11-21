@@ -22,11 +22,11 @@ type AuthAPI =
       :> QueryParam "code" Text
       :> QueryParam "state" Text
       :> Get
-          '[HTML]
-          ( Headers
-              '[ Header "Set-Cookie" SetCookie
-               , Header "Set-Cookie" SetCookie
-               , Header "Set-Cookie" SetCookie
-               ]
-              LoginInUser
-          )
+           '[HTML]
+           ( Headers
+               '[ Header "Set-Cookie" SetCookie
+                , Header "Set-Cookie" SetCookie
+                , Header "Set-Cookie" SetCookie
+                ]
+               LoginInUser
+           )

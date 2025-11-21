@@ -16,6 +16,7 @@ import Control.Monad.Random qualified as Random
 import Crypto.Hash.SHA256 (hash)
 import Crypto.JWT (JWK, fromOctets)
 import Data.Aeson (decode)
+import Data.Base64.Types qualified as B64
 import Data.ByteString qualified as BS
 import Data.ByteString.Base64 qualified as B64
 import Data.ByteString.Lazy qualified as BSL
@@ -105,7 +106,7 @@ instance FromJSON OIDCState
 instance ToJSON OIDCState
 
 decodeOIDCState :: ByteString -> Maybe OIDCState
-decodeOIDCState bs = case B64.decodeBase64 bs of
+decodeOIDCState bs = case B64.decodeBase64Untyped bs of
   Right json -> decode $ from json
   Left _ -> Nothing
 
@@ -114,7 +115,7 @@ mkSessionStore OIDCEnv {sessionStoreStorage} stateM uriM = do
   let sessionStoreGenerate = do
         rb <- liftIO genRandomB64
         let s = OIDCState (decodeUtf8 rb) uriM
-        pure (B64.encodeBase64' $ BSL.toStrict $ encode s)
+        pure (B64.extractBase64 . B64.encodeBase64' $ BSL.toStrict $ encode s)
       sessionStoreSave = storeSave
       sessionStoreGet = storeGet
       sessionStoreDelete = case stateM of
@@ -132,7 +133,7 @@ mkSessionStore OIDCEnv {sessionStoreStorage} stateM uriM = do
 
 -- | Generate a random fixed size string of 42 char base64 encoded
 genRandomB64 :: IO ByteString
-genRandomB64 = B64.encodeBase64' . hash <$> genRandom
+genRandomB64 = B64.extractBase64 . B64.encodeBase64' . hash <$> genRandom
 
 -- | Generate a random fixed size string of 1024 Bytes
 genRandom :: IO ByteString

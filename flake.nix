@@ -23,7 +23,7 @@
 
   inputs = {
     nixpkgs.url =
-      "github:NixOS/nixpkgs/d3780c92e64472e8f9aa54f7bbb0dd4483b98303";
+      "github:NixOS/nixpkgs/89c2b2330e733d6cdb5eae7b899326930c2c0648";
   };
 
   outputs = { self, nixpkgs }:
@@ -40,7 +40,7 @@
       devShells."x86_64-linux".ci = legacy.ci-shell;
       # A debug ghc to fix external deps. Adjust the packages below.
       devShells."x86_64-linux".debug =
-        legacy.hsPkgs.shellFor { packages = p: [ p.morpheus-graphql-app ]; };
+        legacy.hsPkgs.shellFor { packages = p: [ p.proto3-suite ]; };
       devShells."x86_64-linux".monitoring = legacy.monitoring-shell;
       packages."x86_64-linux".default = legacy.monocle-exe;
       packages."x86_64-linux".env = legacy.monocle-light.env;

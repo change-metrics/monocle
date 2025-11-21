@@ -1,6 +1,9 @@
 package proto3-suite
   flags: -swagger -large-records
 
+package path
+  flags: +os-string
+
 packages: .
 
 -- Disregard all upper bounds when dependency solving
@@ -8,5 +11,15 @@ allow-newer: all
 
 source-repository-package
     type: git
-    location: https://github.com/TristanCacqueray/proto3-suite
-    tag: dc8eee9d8c58d959e43038cdc2c282d50bcff565
+    location: https://github.com/awakesecurity/proto3-suite
+    tag: be604b64258061292e264c1ce3d87432530d18b3
+
+source-repository-package
+    type: git
+    location: https://github.com/awakesecurity/proto3-wire
+    tag: fcc53d9935b64b6d8aaf65c8cef17f4bbed56867
+
+source-repository-package
+    type: git
+    location: https://github.com/bitemyapp/bloodhound
+    tag: 601301754bc0c8d8002b1d3d7016530b357ee0c8

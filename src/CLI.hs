@@ -94,7 +94,7 @@ usage =
   usageCrawlerEnv = (,,) <$> envConf <*> envPublicUrl <*> envMonitoring
 
   -- Helper to create sub command
-  mkEnvDoc envParser = pretty (Env.helpDoc envParser)
+  mkEnvDoc envParser = pretty (Env.helpDoc 80 envParser)
   mkCommand doc name parser envParser = command name $ info (parser <**> helper) (progDesc doc <> extraHelp)
    where
     -- We only add `--help` to sub command which uses environment

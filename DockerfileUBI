@@ -53,7 +53,7 @@ RUN dnf install -y \
     gcc-c++
 
 
-ARG GHC=9.10.1
+ARG GHC=9.10.3
 ARG CABAL=latest
 
 # Install GHC and cabal
@@ -72,10 +72,12 @@ RUN dnf install -y \
 # Copy source tree
 COPY . /build
 
+ENV LANG en_US.UTF-8
+
 # Build Monocle
 RUN cd /build && \
     cabal update && \
-    cabal install --project-file=cabal-override.project --installdir /
+    bash -c "source /etc/profile; cabal install --project-file=cabal-override.project --installdir /"
 
 ##### Monocle Web UI build #####
 
