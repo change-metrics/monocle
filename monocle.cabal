@@ -142,6 +142,7 @@ library
                      , envparse                   < 1
                      , exceptions                 >= 0.10
                      , fakedata                   >= 1.0
+                     , filepath
                      , fast-logger
                      , foldl
                      , gerrit                     >= 0.1.6

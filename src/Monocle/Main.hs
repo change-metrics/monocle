@@ -17,6 +17,7 @@ import Monocle.Prelude
 import Monocle.Search.Query (loadAliases)
 import Monocle.Servant.HTTP (server)
 import Monocle.Servant.HTTPMain (RootAPI)
+import Network.HTTP.Types (hContentType)
 import Network.HTTP.Types.Status qualified as HTTP
 import Network.Wai qualified as Wai
 import Network.Wai.Handler.Warp qualified as Warp
@@ -28,6 +29,7 @@ import Prometheus.Metric.GHC (ghcMetrics)
 import Servant
 import Servant.Auth.Server (CookieSettings (..), cookieXsrfSetting, defaultCookieSettings, defaultJWTSettings)
 import System.Directory qualified
+import System.FilePath (takeExtension)
 
 import Effectful qualified as E
 import Effectful.Concurrent.MVar qualified as E
@@ -62,6 +64,22 @@ mkStaticMiddleware publicUrl title webAppPath = do
     exist <- System.Directory.doesPathExist fp
     pure $ if exist then Just fp else otherFP
 
+  -- Content-Type for static files
+  staticFileHeaders path =
+    [
+      ( hContentType
+      , case takeExtension path of
+          ".css" -> "text/css"
+          ".js" -> "application/javascript"
+          ".ico" -> "image/x-icon"
+          ".png" -> "image/png"
+          ".svg" -> "image/svg+xml"
+          ".woff" -> "font/woff"
+          ".woff2" -> "font/woff2"
+          _ -> "application/octet-stream"
+      )
+    ]
+
   -- The middleware pass the request to the monocle app
   staticMiddleware :: LByteString -> FilePath -> Wai.Application -> Wai.Application
   staticMiddleware index rootDir app' req waiRespond = app' req responder
@@ -76,11 +94,11 @@ mkStaticMiddleware publicUrl title webAppPath = do
         if Data.List.null reqPath || ".." `Data.List.isInfixOf` reqPath
           then -- The path is empty or fishy
             pure Nothing
-          else -- Checks if the request match a file, such as favico or css
+          else -- Checks if the request matches a file, such as favico or css
             (rootDir <> reqPath) `existOr` Nothing
       waiRespond $ case respPath of
-        -- The path exist, returns it
-        Just path -> Wai.responseFile HTTP.status200 [] path Nothing
+        -- The path exist, returns it with correct Content-Type
+        Just path -> Wai.responseFile HTTP.status200 (staticFileHeaders path) path Nothing
         -- Otherwise returns the index
         Nothing -> Wai.responseLBS HTTP.status200 [] index
 
