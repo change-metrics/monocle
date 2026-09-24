@@ -1004,7 +1004,7 @@ handleLogin uriM = do
  where
   genOIDCURL :: OIDCEnv -> IO ByteString
   genOIDCURL oidcenv@OIDCEnv {oidc} = do
-    loc <- O.prepareAuthenticationRequestUrl (mkSessionStore oidcenv Nothing uriM) oidc [O.openId] mempty
+    loc <- O.prepareAuthenticationRequestUrl (mkSessionStore oidcenv Nothing uriM) oidc [O.openId, O.email, O.profile] mempty
     return (show loc)
 
 -- This session cookie is made for the Monocle Web APP to figure out the authenticated user context
