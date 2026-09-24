@@ -1,1 +1,1 @@
-{ loop_delay_sec : None Natural }
+{ loop_delay_sec = None Natural }
