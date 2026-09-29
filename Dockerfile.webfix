@@ -1,0 +1,4 @@
+FROM quay.io/change-metrics/monocle:1.11.2
+
+# Replace the web bundle with our fixed version
+COPY webapp-fixed /usr/share/monocle/webapp/

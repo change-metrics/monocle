@@ -474,15 +474,7 @@ module App = {
 
 @react.component
 let make = () =>
-  <NetworkRender
-    get={() => WebApi.Config.getAbout({void: ""})}
-    trigger={""}
-    render={(resp: ConfigTypes.get_about_response) => {
-      switch resp.about {
-      | Some(about) => <App about />
-      | None => <Alert variant=#Danger title={"Unable to fetch about data !"} />
-      }
-    }}
-  />
+  // Hardcoded about response to bypass timeout issue in /api/2/about - skipping getAbout call
+  <App about={version: "1.11.2", links: list{}, auth: Auth_config({provider_name: "", force_login: false, issuer: ""})} />
 
 let default = make
